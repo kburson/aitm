@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from tools.ci import category_sweep as sweep
+from tools.ci import product_shards
 
 UNIT = "packages/aitm-usage/tests/test_fixture.py::test_unit"
 SYSTEM = "packages/aitm-usage/tests/test_fixture.py::test_system"
@@ -32,6 +33,68 @@ def test_inventory_drift_or_duplicate_refuses():
                 {"product": inventory},
                 {UNIT: "fast-unit", SYSTEM: "systems-integration"},
             )
+
+
+def test_product_shards_assign_exact_selection_and_keep_cli_separate():
+    cli = "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+    catalog = {
+        UNIT: "fast-unit",
+        SYSTEM: "local-integration",
+        cli: "systems-integration",
+    }
+    assert product_shards.partition([SYSTEM, cli, UNIT], catalog) == {
+        "fast-unit": [UNIT],
+        "local-integration": [SYSTEM],
+        "systems-integration": [cli],
+    }
+    assert product_shards.partition([UNIT], {UNIT: "fast-unit"}) == {
+        "fast-unit": [UNIT]
+    }
+    for collected in ([UNIT], [UNIT, SYSTEM, cli, UNIT], [UNIT, SYSTEM, "extra"]):
+        with pytest.raises(sweep.Refusal, match="product collection"):
+            product_shards.partition(collected, catalog)
+
+
+def test_product_shard_receipt_preserves_phases_and_child_proofs():
+    collection = [SYSTEM, UNIT]
+    lanes = {"fast-unit": [UNIT], "systems-integration": [SYSTEM]}
+    unit = stock()
+    system = stock(SYSTEM)
+    system["children"] = [{"label": "cli-help", "pid": 434, "returncode": 0}]
+    combined = product_shards.merge_receipts(
+        collection, lanes, {"fast-unit": unit, "systems-integration": system}
+    )
+    assert combined["collected"] == collection
+    assert combined["reports"] == unit["reports"] + system["reports"]
+    assert combined["children"] == system["children"]
+    with pytest.raises(sweep.Refusal, match="shard receipts"):
+        product_shards.merge_receipts(collection, lanes, {"fast-unit": unit})
+    with pytest.raises(sweep.Refusal, match="systems-integration"):
+        product_shards.merge_receipts(
+            collection, lanes, {"fast-unit": unit, "systems-integration": unit}
+        )
+
+
+def test_product_shard_coverage_keeps_originals_and_excludes_other_shards(
+    tmp_path, monkeypatch
+):
+    from coverage import CoverageData
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("COVERAGE_RCFILE", raising=False)
+    source = tmp_path / "example_module.py"
+    source.write_text("if __name__:\n    a = 1\nelse:\n    a = 2\n", encoding="utf-8")
+    first, other = tmp_path / ".product.first", tmp_path / ".product.other"
+    for path, line in ((first, 2), (other, 4)):
+        data = CoverageData(basename=str(path))
+        data.add_arcs({str(source): {(-1, 1), (1, line), (line, -1)}})
+        data.write()
+
+    report = tmp_path / "unit.json"
+    counts = product_shards.write_shard_coverage([first], tmp_path / ".unit", report)
+    assert counts == {"covered_lines": 2, "covered_branches": 1}
+    assert sweep.read(report)["files"]["example_module.py"]["executed_lines"] == [1, 2]
+    assert first.is_file() and other.is_file()
 
 
 @pytest.mark.parametrize("host", ["linux", "darwin"])

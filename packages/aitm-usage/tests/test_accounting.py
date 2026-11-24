@@ -1,11 +1,14 @@
 import json
+from contextlib import contextmanager
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal, localcontext
-from importlib.resources import files
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from test_ledger import _LedgerRows, _memory_ledger
 
 from aitm_usage import accounting, pricing
 from aitm_usage import ledger as store
@@ -16,6 +19,7 @@ from aitm_usage.types import (
     Availability,
     BoundaryKind,
     ClientVersion,
+    Currency,
     Diagnostic,
     DiagnosticCode,
     ItemKey,
@@ -47,6 +51,81 @@ ITEM = ItemKey(ItemKind.ISSUE, 90)
 def project(tmp_path, monkeypatch):
     monkeypatch.setattr(store, "_control_root", lambda: tmp_path / "control")
     return Ledger.initialize(tmp_path / "project", PROJECT)
+
+
+@pytest.fixture
+def pricing_evidence():
+    return _memory_ledger(store, PROJECT, b"pricing-policy-test")
+
+
+@pytest.fixture
+def accounting_rows(pricing_evidence, monkeypatch):
+    rows = _LedgerRows(pricing_evidence.identity, store.APPLICATION_ID, ())
+    writer = replace(
+        pricing_evidence,
+        _writer=object(),
+        _write_paths=SimpleNamespace(check=lambda: None),
+    )
+
+    @contextmanager
+    def transaction(ledger, *, write):
+        assert ledger is writer
+        with rows.connect(write=write) as connection:
+            yield connection
+
+    monkeypatch.setattr(
+        Ledger, "reader", lambda ledger: transaction(ledger, write=False)
+    )
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda ledger: transaction(ledger, write=True)
+    )
+    return writer, rows
+
+
+@pytest.fixture(scope="module")
+def reference_rates():
+    """Freeze the v2026-11-09 inputs used by the arithmetic examples."""
+    return pricing.RateCard(
+        "2026-11-09",
+        Currency.USD,
+        ProcessingTier.STANDARD,
+        pricing._LongContextRate(272000, Decimal("2"), Decimal("1.5")),
+        (
+            pricing._ModelRate(
+                ModelLabel.GPT_6_ASTRA,
+                Provider.CODEX,
+                pricing._RateSource.ASTRA,
+                uncached_input=Decimal("10"),
+                cache_read=Decimal("1"),
+                cache_write=Decimal("12.5"),
+                cache_write_5m=None,
+                cache_write_1h=None,
+                output=Decimal("50"),
+            ),
+            pricing._ModelRate(
+                ModelLabel.GPT_6_1_SOL,
+                Provider.CODEX,
+                pricing._RateSource.SOL,
+                uncached_input=Decimal("2"),
+                cache_read=Decimal("0.1"),
+                cache_write=Decimal("2.5"),
+                cache_write_5m=None,
+                cache_write_1h=None,
+                output=Decimal("10"),
+            ),
+            pricing._ModelRate(
+                ModelLabel.CLAUDE_OPUS_5_5,
+                Provider.CLAUDE,
+                pricing._RateSource.OPUS,
+                uncached_input=Decimal("4"),
+                cache_read=Decimal("0.2"),
+                cache_write=None,
+                cache_write_5m=Decimal("5"),
+                cache_write_1h=Decimal("8"),
+                output=Decimal("20"),
+            ),
+        ),
+    )
 
 
 def usage(project, model=ModelLabel.GPT_6_ASTRA, *, revision=1):
@@ -96,7 +175,8 @@ def quota(project, *, provider=Provider.CODEX):
     )
 
 
-def test_standard_rates_and_account_only_evidence(project):
+def test_standard_rates_and_account_only_evidence(accounting_rows):
+    project, persisted_rows = accounting_rows
     card = pricing.load_rate_card()
     observation = usage(project)
     reading = quota(project)
@@ -114,10 +194,8 @@ def test_standard_rates_and_account_only_evidence(project):
         ),
         ProviderCheckpoint(Provider.CODEX),
     )
-    with project.writer() as writer:
-        before = writer.apply(replace(projected, checkpoint=checkpoint))
-    reopened = Ledger.open(project.root, PROJECT)
-    view = reopened.as_of(before)
+    before = project.apply(replace(projected, checkpoint=checkpoint))
+    view = project.as_of(before)
     prices = [
         rev.record for rev in view.current if isinstance(rev.record, PriceProjection)
     ]
@@ -149,10 +227,12 @@ def test_standard_rates_and_account_only_evidence(project):
         Availability.UNKNOWN
     }
     assert projected.checkpoint is None and projected.prior_checkpoint is None
-    assert accounting.account_observations(batch, card, ledger=reopened) == projected
-    assert reopened.apply(replace(projected, checkpoint=checkpoint)) == before
+    committed = persisted_rows.history
+    assert accounting.account_observations(batch, card, ledger=project) == projected
+    assert project.apply(replace(projected, checkpoint=checkpoint)) == before
+    assert persisted_rows.history == committed
     assert view.checkpoints == (checkpoint,)
-    assert reopened.as_of() == view
+    assert project.as_of() == view
     totals = rollup(ITEM, view).unattributed
     assert totals.known_usd == Decimal("0.0114")
     assert totals.observation_count == 1
@@ -171,24 +251,26 @@ def test_standard_rates_and_account_only_evidence(project):
     ],
 )
 def test_openai_long_context_threshold_prices_full_request(
-    project, model, gross, expected
+    pricing_evidence, reference_rates, model, gross, expected
 ):
     observation = replace(
-        usage(project, model).record,
+        usage(pricing_evidence, model).record,
         tokens=TokenCounts(gross, 200000, 0, 0, 1000, 750, gross + 1000),
         context_tokens=gross,
     )
     with localcontext(prec=2):
-        result = pricing.price(observation, pricing.load_rate_card())
+        result = pricing.price(observation, reference_rates)
     assert result.usd == Decimal(expected)
 
 
-def test_opus_counts_cache_ttls_once_and_allows_absent_thinking_subset(project):
-    obs = usage(project, ModelLabel.CLAUDE_OPUS_5_5).record
+def test_opus_counts_cache_ttls_once_and_allows_absent_thinking_subset(
+    pricing_evidence, reference_rates
+):
+    obs = usage(pricing_evidence, ModelLabel.CLAUDE_OPUS_5_5).record
     obs = replace(
         obs, tokens=replace(obs.tokens, total_tokens=780, reasoning_output_tokens=None)
     )
-    assert pricing.price(obs, pricing.load_rate_card()).usd == Decimal("0.004970")
+    assert pricing.price(obs, reference_rates).usd == Decimal("0.004970")
 
 
 @pytest.mark.parametrize(
@@ -212,26 +294,32 @@ def test_opus_counts_cache_ttls_once_and_allows_absent_thinking_subset(project):
         ("tokens", TokenCounts(500, 400, 0, 0, 200, 150, 850)),
     ],
 )
-def test_insufficient_or_inconsistent_usage_has_unknown_price(project, change, value):
-    obs = replace(usage(project).record, **{change: value})
-    result = pricing.price(obs, pricing.load_rate_card())
+def test_insufficient_or_inconsistent_usage_has_unknown_price(
+    pricing_evidence, reference_rates, change, value
+):
+    obs = replace(usage(pricing_evidence).record, **{change: value})
+    result = pricing.price(obs, reference_rates)
     assert result.usd is None
     assert result.availability is Availability.UNKNOWN
     assert result.currency == "USD"
 
 
-def test_codex_never_prices_nonzero_write_ttl_even_with_coherent_context(project):
+def test_codex_never_prices_nonzero_write_ttl_even_with_coherent_context(
+    pricing_evidence, reference_rates
+):
     obs = replace(
-        usage(project).record,
+        usage(pricing_evidence).record,
         tokens=TokenCounts(500, 400, 0, 1, 200, 150, 701),
         context_tokens=501,
     )
-    assert pricing.price(obs, pricing.load_rate_card()).usd is None
+    assert pricing.price(obs, reference_rates).usd is None
 
 
-def test_opus_context_includes_cache_writes_and_total_excludes_thinking(project):
-    obs = usage(project, ModelLabel.CLAUDE_OPUS_5_5).record
-    rates = pricing.load_rate_card()
+def test_opus_context_includes_cache_writes_and_total_excludes_thinking(
+    pricing_evidence, reference_rates
+):
+    obs = usage(pricing_evidence, ModelLabel.CLAUDE_OPUS_5_5).record
+    rates = reference_rates
     assert pricing.price(replace(obs, context_tokens=500), rates).usd is None
     assert (
         pricing.price(
@@ -241,17 +329,20 @@ def test_opus_context_includes_cache_writes_and_total_excludes_thinking(project)
     )
 
 
-def test_priced_zero_is_distinct_from_missing_tokens(project):
+def test_priced_zero_is_distinct_from_missing_tokens(pricing_evidence, reference_rates):
     obs = replace(
-        usage(project).record,
+        usage(pricing_evidence).record,
         tokens=TokenCounts(0, 0, 0, 0, 0, total_tokens=0),
         context_tokens=0,
     )
-    assert pricing.price(obs, pricing.load_rate_card()).usd == Decimal(0)
+    assert pricing.price(obs, reference_rates).usd == Decimal(0)
 
 
-def test_exact_usage_revision_controls_price_and_preserves_as_of(project):
-    card = pricing.load_rate_card()
+def test_exact_usage_revision_controls_price_and_preserves_as_of(
+    accounting_rows, reference_rates
+):
+    project, _ = accounting_rows
+    card = reference_rates
     partial = usage(project, ModelLabel.CLAUDE_OPUS_5_5)
     partial = replace(
         partial, record=replace(partial.record, availability=Availability.PARTIAL)
@@ -314,10 +405,13 @@ def test_exact_usage_revision_controls_price_and_preserves_as_of(project):
 
 
 def test_accounting_rejects_foreign_reference_through_ledger_admission(
-    project, tmp_path
+    accounting_rows, reference_rates, monkeypatch
 ):
-    other = Ledger.initialize(tmp_path / "other", UUID(int=91))
-    card = pricing.load_rate_card()
+    project, rows = accounting_rows
+    other = _memory_ledger(store, UUID(int=91), project._key)
+    writer = Mock(side_effect=AssertionError("Foreign data reached the writer"))
+    monkeypatch.setattr(Ledger, "writer", writer)
+    card = reference_rates
     sample = quota(project)
     with pytest.raises(LedgerError):
         accounting.account_observations(
@@ -336,11 +430,16 @@ def test_accounting_rejects_foreign_reference_through_ledger_admission(
             )
         )
     assert project.as_of().sequence == 0
+    assert rows.writes == []
+    writer.assert_not_called()
 
 
-def test_same_snapshot_identity_does_not_replace_conflicting_payload(project):
+def test_same_snapshot_identity_does_not_replace_conflicting_payload(
+    accounting_rows, reference_rates
+):
+    project, rows = accounting_rows
     sample = quota(project)
-    card = pricing.load_rate_card()
+    card = reference_rates
     accepted = accounting.account_observations(
         AdapterResult(quota=(sample,)), card, ledger=project
     )
@@ -351,21 +450,23 @@ def test_same_snapshot_identity_does_not_replace_conflicting_payload(project):
         ledger=project,
     )
     assert conflict.revisions[0].key == accepted.revisions[0].key
-    with pytest.raises(ConflictError):
+    before = rows.history
+    with pytest.raises(ConflictError, match="Immutable revision payload conflict"):
         project.apply(conflict)
     assert project.as_of().sequence == seq
     assert project.as_of().current == accepted.revisions
+    assert rows.history == before
 
 
-def test_wire_values_are_canonical_closed_and_private(project):
+def test_wire_values_are_canonical_closed_and_private(accounting_rows, reference_rates):
+    project, committed = accounting_rows
     batch = accounting.account_observations(
         AdapterResult((usage(project),), quota=(quota(project),)),
-        pricing.load_rate_card(),
+        reference_rates,
         ledger=project,
     )
-    project.apply(batch)
-    with project.reader() as conn:
-        rows = [row[0] for row in conn.execute("SELECT payload FROM revisions")]
+    assert project.apply(batch) == 1
+    rows = [payload for _, _, _, payload in committed.history[1]]
     payloads = {json.loads(row)["record"]["kind"]: row for row in rows}
     raw_price = payloads["api-equivalent-price"]
     raw_quota = payloads["account-observation"]
@@ -389,16 +490,25 @@ def test_wire_values_are_canonical_closed_and_private(project):
             _decode(malformed, Revision)
 
 
-def test_rate_card_content_is_versioned_validated_and_immutable(project):
-    card = pricing.load_rate_card()
-    raw = files("aitm_usage").joinpath("rates", "2026-11-09.json").read_text()
+def test_rate_card_content_is_versioned_validated_and_immutable(
+    pricing_evidence, reference_rates, monkeypatch
+):
+    raw = _encode(reference_rates, pricing.RateCard).encode()
+    resources = Mock()
+    resources.return_value.joinpath.return_value.read_bytes.return_value = raw
+    monkeypatch.setattr(pricing, "files", resources)
+    card = pricing.load_rate_card("2026-11-09")
+    assert card == reference_rates
+    resources.assert_called_once_with("aitm_usage")
+    resources.return_value.joinpath.assert_called_once_with("rates", "2026-11-09.json")
     rates = json.loads(raw)
     assert pricing.RateCard.from_json(json.dumps(rates, sort_keys=True)) == card
     assert card.basis.version == "2026-11-09"
-    obs = usage(project).record
+    obs = usage(pricing_evidence).record
     assert pricing.price(obs, card).usd == Decimal("0.0114")
-    alternate = rates["entries"][0]
-    assert alternate["model"] == "gpt-6-astra"
+    alternate = next(
+        entry for entry in rates["entries"] if entry["model"] == "gpt-6-astra"
+    )
     alternate["uncached_input"] = "12"
     edited = pricing.RateCard.from_json(json.dumps(rates))
     assert edited.basis != card.basis
@@ -407,23 +517,30 @@ def test_rate_card_content_is_versioned_validated_and_immutable(project):
     alternate["source"] = "https://example.invalid/private-source"
     with pytest.raises(ValueError):
         pricing.RateCard.from_json(json.dumps(rates))
-    alternate["source"] = rates["entries"][1]["source"]
+    alternate["source"] = next(
+        entry["source"] for entry in rates["entries"] if entry["model"] == "gpt-6.1-sol"
+    )
     with pytest.raises(ValueError):
         pricing.RateCard.from_json(json.dumps(rates))
 
 
-def test_accounting_revision_cannot_overwrite_an_immutable_record(project):
+def test_accounting_revision_cannot_overwrite_an_immutable_record(
+    accounting_rows, reference_rates
+):
+    project, rows = accounting_rows
     original = usage(project)
     batch = accounting.account_observations(
         AdapterResult((original,), quota=(quota(project),)),
-        pricing.load_rate_card(),
+        reference_rates,
         ledger=project,
     )
     first = project.apply(batch)
+    rows.writes.clear()
     for entry in batch.revisions[1:]:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Accounting records are immutable"):
             project.apply(LedgerBatch((replace(entry, revision=2),)))
     assert project.as_of().sequence == first
+    assert rows.writes == []
 
 
 @pytest.mark.parametrize(
@@ -436,10 +553,9 @@ def test_accounting_revision_cannot_overwrite_an_immutable_record(project):
     ],
 )
 def test_sanitized_spike_token_totals_at_standard_rates(
-    project, model, requests, totals, expected
+    pricing_evidence, reference_rates, model, requests, totals, expected
 ):
-    card = pricing.load_rate_card()
-    template = usage(project, model).record
+    template = usage(pricing_evidence, model).record
     priced = Decimal(0)
     # Distribute the recorded aggregate into sanitized request-sized vectors.
     # All four reported sets used Standard rates without a long-context premium.
@@ -453,5 +569,5 @@ def test_sanitized_spike_token_totals_at_standard_rates(
             gross, cached, write_5m, write_1h, output, total_tokens=context + output
         )
         obs = replace(template, tokens=tokens, context_tokens=context)
-        priced += pricing.price(obs, card).usd
+        priced += pricing.price(obs, reference_rates).usd
     assert priced == Decimal(expected)

@@ -392,33 +392,29 @@ def _anchor_attestation(
     return f"{command.command_id}.{sequence}.attested", proof.value.encode("ascii")
 
 
+def _committed_revision_sequence(
+    conn: sqlite3.Connection, revision: Revision, cutoff: int
+) -> int | None:
+    row = conn.execute(
+        """
+        SELECT r.sequence FROM revisions AS r
+        JOIN commits AS c ON c.sequence = r.sequence
+        WHERE r.key = ? AND r.revision = ? AND r.payload = ? AND r.sequence <= ?
+        """,
+        (revision.key.value, revision.revision, _encode(revision, Revision), cutoff),
+    ).fetchone()
+    return None if row is None else row[0]
+
+
 def _anchor_commit_sequence(
     ledger: Ledger, receipt: Revision, effect: Revision, cutoff: int
 ) -> int | None:
-    # The fixed view identifies the exact canonical revisions. A second
-    # verified read-only snapshot is bounded to the same historical cutoff.
+    # The fixed view identifies both exact revisions. Look them up in one
+    # verified snapshot bounded to that view's cutoff.
     with ledger.reader() as conn:
-        row = conn.execute(
-            """
-            SELECT receipt.sequence
-            FROM revisions AS receipt
-            JOIN revisions AS effect ON effect.sequence = receipt.sequence
-            JOIN commits AS committed ON committed.sequence = receipt.sequence
-            WHERE receipt.key = ? AND receipt.revision = ? AND receipt.payload = ?
-              AND effect.key = ? AND effect.revision = ? AND effect.payload = ?
-              AND receipt.sequence <= ?
-            """,
-            (
-                receipt.key.value,
-                receipt.revision,
-                _encode(receipt, Revision),
-                effect.key.value,
-                effect.revision,
-                _encode(effect, Revision),
-                cutoff,
-            ),
-        ).fetchone()
-    return None if row is None else row[0]
+        receipt_sequence = _committed_revision_sequence(conn, receipt, cutoff)
+        effect_sequence = _committed_revision_sequence(conn, effect, cutoff)
+    return receipt_sequence if receipt_sequence == effect_sequence else None
 
 
 def _has_anchor_attestation(

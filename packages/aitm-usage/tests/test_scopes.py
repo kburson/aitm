@@ -1,16 +1,24 @@
 import json
-import os
-import stat
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
+from io import BytesIO
+from pathlib import Path
 from threading import Barrier, Event
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from scope_inbox_policy_cases import attach_scope_inbox_ledger
+from test_ledger import _memory_ledger
 
+from aitm_usage import (
+    cli as usage_cli,
+)
 from aitm_usage import (
     ledger as store,
 )
@@ -21,7 +29,6 @@ from aitm_usage.ledger import (
     ConflictError,
     Ledger,
     LedgerError,
-    WriterActive,
     _pin_directory,
 )
 from aitm_usage.scopes import (
@@ -38,6 +45,7 @@ from aitm_usage.types import (
     Availability,
     BoundaryKind,
     ClientVersion,
+    CommandReceipt,
     DevelopmentBinding,
     Diagnostic,
     DiagnosticCode,
@@ -45,11 +53,13 @@ from aitm_usage.types import (
     ItemKey,
     ItemKind,
     LedgerBatch,
+    LedgerView,
     MarkerDisposition,
     Provider,
     ReviewRole,
     Revision,
     ScopeCorrection,
+    ScopeEnrollment,
     ScopeMarker,
     SourceBoundary,
     SourceRef,
@@ -151,9 +161,110 @@ class Fixture:
         return usage
 
 
-def test_planning_scope_and_development_owner(project):
+@pytest.fixture
+def scope_policy(monkeypatch):
+    """Run inbox dispatch and scope rules with typed publications and ledger views."""
+    ledger = _memory_ledger(store, PROJECT, b"s" * 32)
+    publications = {}
+    history = [LedgerView(PROJECT, 0, (), ())]
 
-    f = Fixture(project)
+    def view(writer, sequence=None):
+        assert writer is ledger
+        return history[-1] if sequence is None else history[sequence]
+
+    def record(sequence, revisions):
+        assert sequence == history[-1].sequence + 1
+        history.append(
+            LedgerView(PROJECT, sequence, (*history[-1].revisions, *revisions), ())
+        )
+        return sequence
+
+    def apply(writer, batch):
+        assert writer is ledger and batch.checkpoint is None
+        return record(history[-1].sequence + 1, batch.revisions)
+
+    def current_command(connection, key, command, digest):
+        assert connection is storage
+        latest = next((r for r in history[-1].current if r.key == key), None)
+        if latest is None:
+            return None
+        assert latest.record.command == command and latest.record.digest == digest
+        return latest.revision, latest.record
+
+    def append_revisions(connection, sequence, revisions):
+        assert connection is storage
+        return record(sequence, revisions)
+
+    class Storage:
+        def execute(self, sql, args):
+            assert sql == "INSERT INTO commits VALUES (?)"
+            assert args == (history[-1].sequence + 1,)
+
+        def check(self):
+            pass
+
+    storage = Storage()
+    monkeypatch.setattr(Ledger, "as_of", view)
+    monkeypatch.setattr(Ledger, "apply", apply)
+    monkeypatch.setattr(Ledger, "require_writer", lambda writer: None)
+    monkeypatch.setattr(Ledger, "writer", lambda writer: nullcontext(writer))
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda writer: nullcontext(storage)
+    )
+    monkeypatch.setattr(store, "_head", lambda connection: history[-1].sequence)
+    monkeypatch.setattr(store, "_current_command", current_command)
+    monkeypatch.setattr(store, "_append_revisions", append_revisions)
+    monkeypatch.setattr(scopes, "_pin_directory", lambda path: nullcontext(storage))
+    monkeypatch.setattr(
+        scopes, "_private_child", lambda *args, **kwargs: nullcontext(storage)
+    )
+    monkeypatch.setattr(scopes, "_publication", lambda inbox: nullcontext())
+
+    def queue(command):
+        ledger.validate_command(command)
+        publications[command.command_id] = scopes._Publication(
+            command, encode_command(command)
+        )
+
+    def snapshot(inbox, writer):
+        assert inbox is storage and writer is ledger
+        return scopes._InboxSnapshot(tuple(publications.values()), 0, False, 0)
+
+    def acknowledge(inbox, directory, receipt, data):
+        assert inbox is directory is storage
+        assert publications[receipt.command.command_id].data == data
+        if receipt.disposition is not MarkerDisposition.PENDING:
+            del publications[receipt.command.command_id]
+
+    monkeypatch.setattr(scopes, "_read_publications", snapshot)
+    monkeypatch.setattr(scopes, "_acknowledge", acknowledge)
+    return ledger, queue
+
+
+@pytest.fixture
+def scope_receipt_transport(monkeypatch):
+    ledger = replace(
+        _memory_ledger(store, PROJECT, b"r" * 32),
+        _writer=object(),
+        _write_paths=SimpleNamespace(check=Mock()),
+    )
+    return ledger, attach_scope_inbox_ledger(monkeypatch, ledger)
+
+
+@pytest.fixture
+def scope_receipt_ledger(scope_receipt_transport):
+    ledger, _ = scope_receipt_transport
+    return ledger
+
+
+def _queue_marker(queue, marker):
+    queue(InboxCommand(marker.marker_id, marker.project_id, marker))
+
+
+def test_planning_scope_and_development_owner(scope_policy):
+
+    ledger, queue = scope_policy
+    f = Fixture(ledger)
     epic = f.marker(1, 1, EPIC, "epic")
     child = f.marker(2, 2, CHILD, "first-child-request")
     second = f.marker(3, 3, OTHER_CHILD, "next-child-turn", kind=BoundaryKind.TURN)
@@ -165,13 +276,13 @@ def test_planning_scope_and_development_owner(project):
         f.boundary(back, 21),
     )
 
-    with project.writer() as writer:
+    with ledger.writer() as writer:
         # Marker first. Neither an exact request ID nor an observation's time
         # authorizes a scope before source-ordered proof.
-        assert enqueue_marker(project.root, epic) == epic.marker_id
-        assert (
-            drain_inbox(writer, ()).receipts[0].disposition is MarkerDisposition.PENDING
-        )
+        _queue_marker(queue, epic)
+        (pending,) = drain_inbox(writer, ()).receipts
+        assert pending.command.command_id == epic.marker_id
+        assert pending.disposition is MarkerDisposition.PENDING
         epic_usage = f.observe(writer, first)
         pending_view = writer.as_of()
         assert resolve_scope(epic_usage, pending_view).scope is None
@@ -184,13 +295,13 @@ def test_planning_scope_and_development_owner(project):
         # request is honored even when its observation arrived earlier.
         child_usage = f.observe(writer, serial)
         assert resolve_scope(child_usage, writer.as_of()).scope.marker.item == EPIC
-        enqueue_marker(project.root, child)
+        _queue_marker(queue, child)
         assert (
             drain_inbox(writer, (serial,)).receipts[0].disposition
             is MarkerDisposition.ACCEPTED
         )
 
-        enqueue_marker(project.root, second)
+        _queue_marker(queue, second)
         turn_usage = f.observe(writer, turn)
         assert (
             drain_inbox(writer, (f.boundary(second, 20, proven=False),))
@@ -204,7 +315,7 @@ def test_planning_scope_and_development_owner(project):
         drain_inbox(writer, (turn,))
 
         back_usage = f.observe(writer, returned)
-        enqueue_marker(project.root, back)
+        _queue_marker(queue, back)
         drain_inbox(writer, (returned,))
         assert [
             resolve_scope(obs, writer.as_of()).scope.marker.item
@@ -237,8 +348,7 @@ def test_planning_scope_and_development_owner(project):
         )
         stranger = f.marker(10, 1, CHILD, "stranger", session=UUID(int=301))
         stranger_usage = f.observe(writer, f.boundary(stranger, 30, anchor=anchor))
-        enqueue_command(
-            project.root,
+        queue(
             InboxCommand(
                 owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)
             ),
@@ -286,7 +396,7 @@ def test_planning_scope_and_development_owner(project):
         ]
         for marker, checkout in zip(reviews, (None, anchor), strict=True):
             evidence = f.boundary(marker, 4, anchor=checkout)
-            enqueue_marker(project.root, marker)
+            _queue_marker(queue, marker)
             drain_inbox(writer, (evidence,))
             review = resolve_scope(f.observe(writer, evidence), writer.as_of()).scope
             assert review.marker.role == marker.role
@@ -301,7 +411,7 @@ def test_planning_scope_and_development_owner(project):
             phase=WorkPhase.HOUSEKEEPING,
         )
         clean = f.boundary(housekeeping, 30)
-        enqueue_marker(project.root, housekeeping)
+        _queue_marker(queue, housekeeping)
         drain_inbox(writer, (clean,))
         scope = resolve_scope(f.observe(writer, clean), writer.as_of()).scope
         assert scope.marker.item == ItemKey(ItemKind.PROJECT)
@@ -318,7 +428,7 @@ def test_planning_scope_and_development_owner(project):
             attempt_ref=attempt,
         )
         conflict = f.boundary(contradiction, 8, anchor=anchor)
-        enqueue_marker(project.root, contradiction)
+        _queue_marker(queue, contradiction)
         assert (
             drain_inbox(writer, (conflict,)).receipts[0].disposition
             is MarkerDisposition.CONFLICT
@@ -339,9 +449,13 @@ def test_planning_scope_and_development_owner(project):
         {"stream_ref": "different-stream", "receipt_ref": None},
     ],
 )
-def test_only_matching_source_proof_attests_pre_turn(project, changes):
-
-    f = Fixture(project)
+def test_only_matching_source_proof_attests_pre_turn(request, changes):
+    exercise_inbox = changes == {"receipt_ref": None}
+    if exercise_inbox:
+        ledger, queue = request.getfixturevalue("scope_policy")
+    else:
+        ledger = _memory_ledger(store, PROJECT, b"s" * 32)
+    f = Fixture(ledger)
     marker = f.marker(1, 1, CHILD, "claimed-next-turn", kind=BoundaryKind.TURN)
     changes = {
         name: f.ref(value) if type(value) is str else value
@@ -349,20 +463,53 @@ def test_only_matching_source_proof_attests_pre_turn(project, changes):
     }
     proof = f.boundary(marker, 1, **changes)
     assert attest_marker(marker, proof.boundary) is MarkerDisposition.PENDING
-    enqueue_marker(project.root, marker)
-    with project.writer() as writer:
-        assert (
-            drain_inbox(writer, (proof,)).receipts[0].disposition
-            is MarkerDisposition.PENDING
+    proven = f.boundary(marker, 1)
+    if not exercise_inbox:
+        command = InboxCommand(marker.marker_id, PROJECT, marker)
+        view = LedgerView(PROJECT, 0, (), ())
+        status, evidence, effects = scopes._evaluate(
+            ledger, command, view, (proof,), {}
         )
-        assert (
-            drain_inbox(writer, (f.boundary(marker, 1),)).receipts[0].disposition
-            is MarkerDisposition.ACCEPTED
+        assert status is MarkerDisposition.PENDING and effects == ()
+        pending = CommandReceipt(
+            command,
+            ledger.validate_command(command),
+            status,
+            None if evidence is None else evidence.boundary,
         )
+        status, evidence, effects = scopes._evaluate(
+            ledger, command, view, (proven,), {command.command_id: pending}
+        )
+        assert status is MarkerDisposition.ACCEPTED
+        assert evidence == proven
+        (effect,) = effects
+        assert effect.revision == 1
+        assert effect.record.marker == marker
+        assert effect.record.boundary == proven.boundary
+        return
+
+    _queue_marker(queue, marker)
+    with ledger.writer() as writer:
+        (pending,) = drain_inbox(writer, (proof,)).receipts
+        assert pending.disposition is MarkerDisposition.PENDING
+        assert pending.boundary == proof.boundary
+        assert not any(
+            isinstance(revision.record, ScopeEnrollment)
+            for revision in writer.as_of().current
+        )
+        (accepted,) = drain_inbox(writer, (proven,)).receipts
+        assert accepted.disposition is MarkerDisposition.ACCEPTED
+        assert accepted.boundary == proven.boundary
+        (enrollment,) = (
+            rev.record
+            for rev in writer.as_of().current
+            if isinstance(rev.record, ScopeEnrollment)
+        )
+        assert enrollment.marker == marker and enrollment.boundary == proven.boundary
 
 
-def test_scope_correction_preserves_prior_view_and_final_receipts(project):
-
+def test_scope_correction_preserves_prior_view_and_final_receipts(scope_receipt_ledger):
+    project = scope_receipt_ledger
     f = Fixture(project)
     marker = f.marker(1, 1, CHILD, "correctable")
     effective = f.boundary(marker, 8)
@@ -417,17 +564,18 @@ def test_scope_correction_preserves_prior_view_and_final_receipts(project):
 
 @pytest.mark.parametrize("sequence, ordinal", [(1, 9), (2, 7), (2, 8)])
 def test_quarantines_duplicate_sequence_and_retroactive_boundary(
-    project, sequence, ordinal
+    scope_policy, sequence, ordinal
 ):
 
+    project, queue = scope_policy
     f = Fixture(project)
     original = f.marker(1, 1, EPIC, "valid")
     conflicting = f.marker(2, sequence, CHILD, "different")
     known, proposed = f.boundary(original, 8), f.boundary(conflicting, ordinal)
     with project.writer() as writer:
-        enqueue_marker(project.root, original)
+        queue(InboxCommand(original.marker_id, PROJECT, original))
         drain_inbox(writer, (known,))
-        enqueue_marker(project.root, conflicting)
+        queue(InboxCommand(conflicting.marker_id, PROJECT, conflicting))
         assert (
             drain_inbox(writer, (proposed,)).receipts[0].disposition
             is MarkerDisposition.CONFLICT
@@ -436,8 +584,9 @@ def test_quarantines_duplicate_sequence_and_retroactive_boundary(
         assert resolve_scope(usage, writer.as_of()).scope is None
 
 
-def test_binding_checks_anchor_session_and_monotonic_generation(project):
+def test_binding_checks_anchor_session_and_monotonic_generation(scope_policy):
 
+    project, queue = scope_policy
     f = Fixture(project)
     anchor, attempt = f.ref("approved-checkout"), f.ref("attempt")
     owner = f.marker(
@@ -448,7 +597,7 @@ def test_binding_checks_anchor_session_and_monotonic_generation(project):
         owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)
     )
     with project.writer() as writer:
-        enqueue_command(project.root, command)
+        queue(command)
         wrong_source = replace(proven, anchor_ref=f.ref("other-checkout"))
         assert (
             drain_inbox(writer, (wrong_source,)).receipts[0].disposition
@@ -469,8 +618,7 @@ def test_binding_checks_anchor_session_and_monotonic_generation(project):
             phase=WorkPhase.DEVELOPMENT,
             attempt_ref=attempt,
         )
-        enqueue_command(
-            project.root,
+        queue(
             InboxCommand(
                 impostor.marker_id, PROJECT, DevelopmentBinding(impostor, anchor, 1)
             ),
@@ -486,67 +634,80 @@ def test_binding_checks_anchor_session_and_monotonic_generation(project):
         )
 
 
-def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_path):
+def test_cli_publication_is_private_authenticated_and_lease_free(
+    scope_receipt_transport, monkeypatch, capsys
+):
+    from aitm_usage import service
 
+    project, transport = scope_receipt_transport
     f = Fixture(project)
     marker = f.marker(1, 1, CHILD, "cli")
     proof = f.boundary(marker, 8)
-    marker_file = tmp_path / "marker.json"
-    marker_file.write_bytes(encode_marker(marker))
-    env = dict(os.environ, CODEX_THREAD_ID=str(CODEX))
-    # Invoke the installed console script in a separate interpreter using
-    # the same isolated project guard.
-    entry = (
-        "import runpy, sys; from pathlib import Path; from aitm_usage import ledger;"
-        f"ledger._control_root = lambda: Path({str(tmp_path / 'control')!r});"
-        "runpy.run_path(str(Path(sys.executable).with_name('aitm-usage')), run_name='__main__')"
-    )
+    marker_file = Path("/fixture/marker.json")
+    inputs = {marker_file: encode_marker(marker)}
+    open_path = Path.open
+
+    def open_input(path, mode="r", *args, **options):
+        if path in inputs:
+            assert mode == "rb" and not args and not options
+            return BytesIO(inputs[path])
+        return open_path(path, mode, *args, **options)
+
+    monkeypatch.setattr(Path, "open", open_input)
+    monkeypatch.setattr(usage_cli, "version", lambda _: "0.1.0")
+    monkeypatch.setattr(service, "_pin_directory", scopes._pin_directory)
+    monkeypatch.setattr(service, "_read_private", scopes._read_private)
+    remember = Mock(wraps=service.remember_claude_session)
+    monkeypatch.setattr(service, "remember_claude_session", remember)
 
     def cli(group, command, option, input_file, *extra, **overrides):
-        return subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                entry,
-                "--project",
-                str(project.root),
-                group,
-                command,
-                option,
-                str(input_file),
-                "--json",
-                *extra,
-            ],
-            env=env | overrides,
-            capture_output=True,
-            text=True,
-            check=False,
+        with monkeypatch.context() as invocation:
+            for name, value in ({"CODEX_THREAD_ID": str(CODEX)} | overrides).items():
+                invocation.setenv(name, value)
+            invocation.setattr(
+                sys,
+                "argv",
+                [
+                    "aitm-usage",
+                    "--project",
+                    str(project.root),
+                    group,
+                    command,
+                    option,
+                    str(input_file),
+                    "--json",
+                    *extra,
+                ],
+            )
+            returncode = usage_cli.main()
+        output = capsys.readouterr()
+        return SimpleNamespace(
+            returncode=returncode, stdout=output.out, stderr=output.err
         )
 
     with project.writer() as writer:
-        with pytest.raises(WriterActive), project.writer():
-            pass
         wrong_session = cli(
             "scope", "mark", "--marker", marker_file, CODEX_THREAD_ID=str(CLAUDE)
         )
         assert wrong_session.returncode != 0
         assert str(CLAUDE) not in wrong_session.stderr
-        assert not (project.root / "inbox").exists()
+        assert transport.inbox.fd not in transport.states
         result = cli("scope", "mark", "--marker", marker_file)
         assert result.returncode == 0, result.stderr
         assert json.loads(result.stdout) == {
             "command_id": str(marker.marker_id),
             "status": "queued",
         }
-        inbox = project.root / "inbox"
-        assert stat.S_IMODE(inbox.stat().st_mode) == 0o700
-        command_file = inbox / f"{marker.marker_id}.json"
-        assert stat.S_IMODE(command_file.stat().st_mode) == 0o600
-        original_bytes = command_file.read_bytes()
-        changed = tmp_path / "changed.json"
-        changed.write_bytes(encode_marker(replace(marker, item=OTHER_CHILD)))
+        inbox = transport.states[transport.inbox.fd]
+        filename = f"{marker.marker_id}.json"
+        original_bytes = inbox[filename]
+        assert original_bytes == encode_command(
+            InboxCommand(marker.marker_id, PROJECT, marker)
+        )
+        changed = Path("/fixture/changed.json")
+        inputs[changed] = encode_marker(replace(marker, item=OTHER_CHILD))
         assert cli("scope", "mark", "--marker", changed).returncode != 0
-        assert command_file.read_bytes() == original_bytes
+        assert inbox[filename] == original_bytes
 
         assert (
             drain_inbox(writer, ()).receipts[0].disposition is MarkerDisposition.PENDING
@@ -563,10 +724,14 @@ def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_pa
             json.loads(cli("scope", "mark", "--marker", marker_file).stdout)["status"]
             == "accepted"
         )
-        assert not command_file.exists()
-        ack = inbox / "acks" / command_file.name
-        assert stat.S_IMODE(ack.stat().st_mode) == 0o600
-        assert json.loads(ack.read_text())["disposition"] == "accepted"
+        assert filename not in inbox
+        with scopes._private_child(
+            transport.inbox, scopes.ACKS_NAME, create=False
+        ) as acks:
+            assert (
+                json.loads(transport.states[acks.fd][filename])["disposition"]
+                == "accepted"
+            )
 
         owner = f.marker(
             2,
@@ -577,8 +742,8 @@ def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_pa
             attempt_ref=f.ref("attempt"),
         )
         anchor = f.ref("anchor")
-        binding = tmp_path / "binding.json"
-        binding.write_bytes(encode_binding(DevelopmentBinding(owner, anchor, 1)))
+        binding = Path("/fixture/binding.json")
+        inputs[binding] = encode_binding(DevelopmentBinding(owner, anchor, 1))
         result = cli("development", "bind", "--binding", binding)
         assert result.returncode == 0, result.stderr
         assert json.loads(result.stdout)["status"] == "queued"
@@ -589,15 +754,13 @@ def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_pa
             is MarkerDisposition.ACCEPTED
         )
 
-        correction = tmp_path / "correction.json"
-        correction.write_bytes(
-            encode_correction(
-                ScopeCorrection(
-                    UUID(int=90),
-                    PROJECT,
-                    replace(marker, item=OTHER_CHILD),
-                    f.ref("correction"),
-                )
+        correction = Path("/fixture/correction.json")
+        inputs[correction] = encode_correction(
+            ScopeCorrection(
+                UUID(int=90),
+                PROJECT,
+                replace(marker, item=OTHER_CHILD),
+                f.ref("correction"),
             )
         )
         result = cli("scope", "correct", "--correction", correction)
@@ -620,8 +783,8 @@ def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_pa
             participant_ref=f.ref("reviewer"),
             review_ref=f.ref("review"),
         )
-        review_file = tmp_path / "review.json"
-        review_file.write_bytes(encode_marker(review))
+        review_file = Path("/fixture/review.json")
+        inputs[review_file] = encode_marker(review)
         assert cli("scope", "mark", "--marker", review_file).returncode != 0
         assert (
             cli(
@@ -638,25 +801,33 @@ def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_pa
             is MarkerDisposition.ACCEPTED
         )
 
-        extras = tmp_path / "extra.json"
+        remember.assert_called_once_with(project, review.session_ref)
+        extras = Path("/fixture/extra.json")
         raw = json.loads(encode_marker(marker))
-        extras.write_text(json.dumps(raw | {"credential": "raw-tool-input-canary"}))
+        inputs[extras] = json.dumps(
+            raw | {"credential": "raw-tool-input-canary"}
+        ).encode()
         failure = cli("scope", "mark", "--marker", extras)
         assert failure.returncode != 0
         assert "raw-tool-input-canary" not in failure.stderr
-        for path in project.root.rglob("*"):
-            if path.is_file():
-                contents = path.read_bytes()
-                assert str(CODEX).encode() not in contents
-                assert str(CLAUDE).encode() not in contents
-                assert b"raw-tool-input-canary" not in contents
+        persisted = [
+            contents.decode()
+            for files in transport.states.values()
+            for contents in files.values()
+        ] + [str(value) for _, values in transport.rows.writes for value in values]
+        for contents in persisted:
+            assert str(CODEX) not in contents
+            assert str(CLAUDE) not in contents
+            assert "raw-tool-input-canary" not in contents
 
 
-def test_publication_and_consumption_reject_unsafe_or_untyped_inputs(project, tmp_path):
-
+def test_publication_and_consumption_reject_unsafe_or_untyped_inputs(
+    scope_receipt_transport,
+):
+    project, storage = scope_receipt_transport
     f = Fixture(project)
     marker = f.marker(1, 1, CHILD, "valid")
-    foreign = Ledger.initialize(tmp_path / "foreign", OTHER_PROJECT)
+    foreign = _memory_ledger(store, OTHER_PROJECT, b"f" * 32)
     fabricated = SourceRef(f"hmac-sha256:{'a' * 64}:{'b' * 64}")
     for bad in (
         replace(marker, project_id=OTHER_PROJECT),
@@ -667,44 +838,53 @@ def test_publication_and_consumption_reject_unsafe_or_untyped_inputs(project, tm
     ):
         with pytest.raises((LedgerError, ValueError)):
             enqueue_marker(project.root, bad)
-    assert not (project.root / "inbox").exists()
+    assert storage.inbox.fd not in storage.states
 
     enqueue_marker(project.root, marker)
-    inbox = project.root / "inbox"
-    complete = (inbox / f"{marker.marker_id}.json").read_bytes()
-    (inbox / ".partial-command").write_bytes(complete[:40])
-    malformed_id = UUID(int=4)
-    malformed = inbox / f"{malformed_id}.json"
-    malformed.write_bytes(complete + b"\n")
-    malformed.chmod(0o600)
-    forged = inbox / f"{UUID(int=5)}.json"
-    forged.write_bytes(
-        encode_command(
-            InboxCommand(
-                UUID(int=5),
-                PROJECT,
-                replace(marker, marker_id=UUID(int=5), participant_ref=fabricated),
-            )
+    inbox = storage.states[storage.inbox.fd]
+    complete = inbox[f"{marker.marker_id}.json"]
+    inbox[".partial-command"] = complete[:40]
+    inbox[f"{UUID(int=4)}.json"] = complete + b"\n"
+    inbox[f"{UUID(int=5)}.json"] = encode_command(
+        InboxCommand(
+            UUID(int=5),
+            PROJECT,
+            replace(marker, marker_id=UUID(int=5), participant_ref=fabricated),
         )
     )
-    forged.chmod(0o600)
-    linked = inbox / f"{UUID(int=6)}.json"
-    linked.symlink_to(malformed)
-    deeply_nested = inbox / f"{UUID(int=7)}.json"
-    deeply_nested.write_bytes(b"[" * 10000 + b"]" * 10000)
-    deeply_nested.chmod(0o600)
+    linked = f"{UUID(int=6)}.json"
+    inbox[linked] = b""
+    storage.denied.add((storage.inbox.fd, linked))
+    inbox[f"{UUID(int=7)}.json"] = b"[" * 10000 + b"]" * 10000
     with project.writer() as writer:
         report = drain_inbox(writer, (f.boundary(marker, 8),))
         assert len(report.receipts) == 1
         assert report.invalid_publications == 4
-        assert (inbox / ".partial-command").exists()
+        assert inbox[".partial-command"] == complete[:40]
     assert len(project.as_of().revisions) == 2
 
 
-def test_local_commit_rolls_back_effect_and_replays_before_ack(project, monkeypatch):
+def test_local_commit_rolls_back_effect_and_replays_before_ack(
+    scope_receipt_transport, monkeypatch
+):
+    project, transport = scope_receipt_transport
+    _assert_scope_commit_rolls_back_and_replays(
+        project,
+        monkeypatch,
+        lambda name: any(
+            name in files
+            for fd, files in transport.states.items()
+            if fd != transport.inbox.fd
+        ),
+    )
+    assert [sql for sql, _ in transport.rows.writes].count(
+        "INSERT INTO revisions VALUES (?, ?, ?, ?)"
+    ) == 3
 
+
+def _assert_scope_commit_rolls_back_and_replays(project, monkeypatch, acknowledged):
     f = Fixture(project)
-    marker = f.marker(1, 1, CHILD, "retry")
+    marker = f.marker(99, 1, CHILD, "retry", provider=Provider.CLAUDE, session=CLAUDE)
     scopes.enqueue_marker(project.root, marker)
     proof = f.boundary(marker, 8)
     append = store._append_revisions
@@ -731,37 +911,35 @@ def test_local_commit_rolls_back_effect_and_replays_before_ack(project, monkeypa
         committed = writer.as_of()
         assert committed.sequence == 1
         assert len(committed.revisions) == 2
-        assert not (
-            project.root / "inbox" / "acks" / f"{marker.marker_id}.json"
-        ).exists()
+        assert not acknowledged(f"{marker.marker_id}.json")
 
     with Ledger.open(project.root, PROJECT).writer() as writer:
         report = scopes.drain_inbox(writer, ())
         assert report.receipts[0].disposition is MarkerDisposition.ACCEPTED
         assert writer.as_of() == committed
         assert scopes.drain_inbox(writer, ()).receipts == ()
+    assert acknowledged(f"{marker.marker_id}.json")
 
 
-def test_correction_can_recover_quarantined_scope_with_recorded_proof(project):
+def test_correction_can_recover_quarantined_scope_with_recorded_proof(scope_policy):
 
-    f = Fixture(project)
+    ledger, queue = scope_policy
+    f = Fixture(ledger)
     anchor, attempt = f.ref("anchor"), f.ref("attempt")
     owner = f.marker(
         1, 1, CHILD, "bind", phase=WorkPhase.DEVELOPMENT, attempt_ref=attempt
     )
     claim = f.marker(2, 2, OTHER_CHILD, "wrong-item", attempt_ref=attempt)
     proof = f.boundary(claim, 2, anchor=anchor)
-    enqueue_command(
-        project.root,
-        InboxCommand(owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)),
-    )
-    enqueue_marker(project.root, claim)
-    with project.writer() as writer:
+    queue(InboxCommand(owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)))
+    _queue_marker(queue, claim)
+    with ledger.writer() as writer:
         report = drain_inbox(writer, (f.boundary(owner, 1, anchor=anchor), proof))
         assert [receipt.disposition for receipt in report.receipts] == [
             MarkerDisposition.ACCEPTED,
             MarkerDisposition.CONFLICT,
         ]
+        assert report.receipts[1].boundary == proof.boundary
         usage = f.observe(writer, proof)
         before = writer.as_of()
         assert resolve_scope(usage, before).reason is MarkerDisposition.CONFLICT
@@ -769,10 +947,8 @@ def test_correction_can_recover_quarantined_scope_with_recorded_proof(project):
     correction = ScopeCorrection(
         UUID(int=90), PROJECT, replace(claim, item=CHILD), f.ref("conflict-decision")
     )
-    enqueue_command(
-        project.root, InboxCommand(correction.correction_id, PROJECT, correction)
-    )
-    with Ledger.open(project.root, PROJECT).writer() as writer:
+    queue(InboxCommand(correction.correction_id, PROJECT, correction))
+    with ledger.writer() as writer:
         assert (
             drain_inbox(writer, ()).receipts[-1].disposition
             is MarkerDisposition.ACCEPTED
@@ -781,19 +957,19 @@ def test_correction_can_recover_quarantined_scope_with_recorded_proof(project):
         assert resolve_scope(usage, writer.as_of(before.sequence)).scope is None
 
 
-def test_bound_owner_cannot_claim_development_in_an_unproven_stream(project):
+def test_bound_owner_cannot_claim_development_in_an_unproven_stream(scope_policy):
 
+    project, queue = scope_policy
     f = Fixture(project)
     anchor, attempt = f.ref("anchor"), f.ref("attempt")
     owner = f.marker(
         1, 1, CHILD, "bind", phase=WorkPhase.DEVELOPMENT, attempt_ref=attempt
     )
     other = f.marker(2, 2, OTHER_CHILD, "contradictory", attempt_ref=attempt)
-    enqueue_command(
-        project.root,
+    queue(
         InboxCommand(owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)),
     )
-    enqueue_marker(project.root, other)
+    queue(InboxCommand(other.marker_id, PROJECT, other))
     unknown_stream = f.boundary(other, 1, stream_ref=f.ref("other-stream"))
     with project.writer() as writer:
         outcomes = drain_inbox(
@@ -807,7 +983,7 @@ def test_bound_owner_cannot_claim_development_in_an_unproven_stream(project):
         assert resolve_scope(usage, writer.as_of()).reason is MarkerDisposition.CONFLICT
 
 
-def test_exclusive_publication_keeps_one_concurrent_command(project):
+def test_exclusive_publication_keeps_one_concurrent_command(project, monkeypatch):
 
     f = Fixture(project)
     marker = f.marker(1, 1, CHILD, "shared-command-id")
@@ -832,11 +1008,59 @@ def test_exclusive_publication_keeps_one_concurrent_command(project):
         assert outcomes.receipts[0].disposition is MarkerDisposition.ACCEPTED
         assert not path.exists()
 
+    _assert_native_final_commit_cannot_race_publication(project, monkeypatch)
 
-def test_final_commit_cannot_race_conflicting_publication(project, monkeypatch):
 
+def test_final_commit_cannot_race_conflicting_publication(
+    scope_receipt_transport, monkeypatch
+):
+    project, transport = scope_receipt_transport
     f = Fixture(project)
-    marker = f.marker(1, 1, CHILD, "shared-command-id")
+    marker = f.marker(2, 2, CHILD, "shared-command-id-retry")
+    command = InboxCommand(marker.marker_id, PROJECT, marker)
+    conflicting = replace(command, payload=replace(marker, item=OTHER_CHILD))
+    scopes.enqueue_command(project.root, command)
+    original_read = Ledger.command_receipt
+    locked = False
+    observed_reads = []
+    committed = []
+
+    @contextmanager
+    def publication(inbox):
+        nonlocal locked
+        assert inbox is transport.inbox and not locked
+        locked = True
+        try:
+            yield
+        finally:
+            locked = False
+
+    def interleave_commit(ledger, proposed):
+        if proposed != conflicting:
+            return original_read(ledger, proposed)
+        observed_reads.append(locked)
+        previous = original_read(ledger, proposed)
+        if not locked:
+            assert previous is None
+            (receipt,) = scopes.drain_inbox(project, (f.boundary(marker, 2),)).receipts
+            committed.append(receipt)
+        return previous
+
+    monkeypatch.setattr(scopes, "_publication", publication)
+    monkeypatch.setattr(Ledger, "command_receipt", interleave_commit)
+    with pytest.raises(ConflictError):
+        scopes.enqueue_command(project.root, conflicting)
+    assert observed_reads == [False, True]
+    (receipt,) = committed
+    assert receipt.disposition is MarkerDisposition.ACCEPTED
+    assert transport.states[transport.inbox.fd] == {}
+    assert project.command_receipt(command) == receipt
+    assert scopes.drain_inbox(project, ()).receipts == ()
+
+
+def _assert_native_final_commit_cannot_race_publication(project, monkeypatch):
+    f = Fixture(project)
+    marker = f.marker(2, 2, CHILD, "shared-command-id-retry")
     command = InboxCommand(marker.marker_id, PROJECT, marker)
     conflicting = replace(command, payload=replace(marker, item=OTHER_CHILD))
     scopes.enqueue_command(project.root, command)
@@ -856,7 +1080,7 @@ def test_final_commit_cannot_race_conflicting_publication(project, monkeypatch):
         retry = pool.submit(scopes.enqueue_command, project.root, conflicting)
         try:
             assert publisher_read.wait(timeout=5)
-            outcome = scopes.drain_inbox(writer, (f.boundary(marker, 1),)).receipts[0]
+            outcome = scopes.drain_inbox(writer, (f.boundary(marker, 2),)).receipts[0]
             assert outcome.disposition is MarkerDisposition.ACCEPTED
         finally:
             retirement_done.set()
@@ -881,9 +1105,29 @@ def test_inbox_directory_refuses_symlink_destination(project, tmp_path):
     assert list(target.iterdir()) == []
     assert project.as_of().sequence == 0
 
+    inbox = project.root / "inbox"
+    inbox.unlink()
+    enqueue_marker(project.root, marker)
+    linked = f.marker(2, 2, CHILD, "linked")
+    payload = encode_command(InboxCommand(linked.marker_id, PROJECT, linked))
+    external = target / f"{linked.marker_id}.json"
+    external.write_bytes(payload)
+    external.chmod(0o600)
+    (inbox / external.name).symlink_to(external)
+    with project.writer() as writer:
+        report = drain_inbox(writer, (f.boundary(marker, 8), f.boundary(linked, 9)))
+        assert [receipt.command.command_id for receipt in report.receipts] == [
+            marker.marker_id
+        ]
+        assert report.invalid_publications == 1
+    assert external.read_bytes() == payload
 
-def test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker(project):
 
+def test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker(
+    scope_policy,
+):
+
+    project, queue = scope_policy
     f = Fixture(project)
     anchor, attempt = f.ref("anchor"), f.ref("attempt")
     owner = f.marker(
@@ -893,7 +1137,7 @@ def test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker(pr
     owner_proof = f.boundary(owner, 8, anchor=anchor)
     marker_proof = f.boundary(contrary, 9, anchor=anchor)
 
-    enqueue_marker(project.root, contrary)
+    queue(InboxCommand(contrary.marker_id, PROJECT, contrary))
     with project.writer() as writer:
         assert (
             drain_inbox(writer, (marker_proof,)).receipts[0].disposition
@@ -903,8 +1147,7 @@ def test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker(pr
         before = writer.as_of()
         assert resolve_scope(usage, before).scope.marker.item == OTHER_CHILD
 
-        enqueue_command(
-            project.root,
+        queue(
             InboxCommand(
                 owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)
             ),
@@ -920,7 +1163,12 @@ def test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker(pr
         )
 
 
-def test_publication_mutex_excludes_other_process_on_pinned_inbox(project):
+def test_publication_mutex_excludes_other_process_on_pinned_inbox(project, monkeypatch):
+    _assert_scope_commit_rolls_back_and_replays(
+        project,
+        monkeypatch,
+        lambda name: (project.root / "inbox" / "acks" / name).is_file(),
+    )
 
     f = Fixture(project)
     enqueue_marker(project.root, f.marker(1, 1, CHILD, "publication-mutex"))
@@ -956,7 +1204,8 @@ except BlockingIOError:
                 pinned.path.mkdir(mode=0o700)
 
 
-def test_review_outside_checkout_cannot_claim_wrong_attempt(project):
+def test_review_outside_checkout_cannot_claim_wrong_attempt(scope_policy):
+    project, queue = scope_policy
     f = Fixture(project)
     anchor, attempt = f.ref("anchor"), f.ref("attempt")
     owner = f.marker(
@@ -975,11 +1224,10 @@ def test_review_outside_checkout_cannot_claim_wrong_attempt(project):
         attempt_ref=f.ref("wrong-attempt"),
         review_ref=f.ref("review-id"),
     )
-    enqueue_command(
-        project.root,
+    queue(
         InboxCommand(owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)),
     )
-    enqueue_marker(project.root, reviewer)
+    queue(InboxCommand(reviewer.marker_id, PROJECT, reviewer))
     with project.writer() as writer:
         outcomes = drain_inbox(
             writer, (f.boundary(owner, 1, anchor=anchor), f.boundary(reviewer, 1))
@@ -990,7 +1238,8 @@ def test_review_outside_checkout_cannot_claim_wrong_attempt(project):
         ]
 
 
-def test_development_marker_waits_for_owner_binding(project):
+def test_development_marker_waits_for_owner_binding(scope_policy):
+    project, queue = scope_policy
     f = Fixture(project)
     anchor, attempt = f.ref("anchor"), f.ref("attempt")
     owner = f.marker(
@@ -1005,7 +1254,7 @@ def test_development_marker_waits_for_owner_binding(project):
         attempt_ref=attempt,
     )
     proof = f.boundary(marker, 20, anchor=anchor)
-    enqueue_marker(project.root, marker)
+    queue(InboxCommand(marker.marker_id, PROJECT, marker))
 
     with project.writer() as writer:
         initial = drain_inbox(writer, ()).receipts[0]
@@ -1018,8 +1267,7 @@ def test_development_marker_waits_for_owner_binding(project):
         before = writer.as_of()
         assert resolve_scope(usage, before).reason is MarkerDisposition.PENDING
 
-        enqueue_command(
-            project.root,
+        queue(
             InboxCommand(
                 owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)
             ),
@@ -1048,9 +1296,13 @@ def test_development_marker_waits_for_owner_binding(project):
     ],
 )
 def test_same_stream_binding_generations_follow_proven_order(
-    project, generation, ordinal, expected
+    request, generation, ordinal, expected
 ):
-    f = Fixture(project)
+    if expected is MarkerDisposition.ACCEPTED:
+        ledger, queue = request.getfixturevalue("scope_policy")
+    else:
+        ledger = _memory_ledger(store, PROJECT, b"s" * 32)
+    f = Fixture(ledger)
     anchor = f.ref("anchor")
     known = f.marker(
         1,
@@ -1068,40 +1320,56 @@ def test_same_stream_binding_generations_follow_proven_order(
         phase=WorkPhase.DEVELOPMENT,
         attempt_ref=f.ref("proposed-attempt"),
     )
-    with project.writer() as writer:
-        enqueue_command(
-            project.root,
-            InboxCommand(
-                known.marker_id, PROJECT, DevelopmentBinding(known, anchor, 2)
-            ),
+    known_command = InboxCommand(
+        known.marker_id, PROJECT, DevelopmentBinding(known, anchor, 2)
+    )
+    proposed_command = InboxCommand(
+        proposed.marker_id, PROJECT, DevelopmentBinding(proposed, anchor, generation)
+    )
+    known_proof = f.boundary(known, 20, anchor=anchor)
+    proof = f.boundary(proposed, ordinal, anchor=anchor)
+    if expected is MarkerDisposition.CONFLICT:
+        view = LedgerView(PROJECT, 0, (), ())
+        status, evidence, effects = scopes._evaluate(
+            ledger, known_command, view, (known_proof,), {}
         )
-        known_proof = f.boundary(known, 20, anchor=anchor)
+        assert status is MarkerDisposition.ACCEPTED and evidence == known_proof
+        (effect,) = effects
+        assert effect.record.generation == 2
+        view = LedgerView(PROJECT, 1, effects, ())
+        assert scopes._evaluate(ledger, proposed_command, view, (proof,), {}) == (
+            MarkerDisposition.CONFLICT,
+            proof,
+            (),
+        )
+        return
+
+    with ledger.writer() as writer:
+        queue(known_command)
         assert (
             drain_inbox(writer, (known_proof,)).receipts[0].disposition
             is MarkerDisposition.ACCEPTED
         )
-        enqueue_command(
-            project.root,
-            InboxCommand(
-                proposed.marker_id,
-                PROJECT,
-                DevelopmentBinding(proposed, anchor, generation),
-            ),
-        )
-        proof = f.boundary(proposed, ordinal, anchor=anchor)
+        queue(proposed_command)
         assert drain_inbox(writer, (proof,)).receipts[0].disposition is expected
-        if expected is MarkerDisposition.ACCEPTED:
-            old = f.observe(writer, proof)
-            new = f.observe(writer, known_proof)
-            assert resolve_scope(old, writer.as_of()).scope.generation == 1
-            assert resolve_scope(new, writer.as_of()).scope.generation == 2
+        old = f.observe(writer, proof)
+        new = f.observe(writer, known_proof)
+        assert resolve_scope(old, writer.as_of()).scope.generation == 1
+        assert resolve_scope(new, writer.as_of()).scope.generation == 2
 
 
 @pytest.mark.parametrize(
     "enrich_identity", [False, True], ids=["tokens", "request-message"]
 )
-def test_cross_stream_rebind_preserves_recorded_prefix_only(project, enrich_identity):
-    f = Fixture(project)
+def test_cross_stream_rebind_preserves_recorded_prefix_only(
+    scope_receipt_ledger, enrich_identity
+):
+    ledger = scope_receipt_ledger
+
+    def queue(command):
+        enqueue_command(ledger.root, command)
+
+    f = Fixture(ledger)
     anchor = f.ref("anchor")
     previous = f.marker(
         1,
@@ -1120,9 +1388,8 @@ def test_cross_stream_rebind_preserves_recorded_prefix_only(project, enrich_iden
         attempt_ref=f.ref("new-attempt"),
         session=UUID(int=300),
     )
-    with project.writer() as writer:
-        enqueue_command(
-            project.root,
+    with ledger.writer() as writer:
+        queue(
             InboxCommand(
                 previous.marker_id, PROJECT, DevelopmentBinding(previous, anchor, 1)
             ),
@@ -1133,8 +1400,7 @@ def test_cross_stream_rebind_preserves_recorded_prefix_only(project, enrich_iden
         before = writer.as_of()
         assert resolve_scope(old, before).scope.generation == 1
 
-        enqueue_command(
-            project.root,
+        queue(
             InboxCommand(new.marker_id, PROJECT, DevelopmentBinding(new, anchor, 2)),
         )
         new_proof = f.boundary(new, 1, anchor=anchor)
@@ -1189,7 +1455,10 @@ def test_cross_stream_rebind_preserves_recorded_prefix_only(project, enrich_iden
         )
 
 
-def test_pending_receipt_refines_location_without_authorizing_attribution(project):
+def test_pending_receipt_refines_location_without_authorizing_attribution(
+    scope_receipt_ledger,
+):
+    project = scope_receipt_ledger
     f = Fixture(project)
     epic = f.marker(1, 1, EPIC, "epic")
     marker = f.marker(2, 2, CHILD, "claimed-child-start")
@@ -1234,8 +1503,11 @@ def test_pending_receipt_refines_location_without_authorizing_attribution(projec
         assert writer.as_of() == committed
 
 
-def test_common_drain_applies_typed_effect_tuple_in_one_commit(project, monkeypatch):
-    f = Fixture(project)
+def test_common_drain_applies_typed_effect_tuple_in_one_commit(
+    scope_policy, monkeypatch
+):
+    ledger, queue = scope_policy
+    f = Fixture(ledger)
     marker = f.marker(1, 1, CHILD, "diagnostic-and-scope")
     diagnostic = Revision(
         f.ref("diagnostic"), 1, Diagnostic(DiagnosticCode.COVERAGE_GAP, NOW)
@@ -1247,10 +1519,17 @@ def test_common_drain_applies_typed_effect_tuple_in_one_commit(project, monkeypa
         return status, evidence, (*effects, diagnostic)
 
     monkeypatch.setattr(scopes, "_evaluate", with_diagnostic)
-    enqueue_marker(project.root, marker)
-    with project.writer() as writer:
+    _queue_marker(queue, marker)
+    with ledger.writer() as writer:
         receipt = drain_inbox(writer, (f.boundary(marker, 8),)).receipts[0]
         assert receipt.disposition is MarkerDisposition.ACCEPTED
-        assert writer.as_of().sequence == 1
-        assert len(writer.as_of().revisions) == 3
-        assert diagnostic in writer.as_of().current
+        latest = writer.as_of()
+        assert latest.sequence == 1 and not writer.as_of(0).revisions
+        assert len(latest.current) == 3
+        assert diagnostic in latest.current
+        assert any(revision.record == receipt for revision in latest.current)
+        assert any(
+            isinstance(revision.record, ScopeEnrollment)
+            and revision.record.marker == marker
+            for revision in latest.current
+        )

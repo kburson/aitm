@@ -29,9 +29,9 @@ _HELPERS = [
 _CLI = "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
 _ACL = _PRODUCT + "test_install.py::test_backup_and_restore_reject_inherited_acl"
 _OPTIONAL = (
-    _PRODUCT + "test_install.py::test_backup_refuses_store_through_physical_path_alias"
+    _PRODUCT + "test_ledger.py::test_extended_grant_on_private_key_refused_before_read"
 )
-_SKIP_REASON = "The host does not expose the matching APFS firmlink path"
+_SKIP_REASON = "The host does not expose the required ACL API"
 _ONE_SHOT = (
     _PRODUCT + "test_service.py::test_one_shot_status_uses_collecting_subprocess_pid"
 )
@@ -55,7 +55,10 @@ _UNIT = {
     _PRICING + "test_grok_card_rejects_unproven_rate_classes_and_models",
     _PRICING + "test_legacy_v1_revision_refuses_grok_provider",
 }
-_FIXED_EXPORT = _PRICING + "test_grok_preserves_legacy_rate_digest_and_fixed_export"
+_FIXED_EXPORT = (
+    _PRODUCT
+    + "test_export.py::test_replacing_outer_stage_during_rename_cannot_publish_substitute"
+)
 _PRODUCT_IDS = sorted(_REQUIRED | _UNIT | {_FIXED_EXPORT, _OPTIONAL})
 _LOCAL = {
     "kind": "local_advisory",
@@ -439,9 +442,9 @@ def test_hosted_and_advisory_preserve_distinct_provenance():
     "nodeid",
     [
         _PRODUCT
-        + "test_scope_admission.py::test_scope_cli_refuses_uninitialized_admission_without_creating_state",
+        + "test_scope_admission.py::test_project_substitution_during_preparation_cannot_publish",
         _PRODUCT
-        + "test_scope_legacy.py::test_adopted_replay_keeps_the_pending_legacy_receipt_without_monitor_state",
+        + "test_monitor_legacy.py::test_pre_adoption_legacy_anchor_enqueues_while_collector_holds_writer",
     ],
 )
 def test_refreshed_scope_modules_share_native_process_isolation(nodeid):

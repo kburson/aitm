@@ -5,12 +5,17 @@ import shlex
 from dataclasses import replace
 from datetime import timedelta
 from hashlib import sha256
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from adapter_frame_cases import AdapterFrames
+from scanner_policy_cases import NativeTranscriptFiles
 from test_claude import MODEL, _native_tool_turn, cost, model_counts, request, user
+from test_claude import SESSION as CLAUDE_SESSION
 from test_claude import row as claude_row
 from test_claude import usage as claude_usage
 from test_codex import (
@@ -34,13 +39,18 @@ from test_codex import (
 from test_scan import _native_startup_rows
 
 from aitm_usage.ledger import Ledger
-from aitm_usage.sources.scan import _capture_position, scan
+from aitm_usage.monitor_registry import _ServiceEvidence
+from aitm_usage.monitor_types import NativeSurface
+from aitm_usage.sources import adapter as provider_adapter
+from aitm_usage.sources.scan import CandidateSource, _capture_position, _origin, scan
 from aitm_usage.types import (
     Availability,
     BoundaryKind,
+    ClientVersion,
     DiagnosticCode,
     LedgerView,
     ProcessingTier,
+    Provider,
     Revision,
     _decode,
     _encode,
@@ -80,6 +90,11 @@ def source(tmp_path, monkeypatch):
     monkeypatch.setattr(Ledger, "writer", unexpected_open)
     monkeypatch.setattr(Ledger, "apply", unexpected_open)
     return key, root, checkout
+
+
+@pytest.fixture
+def native_files(monkeypatch):
+    return NativeTranscriptFiles(monkeypatch)
 
 
 def _adapter(monkeypatch, source, *, system="Darwin", arch="arm64"):
@@ -127,14 +142,18 @@ def _committed_view(result):
 
 
 def test_desktop_and_cli_in_shared_root_admit_only_qualified_surface(
-    monkeypatch, source
+    monkeypatch, native_files
 ):
-    module, adapter, root = _adapter(monkeypatch, source)
-    _, directory, checkout = source
+    directory = native_files.root.with_name("root-private")
+    checkout = native_files.checkout.with_name("checkout-private")
+    native_files.checkout_paths = {checkout}
+    module, adapter, root = _adapter(
+        monkeypatch, (native_files.evidence, directory, checkout)
+    )
     rows = _desktop(checkout)
-    _write(directory / "desktop.jsonl", rows)
+    native_files.write(directory / "desktop.jsonl", rows)
     rows[0]["payload"].update(originator="codex_cli_rs", source="cli")
-    _write(directory / "cli.jsonl", rows)
+    native_files.write(directory / "cli.jsonl", rows)
     results = [adapter.read_delta(locator, None) for locator in adapter.discover(root)]
     assert len(results) == 2
     (allowed,) = (result for result in results if result.observations)
@@ -161,6 +180,41 @@ def test_desktop_and_cli_in_shared_root_admit_only_qualified_surface(
     }
 
 
+def _assert_unqualified_origin(monkeypatch, rows, system, arch):
+    evidence = _ServiceEvidence(b"native-admission-policy-fixture")
+    serialized = b"".join(json.dumps(row).encode() + b"\n" for row in rows)
+    origin = _origin(BytesIO(serialized), len(serialized), evidence)
+    assert origin is not None and origin.session_ref is not None
+    root = provider_adapter.SourceRoot(Path("/fixture/logs"), CUTOFF, (), evidence)
+    source = CandidateSource(
+        origin.provider,
+        origin.session_ref,
+        evidence.pseudonymize("fixture", "stream"),
+        evidence.pseudonymize("fixture", "locator"),
+        evidence.pseudonymize("fixture", "incarnation"),
+        root.path / "source.jsonl",
+        (),
+        root,
+        evidence,
+        _native_surface=origin.native_surface,
+        _monitor=True,
+    )
+    scan_source = Mock(side_effect=AssertionError("unqualified source reached scanner"))
+    monkeypatch.setattr(provider_adapter, "scan", scan_source)
+    monkeypatch.setattr(provider_adapter.platform, "system", lambda: system)
+    monkeypatch.setattr(provider_adapter.platform, "machine", lambda: arch)
+
+    locator = provider_adapter.SourceLocator(source)
+    result = provider_adapter.ProviderAdapter().read_delta(locator, None)
+
+    assert result.observations == result.boundaries == ()
+    assert result.cursor is None
+    (diagnostic,) = result.diagnostics
+    assert diagnostic.code is DiagnosticCode.UNSUPPORTED_FORMAT
+    assert diagnostic.source_ref == source.stream_ref
+    scan_source.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "client,system,arch,change",
     [
@@ -177,31 +231,42 @@ def test_desktop_and_cli_in_shared_root_admit_only_qualified_surface(
     ],
 )
 def test_unqualified_native_tuple_withholds_evidence(
-    monkeypatch, source, client, system, arch, change
+    monkeypatch, client, system, arch, change
 ):
-    _, adapter, root = _adapter(monkeypatch, source, system=system, arch=arch)
-    _, directory, checkout = source
+    checkout = Path("/fixture/checkout")
     rows = _desktop(checkout) if client == "codex" else _rows(CLAUDE_FIXTURE, checkout)
     rows[0].get("payload", rows[0]).update(change)
-    _write(directory / "unqualified.jsonl", rows)
+    _assert_unqualified_origin(monkeypatch, rows, system, arch)
+
+
+def test_discovery_refuses_unqualified_version_on_disk(monkeypatch, native_files):
+    source = native_files.source
+    _, adapter, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    rows = _desktop(checkout)
+    rows[0]["payload"]["cli_version"] = "0.167.0-alpha.3.3"
+    native_files.write(directory / "unqualified.jsonl", rows)
+
     (locator,) = adapter.discover(root)
     result = adapter.read_delta(locator, None)
+
     assert result.observations == result.boundaries == ()
     assert result.cursor is None
-    assert [item.code for item in result.diagnostics] == [
-        DiagnosticCode.UNSUPPORTED_FORMAT
-    ]
+    (diagnostic,) = result.diagnostics
+    assert diagnostic.code is DiagnosticCode.UNSUPPORTED_FORMAT
 
 
-def test_recheck_native_origin_after_discovery(monkeypatch, source):
+def test_recheck_native_origin_after_discovery(monkeypatch, native_files):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     rows = _desktop(checkout)
     path = directory / "changed.jsonl"
-    _write(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
+    assert adapter.read_delta(locator, None).observations
     rows[0]["payload"]["source"] = "cli"
-    _write(path, rows)
+    native_files.write(path, rows)
     result = adapter.read_delta(locator, None)
     assert not result.observations and not result.boundaries and result.cursor is None
     assert [item.code for item in result.diagnostics] == [
@@ -209,23 +274,22 @@ def test_recheck_native_origin_after_discovery(monkeypatch, source):
     ]
 
 
-def test_codex_archive_counter_epoch_replays_once(monkeypatch, source, tmp_path):
+def test_codex_archive_counter_epoch_replays_once(monkeypatch, native_files):
+    source = native_files.source
     module, adapter, root = _adapter(monkeypatch, source)
     key, directory, checkout = source
     rows = _desktop(checkout)
     path = directory / "live.jsonl"
-    frontier = _write(path, rows)
-    with path.open("ab") as stream:
-        stream.write(b'{"incomplete":"secret')
+    frontier = native_files.write(path, rows)
+    native_files.contents[path] += b'{"incomplete":"secret'
     (locator,) = adapter.discover(root)
     first = adapter.read_delta(locator, None)
     assert first.observations
     assert first.cursor.checkpoint.cursor.offset == frontier
     durable = _decode(_encode(first.cursor, module.StreamCursor), module.StreamCursor)
 
-    archive = tmp_path / "archive"
-    archive.mkdir()
-    _write(archive / "copy.jsonl", rows)
+    archive = directory.with_name("archive")
+    native_files.write(archive / "copy.jsonl", rows)
     other_root = replace(
         root, path=archive, evidence=Evidence(key, _committed_view(first))
     )
@@ -268,13 +332,13 @@ def _receipt_request(batch):
 
 
 def test_neutral_desktop_receipt_is_evidence_without_authority(
-    monkeypatch, source, tmp_path
+    monkeypatch, native_files
 ):
+    source = native_files.source
     module, adapter, root = _adapter(monkeypatch, source)
     key, directory, _ = source
-    foreign = tmp_path / "foreign-private"
-    foreign.mkdir()
-    _write(directory / "receipt.jsonl", _receipt_rows(foreign))
+    foreign = Path("/fixture/foreign")
+    native_files.write(directory / "receipt.jsonl", _receipt_rows(foreign))
     (locator,) = adapter.discover(root)
     result = adapter.read_delta(locator, None)
     assert not result.observations
@@ -294,13 +358,14 @@ def test_neutral_desktop_receipt_is_evidence_without_authority(
 
 
 def test_codex_receipt_usage_span_includes_the_later_native_counter(
-    monkeypatch, source
+    monkeypatch, native_files
 ):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     rows = _receipt_rows(checkout, settle=True)
     rows.insert(8, event("token_count", info=None))
-    _write(directory / "receipt.jsonl", rows)
+    native_files.write(directory / "receipt.jsonl", rows)
     (locator,) = adapter.discover(root)
 
     result = adapter.read_delta(locator, None)
@@ -312,7 +377,8 @@ def test_codex_receipt_usage_span_includes_the_later_native_counter(
     assert observation.span_end == 10
 
 
-def test_linux_codex_native_marker_and_cold_replay(monkeypatch, source):
+def test_linux_codex_native_marker_and_cold_replay(monkeypatch, native_files):
+    source = native_files.source
     module, adapter, root = _adapter(
         monkeypatch, source, system="Linux", arch="aarch64"
     )
@@ -330,7 +396,7 @@ def test_linux_codex_native_marker_and_cold_replay(monkeypatch, source):
     lines = data.splitlines(keepends=True)
     archived = b"".join(lines[:22])
     path = directory / "cli.jsonl"
-    path.write_bytes(archived)
+    native_files.contents[path] = archived
     (locator,) = adapter.discover(root)
     result = adapter.read_delta(locator, None)
 
@@ -347,10 +413,9 @@ def test_linux_codex_native_marker_and_cold_replay(monkeypatch, source):
     assert result.cursor.checkpoint.cursor.offset == len(archived)
     saved = _decode(_encode(result.cursor, module.StreamCursor), module.StreamCursor)
 
-    with path.open("ab") as stream:
-        stream.write(b"".join(lines[22:]))
+    native_files.contents[path] += b"".join(lines[22:])
     assert (
-        sha256(path.read_bytes()[: saved.checkpoint.cursor.offset]).digest()
+        sha256(native_files.contents[path][: saved.checkpoint.cursor.offset]).digest()
         == sha256(archived).digest()
     )
     cold = module.ProviderAdapter()
@@ -366,19 +431,22 @@ def test_linux_codex_native_marker_and_cold_replay(monkeypatch, source):
     assert not replay.observations
 
 
-def test_linux_codex_fixed_capture_fence_has_only_visible_receipt(monkeypatch, source):
+def test_linux_codex_fixed_capture_fence_has_only_visible_receipt(
+    monkeypatch, native_files
+):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
     _, directory, checkout = source
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)
     path = directory / "cli.jsonl"
-    _write(path, rows[:17])
+    native_files.write(path, rows[:17])
     (locator,) = adapter.discover(root)
     fixed = scan(locator._source, None, CUTOFF)
     held = adapter.read_delta(locator, None)
     assert not any(item.boundary.receipt_ref for item in held.boundaries)
     assert held.cursor is None
 
-    _write(path, rows)
+    native_files.write(path, rows)
     replay = adapter.read_delta(locator, None, _capture_limit=fixed.cursor)
     assert replay == held
     final = adapter.read_delta(locator, None)
@@ -387,18 +455,19 @@ def test_linux_codex_fixed_capture_fence_has_only_visible_receipt(monkeypatch, s
 
 
 def test_linux_codex_fixed_capture_reports_pending_turn_only_on_linux(
-    monkeypatch, source
+    monkeypatch, native_files
 ):
+    source = native_files.source
     module, adapter, root = _adapter(
         monkeypatch, source, system="Linux", arch="aarch64"
     )
     _, directory, checkout = source
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)
     path = directory / "cli.jsonl"
-    _write(path, rows[:22])
+    native_files.write(path, rows[:22])
     (locator,) = adapter.discover(root)
     prior = adapter.read_delta(locator, None).cursor.checkpoint
-    _write(path, rows[:30])
+    native_files.write(path, rows[:30])
     fixed = scan(locator._source, prior, CUTOFF).cursor
     assert (
         adapter._capture_gap_start(locator, prior, first_unverified=22, limit=fixed)
@@ -411,7 +480,10 @@ def test_linux_codex_fixed_capture_reports_pending_turn_only_on_linux(
             adapter._capture_gap_start(locator, prior, first_unverified=22, limit=fixed)
 
 
-def test_linux_codex_pins_raw_client_surface_and_implicit_format(monkeypatch, source):
+def test_linux_codex_pins_raw_client_surface_and_implicit_format(
+    monkeypatch, native_files
+):
+    source = native_files.source
     from importlib import import_module
 
     from aitm_usage.monitor_types import NativeSurface
@@ -422,7 +494,7 @@ def test_linux_codex_pins_raw_client_surface_and_implicit_format(monkeypatch, so
     _, directory, checkout = source
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)
     path = directory / "cli.jsonl"
-    _write(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
     assert locator._source._native_surface is NativeSurface.CODEX_CLI_LINUX
     pin = ClientVersion.CODEX_0_167_0_ALPHA_3_2
@@ -438,7 +510,7 @@ def test_linux_codex_pins_raw_client_surface_and_implicit_format(monkeypatch, so
     # A normalization alias alone cannot expand the accepted raw carrier.
     monkeypatch.setattr(scanner, "normalize_client_version", lambda value: pin)
     rows[0]["payload"]["cli_version"] = "0.167.0-ALPHA.3.2"
-    _write(path, rows)
+    native_files.write(path, rows)
     (alias,) = adapter.discover(root)
     alias_frames = scan(alias._source, None, CUTOFF)
     assert alias_frames.provider_checkpoint.client_version is pin
@@ -450,8 +522,9 @@ def test_linux_codex_pins_raw_client_surface_and_implicit_format(monkeypatch, so
 
 @pytest.mark.parametrize("linux_carrier", [False, True])
 def test_codex_wrapper_does_not_cross_native_surfaces(
-    monkeypatch, source, linux_carrier
+    monkeypatch, native_files, linux_carrier
 ):
+    source = native_files.source
     _, adapter, root = _adapter(
         monkeypatch,
         source,
@@ -465,29 +538,35 @@ def test_codex_wrapper_does_not_cross_native_surfaces(
         rows[12]["payload"]["input"] = desktop["payload"]["input"]
     else:
         rows[0]["payload"].update(originator="Codex Desktop", source="vscode")
-    _write(directory / "cli.jsonl", rows)
+    native_files.write(directory / "cli.jsonl", rows)
     (locator,) = adapter.discover(root)
     result = adapter.read_delta(locator, None)
     assert result.cursor is not None
     assert not any(item.boundary.receipt_ref for item in result.boundaries)
 
 
-def test_linux_codex_scope_command_can_bind_the_project(monkeypatch, source):
+def test_linux_codex_scope_command_can_bind_the_project():
     from aitm_usage.sources.codex import _linux_marker_command, _Marker
 
-    _, _, checkout = source
-    mark_call = _rows(LINUX_CODEX_FIXTURE, checkout)[12]["payload"]
-    assert (
-        _linux_marker_command(mark_call, Path("/pilot-state/state"))
-        is _Marker.MONITOR_SCOPE
-    )
+    project = Path("/fixture/project")
+    checkout = AdapterFrames.checkout
+    command = f"aitm-usage --project {project} scope mark --marker /fixture/marker.json --json"
+    mark_call = {
+        "type": "custom_tool_call",
+        "name": "exec",
+        "input": (
+            "const result = await tools.exec_command("
+            f"{{cmd:{json.dumps(command)},max_output_tokens:1000}});\n"
+            "text(result.output);\n"
+        ),
+    }
+    assert _linux_marker_command(mark_call, project) is _Marker.MONITOR_SCOPE
     assert _linux_marker_command(mark_call, checkout) is None
 
 
 @pytest.mark.parametrize("replacement", ["no-lf", "extra-lf", "failed", "extra-field"])
-def test_linux_codex_requires_the_exact_queued_body(monkeypatch, source, replacement):
-    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
-    _, directory, checkout = source
+def test_linux_codex_requires_the_exact_queued_body(monkeypatch, replacement):
+    checkout = AdapterFrames.checkout
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)
     block = rows[15]["payload"]["output"][1]
     if replacement == "no-lf":
@@ -501,21 +580,20 @@ def test_linux_codex_requires_the_exact_queued_body(monkeypatch, source, replace
         else:
             receipt["extra"] = True
         block["text"] = json.dumps(receipt) + "\n"
-    _write(directory / "cli.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    result = adapter.read_delta(locator, None)
+    result = _read_linux_policy(monkeypatch, rows)
     assert result.cursor is not None
     assert not any(item.boundary.receipt_ref for item in result.boundaries)
 
 
 def test_linux_codex_a_later_valid_turn_does_not_skip_an_unverified_active_turn(
-    monkeypatch, source
+    monkeypatch, native_files
 ):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
     _, directory, checkout = source
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)
     rows[7]["payload"]["permission_profile"] = {"type": "managed"}
-    _write(directory / "cli.jsonl", rows)
+    native_files.write(directory / "cli.jsonl", rows)
     (locator,) = adapter.discover(root)
     result = adapter.read_delta(locator, None)
     assert result.cursor is None
@@ -528,23 +606,24 @@ def test_linux_codex_a_later_valid_turn_does_not_skip_an_unverified_active_turn(
 
 @pytest.mark.parametrize("resume", [False, True], ids=["cold", "restart"])
 def test_linux_codex_malformed_frame_holds_later_verified_turn(
-    monkeypatch, source, resume
+    monkeypatch, native_files, resume
 ):
+    source = native_files.source
     module, adapter, root = _adapter(
         monkeypatch, source, system="Linux", arch="aarch64"
     )
     _, directory, checkout = source
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)
     path = directory / "cli.jsonl"
-    _write(path, rows[:22])
+    native_files.write(path, rows[:22])
     prior = None
     if resume:
         (locator,) = adapter.discover(root)
         prior = adapter.read_delta(locator, None).cursor
         assert prior is not None
+        prior = _decode(_encode(prior, module.StreamCursor), module.StreamCursor)
 
-    with path.open("ab") as stream:
-        stream.write(b"{malformed\n")
+    native_files.contents[path] += b"{malformed\n"
     if resume:
         (locator,) = adapter.discover(root)
         tail = adapter.read_delta(locator, prior)
@@ -553,9 +632,7 @@ def test_linux_codex_malformed_frame_holds_later_verified_turn(
         assert any(
             item.code is DiagnosticCode.MALFORMED_USAGE for item in tail.diagnostics
         )
-    with path.open("ab") as stream:
-        for row in rows[22:]:
-            stream.write(json.dumps(row).encode() + b"\n")
+    native_files.write(path, rows[22:], append=True)
 
     (locator,) = adapter.discover(root)
     result = module.ProviderAdapter().read_delta(locator, prior)
@@ -565,24 +642,25 @@ def test_linux_codex_malformed_frame_holds_later_verified_turn(
         item.code is DiagnosticCode.MALFORMED_USAGE for item in result.diagnostics
     )
 
-    _write(path, rows)
+    native_files.write(path, rows)
     (repaired,) = adapter.discover(root)
     confirmed = module.ProviderAdapter().read_delta(repaired, prior)
     assert confirmed.cursor is not None and confirmed.cursor != prior
     assert any(item.usage.boundary.ordinal == 29 for item in confirmed.observations)
 
 
-def test_linux_codex_cold_cursor_waits_for_verified_turn(monkeypatch, source):
+def test_linux_codex_cold_cursor_waits_for_verified_turn(monkeypatch, native_files):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
     _, directory, checkout = source
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)
     path = directory / "cli.jsonl"
-    _write(path, rows[:22])
+    native_files.write(path, rows[:22])
     (locator,) = adapter.discover(root)
     previous = adapter.read_delta(locator, None)
     assert previous.cursor is not None
 
-    _write(path, [*rows[:22], rows[30]])
+    native_files.write(path, [*rows[:22], rows[30]])
     result = adapter.read_delta(locator, previous.cursor)
     assert result.cursor == previous.cursor
     assert not result.observations
@@ -608,22 +686,47 @@ def test_linux_codex_cold_cursor_waits_for_verified_turn(monkeypatch, source):
         ),
     ],
 )
-def test_linux_codex_rejects_unverified_origin(
-    monkeypatch, source, system, arch, metadata
-):
-    _, adapter, root = _adapter(monkeypatch, source, system=system, arch=arch)
-    _, directory, checkout = source
-    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+def test_linux_codex_rejects_unverified_origin(monkeypatch, system, arch, metadata):
+    rows = _rows(LINUX_CODEX_FIXTURE, Path("/fixture/checkout"))
     rows[0]["payload"].update(metadata)
-    _write(directory / "cli.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    result = adapter.read_delta(locator, None)
-    assert result.cursor is None
-    assert not result.boundaries
-    assert not result.observations
-    assert [item.code for item in result.diagnostics] == [
-        DiagnosticCode.UNSUPPORTED_FORMAT
-    ]
+    _assert_unqualified_origin(monkeypatch, rows, system, arch)
+
+
+def _read_linux_policy(monkeypatch, rows):
+    checkout = Path("/fixture/checkout")
+    root_path = Path("/fixture/logs")
+    evidence = AdapterFrames(
+        Provider.CODEX,
+        ClientVersion.CODEX_0_167_0_ALPHA_3_2,
+        UUID(rows[0]["payload"]["id"]),
+        CUTOFF,
+    )
+    frames = evidence.batch(rows)
+    root = provider_adapter.SourceRoot(root_path, CUTOFF, (checkout,), evidence.ledger)
+    source = CandidateSource(
+        Provider.CODEX,
+        frames.frames[0].session_ref,
+        frames.cursor.source_ref,
+        frames.cursor.locator_ref,
+        frames.cursor.incarnation_ref,
+        root_path / "source.jsonl",
+        (),
+        root,
+        evidence.ledger,
+        _native_surface=NativeSurface.CODEX_CLI_LINUX,
+        _monitor=True,
+    )
+    read = Mock(return_value=frames)
+    monkeypatch.setattr(provider_adapter, "scan", read)
+    monkeypatch.setattr(provider_adapter.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(provider_adapter.platform, "machine", lambda: "aarch64")
+
+    result = provider_adapter.ProviderAdapter().read_delta(
+        provider_adapter.SourceLocator(source), None
+    )
+
+    read.assert_called_once_with(source, None, CUTOFF, _capture_limit=None)
+    return result
 
 
 @pytest.mark.parametrize(
@@ -635,16 +738,11 @@ def test_linux_codex_rejects_unverified_origin(
         ("turn_id", "foreign-turn"),
     ],
 )
-def test_linux_codex_unverified_mode_cannot_advance_cursor(
-    monkeypatch, source, field, value
-):
-    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
-    _, directory, checkout = source
+def test_linux_codex_unverified_mode_cannot_advance_cursor(monkeypatch, field, value):
+    checkout = Path("/fixture/checkout")
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)[:22]
     rows[7]["payload"][field] = value
-    _write(directory / "cli.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    result = adapter.read_delta(locator, None)
+    result = _read_linux_policy(monkeypatch, rows)
     assert not result.observations
     assert not any(boundary.boundary.receipt_ref for boundary in result.boundaries)
     assert result.cursor is None
@@ -666,9 +764,8 @@ def test_linux_codex_unverified_mode_cannot_advance_cursor(
         "parallel_tool",
     ],
 )
-def test_linux_codex_withholds_unpaired_marker(monkeypatch, source, variation):
-    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
-    _, directory, checkout = source
+def test_linux_codex_withholds_unpaired_marker(monkeypatch, variation):
+    checkout = Path("/fixture/checkout")
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)
     # Leave a later clean turn so a rejected marker cannot leak to its response.
     id_field = {
@@ -695,9 +792,7 @@ def test_linux_codex_withholds_unpaired_marker(monkeypatch, source, variation):
         second = json.loads(json.dumps(rows[12]))
         second["payload"]["call_id"] = "other-tool"
         rows.insert(13, second)
-    _write(directory / "cli.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    result = adapter.read_delta(locator, None)
+    result = _read_linux_policy(monkeypatch, rows)
     assert not any(item.boundary.receipt_ref for item in result.boundaries)
     assert not any(item.usage.boundary.receipt_ref for item in result.observations)
     assert not any(
@@ -706,18 +801,18 @@ def test_linux_codex_withholds_unpaired_marker(monkeypatch, source, variation):
 
 
 def test_monitor_rescan_enrolls_only_an_exact_receipt_at_the_capture_limit(
-    monkeypatch, source, tmp_path
+    monkeypatch, native_files
 ):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     key, directory, _ = source
-    foreign = tmp_path / "foreign-private"
-    foreign.mkdir()
+    foreign = Path("/fixture/foreign")
     path = directory / "receipt.jsonl"
     rows = _receipt_rows(foreign, settle=True)
-    _write(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
     limit = _capture_position(locator._source, None).cursor
-    _write(path, [*rows, event("token_count", info=None)])
+    native_files.write(path, [*rows, event("token_count", info=None)])
 
     lookahead = adapter.read_delta(locator, None, _capture_limit=limit)
     assert not lookahead.observations
@@ -739,16 +834,17 @@ def test_monitor_rescan_enrolls_only_an_exact_receipt_at_the_capture_limit(
     assert scoped.cursor.checkpoint.cursor == limit
 
 
-def test_monitor_scope_rescan_refuses_a_changed_raw_prefix(
-    monkeypatch, source, tmp_path
-):
+def test_monitor_scope_rescan_refuses_a_changed_raw_prefix(monkeypatch, native_files):
+    from scanner_policy_cases import scanner
+
+    monkeypatch.setattr(scanner, "_checkout_anchor", native_files._checkout_lookup)
+    source = native_files.source
     module, adapter, root = _adapter(monkeypatch, source)
     _, directory, _ = source
-    foreign = tmp_path / "foreign-private"
-    foreign.mkdir()
+    foreign = directory.with_name("foreign-private")
     path = directory / "receipt.jsonl"
     rows = _receipt_rows(foreign, settle=True)
-    _write(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
     lookahead = adapter.read_delta(locator, None)
     boundary = _receipt_request(lookahead)
@@ -758,7 +854,7 @@ def test_monitor_scope_rescan_refuses_a_changed_raw_prefix(
     def change_before_rescan(candidate, *args, **kwargs):
         if candidate._enrollments:
             rows[4] = response("rewritten-before-private", usage(8, 2), usage(8, 2))
-            _write(path, rows)
+            native_files.write(path, rows)
         return scan(candidate, *args, **kwargs)
 
     monkeypatch.setattr(module, "scan", change_before_rescan)
@@ -769,12 +865,13 @@ def test_monitor_scope_rescan_refuses_a_changed_raw_prefix(
     }
 
 
-def test_claude_streamed_revision_and_nested_overlap(monkeypatch, source):
+def test_claude_streamed_revision_and_nested_overlap(monkeypatch, native_files):
+    source = native_files.source
     module, adapter, root = _adapter(monkeypatch, source)
     key, directory, checkout = source
     path = directory / "claude.jsonl"
     rows = _rows(CLAUDE_FIXTURE, checkout)
-    first_offset = _write(path, rows[:2])
+    first_offset = native_files.write(path, rows[:2])
     (locator,) = adapter.discover(root)
     first = adapter.read_delta(locator, None)
     (partial,) = first.observations
@@ -811,7 +908,7 @@ def test_claude_streamed_revision_and_nested_overlap(monkeypatch, source):
         assert held.cursor is None and held.observations == ()
 
     durable = _decode(_encode(first.cursor, module.StreamCursor), module.StreamCursor)
-    _write(path, rows + [rows[2]])
+    native_files.write(path, rows + [rows[2]])
     (reopened,) = adapter.discover(
         replace(root, evidence=Evidence(key, _committed_view(first)))
     )
@@ -825,7 +922,7 @@ def test_claude_streamed_revision_and_nested_overlap(monkeypatch, source):
         "00000000-0000-0000-0000-000000000221",
     )
     call = "toolu-private-agent"
-    _write(
+    native_files.write(
         path,
         [
             user(checkout),
@@ -886,8 +983,9 @@ def test_claude_streamed_revision_and_nested_overlap(monkeypatch, source):
 
 @pytest.mark.parametrize("terminal_kind", ["result", "cost-state"])
 def test_claude_revision_witnesses_bind_each_committing_row(
-    monkeypatch, source, terminal_kind
+    monkeypatch, native_files, terminal_kind
 ):
+    source = native_files.source
     module, adapter, root = _adapter(monkeypatch, source)
     key, directory, checkout = source
     path = directory / "revisions.jsonl"
@@ -907,7 +1005,7 @@ def test_claude_revision_witnesses_bind_each_committing_row(
         request(checkout),
         terminal,
     ]
-    _write(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
     legacy = adapter.read_delta(locator, None)
     assert [
@@ -931,7 +1029,8 @@ def test_claude_revision_witnesses_bind_each_committing_row(
         (1, 4, 5, terminal_kind),
         (2, 2, 5, terminal_kind),
     ]
-    native_lines = path.read_bytes().splitlines(keepends=True)
+    native_bytes = native_files.contents[path]
+    native_lines = native_bytes.splitlines(keepends=True)
     for (observation, witness), (prior_index, current_index) in zip(
         witnesses, [(0, 2), (2, 3), (3, 4), (1, 5)], strict=True
     ):
@@ -966,8 +1065,8 @@ def test_claude_revision_witnesses_bind_each_committing_row(
     assert "req-first" not in repr(witnesses)
 
     archive = directory.parent / "archive-private"
-    archive.mkdir()
-    (archive / path.name).write_bytes(path.read_bytes())
+    archived_path = archive / path.name
+    native_files.contents[archived_path] = native_bytes
     (archived,) = adapter.discover(replace(root, path=archive))
     copied_witnesses = []
     copied = adapter.read_delta(archived, None, _revision_witnesses=copied_witnesses)
@@ -978,25 +1077,27 @@ def test_claude_revision_witnesses_bind_each_committing_row(
     )
 
 
-def test_claude_terminal_contributor_span_tracks_stop_with_unchanged_counts(
-    monkeypatch, source
-):
-    _, adapter, root = _adapter(monkeypatch, source)
-    _, directory, checkout = source
-    _write(
-        directory / "terminal.jsonl",
-        [
-            user(checkout),
-            request(checkout, stop=None),
-            request(checkout, req="req-second", msg="msg-second"),
-            request(checkout),
-            user(checkout),
-            cost(**{MODEL: model_counts(8, 4, 10, 6, 8)}),
-        ],
+def _claude_frames():
+    return AdapterFrames(
+        Provider.CLAUDE, ClientVersion.CLAUDE_2_1_318, CLAUDE_SESSION, CUTOFF
     )
-    (locator,) = adapter.discover(root)
+
+
+def test_claude_terminal_contributor_span_tracks_stop_with_unchanged_counts(
+    monkeypatch,
+):
+    frames = _claude_frames()
+    checkout = frames.checkout
+    rows = [
+        user(checkout),
+        request(checkout, stop=None),
+        request(checkout, req="req-second", msg="msg-second"),
+        request(checkout),
+        user(checkout),
+        cost(**{MODEL: model_counts(8, 4, 10, 6, 8)}),
+    ]
     witnesses = []
-    batch = adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+    batch = frames.read_monitor(rows, monkeypatch, revision_witnesses=witnesses)
     assert [item.revision for item in batch.observations] == [1, 1, 2, 2]
     (_, first), (_, second) = witnesses
     assert first.predecessor_ordinal == 1
@@ -1009,6 +1110,13 @@ def test_claude_terminal_contributor_span_tracks_stop_with_unchanged_counts(
             (2, 3),
         )
     )
+
+
+@pytest.fixture
+def terminal_native_files(request):
+    if request.node.callspec.params["linkage"] == "linked":
+        return request.getfixturevalue("native_files")
+    return None
 
 
 @pytest.mark.parametrize(
@@ -1026,10 +1134,11 @@ def test_claude_terminal_contributor_span_tracks_stop_with_unchanged_counts(
     ],
 )
 def test_claude_terminal_witness_requires_verified_nested_contributor(
-    monkeypatch, source, linkage
+    monkeypatch, terminal_native_files, linkage
 ):
-    _, adapter, root = _adapter(monkeypatch, source)
-    _, directory, checkout = source
+    frames = _claude_frames()
+    files = terminal_native_files
+    checkout = frames.checkout if files is None else files.checkout
     tool_id = "toolu-terminal-agent"
 
     def child(parent, output=8):
@@ -1092,9 +1201,17 @@ def test_claude_terminal_witness_requires_verified_nested_contributor(
             modelUsage={MODEL: model_counts(4 + child_output, 4, 10, 6, 8)},
         )
     )
-    _write(directory / "terminal-agent.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    legacy = adapter.read_delta(locator, None)
+    if files is not None:
+        _, adapter, root = _adapter(monkeypatch, files.source)
+        files.write(files.root / "terminal-agent.jsonl", rows)
+        (locator,) = adapter.discover(root)
+
+    def read(witnesses=None):
+        if files is None:
+            return frames.read_monitor(rows, monkeypatch, revision_witnesses=witnesses)
+        return adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+
+    legacy = read()
     assert legacy.cursor is not None
     completed = [
         item
@@ -1107,7 +1224,7 @@ def test_claude_terminal_witness_requires_verified_nested_contributor(
     ) is (linkage in {"foreign", "missing", "late-repaired", "foreign-after-link"})
 
     witnesses = []
-    batch = adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+    batch = read(witnesses)
     assert batch == legacy
     if linkage in {"linked", "same-after-reset"}:
         ((successor, witness),) = witnesses
@@ -1118,11 +1235,14 @@ def test_claude_terminal_witness_requires_verified_nested_contributor(
         assert witnesses == []
 
 
-def test_claude_terminal_witness_holds_nonzero_excluded_baseline(monkeypatch, source):
+def test_claude_terminal_witness_holds_nonzero_excluded_baseline(
+    monkeypatch, native_files
+):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     before = CUTOFF - timedelta(seconds=1)
-    _write(
+    native_files.write(
         directory / "excluded.jsonl",
         [
             user(checkout, before),
@@ -1143,15 +1263,18 @@ def test_claude_terminal_witness_holds_nonzero_excluded_baseline(monkeypatch, so
     assert witnesses == []
 
 
-def test_claude_terminal_witness_holds_contributor_from_prior_read(monkeypatch, source):
+def test_claude_terminal_witness_holds_contributor_from_prior_read(
+    monkeypatch, native_files
+):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     key, directory, checkout = source
     path = directory / "resumed-terminal.jsonl"
     prior_rows = [user(checkout), request(checkout)]
-    _write(path, prior_rows)
+    native_files.write(path, prior_rows)
     (locator,) = adapter.discover(root)
     first = adapter.read_delta(locator, None)
-    _write(
+    native_files.write(
         path,
         [
             *prior_rows,
@@ -1179,10 +1302,10 @@ def test_claude_terminal_witness_holds_contributor_from_prior_read(monkeypatch, 
 
 @pytest.mark.parametrize("regression", [False, True])
 def test_claude_processing_invalidation_requires_accepted_counts(
-    monkeypatch, source, regression
+    monkeypatch, regression
 ):
-    _, adapter, root = _adapter(monkeypatch, source)
-    _, directory, checkout = source
+    frames = _claude_frames()
+    checkout = frames.checkout
     rows = [
         user(checkout),
         request(checkout, counts=claude_usage(3), stop=None),
@@ -1191,9 +1314,7 @@ def test_claude_processing_invalidation_requires_accepted_counts(
         ),
         request(checkout, counts=claude_usage(4)),
     ]
-    _write(directory / "tier.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    legacy = adapter.read_delta(locator, None)
+    legacy = frames.read_monitor(rows, monkeypatch)
     assert legacy.observations[0].usage.processing_tier is ProcessingTier.STANDARD
     assert legacy.observations[1].usage.processing_tier is None
     assert (
@@ -1201,7 +1322,7 @@ def test_claude_processing_invalidation_requires_accepted_counts(
     ) is regression
 
     witnesses = []
-    batch = adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+    batch = frames.read_monitor(rows, monkeypatch, revision_witnesses=witnesses)
     assert batch == legacy
     if regression:
         assert witnesses == []
@@ -1213,16 +1334,17 @@ def test_claude_processing_invalidation_requires_accepted_counts(
 
 
 def test_claude_revision_witness_requires_predecessor_in_fixed_read(
-    monkeypatch, source
+    monkeypatch, native_files
 ):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     key, directory, checkout = source
     path = directory / "resumed.jsonl"
     rows = _rows(CLAUDE_FIXTURE, checkout)
-    _write(path, rows[:2])
+    native_files.write(path, rows[:2])
     (locator,) = adapter.discover(root)
     first = adapter.read_delta(locator, None)
-    _write(path, rows)
+    native_files.write(path, rows)
     (reopened,) = adapter.discover(
         replace(root, evidence=Evidence(key, _committed_view(first)))
     )
@@ -1233,8 +1355,9 @@ def test_claude_revision_witness_requires_predecessor_in_fixed_read(
 
 
 def test_claude_revision_witnesses_follow_the_fixed_capture_frontier(
-    monkeypatch, source
+    monkeypatch, native_files
 ):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     path = directory / "frontier.jsonl"
@@ -1243,10 +1366,10 @@ def test_claude_revision_witnesses_follow_the_fixed_capture_frontier(
         request(checkout, counts=claude_usage(3), stop=None),
         request(checkout),
     ]
-    _write(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
     limit = _capture_position(locator._source, None).cursor
-    _write(path, [*rows, cost(**{MODEL: model_counts()})])
+    native_files.write(path, [*rows, cost(**{MODEL: model_counts()})])
     fixed = adapter.read_delta(locator, None, _capture_limit=limit)
     assert fixed.cursor.checkpoint.cursor == limit
     assert all(
@@ -1264,12 +1387,12 @@ def test_claude_revision_witnesses_follow_the_fixed_capture_frontier(
 
 
 def test_claude_revision_witnesses_withheld_after_failed_rescan(
-    monkeypatch, source, tmp_path
+    monkeypatch, native_files
 ):
+    source = native_files.source
     module, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
-    foreign = tmp_path / "foreign-private"
-    foreign.mkdir()
+    foreign = Path("/fixture/foreign")
     path = directory / "rescan.jsonl"
     command = shlex.join(
         [
@@ -1302,7 +1425,7 @@ def test_claude_revision_witnesses_withheld_after_failed_rescan(
             json.dumps({"command_id": str(COMMAND), "status": "queued"}),
         ),
     ]
-    _write(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
     lookahead = adapter.read_delta(locator, None)
     assert [item.revision for item in lookahead.observations] == [1, 2]
@@ -1315,7 +1438,7 @@ def test_claude_revision_witnesses_withheld_after_failed_rescan(
             rows[2] = request(
                 checkout, req="req-prefix", msg="msg-prefix", counts=claude_usage(6)
             )
-            _write(path, rows)
+            native_files.write(path, rows)
         return scan(candidate, *args, **kwargs)
 
     monkeypatch.setattr(module, "scan", change_before_rescan)
@@ -1328,7 +1451,8 @@ def test_claude_revision_witnesses_withheld_after_failed_rescan(
     assert DiagnosticCode.BOUNDARY_UNVERIFIED in {d.code for d in failed.diagnostics}
 
 
-def test_claude_held_startup_replays_after_checkout_proof(monkeypatch, source):
+def test_claude_held_startup_replays_after_checkout_proof(monkeypatch, native_files):
+    source = native_files.source
     module, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     path = directory / "startup.jsonl"
@@ -1353,11 +1477,11 @@ def test_claude_held_startup_replays_after_checkout_proof(monkeypatch, source):
     for row in following:
         row["sessionId"] = rows[-1]["sessionId"]
     rows.extend(following)
-    _write(path, rows)
+    source_size = native_files.write(path, rows)
     (locator,) = adapter.discover(replace(root, checkout_anchors=()))
     held = adapter.read_delta(locator, None)
     assert held.observations == ()
-    assert held.cursor.checkpoint.cursor.offset < path.stat().st_size
+    assert held.cursor.checkpoint.cursor.offset < source_size
     (linked,) = [
         item for item in held.boundaries if item.boundary.receipt_ref is not None
     ]
@@ -1367,28 +1491,32 @@ def test_claude_held_startup_replays_after_checkout_proof(monkeypatch, source):
     admitted = adapter.read_delta(verified, held.cursor)
     assert len(admitted.observations) == 2
     assert all(item.project_context is not None for item in admitted.observations)
-    assert admitted.cursor.checkpoint.cursor.offset == path.stat().st_size
+    assert admitted.cursor.checkpoint.cursor.offset == source_size
 
 
-def test_desktop_retains_unfinished_native_turn_before_restart(monkeypatch, source):
+def test_desktop_retains_unfinished_native_turn_before_restart(
+    monkeypatch, native_files
+):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     path = directory / "desktop.jsonl"
     rows = _desktop(checkout)
-    _write(path, rows[:-1])
+    native_files.write(path, rows[:-1])
     (locator,) = adapter.discover(root)
     pending = adapter.read_delta(locator, None)
     assert pending.cursor is None
     assert not pending.observations
 
-    _write(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
     complete = adapter.read_delta(locator, pending.cursor)
     assert complete.observations
-    assert complete.cursor.checkpoint.cursor.offset == path.stat().st_size
+    assert complete.cursor.checkpoint.cursor.offset == len(native_files.contents[path])
 
 
-def test_claude_holds_linked_receipt_until_adjoining_request(monkeypatch, source):
+def test_claude_holds_linked_receipt_until_adjoining_request(monkeypatch, native_files):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     path = directory / "linked.jsonl"
@@ -1415,25 +1543,25 @@ def test_claude_holds_linked_receipt_until_adjoining_request(monkeypatch, source
             json.dumps({"command_id": str(COMMAND), "status": "queued"}),
         ),
     ]
-    _write(path, rows[:-1])
+    native_files.write(path, rows[:-1])
     (locator,) = adapter.discover(root)
     pending = adapter.read_delta(locator, None)
     assert pending.cursor is None
     assert not pending.observations
 
-    _write(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
     complete = adapter.read_delta(locator, pending.cursor)
-    assert complete.cursor.checkpoint.cursor.offset == path.stat().st_size
+    assert complete.cursor.checkpoint.cursor.offset == len(native_files.contents[path])
     (proof,) = [
         item for item in complete.boundaries if item.boundary.receipt_ref is not None
     ]
     assert proof.boundary.ordinal == len(rows) - 1
 
 
-def _restart_rows(case, checkout):
+def _restart_rows(case, checkout, *, initial_rows=None):
     if case == "desktop":
-        rows = _desktop(checkout)
+        rows = _desktop(checkout) if initial_rows is None else initial_rows
         first_turn_end = len(rows)
         turn = UUID(int=0x199)
         time = AFTER + timedelta(seconds=1)
@@ -1562,12 +1690,13 @@ def _restart_rows(case, checkout):
     return rows, {1}
 
 
-def test_claude_aggregate_retraction_has_no_revision_witness(monkeypatch, source):
+def test_claude_aggregate_retraction_has_no_revision_witness(monkeypatch, native_files):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     path = directory / "nested.jsonl"
     rows, _ = _restart_rows("nested", checkout)
-    _write(path, [*rows[:2], rows[-1], *rows[2:-1]])
+    native_files.write(path, [*rows[:2], rows[-1], *rows[2:-1]])
     (locator,) = adapter.discover(root)
     legacy = adapter.read_delta(locator, None)
     (retracted,) = [
@@ -1583,10 +1712,11 @@ def test_claude_aggregate_retraction_has_no_revision_witness(monkeypatch, source
     assert witnesses == []
 
 
-def test_claude_revision_witness_refuses_a_foreign_message(monkeypatch, source):
+def test_claude_revision_witness_refuses_a_foreign_message(monkeypatch, native_files):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
-    _write(
+    native_files.write(
         directory / "message.jsonl",
         [
             user(checkout),
@@ -1605,7 +1735,10 @@ def test_claude_revision_witness_refuses_a_foreign_message(monkeypatch, source):
 
 
 @pytest.mark.parametrize("case", ["desktop", "streamed", "nested", "receipt"])
-def test_every_native_split_matches_one_read_after_restart(monkeypatch, source, case):
+def test_every_native_split_matches_one_read_after_restart(
+    monkeypatch, native_files, case
+):
+    source, write_rows = native_files.source, native_files.write
     module, adapter, root = _adapter(monkeypatch, source)
     key, directory, checkout = source
     path = directory / "restart.jsonl"
@@ -1614,14 +1747,14 @@ def test_every_native_split_matches_one_read_after_restart(monkeypatch, source, 
     def latest(*batches):
         return {item.key: item for batch in batches for item in batch.observations}
 
-    _write(path, rows)
+    total_size = write_rows(path, rows)
     (locator,) = adapter.discover(root)
     whole = adapter.read_delta(locator, None)
     assert whole.observations
-    assert whole.cursor.checkpoint.cursor.offset == path.stat().st_size
+    assert whole.cursor.checkpoint.cursor.offset == total_size
 
     for split in range(1, len(rows)):
-        offset = _write(path, rows[:split])
+        offset = write_rows(path, rows[:split])
         (locator,) = adapter.discover(root)
         prefix = adapter.read_delta(locator, None)
         if split not in safe_splits:
@@ -1640,7 +1773,7 @@ def test_every_native_split_matches_one_read_after_restart(monkeypatch, source, 
         else:
             prior = None
             restarted_root = root
-        _write(path, rows)
+        write_rows(path, rows)
         (restarted,) = adapter.discover(restarted_root)
         suffix = module.ProviderAdapter().read_delta(restarted, prior)
         assert latest(prefix, suffix) == latest(whole), (case, split)

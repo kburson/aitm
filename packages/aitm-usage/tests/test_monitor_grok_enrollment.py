@@ -1,9 +1,10 @@
 """Prospective Grok enrollment from an exact applied owner command."""
 
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 
 import pytest
-from test_monitor_grok_capture import isolated_grok_capture as isolated_grok_capture
+from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 
 from aitm_usage.monitor_control import ControlInbox
 from aitm_usage.monitor_registry import (
@@ -15,6 +16,7 @@ from aitm_usage.monitor_registry import (
     _GrokPending,
 )
 from aitm_usage.monitor_scope import RouteStatus, ScopeState, resolve_route
+from aitm_usage.sources import grok
 from aitm_usage.sources.grok import GrokAdapter
 from aitm_usage.types import DiagnosticCode, _decode
 
@@ -36,29 +38,40 @@ def _hookless(f):
     return f.rows[1:5]
 
 
-def test_eligible_empty_root_grant_cannot_be_parsed_by_old_reader(
-    isolated_grok_capture,
-):
-    f = isolated_grok_capture
+@contextmanager
+def _hide_original_stream(f, monkeypatch):
     original = f.locator()._source.path
-    original.unlink()
-    enable = f.submit(33101, True)
-    (receipt,) = f.evaluate()
-    assert receipt.command_id == enable.command_id
-    assert receipt.status is ControlStatus.APPLIED
-    state = f.writer.view()
-    wire = _encode_registry(state)
-    with pytest.raises(ValueError):
-        _decode(wire, _OldRegistryWithGrok)
-    assert f.state.grok_enrollment_gaps() == ()
-    original.touch()
+    raw_transcripts = grok._transcripts
+
+    def visible_transcripts(fd, root):
+        return (path for path in raw_transcripts(fd, root) if path != original)
+
+    with monkeypatch.context() as discovery:
+        discovery.setattr(grok, "_transcripts", visible_transcripts)
+        yield
+
+
+def test_eligible_empty_root_grant_cannot_be_parsed_by_old_reader(
+    grok_capture_policy, monkeypatch
+):
+    f = grok_capture_policy
+    with _hide_original_stream(f, monkeypatch):
+        enable = f.submit(33101, True)
+        (receipt,) = f.evaluate()
+        assert receipt.command_id == enable.command_id
+        assert receipt.status is ControlStatus.APPLIED
+        state = f.writer.view()
+        wire = _encode_registry(state)
+        with pytest.raises(ValueError):
+            _decode(wire, _OldRegistryWithGrok)
+        assert f.state.grok_enrollment_gaps() == ()
     assert _enroll(f, f.locator) is None
 
 
 def test_first_enrollment_reuses_exact_applied_enable_and_keeps_future_turns(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     enable = f.submit(33102, True)
     (receipt,) = f.evaluate()
     assert receipt.command_id == enable.command_id
@@ -93,8 +106,8 @@ def _gaps_after_reopen(f):
     return state.grok_enrollment_gaps()
 
 
-def test_queued_disable_fences_prospective_enrollment(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_queued_disable_fences_prospective_enrollment(grok_capture_policy):
+    f = grok_capture_policy
     f.submit(33103, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, _ = f.add_stream()
@@ -107,10 +120,10 @@ def test_queued_disable_fences_prospective_enrollment(isolated_grok_capture):
 
 
 def test_rejected_enable_receipt_cannot_authorize_prospective_capture(
-    isolated_grok_capture,
+    grok_capture_policy,
     monkeypatch,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     enable = f.submit(33105, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     current = f.writer.view()
@@ -133,11 +146,11 @@ def test_rejected_enable_receipt_cannot_authorize_prospective_capture(
 
 
 def test_reissued_enable_preserves_an_armed_stream_and_original_grant(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
     from aitm_usage.monitor_registry import _grok_records, _GrokGrant
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     first = f.submit(33106, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()
@@ -175,9 +188,9 @@ def test_reissued_enable_preserves_an_armed_stream_and_original_grant(
 
 
 def test_wrong_terminal_and_rewritten_arm_hold_the_original_enrollment(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33108, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()
@@ -198,9 +211,9 @@ def test_wrong_terminal_and_rewritten_arm_hold_the_original_enrollment(
 
 
 def test_disable_retains_unresolved_gap_and_never_applies_a_later_enrollment(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33109, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()
@@ -221,9 +234,9 @@ def test_disable_retains_unresolved_gap_and_never_applies_a_later_enrollment(
 
 
 def test_replacement_stream_or_profile_requires_exact_new_owner_authority(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33111, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, _ = f.add_stream()
@@ -245,10 +258,10 @@ def test_replacement_stream_or_profile_requires_exact_new_owner_authority(
 
 
 def test_unmatched_checkout_cannot_open_payload_or_enroll(
-    isolated_grok_capture,
+    grok_capture_policy,
     monkeypatch,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33113, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, _ = f.add_stream()
@@ -273,10 +286,10 @@ def test_unmatched_checkout_cannot_open_payload_or_enroll(
     assert f.writer.view() == before
 
 
-def test_inherited_turn_cannot_complete_a_prospective_arm(isolated_grok_capture):
+def test_inherited_turn_cannot_complete_a_prospective_arm(grok_capture_policy):
     from test_grok import PROMPT_A
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33114, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()
@@ -312,10 +325,10 @@ def test_inherited_turn_cannot_complete_a_prospective_arm(isolated_grok_capture)
 
 
 def test_reissue_cannot_replace_the_incarnation_of_an_existing_arm(
-    isolated_grok_capture,
+    grok_capture_policy,
     monkeypatch,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33115, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()
@@ -344,13 +357,12 @@ def test_reissue_cannot_replace_the_incarnation_of_an_existing_arm(
 
 @pytest.mark.parametrize("open_turn", [False, True], ids=["quiet", "in-flight"])
 def test_reissued_enable_retains_the_new_streams_pre_witness_gap(
-    isolated_grok_capture,
+    grok_capture_policy,
+    monkeypatch,
     open_turn,
 ):
-    f = isolated_grok_capture
-    original = f.locator()._source.path
-    original.unlink()
-    try:
+    f = grok_capture_policy
+    with _hide_original_stream(f, monkeypatch):
         enable = f.submit(33117, True)
         assert f.evaluate()[0].command_id == enable.command_id
         other, write = f.add_stream()
@@ -374,26 +386,27 @@ def test_reissued_enable_retains_the_new_streams_pre_witness_gap(
         assert _enroll(f, other) is None
         assert f.writer.view() == enrolled
         assert f.state.read_source(f.source_id, other()).observations == ()
-    finally:
-        original.touch()
 
 
 def test_retired_gap_survives_restored_approval_set_and_a_new_root_grant(
-    isolated_grok_capture,
-    tmp_path,
+    grok_capture_policy,
+    monkeypatch,
 ):
     from uuid import UUID
 
+    from aitm_usage import monitor_control, monitor_registry
     from aitm_usage.ledger import ConflictError, LedgerError
     from aitm_usage.monitor_registry import (
         CaptureChange,
         ControlCommand,
-        _directory,
+        Registry,
         _grok_records,
         _GrokGrant,
+        _PhysicalDirectory,
     )
+    from aitm_usage.monitor_scope import _GrokCaptureHeld
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33119, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()
@@ -405,11 +418,18 @@ def test_retired_gap_survives_restored_approval_set_and_a_new_root_grant(
     retired = f.writer.view()
     (old_source,) = retired.sources
 
-    replacement = tmp_path / "replacement-capture"
-    replacement.mkdir(mode=0o700)
+    replacement = _PhysicalDirectory(
+        str(f.root.path.with_name("replacement-capture")), (1, 99)
+    )
+    directory = monitor_registry._directory
+
+    def observe_directory(path, **options):
+        return replacement if path == replacement.path else directory(path, **options)
+
+    monkeypatch.setattr(monitor_registry, "_directory", observe_directory)
     previous = f.writer._live_profile
     (installation,) = previous.installations
-    new_installation = replace(installation, directory=_directory(str(replacement)))
+    new_installation = replace(installation, directory=replacement)
     f.writer._live_profile = replace(
         previous,
         generation=f.writer.source_evidence().pseudonymize(
@@ -420,10 +440,10 @@ def test_retired_gap_survives_restored_approval_set_and_a_new_root_grant(
     )
     # The established approval contract does not allow reusing an old source ID.
     with pytest.raises(ConflictError, match="identity changed"):
-        f.writer.approve_source(replace(old_source.approval, root=str(replacement)))
+        f.writer.approve_source(replace(old_source.approval, root=replacement.path))
     new_source = UUID(int=33121)
     f.writer.approve_source(
-        replace(old_source.approval, source_id=new_source, root=str(replacement))
+        replace(old_source.approval, source_id=new_source, root=replacement.path)
     )
     both = f.writer.view()
     # Exercise a retained approval snapshot with the retired source omitted.
@@ -460,9 +480,14 @@ def test_retired_gap_survives_restored_approval_set_and_a_new_root_grant(
     assert _gaps_after_reopen(f) == (old_gap,)
     current = f.writer.view()
     f.writer._save(replace(current, sources=()))
-    try:
-        with pytest.raises(LedgerError, match="grant installation changed"):
-            _gaps_after_reopen(f)
-    finally:
-        # Keep the original fixture's teardown able to probe its retired source.
-        f.writer._save(replace(current, sources=both.sources))
+    with pytest.raises(LedgerError, match="grant installation changed"):
+        _gaps_after_reopen(f)
+
+    f.writer._save(replace(current, sources=both.sources))
+    monkeypatch.setattr(
+        monitor_registry, "_read_private", monitor_control._read_private
+    )
+    reopened = Registry(f.writer.root, f.writer.lease)
+    state = ScopeState(reopened, grok_reader=GrokAdapter(f.find_origin, f.verifier))
+    with pytest.raises(_GrokCaptureHeld, match="authority"):
+        state.read_source(f.source_id, f.locator())

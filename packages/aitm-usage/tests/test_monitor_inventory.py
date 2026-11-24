@@ -2,21 +2,34 @@
 
 import json
 import os
+import stat
 import subprocess
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from hashlib import sha256
 from importlib import import_module
 from pathlib import Path
-from shutil import copyfile
+from shutil import copyfile, copytree
 from time import time_ns
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from qualification_policy_cases import qualification_policy
+from scanner_policy_cases import NativeDirectoryMetadata, NativeTranscriptFiles
+from test_codex import CUTOFF
 from test_grok import FIXTURES, GROK_BINARY, SESSION
-from test_monitor_journal import COPY, LIVE, A, NativeJournalFixture
+from test_monitor_adapters import _desktop
+from test_monitor_journal import (
+    COPY,
+    LIVE,
+    A,
+    NativeJournalFixture,
+    _MemoryJournalTranscripts,
+)
 
 from aitm_usage.ledger import LedgerError
 from aitm_usage.monitor_journal import RoutingJournal
@@ -32,6 +45,7 @@ from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
 from aitm_usage.sources.scan import _InventoryUnavailable, _OriginCache
 
 source_scan = import_module("aitm_usage.sources.scan")
+_REVALIDATE_CATALOG = source_scan._revalidate_catalog
 
 pytestmark = pytest.mark.usefixtures("legacy_monitor_qualification")
 
@@ -46,10 +60,118 @@ def siblings(tmp_path, monkeypatch):
     return native, selected, parked
 
 
+@pytest.fixture
+def inventory_policy(monkeypatch):
+    authority = qualification_policy(monkeypatch, LIVE, CUTOFF)
+    writer = authority.writer
+    writer.lease.identities = ((1, 90),)
+    files = NativeTranscriptFiles(monkeypatch)
+    root = authority.locator._source._registration
+    assert files.root == root.path
+    files.write(files.root / "active.jsonl", _desktop(files.checkout))
+    parked = files.root / "parked.jsonl"
+    parked_rows = _desktop(files.checkout)
+    parked_rows[0]["payload"]["id"] = str(UUID(int=2026))
+    files.write(parked, parked_rows)
+    stamp = 10_000_000_000
+    case = SimpleNamespace(
+        writer=writer,
+        foreign=authority.foreign,
+        root=root,
+        parked=parked,
+        stamp=stamp,
+        now=stamp + source_scan._INVENTORY_TIMESTAMP_GRANULARITY_NS + 1,
+        opened=[],
+    )
+    normal_snapshot = files._snapshot
+
+    def snapshot(path):
+        value = normal_snapshot(path)
+        value.directory_ctimes = (stamp,)
+        value.stat.st_mtime_ns = stamp
+        value.stat.st_ctime_ns = stamp
+        value.stat.st_nlink = 1
+        value.stat.st_mode = stat.S_IFREG | 0o600
+        return value
+
+    def catalog(path, identity):
+        assert path == files.root and identity == authority.approved.directory.identity
+        return {
+            path: source_scan._DirectoryCatalog(
+                (identity,),
+                (identity, stamp, stamp),
+                {name: snapshot(name) for name in files.contents},
+            )
+        }
+
+    def open_snapshot(path, **kwargs):
+        case.opened.append(path)
+        return files._open_snapshot(path, **kwargs)
+
+    monkeypatch.setattr(files, "_snapshot", snapshot)
+    monkeypatch.setattr(source_scan, "_probe", snapshot)
+    monkeypatch.setattr(source_scan, "_open_snapshot", open_snapshot)
+    monkeypatch.setattr(source_scan, "_complete_catalog", catalog)
+    monkeypatch.setattr(source_scan, "_revalidate_catalog", Mock())
+    monkeypatch.setattr(source_scan, "time_ns", lambda: case.now)
+    return case
+
+
+@pytest.fixture
+def inventory_transcripts(monkeypatch):
+    native = _MemoryJournalTranscripts(monkeypatch)
+    selected = native.locator(LIVE)
+    files = native.files
+    root = native.roots[LIVE].path
+    parked = root / "parked.jsonl"
+    rows = [
+        json.loads(line) for line in files.contents[native.paths[COPY]].splitlines()
+    ]
+    rows[0]["payload"]["id"] = str(UUID(int=2026))
+    files.write(parked, rows)
+    stamp = 10_000_000_000
+    normal_snapshot = files._snapshot
+
+    def snapshot(path):
+        value = normal_snapshot(path)
+        value.directory_ctimes = (stamp,) * (len(value.identity) - 1)
+        value.stat.st_mtime_ns = stamp
+        value.stat.st_ctime_ns = stamp
+        value.stat.st_nlink = 1
+        value.stat.st_mode = stat.S_IFREG | 0o600
+        return value
+
+    def catalog(path, identity):
+        assert (path, identity) == (root, files._identity(root))
+        return {
+            root: source_scan._DirectoryCatalog(
+                files._identity_chain(root),
+                (identity, stamp, stamp),
+                {
+                    item: snapshot(item)
+                    for item in files.contents
+                    if item.parent == root
+                },
+            )
+        }
+
+    walk_catalog = source_scan._complete_catalog
+    monkeypatch.setattr(files, "_snapshot", snapshot)
+    monkeypatch.setattr(source_scan, "_probe", snapshot)
+    monkeypatch.setattr(source_scan, "_complete_catalog", catalog)
+    monkeypatch.setattr(source_scan, "_revalidate_catalog", Mock())
+    monkeypatch.setattr(
+        source_scan,
+        "time_ns",
+        lambda: stamp + source_scan._INVENTORY_TIMESTAMP_GRANULARITY_NS + 1,
+    )
+    return native, selected, parked, walk_catalog
+
+
 def test_current_catalog_matches_legacy_locator_fields_and_skips_parked_open(
-    siblings, monkeypatch
+    inventory_transcripts, monkeypatch
 ):
-    native, selected, parked = siblings
+    native, selected, parked, _ = inventory_transcripts
     original = source_scan._open_snapshot
     opened = []
 
@@ -104,7 +226,7 @@ def test_current_catalog_matches_legacy_locator_fields_and_skips_parked_open(
         assert parked not in opened
 
         # A rewrite changes the file fingerprint even when its path stays the same.
-        parked.write_bytes(parked.read_bytes() + b"\n")
+        native.files.contents[parked] += b"\n"
         opened.clear()
         with writer._inventory_cycle(cache) as inventory:
             replay = writer._native_delta(
@@ -132,13 +254,14 @@ def test_native_inventory_audits_actual_selected_route(tmp_path):
     assert traces["unchanged-parked"] == 0
     assert traces["changed-parked"] == 1
     assert traces["selected-opens"] > 0
+    assert traces["linked-refusals"] == 2
 
 
 def _native_audit(tmp_path):
-    from conftest import legacy_monitor_qualification
+    from conftest import install_legacy_monitor_qualification
 
     with pytest.MonkeyPatch.context() as patch:
-        legacy_monitor_qualification.__wrapped__(tmp_path, patch)
+        install_legacy_monitor_qualification(patch, lambda: tmp_path)
         native = NativeJournalFixture(tmp_path, patch, independent_copy=True)
         selected = native.locator(LIVE)
         parked = native.paths[LIVE].with_name("parked.jsonl")
@@ -180,14 +303,30 @@ def _native_audit(tmp_path):
                 counts[f"{state}-parked"] = seen.count(parked.name)
                 if state == "unchanged":
                     counts["selected-opens"] = seen.count(native.paths[LIVE].name)
+            counts["linked-refusals"] = 0
+            for link in (Path.symlink_to, Path.hardlink_to):
+                parked.unlink()
+                link(parked, native.paths[LIVE])
+                with (
+                    writer._inventory_cycle(cache) as inventory,
+                    pytest.raises(BoundaryUnavailable, match="Complete metadata"),
+                ):
+                    writer._native_delta(
+                        writer.view(),
+                        CaptureChange(A, LIVE, True),
+                        selected,
+                        None,
+                        inventory=inventory,
+                    )
+                counts["linked-refusals"] += 1
         print(json.dumps(counts))
 
 
 def _grok_audit(tmp_path):
-    from conftest import legacy_monitor_qualification
+    from conftest import install_legacy_monitor_qualification
 
     with pytest.MonkeyPatch.context() as patch:
-        legacy_monitor_qualification.__wrapped__(tmp_path, patch)
+        install_legacy_monitor_qualification(patch, lambda: tmp_path)
         native = NativeJournalFixture(tmp_path, patch, independent_copy=True)
         root = tmp_path / "grok"
         parked_id = "10000000-0000-4000-8000-000000000116"
@@ -324,54 +463,137 @@ def test_grok_inventory_audits_active_route_and_sideband_renewal(tmp_path):
     "fault", ["duplicate", "hardlink", "symlink", "limit", "denied"]
 )
 def test_incomplete_or_ambiguous_catalog_refuses_selected_stream(
-    siblings, monkeypatch, fault
+    request, monkeypatch, fault
 ):
-    native, selected, parked = siblings
+    if fault in {"duplicate", "limit", "denied"}:
+        _assert_inventory_policy_refuses(request, monkeypatch, fault)
+        return
+
+    _assert_inventory_refuses_linked_transcript(request, monkeypatch, fault)
+
+
+def _assert_inventory_refuses_linked_transcript(request, monkeypatch, link):
+    native, parked, host = _metadata_catalog(request, monkeypatch)
     active = native.paths[LIVE]
-    if fault == "duplicate":
-        copyfile(active, parked)
-    elif fault == "hardlink":
-        parked.unlink()
-        os.link(active, parked)
-    elif fault == "symlink":
-        parked.unlink()
-        parked.symlink_to(active)
-    elif fault == "limit":
-        monkeypatch.setattr(source_scan, "_INVENTORY_MAX_ENTRIES", 1)
+    (selected,) = (
+        locator
+        for locator in native.adapter.discover(native.roots[LIVE])
+        if locator._source._path == active
+    )
+    original_info = host.info
+
+    def entries(path):
+        if path in (active, parked):
+            metadata = original_info(active)
+            metadata.st_nlink = 2
+            return metadata
+        return original_info(path)
+
+    if link == "hardlink":
+        monkeypatch.setattr(host, "info", entries)
     else:
-        original = os.scandir
-        root_inode = active.parent.stat().st_ino
-
-        def denied(path):
-            if isinstance(path, int) and os.fstat(path).st_ino == root_inode:
-                raise PermissionError("injected inventory enumeration failure")
-            return original(path)
-
-        monkeypatch.setattr(source_scan.os, "scandir", denied)
+        del native.files.contents[parked]
+        host.symlinks[parked] = active
+    forbidden = Mock(side_effect=AssertionError("linked transcript payload was read"))
+    monkeypatch.setattr(source_scan, "_open_snapshot", forbidden)
+    cache = _OriginCache()
     with (
         native.registry.writer() as writer,
-        writer._inventory_cycle(_OriginCache()) as inventory,
+        writer._inventory_cycle(cache) as inventory,
+        pytest.raises(BoundaryUnavailable, match="Complete metadata"),
     ):
-        with pytest.raises(BoundaryUnavailable):
-            writer._native_delta(
-                writer.view(),
-                CaptureChange(A, LIVE, True),
-                selected,
-                None,
-                inventory=inventory,
+        writer._native_delta(
+            writer.view(),
+            CaptureChange(A, LIVE, True),
+            selected,
+            None,
+            inventory=inventory,
+        )
+    forbidden.assert_not_called()
+    assert not cache._entries
+
+
+def _assert_inventory_policy_refuses(request, monkeypatch, fault):
+    native, selected, parked, walk_catalog = request.getfixturevalue(
+        "inventory_transcripts"
+    )
+    active = native.paths[LIVE]
+    if fault == "duplicate":
+        native.files.contents[parked] = native.files.contents[active]
+        message = "Expected the unique current native stream"
+    else:
+        root = active.parent
+        descriptor = native.files._identity(root)
+        root_info = SimpleNamespace(
+            st_dev=descriptor[0], st_ino=descriptor[1], st_mtime_ns=1, st_ctime_ns=1
+        )
+        entries = [
+            SimpleNamespace(
+                name=path.name,
+                stat=Mock(
+                    return_value=SimpleNamespace(
+                        st_mode=stat.S_IFREG | 0o600,
+                        st_nlink=1,
+                        st_dev=1,
+                        st_ino=inode,
+                    )
+                ),
             )
+            for inode, path in enumerate((active, parked), 20)
+        ]
+
+        def scan_directory(fd):
+            assert fd == descriptor
+            if fault == "denied":
+                raise PermissionError("injected inventory enumeration failure")
+            return nullcontext(iter(entries))
+
+        monkeypatch.setattr(source_scan, "_complete_catalog", walk_catalog)
+        monkeypatch.setattr(source_scan.os, "scandir", scan_directory)
+        monkeypatch.setattr(source_scan.os, "fstat", lambda fd: root_info)
+        if fault == "limit":
+            monkeypatch.setattr(source_scan, "_INVENTORY_MAX_ENTRIES", 1)
+        opened = Mock(
+            side_effect=AssertionError("incomplete inventory opened a transcript")
+        )
+        monkeypatch.setattr(source_scan, "_open_snapshot", opened)
+        message = "Complete metadata inventory"
+    cache = _OriginCache()
+    with (
+        native.registry.writer() as writer,
+        writer._inventory_cycle(cache) as inventory,
+        pytest.raises(BoundaryUnavailable, match=message),
+    ):
+        writer._native_delta(
+            writer.view(),
+            CaptureChange(A, LIVE, True),
+            selected,
+            None,
+            inventory=inventory,
+        )
+    if fault != "duplicate":
+        opened.assert_not_called()
+        assert not cache._entries
+        if fault == "limit":
+            entries[0].stat.assert_called_once_with(follow_symlinks=False)
+            entries[1].stat.assert_not_called()
 
 
 def test_metadata_inventory_rejects_changed_sibling_before_return_and_same_cycle_retry(
-    siblings, monkeypatch
+    request, monkeypatch
 ):
-    native, selected, parked = siblings
+    native, parked, _ = _metadata_catalog(request, monkeypatch)
+    (selected,) = (
+        locator
+        for locator in native.adapter.discover(native.roots[LIVE])
+        if locator._source._path == native.paths[LIVE]
+    )
     original = source_scan._revalidate_catalog
     cache = _OriginCache()
 
     def changed(catalog):
         monkeypatch.setattr(source_scan, "_revalidate_catalog", original)
-        parked.write_bytes(parked.read_bytes() + b"\n")
+        native.files.contents[parked] += b"\n"
         original(catalog)
 
     monkeypatch.setattr(source_scan, "_revalidate_catalog", changed)
@@ -388,55 +610,47 @@ def test_metadata_inventory_rejects_changed_sibling_before_return_and_same_cycle
 
 
 def test_cache_renews_through_same_authority_and_rejects_closed_or_foreign_writer(
-    siblings, tmp_path, monkeypatch
+    inventory_policy, monkeypatch
 ):
-    native, selected, parked = siblings
-    seen = []
-    original = source_scan._open_snapshot
-
-    @contextmanager
-    def record(path, **kwargs):
-        seen.append(path)
-        with original(path, **kwargs) as opened:
-            yield opened
-
-    monkeypatch.setattr(source_scan, "_open_snapshot", record)
+    case = inventory_policy
+    writer = case.writer
+    adapter = ProviderAdapter()
     cache = _OriginCache()
-    with native.registry.writer() as writer, writer._inventory_cycle(cache) as old:
-        writer._current_candidate(writer.view(), LIVE, selected, inventory=old)
-        assert cache._entries
-    assert parked in seen
-    seen.clear()
+    with writer._inventory_cycle(cache) as old:
+        baseline = tuple(adapter._inventory_discover(case.root, old))
+        assert len(baseline) == 2
+        assert len(cache._entries) == 2
+    assert case.parked in case.opened
+    case.opened.clear()
     with pytest.raises(_InventoryUnavailable, match="expired"):
         old._require_writer(writer)
 
-    with (
-        native.registry.writer() as restarted,
-        restarted._inventory_cycle(cache) as current,
-    ):
+    reopened = Registry(writer.root, Mock(identities=writer.lease.identities))
+    monkeypatch.setattr(reopened, "view", writer.view)
+    monkeypatch.setattr(reopened, "source_evidence", writer.source_evidence)
+    with reopened._inventory_cycle(cache) as current:
         with pytest.raises(_InventoryUnavailable, match="another writer"):
-            old._require_writer(restarted)
-        _, reopened = restarted._current_candidate(
-            restarted.view(), LIVE, selected, inventory=current
-        )
-        assert reopened.stream_ref == selected.stream_ref
-    assert parked not in seen
-    foreign = Registry(tmp_path / "foreign")
-    with foreign.writer() as writer:
-        with pytest.raises(BoundaryUnavailable, match="established"):
-            with writer._inventory_cycle(cache):
-                pytest.fail("keyless inventory opened")
-        assert writer.view().source_key_id is None
-        writer.source_evidence()
-        with pytest.raises(_InventoryUnavailable, match="another inventory"):
-            with writer._inventory_cycle(cache):
-                pytest.fail("foreign inventory opened")
+            old._require_writer(reopened)
+        assert tuple(adapter._inventory_discover(case.root, current)) == baseline
+    assert case.opened == []
+
+    foreign = case.foreign
+    empty = replace(writer.view(), sources=(), source_key_id=None)
+    monkeypatch.setattr(foreign, "view", lambda: empty)
+    with pytest.raises(BoundaryUnavailable, match="established"):
+        with foreign._inventory_cycle(cache):
+            pytest.fail("keyless inventory opened")
+    assert foreign.view().source_key_id is None
+    empty = replace(empty, source_key_id=foreign.source_evidence().key_id)
+    with pytest.raises(_InventoryUnavailable, match="another inventory"):
+        with foreign._inventory_cycle(cache):
+            pytest.fail("foreign inventory opened")
 
 
 def test_existing_journal_entry_uses_only_explicit_inventory_cycle(
-    siblings, monkeypatch
+    inventory_transcripts, monkeypatch
 ):
-    native, selected, parked = siblings
+    native, selected, parked, _ = inventory_transcripts
     opened = []
     original = source_scan._open_snapshot
 
@@ -468,52 +682,63 @@ def test_existing_journal_entry_uses_only_explicit_inventory_cycle(
 
 @pytest.mark.parametrize("age", [-1, 1_000_000])
 def test_previously_cached_origin_reauthenticates_if_clock_is_racy_or_future(
-    siblings, monkeypatch, age
+    inventory_policy, age
 ):
-    native, selected, parked = siblings
+    case = inventory_policy
+    writer = case.writer
     cache = _OriginCache()
-    opened = []
-    original = source_scan._open_snapshot
-
-    @contextmanager
-    def tracked(path, **kwargs):
-        opened.append(path)
-        with original(path, **kwargs) as observed:
-            yield observed
-
-    monkeypatch.setattr(source_scan, "_open_snapshot", tracked)
-    with native.registry.writer() as writer:
+    adapter = ProviderAdapter()
+    with writer._inventory_cycle(cache) as inventory:
+        baseline = tuple(adapter._inventory_discover(case.root, inventory))
+    assert case.parked in case.opened
+    assert cache._entries
+    case.now = case.stamp + age
+    for _ in range(2):
+        case.opened.clear()
         with writer._inventory_cycle(cache) as inventory:
-            writer._current_candidate(
-                writer.view(), LIVE, selected, inventory=inventory
-            )
-        assert parked in opened
-        observed = parked.stat()
-        instant = max(observed.st_mtime_ns, observed.st_ctime_ns) + age
-        monkeypatch.setattr(source_scan, "time_ns", lambda: instant)
-        for _ in range(2):
-            opened.clear()
-            with writer._inventory_cycle(cache) as inventory:
-                writer._current_candidate(
-                    writer.view(), LIVE, selected, inventory=inventory
-                )
-            assert parked in opened
+            assert tuple(adapter._inventory_discover(case.root, inventory)) == baseline
+        assert case.parked in case.opened
 
 
-def test_replaced_approved_root_never_reuses_a_warm_origin(siblings):
+def test_replaced_approved_root_never_reuses_a_warm_origin(siblings, monkeypatch):
     native, selected, parked = siblings
     root = parked.parent
+    nested = root / "nested"
+    nested.mkdir()
+    parked.rename(nested / parked.name)
     retired = root.with_name("retired-source-root")
     cache = _OriginCache()
     with native.registry.writer() as writer:
+        marker = root / "membership-change"
+        before = source_scan._directory_witness(root.stat())
+        revalidate_catalog = source_scan._revalidate_catalog
+
+        with monkeypatch.context() as patch:
+
+            def revalidate_after_real_change(catalog):
+                patch.setattr(source_scan, "_revalidate_catalog", revalidate_catalog)
+                marker.touch()
+                revalidate_catalog(catalog)
+
+            patch.setattr(
+                source_scan, "_revalidate_catalog", revalidate_after_real_change
+            )
+            with writer._inventory_cycle(cache) as inventory:
+                for _ in range(2):
+                    with pytest.raises(BoundaryUnavailable, match="Complete metadata"):
+                        writer._current_candidate(
+                            writer.view(), LIVE, selected, inventory=inventory
+                        )
+        assert marker.exists()
+        assert source_scan._directory_witness(root.stat()) != before
+        assert not cache._entries
+
         with writer._inventory_cycle(cache) as inventory:
             writer._current_candidate(
                 writer.view(), LIVE, selected, inventory=inventory
             )
         root.rename(retired)
-        root.mkdir()
-        for original in retired.iterdir():
-            copyfile(original, root / original.name)
+        copytree(retired, root)
         with writer._inventory_cycle(cache) as inventory:
             with pytest.raises(LedgerError, match="identity changed"):
                 writer._current_candidate(
@@ -525,41 +750,36 @@ def test_replaced_approved_root_never_reuses_a_warm_origin(siblings):
     "when", ["during-walk", "root-revalidation", "nested-revalidation"]
 )
 def test_superseded_directory_witness_holds_catalog_without_staging(
-    siblings, monkeypatch, when
+    request, monkeypatch, when
 ):
-    native, selected, parked = siblings
-    root = parked.parent
-    nested = root / "nested"
-    nested.mkdir()
-    parked.rename(nested / parked.name)
-    changed = root if when == "root-revalidation" else nested
+    native, parked, tree = _metadata_catalog(request, monkeypatch, nested=True)
+    selected = native.locator(LIVE)
+    changed = native.roots[LIVE].path if when == "root-revalidation" else parked.parent
     marker = changed / "membership-change"
-    before = source_scan._directory_witness(changed.stat())
+
+    def change_directory():
+        native.files.contents[marker] = b""
+        tree.versions[changed] += 1
 
     if when == "during-walk":
-        original = source_scan.os.scandir
-        inode = changed.stat().st_ino
 
         @contextmanager
-        def change_after_scan(directory):
-            with original(directory) as entries:
+        def change_after_scan(fd):
+            with tree.scandir(fd) as entries:
                 yield entries
-            if isinstance(directory, int) and os.fstat(directory).st_ino == inode:
-                monkeypatch.setattr(source_scan.os, "scandir", original)
-                marker.touch()
+            if tree.descriptors[fd] == changed:
+                monkeypatch.setattr(source_scan.os, "scandir", tree.scandir)
+                change_directory()
 
         monkeypatch.setattr(source_scan.os, "scandir", change_after_scan)
     else:
-        original_revalidate = source_scan._revalidate_catalog
 
-        def change_before_revalidation(catalog):
-            monkeypatch.setattr(source_scan, "_revalidate_catalog", original_revalidate)
-            marker.touch()
-            original_revalidate(catalog)
+        def revalidate(catalog):
+            monkeypatch.setattr(source_scan, "_revalidate_catalog", _REVALIDATE_CATALOG)
+            change_directory()
+            _REVALIDATE_CATALOG(catalog)
 
-        monkeypatch.setattr(
-            source_scan, "_revalidate_catalog", change_before_revalidation
-        )
+        monkeypatch.setattr(source_scan, "_revalidate_catalog", revalidate)
 
     cache = _OriginCache()
     with native.registry.writer() as writer:
@@ -569,8 +789,7 @@ def test_superseded_directory_witness_holds_catalog_without_staging(
                     writer._current_candidate(
                         writer.view(), LIVE, selected, inventory=inventory
                     )
-            assert marker.exists()
-            assert source_scan._directory_witness(changed.stat()) != before
+            assert marker in native.files.contents and tree.versions[changed] == 2
             assert not cache._entries
         with writer._inventory_cycle(cache) as refreshed:
             _, current = writer._current_candidate(
@@ -579,23 +798,43 @@ def test_superseded_directory_witness_holds_catalog_without_staging(
             assert current.stream_ref == selected.stream_ref
 
 
+def _metadata_catalog(request, monkeypatch, *, nested=False):
+    native, _, parked, walk_catalog = request.getfixturevalue("inventory_transcripts")
+    files = native.files
+    root = parked.parent
+    if nested:
+        subdirectory = root / "nested"
+        moved = subdirectory / parked.name
+        files.contents[moved] = files.contents.pop(parked)
+        parked = moved
+        tree = NativeDirectoryMetadata(files, root, subdirectory)
+    else:
+        tree = NativeDirectoryMetadata(files, root)
+
+    tree.install(monkeypatch)
+    monkeypatch.setattr(source_scan, "_complete_catalog", walk_catalog)
+    monkeypatch.setattr(source_scan, "_revalidate_catalog", _REVALIDATE_CATALOG)
+    return native, parked, tree
+
+
 def test_inventory_rechecks_root_identity_even_without_existing_registry_match(
-    siblings,
+    request,
+    monkeypatch,
 ):
-    native, _, parked = siblings
+    native, parked, _ = _metadata_catalog(request, monkeypatch)
     directory = parked.parent
-    moved = directory.with_name("moved-approved")
+    files = native.files
+    original = files._identity(directory)
+    replacement = (original[0], 999)
     cache = _OriginCache()
     with native.registry.writer() as writer:
         with writer._inventory_cycle(cache) as inventory:
-            directory.rename(moved)
-            directory.mkdir()
+            files.identities[directory] = replacement
             with pytest.raises(_InventoryUnavailable, match="Complete metadata"):
                 tuple(
                     ProviderAdapter()._inventory_discover(native.roots[LIVE], inventory)
                 )
-            directory.rmdir()
-            moved.rename(directory)
+            files.identities[directory] = original
             with pytest.raises(_InventoryUnavailable, match="Complete metadata"):
                 tuple(
                     ProviderAdapter()._inventory_discover(native.roots[LIVE], inventory)
@@ -615,22 +854,23 @@ def test_inventory_rechecks_root_identity_even_without_existing_registry_match(
 
 
 def test_midcycle_key_identity_change_refuses_existing_writer_cache(
-    siblings, monkeypatch
+    inventory_policy, monkeypatch
 ):
-    native, _, _ = siblings
-    with (
-        native.registry.writer() as writer,
-        writer._inventory_cycle(_OriginCache()) as current,
-    ):
-        assert tuple(ProviderAdapter()._inventory_discover(native.roots[LIVE], current))
+    case = inventory_policy
+    writer = case.writer
+    adapter = ProviderAdapter()
+    with writer._inventory_cycle(_OriginCache()) as current:
+        assert tuple(adapter._inventory_discover(case.root, current))
         before = writer.view()
         assert before.source_key_id is not None
         successor = sha256(before.source_key_id.encode()).hexdigest()
         monkeypatch.setattr(
             writer, "view", lambda: replace(before, source_key_id=successor)
         )
+        case.opened.clear()
         with pytest.raises(BoundaryUnavailable, match="authority changed"):
-            tuple(ProviderAdapter()._inventory_discover(native.roots[LIVE], current))
+            tuple(adapter._inventory_discover(case.root, current))
+        assert case.opened == []
 
 
 if __name__ == "__main__":

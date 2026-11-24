@@ -4,26 +4,34 @@ import os
 import plistlib
 import socket
 import sqlite3
+import stat
 import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
-from contextlib import closing
+from contextlib import closing, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from io import BytesIO
 from pathlib import Path
 from threading import Event
+from types import SimpleNamespace
+from unittest.mock import MagicMock, Mock
 from uuid import UUID
 from zipfile import ZipFile
 
 import pytest
+from test_ledger import _memory_ledger
 
 import aitm_usage
 from aitm_usage import cli, install, scopes, service
+from aitm_usage import ledger as ledger_module
 from aitm_usage.export import export_as_of
 from aitm_usage.ledger import KEY_NAME, Ledger, LedgerIdentity
 from aitm_usage.pricing import load_rate_card
 from aitm_usage.types import (
+    CommandAcknowledgment,
+    CommandReceipt,
     Diagnostic,
     DiagnosticCode,
     InboxCommand,
@@ -31,12 +39,32 @@ from aitm_usage.types import (
     ItemKind,
     ItemParent,
     LedgerBatch,
+    LedgerView,
+    MarkerDisposition,
     Provider,
     Revision,
+    SourceAnchorCommand,
+    _decode,
+    _encode,
 )
 
 PROJECT = UUID(int=940)
 CUTOFF = "2026-11-09T16:00:00+00:00"
+
+
+def _lifecycle_cli(root, monkeypatch, capsys):
+    def command(*args, expected=0):
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            ["aitm-usage", "--project", str(root), *map(str, args), "--json"],
+        )
+        result = cli.main()
+        captured = capsys.readouterr()
+        assert result == expected, captured.err
+        return json.loads(captured.out)
+
+    return command
 
 
 @pytest.fixture
@@ -71,18 +99,7 @@ def project(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr(install, "ServiceSupervisor", StoppedLaunchControl)
 
-    def command(*args, expected=0):
-        monkeypatch.setattr(
-            sys,
-            "argv",
-            ["aitm-usage", "--project", str(root), *map(str, args), "--json"],
-        )
-        result = cli.main()
-        captured = capsys.readouterr()
-        assert result == expected, captured.err
-        return json.loads(captured.out)
-
-    return registration, ledger, command
+    return registration, ledger, _lifecycle_cli(root, monkeypatch, capsys)
 
 
 def _parent(number):
@@ -127,17 +144,12 @@ def _bundle_bytes(path):
     }
 
 
-def _durable_bytes(path):
-    # SQLite read-only transactions can update reader marks in its shared index.
-    return {
-        name: data
-        for name, data in _bundle_bytes(path).items()
-        if name.suffix != ".sqlite3-shm"
-    }
-
-
-def test_fixed_snapshot_restores_exact_authority_key_and_export(project, tmp_path):
-    from aitm_usage.backup import backup, restore
+def test_fixed_snapshot_restores_exact_authority_key_and_export(
+    project, tmp_path, monkeypatch
+):
+    from aitm_usage.backup import BackupError, backup, restore
+    from aitm_usage.ledger import DATABASE_NAME, STORE_NAME
+    from aitm_usage.qualification import _verify_exports
 
     registration, ledger, command = project
     _add_anchor(registration, ledger, tmp_path, 941)
@@ -211,20 +223,37 @@ def test_fixed_snapshot_restores_exact_authority_key_and_export(project, tmp_pat
     }
     assert export_as_of(ledger.as_of(), load_rate_card(), after) == expected_export
     assert _bundle_bytes(before) == _bundle_bytes(after)
+    _verify_exports(
+        ledger.as_of(),
+        load_rate_card(),
+        expected_export.sha256,
+        expected_export.row_count,
+        (str(before), str(after)),
+    )
     assert (
         command("backup", "--output", tmp_path / "cli-backup")["sequence"]
         == saved.sequence
     )
+    before_refusal = _bundle_bytes(ledger.root)
+    with closing(sqlite3.connect(destination / STORE_NAME / DATABASE_NAME)) as database:
+        database.execute("PRAGMA user_version=94")
+    with pytest.raises(BackupError, match="Invalid private restore bundle or target"):
+        restore(destination, ledger.root, ledger.identity)
+    assert _bundle_bytes(ledger.root) == before_refusal
+    _assert_native_pending_ack_replays_after_restore(
+        registration, ledger, tmp_path, monkeypatch
+    )
+    _assert_native_pinned_backup_excludes_later_authority(
+        registration, ledger, tmp_path, monkeypatch
+    )
 
 
-def test_backup_copies_only_authority_in_its_pinned_snapshot(
-    project, tmp_path, monkeypatch
+def _assert_native_pinned_backup_excludes_later_authority(
+    registration, ledger, tmp_path, monkeypatch
 ):
     from aitm_usage import backup as recovery
 
-    registration, ledger, _ = project
-    _add_anchor(registration, ledger, tmp_path, 941)
-    late = _add_anchor(registration, ledger, tmp_path, 942, drain=False)
+    late = _add_anchor(registration, ledger, tmp_path, 943, drain=False)
     original = recovery._copy_snapshot
 
     def copy_after_commit(reader, destination):
@@ -233,53 +262,260 @@ def test_backup_copies_only_authority_in_its_pinned_snapshot(
         original(reader, destination)
 
     before = ledger.as_of().sequence
-    monkeypatch.setattr(recovery, "_copy_snapshot", copy_after_commit)
-    target = tmp_path / "backup"
-    receipt = recovery.backup(ledger, target)
+    target = tmp_path / "pinned-backup"
+    with monkeypatch.context() as observed:
+        observed.setattr(recovery, "_copy_snapshot", copy_after_commit)
+        receipt = recovery.backup(ledger, target)
     assert before == receipt.sequence < ledger.as_of().sequence
     assert not any(str(late.command_id) in str(path) for path in _bundle_bytes(target))
 
 
-def test_restore_refuses_ahead_ack_and_preserves_files(project, tmp_path):
-    from aitm_usage.backup import BackupError, backup, restore
+def _anchor_receipt_values(state, command_id):
+    ledger = state.ledger
+    payload = SourceAnchorCommand(
+        command_id,
+        PROJECT,
+        state.registration.record.configuration_ref,
+        service.checkout_anchor_reference(
+            ledger, Path(f"/fixture/anchor-{command_id}")
+        ),
+    )
+    command = InboxCommand(command_id, PROJECT, payload)
+    effect = service._anchor_revision(ledger, payload)
+    receipt = CommandReceipt(
+        command, ledger.validate_command(command), MarkerDisposition.ACCEPTED
+    )
+    key = ledger.pseudonymize("inbox-command", str(command_id))
+    return effect, Revision(key, 1, receipt)
 
-    registration, ledger, _ = project
-    bundle = tmp_path / "backup"
-    backup(ledger, bundle)
-    assert scopes.enqueue_command(ledger.root, _parent(943)) is None
-    service.collect_once(registration, ledger)
-    before = _durable_bytes(ledger.root)
-    with pytest.raises(BackupError, match="acknowledgment"):
-        restore(bundle, ledger.root, ledger.identity)
-    assert _durable_bytes(ledger.root) == before
+
+def test_backup_copies_only_authority_in_its_pinned_snapshot(
+    restore_policy, monkeypatch
+):
+    from aitm_usage import backup as recovery
+
+    state = restore_policy
+    first, first_receipt = _anchor_receipt_values(state, UUID(int=941))
+    late, late_receipt = _anchor_receipt_values(state, UUID(int=942))
+    revisions = (state.registration, first, first_receipt, late, late_receipt)
+    sequences = {
+        entry.key.value: (index // 2) + 2 for index, entry in enumerate(revisions[1:])
+    }
+    committed = {entry.key.value: entry for entry in revisions[1:]}
+    observations = []
+
+    def lookup(sql, parameters):
+        assert "JOIN commits" in sql
+        key, revision, payload, cutoff = parameters
+        assert committed[key] == _decode(payload, Revision)
+        assert committed[key].revision == revision
+        observations.append((key, cutoff))
+        sequence = sequences[key]
+        return SimpleNamespace(
+            fetchone=lambda: (sequence,) if sequence <= cutoff else None
+        )
+
+    rows = SimpleNamespace(execute=lookup)
+    monkeypatch.setattr(Ledger, "reader", lambda _: nullcontext(rows))
+    pinned = LedgerView(PROJECT, 2, revisions[:3], ())
+    assert set(recovery._authority_names(state.ledger, pinned)) == {
+        recovery.REGISTRATION_NAME,
+        f"{service.ANCHORS_NAME}/{UUID(int=941)}.json",
+        f"{service.ANCHORS_NAME}/{UUID(int=941)}.2.attested",
+    }
+    assert observations == [(first_receipt.key.value, 2), (first.key.value, 2)]
+    assert set(
+        recovery._authority_names(state.ledger, LedgerView(PROJECT, 3, revisions, ()))
+    ) == {
+        recovery.REGISTRATION_NAME,
+        f"{service.ANCHORS_NAME}/{UUID(int=941)}.json",
+        f"{service.ANCHORS_NAME}/{UUID(int=941)}.2.attested",
+        f"{service.ANCHORS_NAME}/{UUID(int=942)}.json",
+        f"{service.ANCHORS_NAME}/{UUID(int=942)}.3.attested",
+    }
+
+
+@pytest.fixture
+def restore_policy(lifecycle_policy, recovery_paths, monkeypatch):
+    from aitm_usage import backup as recovery
+    from aitm_usage.ledger import STORE_NAME
+
+    ledger, supervisor = lifecycle_policy
+    observe, _ = recovery_paths
+    source = Path("/fixture/backup")
+    staging = ledger.root / "staged"
+    for path, inodes in (
+        (ledger.root, (1, 2)),
+        (ledger.root / STORE_NAME, (1, 2, 3)),
+        (source, (1, 4)),
+        (staging, (1, 2, 5)),
+        (staging / STORE_NAME, (1, 2, 5, 6)),
+    ):
+        observe(path, *inodes)
+
+    candidate = replace(ledger, root=staging)
+    saved = recovery.BackupReceipt(
+        PROJECT, ledger.identity.key_id, ledger.identity.schema_version, 1, "a" * 64
+    )
+    inbox, acknowledgments, anchors = (
+        SimpleNamespace(fd=fd, check=Mock()) for fd in (10, 11, 12)
+    )
+    registration, configuration = _installation_registration(ledger)
+    authority = {recovery.REGISTRATION_NAME: configuration}
+    files = {
+        ledger.root: dict(authority),
+        inbox.fd: {},
+        acknowledgments.fd: {},
+        anchors.fd: {},
+    }
+
+    def child(parent, name, *, create):
+        if name == scopes.INBOX_NAME:
+            assert parent.path == ledger.root and create
+            return nullcontext(inbox)
+        if name == recovery.ANCHORS_NAME:
+            assert parent.path == ledger.root and not create
+            return nullcontext(anchors if files[anchors.fd] else None)
+        assert parent is inbox and name == scopes.ACKS_NAME and not create
+        return nullcontext(acknowledgments)
+
+    def store_files(directory):
+        assert directory in (ledger.root, staging)
+        return directory
+
+    def open_ledger(path, project_id):
+        assert path == ledger.root and project_id == PROJECT
+        return ledger
+
+    def verify_bundle(bundle, directory, expected):
+        assert (bundle, directory, expected) == (source, staging, ledger.identity)
+        return (
+            candidate,
+            state.view,
+            authority,
+            replace(saved, sequence=state.view.sequence),
+        )
+
+    def read_private(pin, name):
+        location = getattr(pin, "fd", None)
+        if location is None:
+            location = pin.path
+        return files[location][name]
+
+    swap = Mock(side_effect=AssertionError("invalid restore reached swap"))
+    monkeypatch.setattr(install, "ServiceSupervisor", Mock(return_value=supervisor))
+    monkeypatch.setattr(Ledger, "open", staticmethod(open_ledger))
+    monkeypatch.setattr(recovery, "project_guard", lambda *_: nullcontext(Mock()))
+    monkeypatch.setattr(recovery, "_lease", lambda _: nullcontext(Mock()))
+    monkeypatch.setattr(
+        recovery, "TemporaryDirectory", lambda **_: nullcontext(staging)
+    )
+    monkeypatch.setattr(recovery, "_verify_bundle", verify_bundle)
+    monkeypatch.setattr(recovery, "_state_files", store_files)
+    monkeypatch.setattr(recovery, "_private_child", child)
+    monkeypatch.setattr(recovery, "_publication", lambda _: nullcontext())
+    monkeypatch.setattr(recovery, "_swap_store", swap)
+    host = SimpleNamespace(listdir=lambda fd: list(files[fd]))
+    for module in (recovery, scopes):
+        monkeypatch.setattr(module, "os", host)
+        monkeypatch.setattr(module, "_read_private", read_private)
+
+    state = SimpleNamespace(
+        ledger=ledger,
+        candidate=candidate,
+        source=source,
+        inbox=inbox,
+        files=files,
+        acknowledgments=files[acknowledgments.fd],
+        anchors=files[anchors.fd],
+        authority=authority,
+        registration=registration,
+        view=LedgerView(PROJECT, 1, (registration,), ()),
+        swap=swap,
+    )
+    return state
+
+
+def _installation_registration(ledger):
+    config = service._Config(
+        PROJECT,
+        ("/fixture/source",),
+        ("/fixture/checkout",),
+        datetime.fromisoformat(CUTOFF),
+        (),
+        (),
+        (),
+    )
+    registration = service._registration_revision(ledger, config)
+    return registration, _encode(config, service._Config).encode()
+
+
+def test_restore_refuses_ahead_ack_and_preserves_files(restore_policy):
+    from aitm_usage import backup as recovery
+
+    state = restore_policy
+    ledger = state.ledger
+    command = _parent(943)
+    receipt = CommandReceipt(
+        command, ledger.validate_command(command), MarkerDisposition.ACCEPTED
+    )
+    state.acknowledgments[f"{command.command_id}.json"] = _encode(
+        receipt.acknowledgment, CommandAcknowledgment
+    ).encode()
+    before = {fd: dict(contents) for fd, contents in state.files.items()}
+    with pytest.raises(recovery.BackupError, match="no exact backup receipt"):
+        recovery.restore(state.source, ledger.root, ledger.identity)
+    assert state.files == before
+    state.swap.assert_not_called()
+
+
+@pytest.fixture
+def install_policy_ledger():
+    return _memory_ledger(ledger_module, PROJECT, b"i" * 32)
+
+
+@pytest.fixture
+def lifecycle_policy(install_policy_ledger, monkeypatch):
+    guard = Mock()
+    supervisor = SimpleNamespace(
+        plist_directory=Path("/fixture/services"), job=Mock(return_value=None)
+    )
+    monkeypatch.setattr(
+        install, "_lifecycle", lambda agent: nullcontext((object(), guard))
+    )
+    monkeypatch.setattr(install, "_read_private", Mock(return_value=None))
+    monkeypatch.setattr(install._Agent, "read", lambda agent: b"")
+    return install_policy_ledger, supervisor
 
 
 def test_public_restore_refuses_a_loaded_job_before_store_swap(
-    project, tmp_path, monkeypatch
+    lifecycle_policy, monkeypatch
 ):
-    from aitm_usage.backup import BackupError, backup, restore
+    from aitm_usage.backup import BackupError, restore
 
-    _, ledger, _ = project
-    source = tmp_path / "backup"
-    backup(ledger, source)
-    before = ledger.database_path.parent.stat().st_ino
-    control = install.ServiceSupervisor(ledger)
-    monkeypatch.setattr(control, "job", lambda label: object())
-    monkeypatch.setattr(install, "ServiceSupervisor", lambda _ledger: control)
-    with pytest.raises(BackupError):
+    ledger, control = lifecycle_policy
+    source = Path("/fixture/backup")
+    control.job.return_value = object()
+    open_ledger = Mock(return_value=ledger)
+    swap = Mock(side_effect=AssertionError("running service reached restore"))
+    monkeypatch.setattr(Ledger, "open", open_ledger)
+    monkeypatch.setattr(install, "ServiceSupervisor", Mock(return_value=control))
+    monkeypatch.setattr(install, "_restore_stopped", swap)
+    with pytest.raises(BackupError, match="not a stopped compatible project"):
         restore(source, ledger.root, ledger.identity)
-    assert ledger.database_path.parent.stat().st_ino == before
+    open_ledger.assert_called_once_with(ledger.root, PROJECT)
+    control.job.assert_called_once_with(f"org.aitm.usage.{PROJECT}")
+    swap.assert_not_called()
 
 
-def test_restore_replays_exact_pending_ack_after_final_anchor_commit(
-    project, tmp_path, monkeypatch
+def _assert_native_pending_ack_replays_after_restore(
+    registration, ledger, tmp_path, monkeypatch
 ):
     from aitm_usage.backup import backup, restore
     from aitm_usage.types import MarkerDisposition
 
-    registration, ledger, _ = project
-    command = _add_anchor(registration, ledger, tmp_path, 941, drain=False)
-    anchor, hidden = tmp_path / "anchor-941", tmp_path / "held"
+    command = _add_anchor(registration, ledger, tmp_path, 942, drain=False)
+    anchor, hidden = tmp_path / "anchor-942", tmp_path / "held"
     anchor.rename(hidden)
     service.collect_once(registration, ledger)
     assert ledger.command_receipt(command).disposition is MarkerDisposition.PENDING
@@ -296,7 +532,7 @@ def test_restore_replays_exact_pending_ack_after_final_anchor_commit(
     assert final.disposition is MarkerDisposition.ACCEPTED
     inbox = ledger.root / scopes.INBOX_NAME
     before = _bundle_bytes(inbox)
-    bundle = tmp_path / "backup"
+    bundle = tmp_path / "pending-ack-backup"
     saved = backup(ledger, bundle)
     assert restore(bundle, ledger.root, ledger.identity).sequence == saved.sequence
     assert _bundle_bytes(inbox) == before
@@ -306,25 +542,114 @@ def test_restore_replays_exact_pending_ack_after_final_anchor_commit(
     assert ledger.as_of().sequence == saved.sequence
 
 
-def test_restore_refuses_mismatched_private_proof_or_identity(project, tmp_path):
-    from aitm_usage.backup import BackupError, backup, restore
+def test_restore_replays_exact_pending_ack_after_final_anchor_commit(
+    restore_policy, monkeypatch
+):
+    from aitm_usage import backup as recovery
+    from aitm_usage.backup import BackupError, restore
 
-    registration, ledger, _ = project
-    _add_anchor(registration, ledger, tmp_path, 941)
-    target = tmp_path / "backup"
-    backup(ledger, target)
+    state = restore_policy
+    ledger = state.ledger
+    effect, revision = _anchor_receipt_values(state, UUID(int=942))
+    final = revision.record
+    command = final.command
+    pending = replace(final, disposition=MarkerDisposition.PENDING)
+    state.view = LedgerView(
+        PROJECT,
+        3,
+        (
+            state.registration,
+            replace(revision, record=pending),
+            effect,
+            replace(revision, revision=2),
+        ),
+        (),
+    )
+    name = f"{command.command_id}.json"
+    state.files[state.inbox.fd][name] = scopes._publication_bytes(command, None)
+    state.acknowledgments[name] = _encode(
+        pending.acknowledgment, CommandAcknowledgment
+    ).encode()
+    monkeypatch.setattr(Ledger, "as_of", lambda _: state.view)
+    monkeypatch.setattr(service, "_pin_directory", recovery._pin_directory)
+
+    def configuration(pin, name):
+        assert pin.path == state.candidate.root and name == recovery.REGISTRATION_NAME
+        return state.authority[name]
+
+    monkeypatch.setattr(service, "_read_private", configuration)
+    observed_live = pending
+
+    def read_receipt(handle, requested):
+        assert requested == command
+        return final if handle is state.candidate else observed_live
+
+    monkeypatch.setattr(Ledger, "command_receipt", read_receipt)
+    original = {fd: dict(files) for fd, files in state.files.items()}
+    with pytest.raises(BackupError, match="conflicts with restored history"):
+        restore(state.source, ledger.root, ledger.identity)
+    state.swap.assert_not_called()
+    assert state.files == original
+
+    observed_live = final
+    state.swap.side_effect = None
+    assert restore(state.source, ledger.root, ledger.identity).sequence == 3
+    state.swap.assert_called_once()
+    assert state.files == original
+
+
+def test_restore_refuses_mismatched_private_proof_or_identity(
+    restore_policy, monkeypatch
+):
+    from aitm_usage.backup import BackupError, restore
+
+    state = restore_policy
+    ledger = state.ledger
+    open_ledger = Ledger.open
+
+    def inspect_identity(path, project):
+        if project == UUID(int=941):
+            assert path == ledger.root
+            return ledger
+        return open_ledger(path, project)
+
+    monkeypatch.setattr(Ledger, "open", staticmethod(inspect_identity))
     for expected in (
         LedgerIdentity(UUID(int=941), ledger.identity.key_id),
         LedgerIdentity(PROJECT, "sha256:" + "1" * 64),
     ):
-        with pytest.raises(BackupError):
-            restore(target, ledger.root, expected)
-    proof = next((ledger.root / "source-anchors").glob("*.attested"))
-    proof.write_bytes(b"mismatched")
-    before = _bundle_bytes(ledger.root)
+        with pytest.raises(BackupError, match="target identity mismatch"):
+            restore(state.source, ledger.root, expected)
+
+    command_id = UUID(int=941)
+    anchor = "/fixture/anchor-941"
+    proposal = service._AnchorProposal(command_id, PROJECT, anchor)
+    payload = SourceAnchorCommand(
+        command_id,
+        PROJECT,
+        state.registration.record.configuration_ref,
+        service.checkout_anchor_reference(ledger, Path(anchor)),
+    )
+    command = InboxCommand(command_id, PROJECT, payload)
+    effect = service._anchor_revision(ledger, payload)
+    receipt = CommandReceipt(
+        command, ledger.validate_command(command), MarkerDisposition.ACCEPTED
+    )
+    receipt_key = ledger.pseudonymize("inbox-command", str(command_id))
+    state.view = LedgerView(
+        PROJECT, 2, (state.registration, effect, Revision(receipt_key, 1, receipt)), ()
+    )
+    proof, expected_bytes = service._anchor_attestation(ledger, command, effect, 2)
+    proposal_name = f"{command_id}.json"
+    proposal_bytes = _encode(proposal, service._AnchorProposal).encode()
+    state.authority[f"{service.ANCHORS_NAME}/{proposal_name}"] = proposal_bytes
+    state.authority[f"{service.ANCHORS_NAME}/{proof}"] = expected_bytes
+    state.anchors.update({proposal_name: proposal_bytes, proof: b"mismatched"})
+    before = {fd: dict(contents) for fd, contents in state.files.items()}
     with pytest.raises(BackupError, match="authority"):
-        restore(target, ledger.root, ledger.identity)
-    assert _bundle_bytes(ledger.root) == before
+        restore(state.source, ledger.root, ledger.identity)
+    assert state.files == before
+    state.swap.assert_not_called()
 
 
 def test_restore_fences_publication_until_atomic_swap(project, tmp_path, monkeypatch):
@@ -338,10 +663,25 @@ def test_restore_fences_publication_until_atomic_swap(project, tmp_path, monkeyp
     inbox_path = ledger.root / "inbox"
     original_publication = scopes._publication
 
-    def swap(*args):
+    def swap(project_pin, staged_pin):
+        live_directory = project_pin.path / recovery.STORE_NAME
+        staged_directory = staged_pin.path / recovery.STORE_NAME
+        live_before = live_directory.stat()
+        staged_before = staged_directory.stat()
+        synced = []
+
+        def fsync(fd):
+            assert os.path.samestat(staged_before, live_directory.stat())
+            assert os.path.samestat(live_before, staged_directory.stat())
+            os.fsync(fd)
+            synced.append(fd)
+
         staged.set()
         assert proceed.wait(5)
-        return original(*args)
+        with monkeypatch.context() as observed:
+            observed.setattr(recovery, "os", SimpleNamespace(fsync=fsync))
+            original(project_pin, staged_pin)
+        assert synced == [staged_pin.fd, project_pin.fd]
 
     def publication(inbox):
         assert inbox.path == inbox_path
@@ -366,41 +706,62 @@ def test_restore_fences_publication_until_atomic_swap(project, tmp_path, monkeyp
         assert publish.result(timeout=5) is None
     service.collect_once(registration, ledger)
     assert ledger.command_receipt(_parent(944)).disposition == "accepted"
+    _assert_native_restore_refuses_replaced_stage(ledger, tmp_path, monkeypatch)
 
 
 def test_restore_refuses_incompatible_store_and_interrupted_staging(
-    project, tmp_path, monkeypatch
+    restore_policy, monkeypatch
 ):
     from aitm_usage import backup as recovery
-    from aitm_usage.ledger import DATABASE_NAME, STORE_NAME
 
-    _, ledger, _ = project
-    target = tmp_path / "backup"
-    recovery.backup(ledger, target)
-    before = _bundle_bytes(ledger.root)
-
-    def interrupt(*args):
-        raise OSError("injected staging failure")
-
+    state = restore_policy
+    ledger = state.ledger
+    before = {path: files.copy() for path, files in state.files.items()}
+    interrupted = Mock(side_effect=OSError("injected staging failure"))
     with monkeypatch.context() as patch:
-        patch.setattr(recovery, "_swap_store", interrupt)
-        with pytest.raises(recovery.BackupError):
-            recovery.restore(target, ledger.root, ledger.identity)
-    assert _bundle_bytes(ledger.root) == before
-    with closing(sqlite3.connect(target / STORE_NAME / DATABASE_NAME)) as database:
-        database.execute("PRAGMA user_version=94")
-    with pytest.raises(recovery.BackupError):
-        recovery.restore(target, ledger.root, ledger.identity)
-    assert _bundle_bytes(ledger.root) == before
+        patch.setattr(recovery, "_swap_store", interrupted)
+        with pytest.raises(
+            recovery.BackupError, match="Invalid private restore bundle or target"
+        ):
+            recovery.restore(state.source, ledger.root, ledger.identity)
+    interrupted.assert_called_once()
+    assert state.files == before
+
+    connection = Mock()
+    connection.execute.return_value.fetchone.return_value = (94,)
+    observed_database = Mock(return_value=nullcontext(connection))
+
+    def verify_candidate(source, staged, expected):
+        assert source == state.source and expected == ledger.identity
+        recovery._candidate(staged, expected)
+
+    monkeypatch.setattr(recovery, "_verify_bundle", verify_candidate)
+    create_lock = Mock(return_value=nullcontext())
+    check_path = Mock()
+    monkeypatch.setattr(recovery, "_create_file", create_lock)
+    monkeypatch.setattr(recovery, "_check_path", check_path)
+    monkeypatch.setattr(recovery, "_connection", observed_database)
+    with pytest.raises(
+        recovery.BackupError, match="Invalid private restore bundle or target"
+    ):
+        recovery.restore(state.source, ledger.root, ledger.identity)
+    staged = ledger.root / "staged"
+    create_lock.assert_called_once_with(staged / recovery.LOCK_NAME)
+    database = staged / recovery._DATABASE
+    check_path.assert_called_once_with(database)
+    observed_database.assert_called_once_with(database, write=True)
+    connection.execute.assert_called_once_with("PRAGMA user_version")
+    assert state.files == before
+    state.swap.assert_not_called()
 
 
-def test_restore_refuses_replaced_candidate_store(project, tmp_path, monkeypatch):
+def _assert_native_restore_refuses_replaced_stage(ledger, tmp_path, monkeypatch):
     from aitm_usage import backup as recovery
 
-    _, ledger, _ = project
-    target = tmp_path / "backup"
+    target = tmp_path / "replaced-candidate-backup"
     recovery.backup(ledger, target)
     before = ledger.database_path.parent.stat().st_ino
+    view = ledger.as_of()
     original = recovery._validate_queue
 
     def replace_stage(project, inbox, live, candidate, view):
@@ -409,11 +770,34 @@ def test_restore_refuses_replaced_candidate_store(project, tmp_path, monkeypatch
         directory.rename(directory.with_name("displaced"))
         directory.mkdir(mode=0o700)
 
-    monkeypatch.setattr(recovery, "_validate_queue", replace_stage)
-    with pytest.raises(recovery.BackupError):
-        recovery.restore(target, ledger.root, ledger.identity)
+    with monkeypatch.context() as fault:
+        fault.setattr(recovery, "_validate_queue", replace_stage)
+        with pytest.raises(recovery.BackupError):
+            recovery.restore(target, ledger.root, ledger.identity)
     assert ledger.database_path.parent.stat().st_ino == before
-    assert ledger.as_of().sequence == 1
+    assert ledger.as_of() == view
+
+
+def test_restore_refuses_replaced_candidate_store(restore_policy, monkeypatch):
+    from aitm_usage import backup as recovery
+
+    state = restore_policy
+    ledger = state.ledger
+    pinned = recovery._pin_directory
+    with pinned(state.candidate.database_path.parent) as stage:
+        original = recovery._validate_queue
+
+        def replace_stage(*args):
+            original(*args)
+            stage.check.side_effect = OSError("staged store identity changed")
+
+        monkeypatch.setattr(recovery, "_validate_queue", replace_stage)
+        before = {fd: dict(files) for fd, files in state.files.items()}
+        with pytest.raises(recovery.BackupError, match="Invalid private restore"):
+            recovery.restore(state.source, ledger.root, ledger.identity)
+    stage.check.assert_called_once()
+    state.swap.assert_not_called()
+    assert state.files == before
 
 
 def test_backup_and_restore_reject_inherited_acl(project, tmp_path, grant_extra_acl):
@@ -437,11 +821,11 @@ def test_backup_and_restore_reject_inherited_acl(project, tmp_path, grant_extra_
         restore(blocked / "backup", ledger.root, ledger.identity)
 
 
-def _wheel(parent, suffix, *, incompatible=False, legacy=False):
+def _wheel(parent, suffix, *, incompatible=False, version="0.1.0"):
     directory = parent / suffix
     directory.mkdir()
-    distribution = "aitm_usage-0.1.0.dist-info"
-    filename = directory / "aitm_usage-0.1.0-py3-none-any.whl"
+    distribution = f"aitm_usage-{version}.dist-info"
+    filename = directory / f"aitm_usage-{version}-py3-none-any.whl"
     package = Path(aitm_usage.__file__).parent
     with ZipFile(filename, "w") as wheel:
         names = []
@@ -464,21 +848,10 @@ def _wheel(parent, suffix, *, incompatible=False, legacy=False):
                 )
             if incompatible and name == "aitm_usage/ledger.py":
                 data = data.replace(b"SCHEMA_VERSION = 1", b"SCHEMA_VERSION = 94")
-            if legacy and name == "aitm_usage/service.py":
-                start = data.index(b"class _Status(_LegacyStatus):")
-                end = data.index(b"def _read_status", start)
-                data = (
-                    data[:start]
-                    + b"class _Status(_LegacyStatus):\n    pass\n\n\n"
-                    + data[end:]
-                )
-                data = data.replace(
-                    b"            self.mode,\n            os.getpid(),\n", b""
-                )
             wheel.writestr(name, data)
             names.append(name)
         metadata = {
-            "METADATA": "Metadata-Version: 2.1\nName: aitm-usage\nVersion: 0.1.0\nRequires-Python: >=3.13\n",
+            "METADATA": f"Metadata-Version: 2.1\nName: aitm-usage\nVersion: {version}\nRequires-Python: >=3.13\n",
             "WHEEL": "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
             "entry_points.txt": "[console_scripts]\naitm-usage = aitm_usage.cli:main\n\n",
         }
@@ -513,7 +886,6 @@ class _FakeLaunchControl:
         self.fail_digest = "never-match"
         self.defer_removal = False
         self.removal_requested = False
-        self.after_service_poll = None
 
     def close(self):
         if self.child is not None:
@@ -588,25 +960,12 @@ class _FakeLaunchControl:
         self.loaded = install.ServiceJob(
             label, path, Path(program), tuple(value["ProgramArguments"]), self.child.pid
         )
-        if mode == "one-shot":
-            result = subprocess.run(
-                [program, "--project", str(self.ledger.root), "collect-once", "--json"],
-                env=install._ENVIRONMENT,
-                capture_output=True,
-                timeout=10,
-            )
-            assert result.returncode == 0, result.stderr
-            witness = service.status_report(self.ledger.root, self.ledger)
-            assert witness["producer_mode"] == "one-shot"
-            assert witness["producer_pid"] != self.child.pid
-        elif mode == "fresh":
+        if mode == "fresh":
             deadline = time.monotonic() + 10
             while time.monotonic() < deadline:
                 witness = service.status_report(self.ledger.root, self.ledger)
                 if witness["producer_pid"] == self.child.pid:
                     assert witness["producer_mode"] == "service"
-                    if self.after_service_poll is not None:
-                        self.after_service_poll(Path(program))
                     return
                 assert self.child.poll() is None
                 time.sleep(0.02)
@@ -622,9 +981,23 @@ def launch_control(project, tmp_path, monkeypatch):
 
 
 def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_control):
-    _, ledger, command = project
+    from test_activation_receipt import (
+        _assert_running_qualification,
+        _collector_for_lifecycle,
+        _recovery_evidence,
+        _unbound_claude_source,
+    )
+    from test_export import _observation
+    from test_service import _fixtures
+
+    from aitm_usage import qualification
+    from aitm_usage.backup import BackupReceipt, backup
+
+    registration, ledger, command = project
+    _fixtures(registration.source_roots[0], registration.checkout_anchors[0])
+    _unbound_claude_source(registration, tmp_path / "other-checkout")
     first, first_digest = _wheel(tmp_path, "first")
-    second, second_digest = _wheel(tmp_path, "second")
+    second, second_digest = _wheel(tmp_path, "second", version="0.1.1")
     incompatible, incompatible_digest = _wheel(
         tmp_path, "incompatible", incompatible=True
     )
@@ -647,6 +1020,15 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
             expected=expected,
         )
 
+    def lifecycle(result):
+        result = result.copy()
+        if result["backup"] is not None:
+            record = result["backup"]
+            result["backup"] = BackupReceipt(
+                **{**record, "project_id": UUID(record["project_id"])}
+            )
+        return install.InstallReceipt(**result)
+
     assert (
         activate("install", first, first_digest, flags=("--dry-run",))["status"]
         == "planned"
@@ -656,6 +1038,8 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
         activate("install", first, "0" * 64, expected=1)["status"] == "install-failed"
     )
     assert not list(launch.iterdir())
+    usage, _ = _observation(ledger, "first")
+    ledger.apply(LedgerBatch((usage,)))
     installed = activate("install", first, first_digest)
     assert installed["wheel_sha256"] == first_digest
     assert installed["poll_interval_seconds"] == 15
@@ -667,6 +1051,8 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert installed["producer_mode"] == "service"
     assert installed["producer_pid"] == process.pid
     assert installed["producer_started"] == process.started.isoformat()
+    initial = lifecycle(installed)
+    _assert_running_qualification(registration, ledger, initial, control, tmp_path)
     assert (
         command(
             "service",
@@ -703,15 +1089,33 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert path.read_bytes() == exact_plist and control.loaded == previous
     assert len(control.bootstraps) == 1
 
+    rates = load_rate_card()
+    bundle = tmp_path / "rehearsal-backup"
+    saved = backup(ledger, bundle)
+    backed_up_at = datetime.now(UTC)
+
+    def snapshot(stage):
+        target = tmp_path / stage
+        return str(target), export_as_of(ledger.as_of(saved.sequence), rates, target)
+
+    before, exported = snapshot("rehearsal-before")
+    stopped = install.stop_agent(ledger, control)
+    recovered = install.restore_for_agent(ledger, bundle, control)
+    restored_at = datetime.now(UTC)
+    assert usage in ledger.as_of(saved.sequence).current
+    after_restore, _ = snapshot("rehearsal-restored")
+    resumed = lifecycle(activate("install", first, first_digest))
+    previous = control.loaded
+
     control.startup = "stale"
     failed = activate("upgrade", second, second_digest, expected=1)
     assert failed["status"] == "activation-rolled-back"
     assert path.read_bytes() == exact_plist
     assert replace(control.loaded, pid=None) == replace(previous, pid=None)
     assert control.loaded.pid != previous.pid
-    assert len(control.bootstraps) == 3
+    assert len(control.bootstraps) == 4
     assert first_digest in control.bootstraps[0]
-    assert second_digest in control.bootstraps[1]
+    assert second_digest in control.bootstraps[-2]
     assert all(Path(item).exists() for item in control.bootstraps)
 
     control.startup = "no-heartbeat"
@@ -727,7 +1131,7 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
             "service",
             "prune",
             "--version",
-            "0.1.0",
+            "0.1.1",
             "--wheel-sha256",
             second_digest,
             "--backup",
@@ -757,6 +1161,7 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert (
         ledger.root / "service-backups" / success["backup_id"] / "manifest.json"
     ).is_file()
+    after_upgrade, _ = snapshot("rehearsal-upgraded")
     prune_bundle = tmp_path / "prune-backup"
     retained = command("backup", "--output", prune_bundle)
     pruned = command(
@@ -773,6 +1178,30 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert pruned["backup"]["manifest_sha256"] == retained["manifest_sha256"]
     assert not previous.program.exists()
     assert (ledger.root / "wheels" / first_digest / first.name).is_file()
+
+    rollback = lifecycle(activate("upgrade", first, first_digest))
+    after_rollback, _ = snapshot("rehearsal-rolled-back")
+    proof = qualification._RecoveryProof(
+        str(ledger.root),
+        str(bundle),
+        initial,
+        stopped,
+        qualification._BackupProof("backed-up", **saved.as_dict()),
+        qualification._BackupProof("restored", **recovered.as_dict()),
+        resumed,
+        lifecycle(success),
+        rollback,
+        before,
+        after_restore,
+        after_upgrade,
+        after_rollback,
+    )
+    qualification._verify_recovery(
+        _recovery_evidence(proof, exported, backed_up_at, restored_at),
+        proof,
+        _collector_for_lifecycle(initial),
+        rates,
+    )
     original_key = ledger.key_path.read_bytes()
     assert (
         command("restore", "--backup", prune_bundle, expected=1)["status"]
@@ -794,83 +1223,249 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert ledger.as_of().sequence == success["backup"]["sequence"]
 
 
-def test_one_shot_from_other_pid_cannot_certify_install(
-    project, tmp_path, launch_control
-):
-    _, _, command = project
-    wheel, digest = _wheel(tmp_path, "one-shot")
-    launch_control.startup = "one-shot"
-    launch_control.fail_digest = digest
-    result = command(
-        "service",
-        "install",
-        "--wheel",
-        wheel,
-        "--wheel-sha256",
-        digest,
-        "--interpreter",
-        Path(sys._base_executable).resolve(strict=True),
-        expected=1,
+@pytest.fixture
+def activation_policy(install_policy_ledger, runtime_receipt, monkeypatch, capsys):
+    case = runtime_receipt
+    ledger = replace(install_policy_ledger, root=case.ledger.root)
+    runtime = case.runtime
+    case.set_console(install._launcher(case.python, case.site))
+    registration, configuration = _installation_registration(ledger)
+    view = LedgerView(PROJECT, 1, (registration,), ())
+    files = {service.REGISTRATION_NAME: configuration}
+    service_files = {}
+    recovery_records = {}
+    pin = Mock(fd=73)
+    control = SimpleNamespace(
+        plist_directory=Path("/fixture/services"),
+        activation_timeout=0,
+        loaded=None,
+        disabled=False,
+        bootstraps=[],
+        after_bootstrap=lambda: None,
     )
+    after = datetime(2026, 11, 20, tzinfo=UTC)
+    clock = Mock(wraps=datetime)
+    clock.now.return_value = after
+    process = install.ManagedProcess(5301, after, runtime.interpreter)
+    status = service._Status(
+        PROJECT,
+        registration.record.configuration_ref,
+        after + timedelta(seconds=1),
+        runtime.version,
+        runtime.interpreter_version,
+        service.CollectionReport(view.sequence, 0, 0, 0, 0, 0, False),
+        (),
+        service._ProducerMode.SERVICE,
+        process.pid,
+    )
+    control.status = status
+    owned = install._Agent(ledger, control)
+
+    def bootstrap(path, interpreter):
+        assert (path, interpreter) == (owned.plist, runtime.interpreter)
+        assert not control.disabled and control.loaded is None
+        executable = owned.program(service_files[path])
+        arguments = tuple(owned.payload(executable)["ProgramArguments"])
+        control.loaded = install.ServiceJob(
+            owned.label, path, executable, arguments, process.pid
+        )
+        files[service.STATUS_NAME] = _encode(control.status, service._Status).encode()
+        clock.now.return_value = after + timedelta(seconds=2)
+        control.bootstraps.append(path)
+        control.after_bootstrap()
+
+    def bootout(label):
+        assert label == owned.label and control.disabled
+        control.loaded = None
+
+    control.job = lambda label: control.loaded if label == owned.label else None
+    control.process = lambda pid: process if pid == process.pid else None
+    control.is_disabled = lambda _: control.disabled
+    control.disable = lambda _: setattr(control, "disabled", True)
+    control.enable = lambda _: setattr(control, "disabled", False)
+    control.bootstrap = bootstrap
+    control.bootout = bootout
+
+    def write_plist(agent, data, expected):
+        assert agent.read() == expected
+        if data:
+            agent.program(data)
+            service_files[agent.plist] = data
+        else:
+            del service_files[agent.plist]
+
+    def publish_record(directory, name, data):
+        assert directory is pin and name not in recovery_records
+        recovery_records[name] = data
+        return True
+
+    def remove_record(name, *, dir_fd):
+        assert dir_fd == pin.fd
+        del recovery_records[name]
+
+    read_owned = install._read_owned
+    read_private = install._read_private
+    pin_directory = install._pin_directory
+    monkeypatch.setattr(install, "datetime", clock)
+    monkeypatch.setattr(install, "_validated_path", Mock())
+    monkeypatch.setattr(
+        install, "_path_exists", lambda path: path == owned.plist.parent
+    )
+    monkeypatch.setattr(
+        install,
+        "_read_owned",
+        lambda path, **kwargs: (
+            service_files.get(path)
+            if path == owned.plist
+            else read_owned(path, **kwargs)
+        ),
+    )
+    monkeypatch.setattr(
+        install,
+        "_read_private",
+        lambda directory, name: (
+            recovery_records.get(name)
+            if directory is pin
+            else read_private(directory, name)
+        ),
+    )
+    monkeypatch.setattr(
+        install,
+        "_pin_directory",
+        lambda path: nullcontext(pin) if path == ledger.root else pin_directory(path),
+    )
+    monkeypatch.setattr(install, "_lifecycle", lambda _: nullcontext((pin, pin)))
+    monkeypatch.setattr(install, "project_guard", lambda *_: nullcontext(pin))
+    monkeypatch.setattr(install, "_lease", lambda *_: nullcontext(pin))
+    monkeypatch.setattr(install, "_publish", publish_record)
+    monkeypatch.setattr(
+        install, "os", SimpleNamespace(unlink=remove_record, fsync=Mock())
+    )
+    monkeypatch.setattr(install._Agent, "write", write_plist)
+    monkeypatch.setattr(
+        install,
+        "_prepare",
+        lambda actual, wheel, interpreter: install._read_runtime(
+            actual, case.directory, interpreter=interpreter
+        ),
+    )
+    monkeypatch.setattr(service, "_pin_directory", lambda _: nullcontext(pin))
+    monkeypatch.setattr(service, "_read_private", lambda _, name: files.get(name))
+    monkeypatch.setattr(service, "version", lambda _: runtime.version)
+    monkeypatch.setattr(Ledger, "open", lambda *_: ledger)
+    monkeypatch.setattr(Ledger, "as_of", lambda _: view)
+    monkeypatch.setattr(cli, "open_project", lambda _: ledger)
+    monkeypatch.setattr(cli, "ServiceSupervisor", lambda _: control)
+
+    def invoke(action):
+        return _lifecycle_cli(ledger.root, monkeypatch, capsys)(
+            "service",
+            action,
+            "--wheel",
+            Path("/fixture/candidate.whl"),
+            "--wheel-sha256",
+            case.wheel.digest,
+            "--interpreter",
+            runtime.interpreter,
+            expected=1,
+        )
+
+    return SimpleNamespace(
+        runtime_files=case,
+        ledger=ledger,
+        control=control,
+        process=process,
+        owned=owned,
+        project_files=files,
+        service_files=service_files,
+        records=recovery_records,
+        invoke=invoke,
+        command=_lifecycle_cli(ledger.root, monkeypatch, capsys),
+    )
+
+
+def test_one_shot_from_other_pid_cannot_certify_install(activation_policy):
+    case = activation_policy
+    process = case.process
+    control = case.control
+    control.status = replace(
+        control.status,
+        producer_mode=service._ProducerMode.ONE_SHOT,
+        producer_pid=process.pid + 1,
+    )
+    result = case.invoke("install")
     assert result["status"] == "activation-rolled-back"
-    assert launch_control.loaded is None
-    assert not list(launch_control.plist_directory.iterdir())
+    observed = service.status_report(case.ledger.root, case.ledger)
+    assert observed["producer_mode"] == "one-shot"
+    assert observed["producer_pid"] == control.status.producer_pid != process.pid
+    assert observed["status_sequence"] == case.ledger.as_of().sequence
+    assert control.loaded is None and not control.disabled
+    assert not case.service_files and not case.records
 
 
-def test_unapproved_runtime_hook_never_executes(project, tmp_path, launch_control):
-    _, ledger, command = project
-    wheel, digest = _wheel(tmp_path, "hook")
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
-    (site,) = runtime.executable.parents[1].glob("lib/python*/site-packages")
-    marker = tmp_path / "unexpected-hook-ran"
-    (site / "sitecustomize.py").write_text(f"open({str(marker)!r}, 'w').close()\n")
-    result = command(
-        "service",
-        "install",
-        "--wheel",
-        wheel,
-        "--wheel-sha256",
-        digest,
-        "--interpreter",
-        interpreter,
-        expected=1,
-    )
-    assert result["status"] == "install-failed"
-    assert not marker.exists()
-    assert not launch_control.bootstraps
+def test_unapproved_runtime_hook_never_executes(request, monkeypatch):
+    probe = install._probe_runtime
+    case = request.getfixturevalue("runtime_receipt")
+    case.set_console(install._launcher(case.python, case.site))
+    environment = case.executable.parents[1]
+    minor = install._minor(case.python_version)
+    entries = {
+        environment: ["bin", "include", "lib", "pyvenv.cfg"],
+        environment / "bin": ["aitm-usage", "python"],
+        environment / "include": [f"python{minor}"],
+        environment / "include" / f"python{minor}": [],
+        environment / "lib": [case.site.parent.name],
+        case.site.parent: [case.site.name],
+        case.site: ["sitecustomize.py"],
+    }
+    list_directory = Mock(side_effect=entries.__getitem__)
+    invoke = Mock(side_effect=AssertionError("Unapproved runtime was probed"))
+    monkeypatch.setattr(install, "_probe_runtime", probe)
+    monkeypatch.setattr(install, "_open_parent", lambda path: nullcontext(path.parent))
+    monkeypatch.setattr(install, "os", SimpleNamespace(listdir=list_directory))
+    monkeypatch.setattr(install, "_run_python", invoke)
+
+    with pytest.raises(
+        install.InstallError, match="Unexpected installed runtime entry"
+    ):
+        install._read_runtime(case.ledger, case.directory)
+
+    list_directory.assert_any_call(case.site)
+    invoke.assert_not_called()
 
 
 def test_runtime_replaced_after_bootstrap_cannot_certify_readiness(
-    project, tmp_path, launch_control
+    activation_policy, monkeypatch
 ):
-    _, _, command = project
-    wheel, digest = _wheel(tmp_path, "changed-after-start")
+    case = activation_policy
+    runtime = case.runtime_files
+    tampered = b"#!/bin/sh\nexit 1\n"
+    read_owned = install._read_owned
+    launcher_reads = []
 
-    def replace_launcher(program):
-        program.write_bytes(b"#!/bin/sh\nexit 1\n")
+    def read_runtime_file(path, **options):
+        data = read_owned(path, **options)
+        if path == runtime.executable:
+            launcher_reads.append(data)
+        return data
 
-    launch_control.after_service_poll = replace_launcher
-    result = command(
-        "service",
-        "install",
-        "--wheel",
-        wheel,
-        "--wheel-sha256",
-        digest,
-        "--interpreter",
-        Path(sys._base_executable).resolve(strict=True),
-        expected=1,
+    monkeypatch.setattr(install, "_read_owned", read_runtime_file)
+    case.control.after_bootstrap = lambda: runtime.set_console(
+        tampered, update_receipt=False
     )
+    result = case.invoke("install")
     assert result["status"] == "activation-rolled-back"
-    assert launch_control.loaded is None
-    assert not list(launch_control.plist_directory.iterdir())
+    assert launcher_reads[-1] == tampered
+    assert launcher_reads[0] == install._launcher(runtime.python, runtime.site)
+    assert case.control.bootstraps == [case.owned.plist]
+    assert case.control.loaded is None
+    assert not case.service_files and not case.records
 
 
 def test_installed_console_ignores_environment_and_working_directory_hooks(
-    project, tmp_path
+    project, tmp_path, launch_control
 ):
-    _, ledger, _ = project
+    _, ledger, command = project
     wheel, digest = _wheel(tmp_path, "isolated-launch")
     interpreter = Path(sys._base_executable).resolve(strict=True)
     runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
@@ -901,73 +1496,11 @@ def test_installed_console_ignores_environment_and_working_directory_hooks(
     assert result.stdout == b"aitm-usage 0.1.0\n"
     assert not marker.exists()
 
-
-def test_upgrade_refuses_witness_incapable_running_prior(
-    project, tmp_path, launch_control
-):
-    _, ledger, command = project
-    wheel, digest = _wheel(tmp_path, "legacy", legacy=True)
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    prior = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
-    agent = install._Agent(ledger, launch_control)
-    plist = plistlib.dumps(agent.payload(prior.executable))
-    agent.write(plist, b"")
-    args = tuple(plistlib.loads(plist)["ProgramArguments"])
-    child = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    launch_control.child = child
-    launch_control.loaded = install.ServiceJob(
-        agent.label, agent.plist, prior.executable, args, child.pid
-    )
-    deadline = time.monotonic() + 5
-    while time.monotonic() < deadline:
-        status = service.status_report(ledger.root, ledger)
-        if status["heartbeat"] is not None:
-            break
-        assert child.poll() is None
-        time.sleep(0.02)
-    assert status["heartbeat"] is not None
-    assert status["producer_mode"] is status["producer_pid"] is None
-    candidate, next_digest = _wheel(tmp_path, "next")
-    result = command(
-        "service",
-        "upgrade",
-        "--wheel",
-        candidate,
-        "--wheel-sha256",
-        next_digest,
-        "--interpreter",
-        interpreter,
-        expected=1,
-    )
-    assert result["status"] == "witness-unavailable"
-    assert child.poll() is None and not launch_control.disabled
-    assert agent.plist.read_bytes() == plist
-    assert not launch_control.bootstraps
-
-    # Simulate an older interrupted upgrade whose record predates the refusal.
-    launch_control.close()
-    prepared = install._prepare(
-        ledger, install._wheel(candidate, next_digest), interpreter
-    )
-    pending_plist = plistlib.dumps(agent.payload(prepared.executable))
-    agent.write(pending_plist, plist)
-    pending = install._Operation(plist, pending_plist, True, False, "", "")
-    record = tmp_path / "control" / f"{PROJECT}.service-recovery.plist"
-    record.write_bytes(pending.encode())
-    record.chmod(0o600)
-    assert command("service", "stop", expected=1)["status"] == "recovery-required"
-    assert agent.plist.read_bytes() == plist
-    assert record.read_bytes() == pending.encode()
-    assert launch_control.disabled and not launch_control.bootstraps
-
-
-def test_same_pid_with_different_start_cannot_certify_health(
-    project, tmp_path, launch_control, monkeypatch
-):
-    _, ledger, command = project
-    wheel, digest = _wheel(tmp_path, "incarnation")
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    command(
+    (
+        install._site(runtime.executable.parents[1], runtime.interpreter_version)
+        / "sitecustomize.py"
+    ).write_text(hook)
+    refused = command(
         "service",
         "install",
         "--wheel",
@@ -976,100 +1509,383 @@ def test_same_pid_with_different_start_cannot_certify_health(
         digest,
         "--interpreter",
         interpreter,
+        expected=1,
     )
-    agent = install._Agent(ledger, launch_control)
-    program = launch_control.loaded.program
-    runtime = install._runtime_for(agent, program)
-    process = launch_control.process(launch_control.loaded.pid)
+    assert refused["status"] == "install-failed"
+    assert not marker.exists()
+    assert not launch_control.bootstraps
+
+
+def test_upgrade_refuses_witness_incapable_running_prior(
+    activation_policy, monkeypatch
+):
+    case = activation_policy
+    ledger, control, agent = case.ledger, case.control, case.owned
+    candidate = case.runtime_files.runtime
+    prior_digest = "b" * 64
+    prior_directory = (
+        ledger.root / install._VERSIONS / f"{candidate.version}-{prior_digest}"
+    )
+    prior = replace(
+        candidate,
+        executable=prior_directory
+        / candidate.executable.relative_to(case.runtime_files.directory),
+        wheel_sha256=prior_digest,
+        witness_capable=False,
+    )
+    read_runtime = install._read_runtime
+
+    def observe_runtime(actual, directory, **options):
+        if directory == prior_directory:
+            assert actual is ledger
+            return prior
+        return read_runtime(actual, directory, **options)
+
+    monkeypatch.setattr(install, "_read_runtime", observe_runtime)
+    plist = plistlib.dumps(agent.payload(prior.executable))
+    case.service_files[agent.plist] = plist
+    args = tuple(plistlib.loads(plist)["ProgramArguments"])
+    job = install.ServiceJob(
+        agent.label, agent.plist, prior.executable, args, case.process.pid
+    )
+    control.loaded = job
+    observed = control.status
+    heartbeat = service._LegacyStatus(
+        observed.project_id,
+        observed.configuration_ref,
+        observed.heartbeat,
+        prior.version,
+        prior.interpreter_version,
+        observed.report,
+        (),
+    )
+    case.project_files[service.STATUS_NAME] = _encode(
+        heartbeat, service._LegacyStatus
+    ).encode()
+    status = service.status_report(ledger.root, ledger)
+    assert status["heartbeat"] is not None
+    assert status["producer_mode"] is status["producer_pid"] is None
+    result = case.invoke("upgrade")
+    assert result["status"] == "witness-unavailable"
+    assert control.loaded == job and not control.disabled
+    assert agent.read() == plist
+    assert not control.bootstraps and not case.records
+
+    # Simulate an older interrupted upgrade whose record predates the refusal.
+    control.loaded = None
+    pending_plist = plistlib.dumps(agent.payload(candidate.executable))
+    case.service_files[agent.plist] = pending_plist
+    pending = install._Operation(plist, pending_plist, True, False, "", "")
+    record = install._record_name(agent)
+    case.records[record] = pending.encode()
+    assert case.command("service", "stop", expected=1)["status"] == "recovery-required"
+    assert agent.read() == plist
+    assert case.records[record] == pending.encode()
+    assert control.disabled and not control.bootstraps
+
+
+def test_same_pid_with_different_start_cannot_certify_health(
+    runtime_receipt, monkeypatch
+):
+    from aitm_usage.supervisor import ManagedProcess, ServiceJob
+
+    case = runtime_receipt
+    runtime = case.runtime
+    case.ledger.identity.project_id = PROJECT
+    case.set_console(install._launcher(case.python, case.site))
+    control = SimpleNamespace(
+        plist_directory=Path("/fixture/services"), job=Mock(), process=Mock()
+    )
+    agent = install._Agent(case.ledger, control)
+    registration = agent.payload(runtime.executable)
+    plist = plistlib.dumps(registration)
+    pid = 5301
+    control.job.return_value = ServiceJob(
+        agent.label,
+        agent.plist,
+        runtime.executable,
+        tuple(registration["ProgramArguments"]),
+        pid,
+    )
+    started = datetime(2026, 11, 20, tzinfo=UTC)
+    heartbeat = started + timedelta(seconds=1)
+    clock = Mock(wraps=datetime)
+    clock.now.return_value = heartbeat
+    monkeypatch.setattr(install, "datetime", clock)
+    monkeypatch.setattr(install._Agent, "read", lambda agent: plist)
+    monkeypatch.setattr(
+        install,
+        "status_report",
+        Mock(
+            return_value={
+                "read_gap": False,
+                "registration_gap": False,
+                "status_sequence": 1,
+                "collector_version": runtime.version,
+                "collector_interpreter_version": runtime.interpreter_version,
+                "producer_mode": "service",
+                "producer_pid": pid,
+                "heartbeat": heartbeat.isoformat(),
+            }
+        ),
+    )
+    process = ManagedProcess(pid, started, runtime.interpreter)
+    control.process.return_value = process
+    assert agent.healthy(runtime, plist, started).process == process
     changed = replace(process, started=process.started + timedelta(microseconds=1))
-    inspections = iter([process, changed])
-    monkeypatch.setattr(launch_control, "process", lambda pid: next(inspections))
-    assert (
-        agent.healthy(runtime, agent.read(), datetime.now(UTC) - timedelta(seconds=15))
-        is None
-    )
+    control.process.reset_mock()
+    control.process.side_effect = (process, changed)
+    assert agent.healthy(runtime, plist, started) is None
+    assert control.process.call_count == 2
 
 
-def test_backup_refuses_output_inside_replaceable_store(project):
-    from aitm_usage.backup import BackupError, backup
-
-    _, ledger, _ = project
-    directory = ledger.database_path.parent / "nested-backup"
-    with pytest.raises(BackupError):
-        backup(ledger, directory)
-    assert not directory.exists()
-
-
-def test_backup_refuses_store_through_physical_path_alias(
-    project, tmp_path, alias_directory_identity
+def test_backup_refuses_output_inside_replaceable_store(
+    install_policy_ledger, monkeypatch
 ):
     from aitm_usage import backup as recovery
 
-    _, ledger, _ = project
+    ledger = install_policy_ledger
     store = ledger.database_path.parent
-    alias = tmp_path / "alias"
-    alias_directory_identity(alias, store)
+    directory = store / "nested-backup"
+    identities = ((1, 1), (1, 2), (1, 3))
+    pin = Mock(return_value=nullcontext(Mock(path=store, identities=identities)))
+    ancestry = Mock(return_value=identities)
+    stage = Mock(side_effect=AssertionError("contained output reached backup staging"))
+    monkeypatch.setattr(recovery, "_pin_directory", pin)
+    monkeypatch.setattr(recovery, "_validated_path", ancestry)
+    monkeypatch.setattr(recovery, "TemporaryDirectory", stage)
+    with pytest.raises(recovery.BackupError, match="overlaps"):
+        recovery.backup(ledger, directory)
+    pin.assert_called_once_with(store)
+    ancestry.assert_called_once_with(directory, directory=True, allow_missing=True)
+    stage.assert_not_called()
+
+
+def test_backup_refuses_store_through_physical_path_alias(
+    install_policy_ledger, monkeypatch
+):
+    from aitm_usage import backup as recovery
+
+    ledger = install_policy_ledger
+    store = ledger.database_path.parent
+    alias = ledger.root.parent / "alias"
     destination = alias / "nested-backup"
+    inodes = {
+        ancestor: inode for inode, ancestor in enumerate(reversed(store.parents), 1)
+    }
+    inodes[store] = inodes[alias] = len(inodes) + 1
+
+    def lstat(path):
+        if path not in inodes:
+            raise FileNotFoundError(path)
+        return os.stat_result(
+            (stat.S_IFDIR | 0o700, inodes[path], 1, 1, os.geteuid(), 0, 0, 0, 0, 0)
+        )
+
+    monkeypatch.setattr(Path, "lstat", lstat)
+    monkeypatch.setattr(ledger_module, "_check_acl", Mock())
+    pin = SimpleNamespace(
+        path=store,
+        identities=ledger_module._validated_path(store, directory=True),
+        check=Mock(),
+    )
+    stage = Mock(side_effect=AssertionError("aliased store reached backup staging"))
+    monkeypatch.setattr(recovery, "_pin_directory", Mock(return_value=nullcontext(pin)))
+    monkeypatch.setattr(recovery, "TemporaryDirectory", stage)
     with pytest.raises(recovery.BackupError, match="overlaps"):
         recovery.backup(ledger, destination)
     assert not destination.exists()
+    stage.assert_not_called()
 
 
-def test_restore_preserves_backup_inside_replaceable_store(project, tmp_path):
-    from aitm_usage.backup import BackupError, backup, restore
+@pytest.fixture
+def recovery_paths(monkeypatch):
+    from aitm_usage import backup as recovery
 
-    _, ledger, _ = project
-    bundle = tmp_path / "backup"
-    backup(ledger, bundle)
-    inside = ledger.database_path.parent / "nested-backup"
-    bundle.rename(inside)
-    before = _bundle_bytes(inside)
-    with pytest.raises(BackupError):
-        restore(inside, ledger.root, ledger.identity)
-    assert _bundle_bytes(inside) == before
+    pins = {}
+
+    def observe(path, *inodes):
+        pins[path] = SimpleNamespace(
+            path=path, identities=tuple((1, inode) for inode in inodes), check=Mock()
+        )
+
+    def pin(path):
+        return nullcontext(pins[path])
+
+    ancestry = Mock(side_effect=lambda path, **kwargs: pins[path].identities)
+    monkeypatch.setattr(recovery, "_pin_directory", pin)
+    monkeypatch.setattr(install, "_pin_directory", pin)
+    monkeypatch.setattr(recovery, "_validated_path", ancestry)
+    return observe, ancestry
+
+
+def test_restore_preserves_backup_inside_replaceable_store(
+    lifecycle_policy, recovery_paths, monkeypatch
+):
+    from aitm_usage import backup as recovery
+
+    ledger, control = lifecycle_policy
+    observe, ancestry = recovery_paths
+    store = ledger.database_path.parent
+    inside = store / "nested-backup"
+    staged = ledger.root / ".restore-staging"
+    observe(ledger.root, 1, 2, 3)
+    observe(store, 1, 2, 3, 4)
+    observe(inside, 1, 2, 3, 4, 5)
+    observe(staged, 1, 2, 3, 6)
+    verify = Mock(side_effect=AssertionError("nested backup reached restore staging"))
+    swap = Mock(side_effect=AssertionError("nested backup reached the store swap"))
+    monkeypatch.setattr(Ledger, "open", Mock(return_value=ledger))
+    monkeypatch.setattr(install, "ServiceSupervisor", Mock(return_value=control))
+    monkeypatch.setattr(recovery, "project_guard", lambda *_: nullcontext(object()))
+    monkeypatch.setattr(recovery, "_lease", lambda *_: nullcontext(object()))
+    monkeypatch.setattr(recovery, "TemporaryDirectory", lambda **_: nullcontext(staged))
+    monkeypatch.setattr(recovery, "_verify_bundle", verify)
+    monkeypatch.setattr(recovery, "_swap_store", swap)
+
+    with pytest.raises(recovery.BackupError, match="overlaps"):
+        recovery.restore(inside, ledger.root, ledger.identity)
+
+    ancestry.assert_called_once_with(inside, directory=True, allow_missing=False)
+    verify.assert_not_called()
+    swap.assert_not_called()
 
 
 def test_prune_preserves_nested_recovery_material(
-    project, tmp_path, launch_control, monkeypatch
+    lifecycle_policy, recovery_paths, monkeypatch, capsys
 ):
-    from aitm_usage.backup import backup
-
-    _, ledger, command = project
-    wheel, digest = _wheel(tmp_path, "prune")
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
-    version_dir = runtime.executable.parents[2]
+    ledger, control = lifecycle_policy
+    observe, ancestry = recovery_paths
+    digest = "a" * 64
+    version_dir = ledger.root / install._VERSIONS / f"0.1.0-{digest}"
     bundle = version_dir / "backup"
-    backup(ledger, bundle)
+    external = ledger.root / "external-backup"
+    observe(version_dir, 1, 2, 3, 4, 5)
+    observe(bundle, 1, 2, 3, 4, 5, 6)
+    observe(external, 1, 2, 3, 7)
+    verify = Mock(
+        side_effect=AssertionError("nested recovery material reached verification")
+    )
+    remove = Mock(
+        side_effect=AssertionError("prune would delete nested recovery material")
+    )
+    read_wheel = Mock(side_effect=AssertionError("prune opened a retained wheel"))
+    monkeypatch.setattr(cli, "open_project", Mock(return_value=ledger))
+    monkeypatch.setattr(cli, "ServiceSupervisor", Mock(return_value=control))
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    monkeypatch.setattr(install, "verify_backup", verify)
+    monkeypatch.setattr(install, "_wheel", read_wheel)
+    monkeypatch.setattr(install, "shutil", SimpleNamespace(rmtree=remove))
+    command = _lifecycle_cli(ledger.root, monkeypatch, capsys)
     arguments = ("service", "prune", "--version", "0.1.0", "--wheel-sha256", digest)
-    before = _bundle_bytes(bundle)
+
     assert (
         command(*arguments, "--backup", bundle, expected=1)["status"] == "prune-failed"
     )
-    assert _bundle_bytes(bundle) == before
-    external = tmp_path / "external"
-    bundle.rename(external)
+    ancestry.assert_called_once_with(bundle, directory=True, allow_missing=False)
+    ancestry.reset_mock()
+
     retained = install._wheel_path(ledger, "0.1.0", digest)
     inside = version_dir / retained.name
-    retained.rename(inside)
+    observe(inside, 1, 2, 3, 4, 5, 8)
     monkeypatch.setattr(install, "_wheel_path", lambda *args: inside)
     assert (
         command(*arguments, "--backup", external, expected=1)["status"]
         == "prune-failed"
     )
-    assert inside.exists() and runtime.executable.exists()
+    assert ancestry.call_count == 2
+    ancestry.assert_called_with(inside, directory=False, allow_missing=False)
+    verify.assert_not_called()
+    read_wheel.assert_not_called()
+    remove.assert_not_called()
+
+
+def _assert_scope_thread_admission(ledger, monkeypatch, capsys, *, matches):
+    from aitm_usage.types import BoundaryKind, ScopeMarker, WorkPhase, encode_marker
+
+    thread = str(UUID(int=1201))
+    marker_id = UUID(int=1204)
+    marker = ScopeMarker(
+        marker_id,
+        Provider.CODEX,
+        scopes.session_reference(ledger, Provider.CODEX, thread),
+        1,
+        BoundaryKind.REQUEST,
+        ledger.pseudonymize("fixture", "native-boundary"),
+        datetime.fromisoformat(CUTOFF) + timedelta(seconds=1),
+        ItemKey(ItemKind.ISSUE, 194),
+        WorkPhase.PLANNING,
+        ledger.pseudonymize("fixture", "participant"),
+        PROJECT,
+        receipt_ref=ledger.pseudonymize("scope-receipt", str(marker_id)),
+    )
+    path = Path("/fixture/marker.json")
+    payload = encode_marker(marker)
+
+    def read_marker(path_to_open, mode):
+        assert (path_to_open, mode) == (path, "rb")
+        return BytesIO(payload)
+
+    open_ledger = Mock(return_value=ledger)
+    enqueue = Mock(return_value=None)
+    monkeypatch.setattr(Path, "open", read_marker)
+    monkeypatch.setattr(Ledger, "open", open_ledger)
+    monkeypatch.setattr(cli, "enqueue_command", enqueue)
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    monkeypatch.setenv("CODEX_THREAD_ID", thread if matches else str(UUID(int=1202)))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "aitm-usage",
+            "--project",
+            str(ledger.root),
+            "scope",
+            "mark",
+            "--marker",
+            str(path),
+            "--json",
+        ],
+    )
+
+    result = cli.main()
+    output = capsys.readouterr()
+    open_ledger.assert_called_once_with(ledger.root, PROJECT)
+    if matches:
+        assert result == 0
+        assert json.loads(output.out) == {
+            "command_id": str(marker_id),
+            "status": "queued",
+        }
+        assert output.err == ""
+        enqueue.assert_called_once_with(
+            ledger.root, InboxCommand(marker_id, PROJECT, marker), claude_session=None
+        )
+    else:
+        assert result == 1
+        assert output.out == ""
+        assert output.err == "aitm-usage: invalid private inbox command or project\n"
+        enqueue.assert_not_called()
 
 
 @pytest.mark.parametrize("case", ["matching", "wrong", "unset", "empty", "hostile"])
-def test_scope_launcher_forwards_only_exact_optional_thread_candidate(tmp_path, case):
+def test_scope_launcher_forwards_only_exact_optional_thread_candidate(
+    request, monkeypatch, capsys, case
+):
+    if case in {"matching", "wrong"}:
+        ledger = request.getfixturevalue("install_policy_ledger")
+        _assert_scope_thread_admission(
+            ledger, monkeypatch, capsys, matches=case == "matching"
+        )
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     side_effect = tmp_path / "unexpected-shell-execution"
     hostile = (
         f'- spaces "quoted" and \'single\' $(touch "{side_effect}") '
         f'`touch "{side_effect}"`\nsecond line'
     )
     candidate = {
-        "matching": str(UUID(int=1201)),
-        "wrong": str(UUID(int=1202)),
         "unset": None,
         "empty": "",
         "hostile": hostile,
@@ -1121,66 +1937,134 @@ def test_legacy_scope_launcher_matches_golden_bytes_and_digest():
     )
 
 
-@pytest.mark.parametrize("legacy", [False, True])
-def test_launcher_verification_selects_exact_receipt_variant(
-    project, tmp_path, monkeypatch, legacy
-):
-    _, ledger, _ = project
-    wheel, digest = _wheel(tmp_path, "receipt-variant")
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    generator = install._launcher
-    with monkeypatch.context() as old:
-        if legacy:
-            old.setattr(
-                install,
-                "_launcher",
-                lambda python, site: generator(python, site, legacy=True),
-            )
-        runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
-    executable = runtime.executable
-    directory = executable.parents[2]
-    receipt_path = directory / install._RUNTIME
-    receipt = json.loads(receipt_path.read_bytes())
-    site = install._site(executable.parents[1], runtime.interpreter_version)
+@pytest.fixture
+def runtime_receipt(monkeypatch):
+    ledger = SimpleNamespace(
+        root=Path("/ledger"), identity=SimpleNamespace(schema_version=4)
+    )
+    version, digest, python_version = "0.1.0", "a" * 64, "3.13.9"
+    interpreter = Path("/pinned/python3")
+    directory = ledger.root / install._VERSIONS / f"{version}-{digest}"
+    environment = directory / ("venv-" + "b" * 32)
+    executable = environment / "bin" / "aitm-usage"
+    site = install._site(environment, python_version)
     python = executable.with_name("python")
-    assert executable.read_bytes() == generator(python, site, legacy=legacy)
-    assert install._read_runtime(ledger, directory) == runtime
+    wheel = install._Wheel(version, digest, b"retained wheel", {})
+    runtime = install._Runtime(
+        executable, version, digest, python_version, interpreter, True
+    )
+    receipt = {
+        "format": install._RUNTIME_FORMAT,
+        "environment": environment.name,
+        "interpreter": str(interpreter),
+        "interpreter_sha256": hashlib.sha256(b"interpreter").hexdigest(),
+    }
+    files = {interpreter: b"interpreter"}
+    pinned = object()
 
-    def refuse_probe(*args, **kwargs):
-        pytest.fail("Unverified launcher reached the runtime probe")
+    def read_receipt(parent, name):
+        assert (parent, name) == (pinned, install._RUNTIME)
+        return json.dumps(receipt, sort_keys=True).encode()
 
-    monkeypatch.setattr(install, "_probe_runtime", refuse_probe)
-    executable.write_bytes(generator(python, site, legacy=not legacy))
+    pin = Mock(return_value=nullcontext(pinned))
+    inspect_interpreter = Mock(return_value=python_version)
+    probe = Mock(return_value=runtime)
+    read_wheel = Mock(return_value=wheel)
+    monkeypatch.setattr(install, "_pin_directory", pin)
+    monkeypatch.setattr(install, "_read_private", read_receipt)
+    monkeypatch.setattr(install, "_read_owned", lambda path, **_options: files[path])
+    monkeypatch.setattr(install, "_wheel", read_wheel)
+    monkeypatch.setattr(install, "_interpreter", inspect_interpreter)
+    monkeypatch.setattr(install, "_probe_runtime", probe)
+
+    def set_console(data, *, update_receipt=True):
+        files[executable] = data
+        if update_receipt:
+            receipt["console_sha256"] = hashlib.sha256(data).hexdigest()
+
+    return SimpleNamespace(
+        ledger=ledger,
+        directory=directory,
+        executable=executable,
+        interpreter=interpreter,
+        python=python,
+        python_version=python_version,
+        site=site,
+        wheel=wheel,
+        runtime=runtime,
+        receipt=receipt,
+        set_console=set_console,
+        pin=pin,
+        read_wheel=read_wheel,
+        inspect_interpreter=inspect_interpreter,
+        probe=probe,
+    )
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_launcher_verification_selects_exact_receipt_variant(runtime_receipt, legacy):
+    case = runtime_receipt
+    launcher = install._launcher(case.python, case.site, legacy=legacy)
+    case.set_console(launcher)
+    assert install._read_runtime(case.ledger, case.directory) == case.runtime
+    case.pin.assert_called_once_with(case.directory)
+    case.read_wheel.assert_called_once_with(
+        case.ledger.root
+        / install._WHEELS
+        / case.wheel.digest
+        / "aitm_usage-0.1.0-py3-none-any.whl",
+        case.wheel.digest,
+        private=True,
+    )
+    case.probe.assert_called_once_with(
+        case.executable,
+        case.interpreter,
+        case.python_version,
+        case.wheel,
+        launcher,
+        schema_version=case.ledger.identity.schema_version,
+    )
+
+    case.probe.reset_mock()
+    case.set_console(
+        install._launcher(case.python, case.site, legacy=not legacy),
+        update_receipt=False,
+    )
     with pytest.raises(install.InstallError, match="Verified runtime files changed"):
-        install._read_runtime(ledger, directory)
+        install._read_runtime(case.ledger, case.directory)
 
-    unknown = b"#!/bin/sh\nexit 99\n"
-    executable.write_bytes(unknown)
-    receipt["console_sha256"] = hashlib.sha256(unknown).hexdigest()
-    receipt_path.write_bytes(json.dumps(receipt, sort_keys=True).encode())
+    case.set_console(b"#!/bin/sh\nexit 99\n")
     with pytest.raises(install.InstallError, match="unknown launcher"):
-        install._read_runtime(ledger, directory)
+        install._read_runtime(case.ledger, case.directory)
+    case.probe.assert_not_called()
 
 
 def test_installed_runtime_checks_interpreter_digest_before_any_execution(
-    project, tmp_path, monkeypatch
+    runtime_receipt,
 ):
-    _, ledger, _ = project
-    wheel, digest = _wheel(tmp_path, "interpreter-pin")
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
-    directory = runtime.executable.parents[2]
-    receipt_path = directory / install._RUNTIME
-    receipt = json.loads(receipt_path.read_bytes())
-    receipt["interpreter_sha256"] = "0" * 64
-    receipt_path.write_bytes(json.dumps(receipt, sort_keys=True).encode())
+    case = runtime_receipt
+    case.set_console(install._launcher(case.python, case.site))
+    case.receipt["interpreter_sha256"] = "0" * 64
 
-    def refuse_execution(*args):
-        pytest.fail("Interpreter ran before its receipt digest was verified")
-
-    monkeypatch.setattr(install, "_interpreter", refuse_execution)
     with pytest.raises(install.InstallError, match="Verified runtime files changed"):
-        install._read_runtime(ledger, directory)
+        install._read_runtime(case.ledger, case.directory)
+
+    case.inspect_interpreter.assert_not_called()
+    case.probe.assert_not_called()
+
+
+def test_installed_runtime_detects_changed_launcher_on_disk(runtime_receipt):
+    case = runtime_receipt
+    case.set_console(install._launcher(case.python, case.site))
+    assert install._read_runtime(case.ledger, case.directory) == case.runtime
+
+    case.inspect_interpreter.reset_mock()
+    case.probe.reset_mock()
+    case.set_console(b"#!/bin/sh\nexit 99\n", update_receipt=False)
+    with pytest.raises(install.InstallError, match="Verified runtime files changed"):
+        install._read_runtime(case.ledger, case.directory)
+    case.inspect_interpreter.assert_not_called()
+    case.probe.assert_not_called()
 
 
 def test_installed_scope_launcher_upgrade_preserves_old_receipt_and_queues(
@@ -1424,65 +2308,118 @@ def test_portable_supervisor_reaps_owned_service_across_controllers(
 
 
 def test_portable_supervisor_holds_existing_legacy_registration(
-    project, tmp_path, monkeypatch
+    install_policy_ledger, monkeypatch
 ):
-    from aitm_usage.supervisor import ServiceSupervisor
+    from aitm_usage import supervisor as managed_service
 
-    _, ledger, _ = project
-    legacy = tmp_path / "legacy.plist"
-    legacy.touch()
-    supervisor = ServiceSupervisor(ledger)
+    ledger = install_policy_ledger
+    legacy = Path("/fixture/legacy.plist")
+    monkeypatch.setattr(
+        managed_service, "_guard_path", lambda *_: Path("/fixture/writer.lock")
+    )
+    supervisor = managed_service.ServiceSupervisor(ledger)
     monkeypatch.setattr(supervisor, "_legacy_registration", lambda: legacy)
+    path_exists = Mock(return_value=True)
+    monkeypatch.setattr(managed_service, "_path_exists", path_exists)
+    monkeypatch.setattr(install._Agent, "read", lambda agent: b"")
+    lifecycle = Mock(side_effect=AssertionError("dry run mutated service state"))
+    monkeypatch.setattr(install, "_lifecycle", lifecycle)
     with pytest.raises(install.InstallError, match="legacy LaunchAgent"):
         install.stop_agent(ledger, supervisor, dry_run=True)
-    assert legacy.exists()
-    assert not supervisor.plist_directory.exists()
+    path_exists.assert_called_once_with(legacy)
+    lifecycle.assert_not_called()
 
 
 def test_portable_supervisor_refuses_stop_without_writer_exclusion(
-    project, monkeypatch
+    lifecycle_policy, monkeypatch
 ):
     from aitm_usage.ledger import WriterActive
-    from aitm_usage.supervisor import ServiceSupervisor
 
-    _, ledger, _ = project
+    ledger, supervisor = lifecycle_policy
+    guard = Mock(side_effect=WriterActive("project writer is active"))
+    lease = Mock(side_effect=AssertionError("busy writer reached local lease"))
+    sleep = Mock(side_effect=AssertionError("zero timeout entered another retry"))
+    monkeypatch.setattr(install, "project_guard", guard)
+    monkeypatch.setattr(install, "_lease", lease)
+    monkeypatch.setattr(
+        install, "time", SimpleNamespace(monotonic=lambda: 0, sleep=sleep)
+    )
     monkeypatch.setattr(install, "_STOP_TIMEOUT", 0)
-    with ledger.writer(), pytest.raises(WriterActive):
-        install.stop_agent(ledger, ServiceSupervisor(ledger))
+    with pytest.raises(WriterActive, match="project writer is active"):
+        install.stop_agent(ledger, supervisor)
+    guard.assert_called_once_with(ledger.root, PROJECT)
+    lease.assert_not_called()
+    sleep.assert_not_called()
 
 
-def test_portable_supervisor_owner_refuses_a_reaped_child():
-    from tempfile import TemporaryDirectory
-    from threading import Thread
+def test_portable_supervisor_owner_refuses_a_reaped_child(monkeypatch):
+    from aitm_usage import supervisor
 
-    from aitm_usage.supervisor import _confirms_live_child, _Launch, _respond
+    directory = Path("/fixture/service-owner")
+    endpoint = directory / "owner"
+    record = supervisor._Launch(
+        "a" * 32,
+        ("/fixture/aitm-usage", "--project", str(directory), "service", "run"),
+        "/fixture/python",
+        str(endpoint),
+        5302,
+        datetime(2026, 11, 20, tzinfo=UTC),
+    )
+    uid = 501
+    metadata = SimpleNamespace(
+        st_mode=stat.S_IFSOCK | 0o600, st_uid=uid, st_dev=1, st_ino=17
+    )
 
-    with (
-        TemporaryDirectory(
-            prefix="aitm-owner-test-", dir=Path("/tmp").resolve()
-        ) as directory,
-        socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server,
-    ):
-        endpoint = Path(directory) / "owner"
-        server.bind(str(endpoint))
-        endpoint.chmod(0o600)
-        server.listen(1)
-        server.settimeout(2)
-        started = datetime.now(UTC)
-        child = subprocess.Popen([sys.executable, "-c", "pass"])
-        assert child.wait(timeout=5) == 0
-        record = _Launch(
-            "a" * 32,
-            (sys.executable, "--project", directory, "service", "run"),
-            str(Path(sys._base_executable).resolve()),
-            str(endpoint),
-            child.pid,
-            started,
-        )
-        responder = Thread(target=_respond, args=(server, child, record), daemon=True)
-        responder.start()
-        try:
-            assert not _confirms_live_child(record)
-        finally:
-            responder.join(3)
-        assert not responder.is_alive()
+    class ObservedEndpoint:
+        parent = directory
+
+        def __str__(self):
+            return str(endpoint)
+
+        def lstat(self):
+            return metadata
+
+    observed_endpoint = ObservedEndpoint()
+    child = SimpleNamespace(poll=Mock(side_effect=(None, 0)))
+    pinned = SimpleNamespace(check=Mock())
+    buffer = bytearray()
+    peer = MagicMock()
+    peer.sendall.side_effect = buffer.extend
+    server = SimpleNamespace(accept=lambda: (peer, None))
+
+    def connect(address):
+        assert address == str(endpoint)
+        buffer.clear()
+        supervisor._respond(server, child, record)
+
+    client = SimpleNamespace(
+        connect=connect,
+        settimeout=Mock(),
+        makefile=lambda _: BytesIO(bytes(buffer)),
+    )
+    socket_factory = Mock(return_value=nullcontext(client))
+    monkeypatch.setattr(
+        supervisor,
+        "socket",
+        SimpleNamespace(
+            AF_UNIX=socket.AF_UNIX,
+            SOCK_STREAM=socket.SOCK_STREAM,
+            socket=socket_factory,
+        ),
+    )
+    monkeypatch.setattr(
+        supervisor,
+        "os",
+        SimpleNamespace(geteuid=lambda: uid, path=os.path),
+    )
+    monkeypatch.setattr(
+        supervisor, "Path", {record.endpoint: observed_endpoint}.__getitem__
+    )
+    monkeypatch.setattr(supervisor, "_pin_directory", lambda _: nullcontext(pinned))
+    monkeypatch.setattr(supervisor, "_check_acl", Mock())
+    monkeypatch.setattr(supervisor, "_peer_uid", lambda _: uid)
+
+    assert supervisor._confirms_live_child(record)
+    assert not supervisor._confirms_live_child(record)
+    peer.sendall.assert_called_once_with(_encode(record, supervisor._Launch).encode())
+    assert child.poll.call_count == 2

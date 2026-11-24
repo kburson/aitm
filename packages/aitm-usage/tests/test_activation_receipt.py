@@ -2,12 +2,18 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
+from test_accounting import reference_rates as reference_rates
+from test_install import activation_policy as activation_policy
+from test_install import install_policy_ledger as install_policy_ledger
 from test_install import launch_control as launch_control
 from test_install import project as project
+from test_install import runtime_receipt as runtime_receipt
+from test_service import collector_policy as collector_policy
 
-from aitm_usage import cli
+from aitm_usage import cli, qualification
 
 FIXTURE = Path(__file__).parent / "fixtures" / "activation" / "receipt.json"
 CHECKED = datetime(2026, 11, 9, 15, 0, 5, tzinfo=UTC)
@@ -142,28 +148,95 @@ def _cli(monkeypatch, capsys, root, receipt, *extra):
 
 
 def test_cli_sanitizes_malformed_input_and_disallows_duplicate_fields(
-    tmp_path, monkeypatch, capsys
+    monkeypatch, capsys
 ):
-    path = tmp_path / "receipt.json"
-    path.write_text('{"project_id": "/private/canary", "project_id": "two"}')
-    assert _cli(monkeypatch, capsys, tmp_path, path) == (
-        1,
-        {"status": "invalid-receipt"},
+    root = Path("/fixture/project")
+    path = root / "receipt.json"
+    reader = Mock(
+        return_value=b'{"project_id": "/private/canary", "project_id": "two"}'
+    )
+    monkeypatch.setattr(qualification, "_read_owned", reader)
+
+    assert _cli(monkeypatch, capsys, root, path) == (1, {"status": "invalid-receipt"})
+    reader.assert_called_once_with(
+        path, private=False, limit=qualification._MAX_EVIDENCE_BYTES
     )
 
 
-def test_cli_requires_installed_proof_for_actual_qualification(
-    tmp_path, monkeypatch, capsys
-):
-    from aitm_usage import qualification
+def test_cli_requires_installed_proof_for_actual_qualification(monkeypatch, capsys):
+    root = Path("/fixture/project")
+    path = root / "receipt.json"
+    monkeypatch.setattr(qualification, "_now", lambda: CHECKED)
+    monkeypatch.setattr(
+        qualification, "_read_owned", Mock(return_value=json.dumps(_receipt()).encode())
+    )
+    exists = Mock(return_value=False)
+    open_project = Mock()
+    monkeypatch.setattr(Path, "exists", lambda path: exists(path))
+    monkeypatch.setattr(cli, "open_project", open_project)
+
+    assert _cli(monkeypatch, capsys, root, path) == (1, {"status": "proof-required"})
+    exists.assert_called_once_with(root / qualification.PROOF_NAME)
+    open_project.assert_not_called()
+
+
+def test_qualification_reads_owned_receipt_on_disk(monkeypatch, capsys):
+    import stat
+    from contextlib import nullcontext
+    from io import BytesIO
+    from types import SimpleNamespace
+
+    from aitm_usage import install
 
     monkeypatch.setattr(qualification, "_now", lambda: CHECKED)
-    path = tmp_path / "actual-shaped.json"
-    path.write_text(json.dumps(_receipt()))
-    assert _cli(monkeypatch, capsys, tmp_path, path) == (
+    root = Path("/fixture/project")
+    path = root / "actual-shaped.json"
+    expected = json.dumps(_receipt()).encode()
+    original_os = install.os
+    file_info = SimpleNamespace(
+        st_dev=2,
+        st_ino=8,
+        st_mode=stat.S_IFREG | 0o644,
+        st_uid=501,
+        st_mtime_ns=10,
+        st_ctime_ns=12,
+    )
+    open_file = Mock(return_value=8)
+    open_parent = Mock(return_value=nullcontext(7))
+    reopen = Mock(return_value=file_info)
+    check_acl = Mock()
+    monkeypatch.setattr(install, "_open_parent", open_parent)
+    monkeypatch.setattr(install, "_check_acl", check_acl)
+    monkeypatch.setattr(
+        install,
+        "os",
+        SimpleNamespace(
+            O_RDONLY=original_os.O_RDONLY,
+            O_NONBLOCK=original_os.O_NONBLOCK,
+            O_NOFOLLOW=original_os.O_NOFOLLOW,
+            open=open_file,
+            fdopen=lambda descriptor, mode: BytesIO(expected),
+            fstat=lambda descriptor: file_info,
+            geteuid=lambda: file_info.st_uid,
+            stat=reopen,
+            path=original_os.path,
+        ),
+    )
+    exists = Mock(return_value=False)
+    monkeypatch.setattr(Path, "exists", lambda candidate: exists(candidate))
+    assert _cli(monkeypatch, capsys, root, path) == (
         1,
         {"status": "proof-required"},
     )
+    open_parent.assert_called_once_with(path)
+    open_file.assert_called_once_with(
+        path.name,
+        original_os.O_RDONLY | original_os.O_NONBLOCK | original_os.O_NOFOLLOW,
+        dir_fd=7,
+    )
+    check_acl.assert_called_once_with(8)
+    reopen.assert_called_once_with(path.name, dir_fd=7, follow_symlinks=False)
+    exists.assert_called_once_with(root / qualification.PROOF_NAME)
 
 
 def _unbound_claude_source(
@@ -180,78 +253,402 @@ def _unbound_claude_source(
     return path
 
 
-def test_running_witness_rejects_same_pid_different_start_and_same_version_wrong_wheel(
-    project,
-    tmp_path,
-    launch_control,
-):
-    from dataclasses import replace
+def _collector_for_lifecycle(lifecycle):
     from datetime import timedelta
 
-    from test_install import _wheel
-    from test_service import _fixtures
-
-    from aitm_usage import install
-    from aitm_usage.qualification import (
-        QualificationError,
-        _verify_running,
-        decode_activation_receipt,
-    )
-
-    registration, ledger, _ = project
-    _fixtures(registration.source_roots[0], registration.checkout_anchors[0])
-    _unbound_claude_source(registration, tmp_path / "other-checkout")
-    wheel, digest = _wheel(tmp_path, "qualification")
-    lifecycle = install.install_wheel(
-        ledger,
-        wheel,
-        Path(sys._base_executable).resolve(strict=True),
-        launch_control,
-        action="install",
-        expected_sha256=digest,
-    )
-    sample = decode_activation_receipt(FIXTURE.read_bytes()).collector
     start = datetime.fromisoformat(lifecycle.producer_started)
     heartbeat = datetime.fromisoformat(lifecycle.heartbeat)
-    collector = replace(
-        sample,
+    return qualification._CollectorEvidence(
         version=lifecycle.version,
-        wheel_sha256=digest,
         interpreter_version=lifecycle.interpreter_version,
+        wheel_sha256=lifecycle.wheel_sha256,
+        previous_started=start - timedelta(minutes=2),
+        previous_heartbeat=start - timedelta(minutes=1),
         producer_started=start,
         activation_heartbeat=heartbeat,
         heartbeat=heartbeat,
+        poll_interval_seconds=lifecycle.poll_interval_seconds,
+        owned_unattended=True,
+        same_process=True,
+        private_state=True,
     )
-    verified = _verify_running(ledger, collector, lifecycle, launch_control)
+
+
+def _assert_running_qualification(registration, ledger, lifecycle, control, tmp_path):
+    from aitm_usage.pricing import load_rate_card
+
+    verified = qualification._verify_running(
+        ledger, _collector_for_lifecycle(lifecycle), lifecycle, control
+    )
     assert verified["producer_mode"] == "service"
     assert verified["held_sources"] == 1
     assert sum(row["observed_through"] is not None for row in verified["sources"]) == 2
 
-    reused_start = start - timedelta(seconds=1)
+    selected = _selected_source_evidence(verified)
+    view = ledger.as_of()
+    rates = load_rate_card()
+    qualification._verify_selected_sources(ledger, view, selected, rates)
+    source = registration.source_roots[0] / "claude.jsonl"
+    relocated = source.rename(tmp_path / "no-longer-approved.jsonl")
+    try:
+        with pytest.raises(
+            qualification.QualificationError, match="selected-source-gap"
+        ):
+            qualification._verify_selected_sources(ledger, view, selected, rates)
+    finally:
+        relocated.rename(source)
+
+
+def test_running_witness_rejects_same_pid_different_start_and_same_version_wrong_wheel(
+    activation_policy,
+    monkeypatch,
+):
+    from dataclasses import replace
+    from datetime import timedelta
+
+    from aitm_usage.install import InstallReceipt
+    from aitm_usage.qualification import (
+        QualificationError,
+        _verify_running,
+    )
+
+    case = activation_policy
+    wheel = case.runtime_files.wheel
+    lifecycle = InstallReceipt(
+        **case.command(
+            "service",
+            "install",
+            "--wheel",
+            Path("/fixture/candidate.whl"),
+            "--wheel-sha256",
+            wheel.digest,
+            "--interpreter",
+            case.runtime_files.interpreter,
+        )
+    )
+    collector = _collector_for_lifecycle(lifecycle)
+    monkeypatch.setattr(
+        qualification, "_now", lambda: collector.heartbeat + timedelta(seconds=1)
+    )
+    guard = Mock(return_value=Path("/fixture/qualification-control/writer.lock"))
+    monkeypatch.setattr(qualification, "_guard_path", guard)
+    monkeypatch.setattr(qualification, "_path_exists", Mock(return_value=False))
+    verified = _verify_running(case.ledger, collector, lifecycle, case.control)
+    assert verified["producer_mode"] == "service"
+    assert verified["producer_pid"] == case.process.pid
+    guard.assert_called_once_with(case.ledger.root, case.ledger.identity.project_id)
+
+    reused_start = collector.producer_started - timedelta(seconds=1)
     with pytest.raises(QualificationError, match="process-incarnation"):
         _verify_running(
-            ledger,
+            case.ledger,
             replace(collector, producer_started=reused_start),
             replace(lifecycle, producer_started=reused_start.isoformat()),
-            launch_control,
+            case.control,
         )
 
-    other_wheel, other_digest = _wheel(tmp_path, "same-version-other-wheel")
-    assert other_wheel.name == wheel.name and other_digest != digest
+    other_digest = "b" * 64
     with pytest.raises(QualificationError, match="wheel-mismatch"):
         _verify_running(
-            ledger,
+            case.ledger,
             replace(collector, wheel_sha256=other_digest),
             replace(lifecycle, wheel_sha256=other_digest),
-            launch_control,
+            case.control,
         )
-    assert len(launch_control.bootstraps) == 1
+    assert len(case.control.bootstraps) == 1
 
 
 def _write_private(path, data):
     path.write_bytes(data)
     path.chmod(0o600)
     return path
+
+
+def _processing_order_transcript(ledger, checkout, provider, mark_args):
+    import shlex
+    from dataclasses import replace
+
+    import test_claude as claude
+    from test_service_process import (
+        CL_CHILD,
+        CX_CHILD,
+        CX_EPIC,
+        _codex_rows,
+        _marker,
+        _queued,
+    )
+
+    from aitm_usage.types import InboxCommand, Provider
+
+    kind = Provider(provider)
+    target = CX_EPIC if kind is Provider.CODEX else CL_CHILD
+    marker = replace(
+        _marker(ledger, kind, target, 1, 83), project_id=ledger.identity.project_id
+    )
+    command = InboxCommand(target, marker.project_id, marker)
+
+    args = mark_args(marker)
+    if kind is Provider.CODEX:
+        rows = _codex_rows(
+            ledger,
+            checkout,
+            args,
+            mark_args(_marker(ledger, kind, CX_CHILD, 2, 95)),
+            _queued(target),
+            _queued(CX_CHILD),
+        )[:-8]
+    else:
+        shell = shlex.join(
+            (
+                "aitm-usage",
+                "--project",
+                str(ledger.root),
+                *args,
+            )
+        )
+        rows = [
+            claude.user(checkout),
+            *claude._native_tool_turn(checkout, shell, _queued(target).decode()),
+        ]
+    return command, rows
+
+
+def _reserve_processing_order_session(monkeypatch, marker):
+    from contextlib import nullcontext
+
+    from aitm_usage import service
+
+    sessions = object()
+    private_child, read_private = service._private_child, service._read_private
+
+    def child(directory, name, *, create):
+        if name == service.CLAUDE_SESSIONS_NAME:
+            assert not create
+            return nullcontext(sessions)
+        return private_child(directory, name, create=create)
+
+    def read(directory, name):
+        if directory is sessions:
+            assert name == service._session_filename(marker.session_ref)
+            return json.dumps(marker.session_ref.value).encode()
+        return read_private(directory, name)
+
+    monkeypatch.setattr(service, "_private_child", child)
+    monkeypatch.setattr(service, "_read_private", read)
+
+
+def _assert_processing_order_in_memory(
+    case, monkeypatch, provider, arrival, withhold_target
+):
+    from dataclasses import replace
+    from datetime import timedelta
+    from hashlib import sha256
+    from types import SimpleNamespace
+
+    from aitm_usage import scopes, service
+    from aitm_usage.ledger import Ledger
+    from aitm_usage.types import (
+        CommandReceipt,
+        MarkerDisposition,
+        Provider,
+        Revision,
+        UsageObservation,
+    )
+
+    ledger, native = case.ledger, case.native
+    case.configure(checkout_anchors=())
+
+    def mark_args(marker):
+        from test_claude import SESSION
+
+        args = ("scope", "mark", "--marker", f"/fixture/marker-{marker.marker_id}.json")
+        if marker.provider is Provider.CLAUDE:
+            args += ("--session-id", str(SESSION))
+        return (*args, "--json")
+
+    command, rows = _processing_order_transcript(
+        ledger, native.checkout, provider, mark_args
+    )
+    marker = command.payload
+    if marker.provider is Provider.CLAUDE:
+        _reserve_processing_order_session(monkeypatch, marker)
+    publication = scopes._publication_bytes(command, None)
+    key = ledger.pseudonymize("inbox-command", str(command.command_id))
+    queued = arrival == "marker-first"
+
+    def receipt_in(view):
+        return next((row for row in view.current if row.key == key), None)
+
+    def drain(writer, boundaries):
+        assert writer is ledger
+        if not queued:
+            return scopes.InboxDrain()
+        view = writer.as_of()
+        previous = receipt_in(view)
+        if (
+            previous is not None
+            and previous.record.disposition is not MarkerDisposition.PENDING
+        ):
+            return scopes.InboxDrain()
+        receipts = {} if previous is None else {command.command_id: previous.record}
+        disposition, proof, effects = scopes._evaluate(
+            writer, command, view, boundaries, receipts
+        )
+        receipt = CommandReceipt(
+            command,
+            writer.validate_command(command),
+            disposition,
+            None if proof is None else proof.boundary,
+            None if proof is None else proof.anchor_ref,
+        )
+        if previous is None or receipt != previous.record:
+            revision = 1 if previous is None else previous.revision + 1
+            case.commit_revisions(*effects, Revision(key, revision, receipt))
+        return scopes.InboxDrain((receipt,))
+
+    def status_bytes():
+        with service._pin_directory(ledger.root) as pinned:
+            return service._read_private(pinned, service.STATUS_NAME)
+
+    monkeypatch.setattr(service, "drain_inbox", drain)
+    source = native.root / f"{provider}.jsonl"
+    if not queued:
+        native.write(source, rows[:-2] if withhold_target else rows)
+    before_prefix = native.contents.get(source, b"")
+    before_captured_at = marker.published_at + timedelta(seconds=30)
+    case.clock.now.return_value = before_captured_at + timedelta(seconds=1)
+    prior_status = case.collect()
+    before, before_status = ledger.as_of(), status_bytes()
+    assert native.contents.get(source, b"") == before_prefix
+    before_confirmed_at = before_captured_at + timedelta(seconds=2)
+    released_at = None
+    if not queued:
+        assert prior_status["held_sources"] == 1
+        released_at = before_confirmed_at + timedelta(seconds=1)
+        queued = True
+    native.write(source, rows)
+    case.clock.now.return_value = before_confirmed_at + timedelta(seconds=2)
+    case.collect()
+    case.collect()
+    after, after_status = ledger.as_of(), status_bytes()
+    accepted = receipt_in(after).record
+    assert (
+        accepted.disposition is MarkerDisposition.ACCEPTED
+        and accepted.boundary is not None
+    )
+    (first,) = (
+        row.key.value.split(":")[1]
+        for row in after.current
+        if isinstance(row.record, UsageObservation)
+        and row.record.boundary == accepted.boundary
+    )
+
+    saved, snapshot, settled, captured, late_capture = (
+        Path("/fixture") / name
+        for name in (
+            "original-publication.json",
+            "prior-status.json",
+            "settled-status.json",
+            "prior-source.jsonl",
+            "late-capture.jsonl",
+        )
+    )
+    artifacts = {
+        saved: publication,
+        snapshot: before_status,
+        settled: after_status,
+        captured: before_prefix,
+        late_capture: before_prefix,
+    }
+
+    def read_owned(path, *, private, limit):
+        assert private
+        raw = native.contents[path] if path == source else artifacts[path]
+        assert len(raw) <= limit
+        return raw
+
+    def stat_for(identity, when):
+        device, inode = identity
+        stamp = when.timestamp()
+        return SimpleNamespace(
+            st_dev=device,
+            st_ino=inode,
+            st_mtime=stamp,
+            st_ctime=stamp,
+            st_birthtime=stamp,
+        )
+
+    stat = Path.stat
+    stats = {
+        source: stat_for(native.identities[source], marker.published_at),
+        captured: stat_for((2, 1), before_captured_at - timedelta(seconds=1)),
+        late_capture: stat_for((2, 2), before_confirmed_at + timedelta(seconds=1)),
+    }
+    fixed_views = {view.sequence: view for view in (before, after)}
+    monkeypatch.setattr(
+        Ledger,
+        "as_of",
+        lambda self, sequence=None: (
+            after if sequence is None else fixed_views[sequence]
+        ),
+    )
+    monkeypatch.setattr(
+        Path,
+        "stat",
+        lambda path, **kw: stats[path] if path in stats else stat(path, **kw),
+    )
+    monkeypatch.setattr(qualification, "_read_owned", read_owned)
+    verified_at = case.clock.now.return_value + timedelta(seconds=1)
+    monkeypatch.setattr(qualification, "_now", lambda: verified_at)
+
+    prefix = native.contents[source]
+    entry = qualification._OrderEvidence(
+        marker.project_id,
+        marker.provider,
+        qualification._Order(arrival),
+        key.value.split(":")[1],
+        sha256(publication).hexdigest(),
+        sha256(before_prefix).hexdigest(),
+        sha256(prefix).hexdigest(),
+        first,
+        before.sequence,
+        after.sequence,
+    )
+    proof = qualification._OrderProof(
+        str(ledger.root),
+        str(saved),
+        str(source),
+        len(prefix),
+        str(snapshot),
+        str(settled),
+        str(captured),
+        len(before_prefix),
+        before_captured_at,
+        before_confirmed_at,
+        released_at,
+    )
+    card = service.load_rate_card()
+    if withhold_target:
+        assert accepted.boundary.ordinal >= before_prefix.count(b"\n")
+        with pytest.raises(qualification.QualificationError, match="processing-order"):
+            qualification._verify_order(entry, proof, card)
+        artifacts[captured] = prefix
+        qualification._verify_order(
+            replace(entry, before_prefix_sha256=entry.prefix_sha256),
+            replace(proof, before_prefix_bytes=len(prefix)),
+            card,
+        )
+        return
+    qualification._verify_order(entry, proof, card)
+    for altered in (
+        replace(proof, before_source=str(late_capture)),
+        replace(proof, before_captured_at=before_confirmed_at),
+    ):
+        with pytest.raises(qualification.QualificationError, match="processing-order"):
+            qualification._verify_order(entry, altered, card)
+    artifacts[saved] += b" "
+    with pytest.raises(qualification.QualificationError, match="processing-order"):
+        qualification._verify_order(entry, proof, card)
 
 
 @pytest.mark.parametrize(
@@ -265,24 +662,14 @@ def _write_private(path, data):
     ],
 )
 def test_processing_orders_require_native_prefix_and_fixed_ledger(
-    tmp_path, monkeypatch, provider, arrival, withhold_target
+    request, monkeypatch, provider, arrival, withhold_target
 ):
-    import shlex
     from dataclasses import replace
+    from functools import partial
     from hashlib import sha256
 
     import test_claude as claude
-    import test_codex as codex
-    from test_service_process import (
-        CL_CHILD,
-        CX_CHILD,
-        CX_EPIC,
-        PROJECT,
-        _codex_rows,
-        _mark_args,
-        _marker,
-        _queued,
-    )
+    from test_service_process import PROJECT, _mark_args
 
     from aitm_usage.ledger import Ledger
     from aitm_usage.pricing import load_rate_card
@@ -300,8 +687,19 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
         register_project,
         remember_claude_session,
     )
-    from aitm_usage.types import InboxCommand, Provider, UsageObservation
+    from aitm_usage.types import UsageObservation
 
+    if (provider, arrival, withhold_target) != ("claude", "boundary-first", False):
+        _assert_processing_order_in_memory(
+            request.getfixturevalue("collector_policy"),
+            monkeypatch,
+            provider,
+            arrival,
+            withhold_target,
+        )
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
     root = tmp_path / "private state"
     sources = tmp_path / "sources"
@@ -321,54 +719,54 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
     )
     registration = register_project(root, config)
     ledger = Ledger.open(root, PROJECT)
+    public_receipt = tmp_path / "qualification-receipt.json"
+    public_receipt.write_text(json.dumps(_receipt()))
+    public_receipt.chmod(0o644)
+    assert qualification.read_activation_receipt(
+        public_receipt
+    ) == qualification.decode_activation_receipt(public_receipt.read_bytes())
     source = sources / f"{provider}.jsonl"
-    kind = Provider(provider)
-    target = CX_EPIC if kind is Provider.CODEX else CL_CHILD
-    marker = _marker(ledger, kind, target, 1, 83)
-    args = _mark_args(tmp_path, marker)
-    command = InboxCommand(target, PROJECT, marker)
-    if kind is Provider.CODEX:
-        other = _mark_args(tmp_path, _marker(ledger, kind, CX_CHILD, 2, 95))
-        rows = _codex_rows(
-            ledger, checkout, args, other, _queued(target), _queued(CX_CHILD)
-        )[:-8]
-        write = codex.write
-    else:
-        shell = shlex.join(("aitm-usage", "--project", str(root), *args))
-        rows = [
-            claude.user(checkout),
-            *claude._native_tool_turn(checkout, shell, _queued(target).decode()),
-        ]
-        write = claude.write
-        remember_claude_session(ledger, marker.session_ref)
+    command, rows = _processing_order_transcript(
+        ledger, checkout, provider, partial(_mark_args, tmp_path)
+    )
+    from test_scan import _native_startup_rows, _startup_bytes
+
+    startup = _native_startup_rows(checkout)
+    for row in startup:
+        row["sessionId"] = str(claude.SESSION)
+    rows = [*startup, *rows[1:]]
+    marker = command.payload
+    target, kind = command.command_id, marker.provider
+    remember_claude_session(ledger, marker.session_ref)
 
     assert enqueue_command(root, command) is None
     queued = root / INBOX_NAME / f"{target}.json"
     saved = _write_private(tmp_path / "original-publication.json", queued.read_bytes())
-    if arrival == "boundary-first":
-        queued.unlink()
-        write(source, rows[:-2] if withhold_target else rows)
-        source.chmod(0o600)
-    before_prefix = source.read_bytes() if source.exists() else b""
+    queued.unlink()
+    claude.write(source, rows)
+    source.chmod(0o600)
+    before_prefix = source.read_bytes()
     before_source = _write_private(tmp_path / "prior-source.jsonl", before_prefix)
     before_captured_at = datetime.now(UTC)
     before = collect_once(registration, ledger)
     snapshot = _write_private(
         tmp_path / "prior-status.json", (root / STATUS_NAME).read_bytes()
     )
-    assert (source.read_bytes() if source.exists() else b"") == before_prefix
+    assert source.read_bytes() == before_prefix
     before_confirmed_at = datetime.now(UTC)
-    released_at = None
-    if arrival == "marker-first":
-        write(source, rows)
-        source.chmod(0o600)
-    else:
-        assert before.held_sources == 1
-        _write_private(queued, saved.read_bytes())
-        released_at = datetime.now(UTC)
-        if withhold_target:
-            write(source, rows)
-    collect_once(registration, ledger)
+    assert before.held_sources == 1
+    (checkpoint,) = ledger.as_of().checkpoints
+    assert checkpoint.cursor.offset == len(_startup_bytes(startup[:4]))
+    assert not any(
+        isinstance(row.record, UsageObservation) for row in ledger.as_of().current
+    )
+    _write_private(queued, saved.read_bytes())
+    released_at = datetime.now(UTC)
+    admitted = collect_once(registration, ledger)
+    assert admitted.deferred_sources == 1
+    assert not any(
+        isinstance(row.record, UsageObservation) for row in ledger.as_of().current
+    )
     after = collect_once(registration, ledger)
     settled = _write_private(
         tmp_path / "settled-status.json", (root / STATUS_NAME).read_bytes()
@@ -406,10 +804,6 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
         before_confirmed_at,
         released_at,
     )
-    if withhold_target:
-        with pytest.raises(QualificationError, match="processing-order"):
-            _verify_order(entry, proof, load_rate_card())
-        return
     _verify_order(entry, proof, load_rate_card())
     late_capture = _write_private(tmp_path / "late-capture.jsonl", before_prefix)
     with pytest.raises(QualificationError, match="processing-order"):
@@ -427,36 +821,102 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
         _verify_order(entry, proof, load_rate_card())
 
 
-def test_fixed_export_uses_actual_ledger_and_replay_bytes(project, tmp_path):
+def _observe_export_snapshots(snapshots, monkeypatch):
+    import os
+    import stat
+    from contextlib import nullcontext
+    from io import BytesIO
+    from types import SimpleNamespace
+
+    from aitm_usage import export
+
+    folders = dict(enumerate(snapshots, 1))
+    entries = {
+        (parent, name): (index, snapshots[folder][name])
+        for parent, folder in folders.items()
+        for index, name in enumerate(snapshots[folder], 10 * parent)
+    }
+    by_descriptor = {fd: data for fd, data in entries.values()}
+
+    def file_status(fd):
+        data = by_descriptor[fd]
+        return os.stat_result(
+            (stat.S_IFREG | 0o600, fd, 1, 1, os.geteuid(), 0, len(data), 0, 0, 0)
+        )
+
+    def file_open(name, flags, *, dir_fd):
+        assert flags == os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+        return entries[dir_fd, name][0]
+
+    def file_stat(name, *, dir_fd, follow_symlinks):
+        assert not follow_symlinks
+        return file_status(entries[dir_fd, name][0])
+
+    pins = {
+        folder: SimpleNamespace(fd=fd, identities=((1, fd),), check=Mock())
+        for fd, folder in folders.items()
+    }
+    monkeypatch.setattr(
+        qualification, "_pin_directory", lambda path: nullcontext(pins[path])
+    )
+    monkeypatch.setattr(export, "_check_acl", Mock())
+    monkeypatch.setattr(
+        export,
+        "os",
+        SimpleNamespace(
+            O_RDONLY=os.O_RDONLY,
+            O_NOFOLLOW=os.O_NOFOLLOW,
+            O_NONBLOCK=os.O_NONBLOCK,
+            listdir=lambda fd: tuple(snapshots[folders[fd]]),
+            open=file_open,
+            fdopen=lambda fd, mode: BytesIO(by_descriptor[fd]),
+            fstat=file_status,
+            stat=file_stat,
+            path=os.path,
+        ),
+    )
+    return pins
+
+
+def test_fixed_export_uses_actual_ledger_and_replay_bytes(reference_rates, monkeypatch):
     from dataclasses import replace
 
     from test_export import _observation
+    from test_install import PROJECT
+    from test_ledger import _LedgerRows, _memory_ledger
 
-    from aitm_usage.export import export_as_of
-    from aitm_usage.pricing import load_rate_card
+    from aitm_usage import export
+    from aitm_usage import ledger as store
+    from aitm_usage.ledger import Ledger
     from aitm_usage.qualification import QualificationError, _verify_exports
     from aitm_usage.types import LedgerBatch
 
-    _, ledger, _ = project
+    ledger = replace(_memory_ledger(store, PROJECT, b"q" * 32), _writer=object())
+    rows = _LedgerRows(ledger.identity, store.APPLICATION_ID, ())
+    monkeypatch.setattr(Ledger, "require_writer", lambda _: None)
+    monkeypatch.setattr(Ledger, "reader", lambda _: rows.connect(write=False))
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda _: rows.connect(write=True)
+    )
     usage, _ = _observation(ledger, "first")
     ledger.apply(LedgerBatch((usage,)))
     view = ledger.as_of()
-    card = load_rate_card()
-    before, after = tmp_path / "before", tmp_path / "after"
-    receipt = export_as_of(view, card, before)
-    export_as_of(view, card, after)
-    _verify_exports(view, card, receipt.sha256, 1, (str(before), str(after)))
+    card = reference_rates
+    receipt, serialized = export._render(view, card)
+    snapshots = {ledger.root / name: dict(serialized) for name in ("before", "after")}
+    pins = _observe_export_snapshots(snapshots, monkeypatch)
+    before, after = map(str, snapshots)
+    _verify_exports(view, card, receipt.sha256, 1, (before, after))
+    assert all(pin.check.call_count == 1 for pin in pins.values())
     with pytest.raises(QualificationError, match="export-parity"):
-        _verify_exports(view, card, "0" * 64, 1, (str(before), str(after)))
+        _verify_exports(view, card, "0" * 64, 1, (before, after))
     with pytest.raises(QualificationError, match="export-parity"):
-        _verify_exports(view, card, receipt.sha256, 1, (str(before), str(before)))
+        _verify_exports(view, card, receipt.sha256, 1, (before, before))
 
     duplicate = replace(usage, key=ledger.pseudonymize("activation-test", "duplicate"))
     ledger.apply(LedgerBatch((duplicate,)))
     with pytest.raises(QualificationError, match="duplicate-observation"):
-        _verify_exports(
-            ledger.as_of(), card, receipt.sha256, 1, (str(before), str(after))
-        )
+        _verify_exports(ledger.as_of(), card, receipt.sha256, 1, (before, after))
 
 
 @pytest.mark.parametrize(
@@ -475,15 +935,18 @@ def test_fixed_export_uses_actual_ledger_and_replay_bytes(project, tmp_path):
     ],
 )
 def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
-    project, scope_case
+    monkeypatch, scope_case
 ):
     from dataclasses import replace
     from datetime import timedelta
     from uuid import UUID
 
     from test_export import _observation
-    from test_install import _add_anchor
+    from test_install import PROJECT
+    from test_ledger import _memory_ledger
 
+    from aitm_usage import ledger as store
+    from aitm_usage import scopes
     from aitm_usage.qualification import (
         QualificationError,
         _usage,
@@ -493,24 +956,73 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
         _Workflow,
         decode_activation_receipt,
     )
-    from aitm_usage.scopes import BoundaryEvidence, drain_inbox, enqueue_command
+    from aitm_usage.scopes import BoundaryEvidence
     from aitm_usage.sources.scan import checkout_anchor_reference
     from aitm_usage.types import (
         ClientVersion,
+        CommandReceipt,
         DevelopmentBinding,
         DraftAlias,
         InboxCommand,
         ItemKey,
         ItemKind,
         ItemParent,
-        LedgerBatch,
+        LedgerView,
         MarkerDisposition,
         Provider,
+        Registration,
         ReviewRole,
+        Revision,
         WorkPhase,
     )
 
-    registration, ledger, _ = project
+    ledger = _memory_ledger(store, PROJECT, b"q" * 32)
+    planning_path = Path("/fixture/planning")
+    dev_path = Path("/fixture/development")
+    history = [LedgerView(PROJECT, 0, (), ())]
+    registration = Registration(
+        PROJECT,
+        ledger.root,
+        (Path("/fixture/transcripts"),),
+        (planning_path, dev_path),
+        CHECKED,
+    )
+    monkeypatch.setattr(
+        qualification,
+        "_effective_registration",
+        lambda ledger, view: (registration, ()),
+    )
+    monkeypatch.setattr(
+        store.Ledger,
+        "as_of",
+        lambda self, sequence=None: history[-1 if sequence is None else sequence],
+    )
+
+    def put(*revisions):
+        prior = history[-1]
+        history.append(
+            replace(
+                prior,
+                sequence=prior.sequence + 1,
+                revisions=(*prior.revisions, *revisions),
+            )
+        )
+
+    def admit(command, evidence=()):
+        disposition, matched, effects = scopes._evaluate(
+            ledger, command, history[-1], evidence, {}
+        )
+        assert disposition is MarkerDisposition.ACCEPTED
+        receipt = CommandReceipt(
+            command,
+            ledger.validate_command(command),
+            disposition,
+            None if matched is None else matched.boundary,
+            None if matched is None else matched.anchor_ref,
+        )
+        key = ledger.pseudonymize("inbox-command", str(command.command_id))
+        put(*effects, Revision(key, 1, receipt))
+
     project_id = ledger.identity.project_id
     template, marker = _observation(ledger, "first")
     start = template.record.observed_at
@@ -524,11 +1036,8 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
         if scope_case == "core-graduation"
         else ItemKey(ItemKind.ISSUE, 1_000_000_095)
     )
-    _add_anchor(registration, ledger, ledger.root.parent, 998)
-    dev_checkout = checkout_anchor_reference(ledger, ledger.root.parent / "anchor-998")
-    planning_checkout = checkout_anchor_reference(
-        ledger, registration.checkout_anchors[0]
-    )
+    dev_checkout = checkout_anchor_reference(ledger, dev_path)
+    planning_checkout = checkout_anchor_reference(ledger, planning_path)
     author = ledger.pseudonymize("activation-test", "author")
     reviewer = ledger.pseudonymize("activation-test", "reviewer")
     attempt = ledger.pseudonymize("activation-test", "attempt")
@@ -589,32 +1098,17 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
             request_ref=target,
         )
         key = ledger.pseudonymize("activation-test", f"usage-{index}")
+        revision = replace(template, key=key, record=observation)
+        command = InboxCommand(command_id, project_id, payload)
+        evidence = (BoundaryEvidence(boundary, anchor),)
         if new_marker:
-            assert (
-                enqueue_command(
-                    ledger.root, InboxCommand(command_id, project_id, payload)
-                )
-                is None
-            )
-        with ledger.writer() as writer:
-            if new_marker:
-                drain = drain_inbox(writer, (BoundaryEvidence(boundary, anchor),))
-                assert drain.receipts[0].disposition is MarkerDisposition.ACCEPTED
-            writer.apply(LedgerBatch((replace(template, key=key, record=observation),)))
+            admit(command, evidence)
+        put(revision)
         return key.value.split(":")[1]
 
     def relationship(payload):
-        assert (
-            enqueue_command(
-                ledger.root, InboxCommand(payload.command_id, project_id, payload)
-            )
-            is None
-        )
-        with ledger.writer() as writer:
-            assert (
-                drain_inbox(writer, ()).receipts[0].disposition
-                is MarkerDisposition.ACCEPTED
-            )
+        command = InboxCommand(payload.command_id, project_id, payload)
+        admit(command)
         return ledger.as_of().sequence
 
     relationship(ItemParent(UUID(int=920), project_id, child_a, epic))
@@ -742,179 +1236,260 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
             _verify_relationship_continuity(after, ledger.as_of())
 
 
+def _recovery_evidence(proof, export, backed_up_at, restored_at):
+    from uuid import UUID
+
+    return qualification._RecoveryEvidence(
+        UUID(proof.backup.project_id),
+        proof.backup.sequence,
+        export.row_count,
+        proof.backup.manifest_sha256,
+        export.sha256,
+        export.sha256,
+        export.sha256,
+        export.sha256,
+        proof.upgrade.version,
+        proof.upgrade.wheel_sha256,
+        datetime.fromisoformat(proof.initial.producer_started),
+        backed_up_at,
+        restored_at,
+        datetime.fromisoformat(proof.upgrade.heartbeat),
+        datetime.fromisoformat(proof.rollback.heartbeat),
+    )
+
+
 def test_recovery_proves_exact_retained_bundle_and_fixed_parity(
-    project,
-    tmp_path,
-    launch_control,
+    install_policy_ledger, reference_rates, monkeypatch
 ):
     from dataclasses import replace
     from datetime import timedelta
     from hashlib import sha256
-    from zipfile import ZipFile
+    from types import SimpleNamespace
+    from uuid import UUID
 
     from test_export import _observation
-    from test_install import _wheel
 
-    from aitm_usage import install
-    from aitm_usage.backup import backup
-    from aitm_usage.export import export_as_of
-    from aitm_usage.pricing import load_rate_card
-    from aitm_usage.qualification import (
-        QualificationError,
-        _BackupProof,
-        _RecoveryEvidence,
-        _RecoveryProof,
-        _verify_recovery,
-        decode_activation_receipt,
+    from aitm_usage import export, install
+    from aitm_usage.backup import BackupReceipt
+    from aitm_usage.ledger import Ledger
+    from aitm_usage.service import REGISTRATION_NAME
+    from aitm_usage.types import LedgerView
+
+    ledger = install_policy_ledger
+    identity = ledger.identity
+    project_id = str(identity.project_id)
+    label = f"org.aitm.usage.{project_id}"
+    usage, _ = _observation(ledger, "first")
+    view = LedgerView(identity.project_id, 2, (usage,), ())
+    result, files = export._render(view, reference_rates)
+    snapshots = tuple(
+        ledger.root / stage
+        for stage in ("before", "restored", "upgraded", "rolled-back")
     )
-    from aitm_usage.types import LedgerBatch
+    _observe_export_snapshots(dict.fromkeys(snapshots, files), monkeypatch)
 
-    _, ledger, _ = project
-    sample = decode_activation_receipt(FIXTURE.read_bytes()).collector
-    wheel, digest = _wheel(tmp_path, "primary")
-    sibling = tmp_path / "aitm_usage-0.1.1-py3-none-any.whl"
-    with ZipFile(wheel) as old, ZipFile(sibling, "w") as new:
-        for name in old.namelist():
-            content = old.read(name)
-            if name.endswith(("METADATA", "RECORD")):
-                content = content.replace(b"0.1.0", b"0.1.1")
-            new.writestr(
-                name.replace(
-                    "aitm_usage-0.1.0.dist-info", "aitm_usage-0.1.1.dist-info"
-                ),
-                content,
-            )
-    sibling_digest = sha256(sibling.read_bytes()).hexdigest()
-    interpreter = Path(sys._base_executable).resolve(strict=True)
+    bundle = Path("/fixture/backup")
+    upgrade_id, rollback_id = str(UUID(int=471)), str(UUID(int=472))
+    observed = {}
 
-    def activate(path, expected, action):
-        return install.install_wheel(
-            ledger,
-            path,
-            interpreter,
-            launch_control,
-            action=action,
-            expected_sha256=expected,
+    def observe_backup(path, database):
+        contents = {
+            qualification._KEY: b"owned key",
+            qualification._DATABASE: database,
+            REGISTRATION_NAME: b"owned registration",
+        }
+        manifest = {
+            "format": "aitm-usage.backup/v1",
+            "project_id": project_id,
+            "key_id": identity.key_id,
+            "schema_version": identity.schema_version,
+            "sequence": view.sequence,
+            "files": {
+                name: sha256(data).hexdigest() for name, data in contents.items()
+            },
+        }
+        proof = ledger.pseudonymize(
+            "collector-backup-manifest", qualification._json(manifest).decode()
+        )
+        raw = qualification._json({**manifest, "proof": proof.value})
+        observed.update({path / name: data for name, data in contents.items()})
+        observed[path / "manifest.json"] = raw
+        return BackupReceipt(
+            identity.project_id,
+            identity.key_id,
+            identity.schema_version,
+            view.sequence,
+            sha256(raw).hexdigest(),
         )
 
-    def snapshot(label):
-        path = tmp_path / label
-        return str(path), export_as_of(ledger.as_of(saved.sequence), card, path)
+    saved = observe_backup(bundle, b"snapshot sqlite bytes")
+    upgrade_backup = observe_backup(
+        ledger.root / "service-backups" / upgrade_id, b"upgrade sqlite bytes"
+    )
+    rollback_backup = observe_backup(
+        ledger.root / "service-backups" / rollback_id, b"rollback sqlite bytes"
+    )
 
-    card = load_rate_card()
-    usage, _ = _observation(ledger, "first")
-    ledger.apply(LedgerBatch((usage,)))
-    initial = activate(wheel, digest, "install")
-    bundle = tmp_path / "bundle"
-    saved = backup(ledger, bundle)
-    backup_at = datetime.now(UTC)
-    before, export = snapshot("before")
-    stop = install.stop_agent(ledger, launch_control)
-    restored = install.restore_for_agent(ledger, bundle, launch_control)
-    restore_at = datetime.now(UTC)
-    restored_path, _ = snapshot("restored")
-    resumed = activate(wheel, digest, "install")
-    upgraded = activate(sibling, sibling_digest, "upgrade")
-    upgraded_path, _ = snapshot("upgraded")
-    rollback = activate(wheel, digest, "upgrade")
-    rollback_path, _ = snapshot("rolled-back")
-    collector = replace(
-        sample,
-        version=initial.version,
-        wheel_sha256=digest,
-        interpreter_version=initial.interpreter_version,
-    )
-    evidence = _RecoveryEvidence(
-        ledger.identity.project_id,
-        saved.sequence,
-        1,
-        saved.manifest_sha256,
-        export.sha256,
-        export.sha256,
-        export.sha256,
-        export.sha256,
-        upgraded.version,
-        sibling_digest,
-        datetime.fromisoformat(initial.producer_started),
-        backup_at,
-        restore_at,
-        datetime.fromisoformat(upgraded.heartbeat),
-        datetime.fromisoformat(rollback.heartbeat),
-    )
-    proof = _RecoveryProof(
+    def lifecycle(status, seconds, *, sibling=False, backup=None, backup_id=None):
+        started = CHECKED + timedelta(seconds=seconds)
+        return install.InstallReceipt(
+            project_id,
+            label,
+            status,
+            "0.1.1" if sibling else "0.1.0",
+            ("b" if sibling else "a") * 64,
+            "3.13.9",
+            heartbeat=(started + timedelta(seconds=1)).isoformat(),
+            producer_mode="service",
+            producer_pid=321,
+            producer_started=started.isoformat(),
+            backup=backup,
+            backup_id=backup_id,
+        )
+
+    proof = qualification._RecoveryProof(
         str(ledger.root),
         str(bundle),
-        initial,
-        stop,
-        _BackupProof("backed-up", **saved.as_dict()),
-        _BackupProof("restored", **restored.as_dict()),
-        resumed,
-        upgraded,
-        rollback,
-        before,
-        restored_path,
-        upgraded_path,
-        rollback_path,
+        lifecycle("installed", 0),
+        install.InstallReceipt(project_id, label, "stopped"),
+        qualification._BackupProof("backed-up", **saved.as_dict()),
+        qualification._BackupProof("restored", **saved.as_dict()),
+        lifecycle("installed", 4),
+        lifecycle(
+            "upgraded", 6, sibling=True, backup=upgrade_backup, backup_id=upgrade_id
+        ),
+        lifecycle("upgraded", 8, backup=rollback_backup, backup_id=rollback_id),
+        *map(str, snapshots),
     )
-    _verify_recovery(evidence, proof, collector, card)
-    with pytest.raises(QualificationError, match="recovery-evidence"):
-        _verify_recovery(
-            replace(evidence, restored_at=restore_at - timedelta(days=1)),
+    backed_up_at = CHECKED + timedelta(seconds=2)
+    restored_at = CHECKED + timedelta(seconds=3)
+    evidence = _recovery_evidence(proof, result, backed_up_at, restored_at)
+    collector = _collector_for_lifecycle(proof.initial)
+    wheels = {
+        install._wheel_path(ledger, receipt.version, receipt.wheel_sha256): receipt
+        for receipt in (proof.initial, proof.upgrade)
+    }
+
+    def read_wheel(path, digest, *, private):
+        assert private and digest == wheels[path].wheel_sha256
+        return SimpleNamespace(
+            files={
+                Path("aitm_usage/cli.py"): b"identical installed source",
+                Path(
+                    f"aitm_usage-{wheels[path].version}.dist-info/METADATA"
+                ): b"distinct versions",
+            }
+        )
+
+    open_ledger = Mock(return_value=ledger)
+    registration = Mock()
+    monkeypatch.setattr(Ledger, "open", open_ledger)
+
+    def read_fixed_view(actual, cutoff):
+        assert actual is ledger and cutoff == view.sequence
+        return view
+
+    monkeypatch.setattr(Ledger, "as_of", read_fixed_view)
+    monkeypatch.setattr(qualification, "load_registration", registration)
+    monkeypatch.setattr(qualification, "_wheel", read_wheel)
+    monkeypatch.setattr(qualification, "_read_proof", lambda path, *_: observed[path])
+
+    verify = qualification._verify_recovery
+    verify(evidence, proof, collector, reference_rates)
+    open_ledger.assert_called_once_with(ledger.root, identity.project_id)
+    registration.assert_called_once_with(ledger)
+    with pytest.raises(qualification.QualificationError, match="recovery-evidence"):
+        verify(
+            replace(evidence, restored_at=restored_at - timedelta(days=1)),
             proof,
             collector,
-            card,
+            reference_rates,
         )
-    (bundle / "manifest.json").write_bytes(b"{}")
-    with pytest.raises(QualificationError, match="recovery-parity"):
-        _verify_recovery(evidence, proof, collector, card)
+    observed[bundle / "manifest.json"] = b"{}"
+    with pytest.raises(qualification.QualificationError, match="recovery-parity"):
+        verify(evidence, proof, collector, reference_rates)
 
 
 def test_cli_cannot_use_receipt_from_another_registered_project(
-    project,
-    tmp_path,
+    collector_policy,
     monkeypatch,
     capsys,
 ):
-    from aitm_usage import qualification
+    from aitm_usage import service
 
-    _, ledger, _ = project
+    case = collector_policy
+    case.configure()
+    ledger = case.ledger
+    receipt = _receipt()
+    path = Path("/fixture/actual-shaped.json")
+    proof_path = ledger.root / qualification.PROOF_NAME
+    real_exists = Path.exists
+
+    def read_owned(requested, *, private, limit):
+        assert requested == path and not private
+        assert limit == qualification._MAX_EVIDENCE_BYTES
+        return json.dumps(receipt).encode()
+
     monkeypatch.setattr(qualification, "_now", lambda: CHECKED)
-    _write_private(ledger.root / "activation-proof.json", b"{}")
-    path = tmp_path / "actual-shaped.json"
-    path.write_text(json.dumps(_receipt()))
+    monkeypatch.setattr(qualification, "_read_owned", read_owned)
+    monkeypatch.setattr(
+        Path, "exists", lambda path: path == proof_path or real_exists(path)
+    )
+    open_project = Mock(return_value=ledger)
+    supervisor = Mock()
+    monkeypatch.setattr(cli, "open_project", open_project)
+    monkeypatch.setattr(cli, "ServiceSupervisor", supervisor)
+    assert receipt["project_id"] != str(ledger.identity.project_id)
     assert _cli(monkeypatch, capsys, ledger.root, path) == (
         1,
         {"status": "project-mismatch"},
     )
-    receipt = _receipt()
     receipt["project_id"] = str(ledger.identity.project_id)
-    receipt["registration_cutoff"] = "2026-11-09T16:00:00+00:00"
-    path.write_text(json.dumps(receipt))
+    receipt["registration_cutoff"] = service.load_registration(
+        ledger
+    ).cutoff.isoformat()
     assert _cli(monkeypatch, capsys, ledger.root, path) == (
         1,
         {"status": "service-evidence"},
     )
+    open_project.assert_called_once_with(ledger.root)
+    supervisor.assert_called_once_with(ledger)
+
+
+def _collect_activation_transcripts(case):
+    from datetime import timedelta
+
+    from test_claude import request, user
+    from test_service import _codex_transcript
+
+    native = case.native
+    case.configure()
+    native.write(native.root / "codex.jsonl", _codex_transcript(native.checkout))
+    native.write(
+        native.root / "claude.jsonl", [user(native.checkout), request(native.checkout)]
+    )
+    case.clock.now.return_value += timedelta(minutes=1)
+    return case.collect()
 
 
 def test_watermarks_bind_historical_authenticated_offsets_and_current_progress(
-    project,
+    collector_policy,
     monkeypatch,
 ):
     from dataclasses import replace
     from datetime import timedelta
 
-    from test_service import _fixtures
+    from test_codex import end
 
     from aitm_usage import qualification, service
-    from aitm_usage.types import Provider, _decode
+    from aitm_usage.types import Provider
 
-    registration, ledger, _ = project
-    _fixtures(registration.source_roots[0], registration.checkout_anchors[0])
-    service.collect_once(registration, ledger)
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    historical = _collect_activation_transcripts(case)
     view = ledger.as_of()
-    raw = (ledger.root / service.STATUS_NAME).read_bytes()
-    captured = _decode(raw, service._Status, validate_ref=ledger.validate_source_ref)
-    current = service.status_report(ledger.root, ledger)
+    captured = service._read_status(ledger.root)
+    assert isinstance(captured, service._Status)
     receipt = qualification.decode_activation_receipt(FIXTURE.read_bytes())
     expected = {entry.provider: entry for entry in receipt.providers}
     evidence = tuple(
@@ -925,9 +1500,17 @@ def test_watermarks_bind_historical_authenticated_offsets_and_current_progress(
             observed_through=datetime.fromisoformat(source["observed_through"]),
             retention_seconds=None,
         )
-        for source in current["sources"]
+        for source in historical["sources"]
     )
-    check_at = max(entry.observed_through for entry in evidence) + timedelta(seconds=10)
+    case.clock.now.return_value += timedelta(seconds=5)
+    native.write(native.root / "codex.jsonl", [end()], append=True)
+    current = case.collect()
+    assert len(evidence) == len(current["sources"]) == 2
+    assert any(
+        source["offset"] > entry.offset
+        for source, entry in zip(current["sources"], evidence, strict=True)
+    )
+    check_at = case.clock.now.return_value + timedelta(seconds=1)
     monkeypatch.setattr(qualification, "_now", lambda: check_at)
     qualification._verify_watermarks(ledger, view, captured, current, evidence)
 
@@ -935,23 +1518,36 @@ def test_watermarks_bind_historical_authenticated_offsets_and_current_progress(
     with pytest.raises(qualification.QualificationError, match="source-watermark"):
         qualification._verify_watermarks(ledger, view, captured, current, wrong_capture)
 
+    forged = replace(
+        captured,
+        observed=(
+            replace(
+                captured.observed[0],
+                proof=ledger.pseudonymize("fixture", "wrong-proof"),
+            ),
+            *captured.observed[1:],
+        ),
+    )
+    with pytest.raises(qualification.QualificationError, match="source-watermark"):
+        qualification._verify_watermarks(ledger, view, forged, current, evidence)
+
     current["sources"][0]["observed_through"] = None
     with pytest.raises(qualification.QualificationError, match="source-watermark"):
         qualification._verify_watermarks(ledger, view, captured, current, evidence)
 
 
-def test_retry_and_nested_observations_cannot_be_claimed_without_evidence(project):
+def test_retry_and_nested_observations_cannot_be_claimed_without_evidence(
+    collector_policy,
+):
     from dataclasses import replace
-
-    from test_service import _fixtures
 
     from aitm_usage import qualification, service
 
-    registration, ledger, _ = project
-    _fixtures(registration.source_roots[0], registration.checkout_anchors[0])
-    service.collect_once(registration, ledger)
+    case = collector_policy
+    ledger = case.ledger
+    snapshot = _collect_activation_transcripts(case)
+    registration = service.load_registration(ledger)
     view = ledger.as_of()
-    snapshot = service.status_report(ledger.root, ledger)
     evidence = qualification.decode_activation_receipt(FIXTURE.read_bytes()).providers[
         0
     ]
@@ -960,6 +1556,10 @@ def test_retry_and_nested_observations_cannot_be_claimed_without_evidence(projec
         evidence,
         stream=source["source_ref"].split(":")[1],
         coverage=replace(evidence.coverage, model_switch=qualification._Metric.GAP),
+    )
+    assert any(
+        usage.boundary.stream_ref.value == source["source_ref"]
+        for usage in qualification._usage(view).values()
     )
     qualification._verify_live_coverage(ledger, view, evidence, registration.cutoff)
     for field in ("retry", "nested"):
@@ -975,39 +1575,53 @@ def test_retry_and_nested_observations_cannot_be_claimed_without_evidence(projec
             )
 
 
-def test_selected_source_gap_refuses_missing_live_file_without_penalizing_unrelated_hold(
-    project,
-    tmp_path,
-):
+def _selected_source_evidence(status):
     from dataclasses import replace
 
-    from test_service import _fixtures
-
-    from aitm_usage import qualification, service
-    from aitm_usage.pricing import load_rate_card
     from aitm_usage.types import Provider
 
-    registration, ledger, _ = project
-    approved = registration.source_roots[0]
-    _fixtures(approved, registration.checkout_anchors[0])
-    _unbound_claude_source(registration, tmp_path / "unbound")
-    service.collect_once(registration, ledger)
-    status = service.status_report(ledger.root, ledger)
-    assert status["held_sources"] == 1
     fixture = qualification.decode_activation_receipt(FIXTURE.read_bytes())
     providers = {entry.provider: entry for entry in fixture.providers}
-    entries = tuple(
+    return tuple(
         replace(
             providers[Provider(row["provider"])], stream=row["source_ref"].split(":")[1]
         )
         for row in status["sources"]
         if row["observed_through"] is not None
     )
+
+
+def test_selected_source_gap_refuses_missing_live_file_without_penalizing_unrelated_hold(
+    collector_policy, reference_rates
+):
+    from datetime import timedelta
+
+    from test_claude import request, usage, user
+    from test_service import FIXTURES
+
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    unrelated = native.checkout.with_name("unbound-checkout")
+    rows = [user(unrelated), request(unrelated, counts=usage())]
+    for row in rows:
+        row["sessionId"] = "00000000-0000-4000-8000-00000000aaaa"
+    native.write(native.root / "unrelated.jsonl", rows)
+    case.configure()
+    case.use_ledger_rows()
+    for provider in ("codex", "claude"):
+        data = (FIXTURES / provider / "usage.jsonl").read_bytes()
+        native.contents[native.root / f"{provider}.jsonl"] = data.replace(
+            b"CHECKOUT", str(native.checkout).encode()
+        )
+    case.clock.now.return_value += timedelta(minutes=1)
+    status = case.collect()
+    assert status["held_sources"] == 1
+    entries = _selected_source_evidence(status)
     assert len(entries) == 2
     view = ledger.as_of()
-    card = load_rate_card()
-    qualification._verify_selected_sources(ledger, view, entries, card)
+    qualification._verify_selected_sources(ledger, view, entries, reference_rates)
 
-    (approved / "claude.jsonl").rename(tmp_path / "no-longer-approved.jsonl")
+    del native.contents[native.root / "claude.jsonl"]
     with pytest.raises(qualification.QualificationError, match="selected-source-gap"):
-        qualification._verify_selected_sources(ledger, view, entries, card)
+        qualification._verify_selected_sources(ledger, view, entries, reference_rates)
+    assert ledger.as_of() == view

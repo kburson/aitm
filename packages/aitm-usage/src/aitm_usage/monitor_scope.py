@@ -762,6 +762,62 @@ def _restorable_owned_route(
     return None
 
 
+def _project_journal_releases(
+    state: _ScopeSnapshot | _ScopeSnapshotV2,
+    batch: VerifiedScopeBatch,
+    releases: tuple[_JournalScopeRelease, ...],
+    conflicts: frozenset[UUID],
+    verify_prefix: Callable[[SourceCursor], object],
+) -> tuple[tuple[ProofHold, ...], tuple[tuple[SourceBoundary, int], ...]]:
+    """Project only retained native releases consistent with the current scope."""
+    source = batch._locator._source
+    holds = {hold.command_id: hold for hold in state.holds}
+    terminals = []
+    for release in releases:
+        hold = release.hold
+        position = hold.position
+        if (
+            batch.source_id != position.source_id
+            or batch.surface != position.surface
+            or source.stream_ref != position.stream_ref
+        ):
+            continue
+        original = holds.get(hold.command_id)
+        prefix = release.terminal_prefix
+        if (
+            not isinstance(state, _ScopeSnapshotV2)
+            or type(source) is not CandidateSource
+            or source.session_ref != position.session_ref
+            or _prefix_identity(prefix)
+            != (source.stream_ref, source.locator_ref, source.incarnation_ref)
+            or original is None
+            or original.state not in (HoldState.HELD, HoldState.GAP)
+            or replace(original, state=HoldState.HELD) != hold
+            or release.original not in state.held_route_targets
+            or release.outcome is not HoldState.RESOLVED
+            or {hold.command_id, release.command_id} & conflicts
+            or any(
+                row.result.command_id == hold.command_id
+                or row.command_id == release.command_id
+                for row in state.resolutions
+            )
+            or any(
+                row.hold_id == hold.command_id or row.command_id == release.command_id
+                for row in state.route_dispositions
+            )
+            or _restorable_owned_route(state.events, hold, release.checkout)
+            != release.prior_route
+        ):
+            raise LedgerError("Committed settlement conflicts with scope history")
+        try:
+            verify_prefix(prefix)
+        except (OSError, ValueError):
+            raise LedgerError("Committed settlement native prefix changed") from None
+        holds[hold.command_id] = replace(hold, state=release.outcome)
+        terminals.append((release.terminal, release.completion_ordinal))
+    return tuple(holds.values()), tuple(terminals)
+
+
 def resolve_route(
     observation: NativeObservation, registry: RegistryView, scopes: ScopeView
 ) -> RouteDecision:
@@ -3276,53 +3332,13 @@ class ScopeState:
         self._recheck_batch(batch)
         registry = self.registry.view(_confirm_publication=confirm)
         source = batch._locator._source
-        holds = {hold.command_id: hold for hold in state.holds}
-        terminals = []
-        for release in releases:
-            hold = release.hold
-            position = hold.position
-            if (
-                batch.source_id != position.source_id
-                or batch.surface != position.surface
-                or source.stream_ref != position.stream_ref
-            ):
-                continue
-            original = holds.get(hold.command_id)
-            prefix = release.terminal_prefix
-            if (
-                not isinstance(state, _ScopeSnapshotV2)
-                or type(source) is not CandidateSource
-                or source.session_ref != position.session_ref
-                or _prefix_identity(prefix)
-                != (source.stream_ref, source.locator_ref, source.incarnation_ref)
-                or original is None
-                or original.state not in (HoldState.HELD, HoldState.GAP)
-                or replace(original, state=HoldState.HELD) != hold
-                or release.original not in state.held_route_targets
-                or release.outcome is not HoldState.RESOLVED
-                or {hold.command_id, release.command_id} & conflicts
-                or any(
-                    row.result.command_id == hold.command_id
-                    or row.command_id == release.command_id
-                    for row in state.resolutions
-                )
-                or any(
-                    row.hold_id == hold.command_id
-                    or row.command_id == release.command_id
-                    for row in state.route_dispositions
-                )
-                or _restorable_owned_route(state.events, hold, release.checkout)
-                != release.prior_route
-            ):
-                raise LedgerError("Committed settlement conflicts with scope history")
-            try:
-                _capture_position(source, prefix, fixed=prefix)
-            except (OSError, ValueError):
-                raise LedgerError(
-                    "Committed settlement native prefix changed"
-                ) from None
-            holds[hold.command_id] = replace(hold, state=release.outcome)
-            terminals.append((release.terminal, release.completion_ordinal))
+        holds, terminals = _project_journal_releases(
+            state,
+            batch,
+            releases,
+            conflicts,
+            lambda prefix: _capture_position(source, prefix, fixed=prefix),
+        )
         if progress is not None:
             if batch._completion_progress is not progress:
                 raise LedgerError(
@@ -3333,10 +3349,10 @@ class ScopeState:
                     raise LedgerError("Settlement checkout identity changed")
         view = ScopeView(
             state.events,
-            tuple(holds.values()),
+            holds,
             batch._proofs if progress is None else progress.proofs,
             registry,
-            tuple(terminals),
+            terminals,
         )
         _ISSUED_VIEWS[id(view)] = view
         return view

@@ -2,9 +2,11 @@ import hashlib
 import json
 import sqlite3
 import sys
-from contextlib import closing
+from contextlib import closing, nullcontext
 from datetime import UTC, datetime
+from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import MagicMock, Mock
 from uuid import UUID
 
 import pytest
@@ -88,9 +90,129 @@ def _durable_bytes(project):
     )
 
 
+@pytest.fixture
+def catalog_policy(monkeypatch):
+    """Feed only metadata SELECT results to real ledger admission and upgrade."""
+    key = b"v" * 32
+    root = Path("/fixture/project-state")
+    base_catalog = (
+        (
+            "table",
+            "checkpoints",
+            "checkpoints",
+            "CREATE TABLE checkpoints (payload TEXT) STRICT",
+        ),
+        (
+            "table",
+            "commits",
+            "commits",
+            "CREATE TABLE commits (sequence INTEGER PRIMARY KEY) STRICT",
+        ),
+    )
+    v2_catalog = (
+        ("table", "monitor_revisions", "monitor_revisions", ledger._MONITOR_SCHEMA[0]),
+        (
+            "index",
+            "monitor_revision_sequence",
+            "monitor_revisions",
+            ledger._MONITOR_SCHEMA[1],
+        ),
+    )
+    v3_catalog = (
+        (
+            "table",
+            "monitor_delivery_receipts",
+            "monitor_delivery_receipts",
+            ledger._DELIVERY_SCHEMA,
+        ),
+    )
+
+    def supported(version):
+        if version == 1:
+            return base_catalog
+        if version == 2:
+            return tuple(sorted((*base_catalog, *v2_catalog), key=lambda row: row[1]))
+        assert version == 3
+        return tuple(
+            sorted((*base_catalog, *v2_catalog, *v3_catalog), key=lambda row: row[1])
+        )
+
+    def observed(version, *, reported=None, catalog=None):
+        identity = ledger._identity(PROJECT, key, version)
+        store = ledger.Ledger(root, identity, key)
+        queries = []
+        openings = []
+        metadata = {
+            "PRAGMA user_version": (version if reported is None else reported,),
+            "PRAGMA journal_mode": ("wal",),
+            "PRAGMA application_id": (ledger.APPLICATION_ID,),
+            "SELECT project_id, key_id FROM identity WHERE singleton = 1": (
+                str(PROJECT),
+                identity.key_id,
+            ),
+            "SELECT COALESCE(MAX(sequence), 0) FROM commits": (1,),
+        }
+
+        def connection(path, *, write):
+            assert path == store.database_path
+            openings.append(write)
+
+            def execute(statement):
+                sql = " ".join(statement.split())
+                queries.append(sql)
+                if sql == ("BEGIN IMMEDIATE" if write else "BEGIN"):
+                    return None
+                if (
+                    sql
+                    == "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name"
+                ):
+                    return supported(version) if catalog is None else catalog
+                assert sql in metadata, f"Unexpected ledger query: {sql}"
+                return SimpleNamespace(fetchone=lambda: metadata[sql])
+
+            conn = MagicMock(spec=sqlite3.Connection)
+            conn.execute.side_effect = execute
+            return nullcontext(conn)
+
+        monkeypatch.setattr(ledger, "_connection", connection)
+        return store, queries, openings
+
+    def read_storage(path, project_id):
+        assert (path, project_id) == (root, PROJECT)
+        return key
+
+    pins = Mock()
+    state_files = ((1, 2), (1, 3), (1, 4), (1, 5))
+
+    def read_key(path, project_id, identity):
+        assert (path, project_id, identity) == (root, PROJECT, state_files[-1])
+        return key
+
+    monkeypatch.setattr(ledger, "_supported_schema", supported)
+    monkeypatch.setattr(ledger, "_validate_storage", read_storage)
+    monkeypatch.setattr(ledger, "_read_key", read_key)
+    monkeypatch.setattr(ledger, "_state_files", lambda path: state_files)
+    monkeypatch.setattr(
+        ledger, "project_guard", lambda path, project: nullcontext(pins)
+    )
+    monkeypatch.setattr(ledger, "_lease", lambda path: nullcontext(pins))
+    monkeypatch.setattr(ledger, "_pin_directory", lambda path: nullcontext(pins))
+    return observed, supported
+
+
 def test_schema_upgrade_preserves_legacy_identity_and_export_bytes(project, tmp_path):
     before = project.as_of()
     key = project.key_path.read_bytes()
+    legacy_backup = tmp_path / "legacy-backup"
+    receipt = backup.backup(project, legacy_backup)
+    assert receipt.schema_version == 1
+    assert backup.verify_backup(legacy_backup, project) == receipt
+    assert json.loads((legacy_backup / "manifest.json").read_bytes())["format"] == (
+        "aitm-usage.backup/v1"
+    )
+    assert ledger.Ledger.open(project.root, PROJECT).as_of() == before
+    canonical = json.dumps(ledger._supported_schema(1), separators=(",", ":")).encode()
+    assert hashlib.sha256(canonical).hexdigest() == LEGACY_FINGERPRINT
     legacy_export = tmp_path / "legacy"
     card = load_rate_card()
     expected_receipt = export_as_of(before, card, legacy_export)
@@ -208,15 +330,30 @@ def test_mixed_or_interrupted_upgrade_rolls_back(project, monkeypatch, tmp_path)
 
 
 @pytest.mark.parametrize("version", [1, 2])
-def test_schema_tag_requires_its_exact_tables(project, version):
-    if version == 1:
-        statement = "CREATE TABLE monitor_revisions (payload TEXT)"
+def test_schema_tag_requires_its_exact_tables(catalog_policy, version):
+    observed, supported = catalog_policy
+    if version == 2:
+        catalog = supported(1)
     else:
-        statement = "PRAGMA user_version = 2"
-    with project.writer() as writer, writer._write_transaction() as conn:
-        conn.execute(statement)
-    with pytest.raises(ledger.LedgerError):
+        unexpected = (
+            "table",
+            "monitor_revisions",
+            "monitor_revisions",
+            "CREATE TABLE monitor_revisions (payload TEXT)",
+        )
+        catalog = (*supported(1), unexpected)
+    project, queries, openings = observed(1, reported=version, catalog=catalog)
+    with pytest.raises(ledger.LedgerError, match="Invalid ledger table schema"):
         ledger.Ledger.open(project.root, PROJECT)
+    _assert_rejected_catalog_read(queries, openings)
+
+
+def _assert_rejected_catalog_read(queries, openings):
+    assert openings == [False]
+    assert (
+        queries[-1]
+        == "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name"
+    )
 
 
 @pytest.mark.parametrize(
@@ -230,21 +367,43 @@ def test_schema_tag_requires_its_exact_tables(project, version):
     ids=["future-version", "missing-table", "incompatible-v2-layout", "stale-head"],
 )
 def test_delivery_upgrade_refuses_unknown_or_incomplete_catalog(
-    project, version, mutation
+    catalog_policy, version, mutation
 ):
-    sequence = project.as_of().sequence
-    project.upgrade_monitor_schema(sequence)
-    store = ledger.Ledger.open(project.root, PROJECT)
-    if version == 3:
-        store.upgrade_delivery_schema(sequence)
-        store = ledger.Ledger.open(project.root, PROJECT)
-    if mutation is not None:
-        with store.writer() as writer, writer._write_transaction() as conn:
-            conn.execute(mutation)
-    before = _durable_bytes(store)
-    with pytest.raises(ledger.LedgerError):
-        store.upgrade_delivery_schema(sequence + int(mutation is None))
-    assert _durable_bytes(store) == before
+    observed, supported = catalog_policy
+    if mutation is None:
+        store, queries, openings = observed(version)
+        with pytest.raises(
+            ledger.ConflictError,
+            match="Ledger changed before delivery schema upgrade",
+        ):
+            store.upgrade_delivery_schema(2)
+        assert openings == [False, True]
+        assert queries[-1] == "SELECT COALESCE(MAX(sequence), 0) FROM commits"
+        return
+    if mutation == "PRAGMA user_version = 4":
+        store, queries, openings = observed(version, reported=4)
+        with pytest.raises(ledger.LedgerError, match="Unsupported ledger schema"):
+            store.upgrade_delivery_schema(1)
+        assert openings == [False]
+        assert queries == ["BEGIN", "PRAGMA user_version"]
+        return
+
+    if mutation == "DROP TABLE monitor_delivery_receipts":
+        catalog = tuple(
+            row for row in supported(version) if row[1] != "monitor_delivery_receipts"
+        )
+    else:
+        extra = (
+            "table",
+            "monitor_delivery_receipts",
+            "monitor_delivery_receipts",
+            mutation,
+        )
+        catalog = tuple(sorted((*supported(version), extra), key=lambda row: row[1]))
+    store, queries, openings = observed(version, catalog=catalog)
+    with pytest.raises(ledger.LedgerError, match="Invalid ledger table schema"):
+        store.upgrade_delivery_schema(1)
+    _assert_rejected_catalog_read(queries, openings)
 
 
 def test_v3_restore_authenticates_delivery_rows(project, tmp_path, monkeypatch):
@@ -272,6 +431,12 @@ def test_v3_restore_authenticates_delivery_rows(project, tmp_path, monkeypatch):
     store = ledger.Ledger.open(project.root, PROJECT)
     store.upgrade_delivery_schema(sequence)
     store = ledger.Ledger.open(project.root, PROJECT)
+    before = _durable_bytes(store)
+    with pytest.raises(
+        ledger.ConflictError, match="Ledger changed before delivery schema upgrade"
+    ):
+        store.upgrade_delivery_schema(sequence + 1)
+    assert _durable_bytes(store) == before
 
     def revision(number):
         return MonitorRevision(
@@ -330,31 +495,40 @@ def test_v3_restore_authenticates_delivery_rows(project, tmp_path, monkeypatch):
     assert _durable_bytes(store) == before
     assert store._monitor_delivery_receipt(receipt.key, receipt.revision) == receipt
 
+    with store.writer() as writer, writer._write_transaction() as conn:
+        conn.execute("DROP TABLE monitor_delivery_receipts")
+    incomplete = _durable_bytes(store)
+    with pytest.raises(ledger.LedgerError, match="Invalid ledger table schema"):
+        store.upgrade_delivery_schema(restored.sequence)
+    assert _durable_bytes(store) == incomplete
+
 
 def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
-    project, tmp_path, monkeypatch
+    catalog_policy, monkeypatch
 ):
-    old_view = project.as_of()
-    saved = tmp_path / "backup"
-    receipt = backup.backup(project, saved)
-    assert receipt.schema_version == 1
-    assert backup.verify_backup(saved, project) == receipt
-    assert json.loads((saved / "manifest.json").read_bytes())["format"] == (
-        "aitm-usage.backup/v1"
-    )
-    assert ledger.Ledger.open(project.root, PROJECT).as_of() == old_view
+    _, supported = catalog_policy
+    root = Path("/fixture/runtime")
+    executable = root / "aitm-usage"
 
-    executable = tmp_path / "aitm-usage"
+    def fingerprint(version):
+        data = json.dumps(supported(version), separators=(",", ":"))
+        return [
+            ledger.APPLICATION_ID,
+            version,
+            hashlib.sha256(data.encode()).hexdigest(),
+        ]
+
     observed = {
         "version": "0.1.0",
         "interpreter_version": "3.13.9",
         "interpreter": str(executable.with_name("python")),
         "packages": ["aitm-usage"],
-        "schema": [1095324757, 1, LEGACY_FINGERPRINT],
+        "schema": fingerprint(1),
         "entry_points": [["console_scripts", "aitm-usage", "aitm_usage.cli:main"]],
         "witness_capable": True,
     }
-    monkeypatch.setattr(install, "_inspect_surface", lambda *args: tmp_path)
+    monkeypatch.setattr(install, "_supported_schema", supported)
+    monkeypatch.setattr(install, "_inspect_surface", lambda *args: root)
     monkeypatch.setattr(install, "_run_python", lambda *args: json.dumps(observed))
     monkeypatch.setattr(
         install.subprocess,
@@ -364,7 +538,7 @@ def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
         ),
     )
     wheel = install._Wheel("0.1.0", "1" * 64, b"", {})
-    args = (executable, tmp_path / "python3", "3.13.9", wheel, b"pinned launcher")
+    args = (executable, root / "python3", "3.13.9", wheel, b"pinned launcher")
     assert install._probe_runtime(*args, schema_version=1).witness_capable
     with pytest.raises(install.InstallError):
         install._probe_runtime(*args, schema_version=2)
@@ -374,14 +548,6 @@ def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
     observed["schema"][1:] = [1, "0" * 64]
     with pytest.raises(install.InstallError):
         install._probe_runtime(*args, schema_version=1)
-
-    def fingerprint(version):
-        data = json.dumps(ledger._supported_schema(version), separators=(",", ":"))
-        return [
-            ledger.APPLICATION_ID,
-            version,
-            hashlib.sha256(data.encode()).hexdigest(),
-        ]
 
     observed["schema"] = [fingerprint(1), fingerprint(2)]
     for version in (1, 2):
@@ -393,14 +559,24 @@ def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
         assert install._probe_runtime(*args, schema_version=version).witness_capable
 
 
-def test_legacy_global_state_and_report_project_uuid_are_separate(
-    project, monkeypatch, capsys
-):
+def test_legacy_global_state_and_report_project_uuid_are_separate(monkeypatch, capsys):
+    key = b"c" * 32
+    project = ledger.Ledger(
+        Path("/fixture/legacy"), ledger._identity(PROJECT, key), key
+    )
+    open_project = Mock(return_value=project)
+    status_report = Mock(return_value={"heartbeat": None})
+    monkeypatch.setattr(cli, "open_project", open_project)
+    monkeypatch.setattr(cli, "status_report", status_report)
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
     monkeypatch.setattr(
         sys, "argv", ["aitm-usage", "--project", str(project.root), "status", "--json"]
     )
     assert cli.main() == 0
-    assert isinstance(json.loads(capsys.readouterr().out), dict)
+    assert json.loads(capsys.readouterr().out) == {
+        "heartbeat": None,
+        "heartbeat_age_seconds": None,
+    }
 
     command = ["monitor", "report", "--project", str(PROJECT)]
     monkeypatch.setattr(sys, "argv", ["aitm-usage", *command])
@@ -414,3 +590,5 @@ def test_legacy_global_state_and_report_project_uuid_are_separate(
         cli.main()
     assert rejected.value.code == 2
     assert "cannot combine" in capsys.readouterr().err
+    open_project.assert_called_once_with(project.root)
+    status_report.assert_called_once_with(project.root, project)

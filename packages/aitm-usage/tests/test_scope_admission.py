@@ -1,22 +1,34 @@
 """Scoped producer admission and the mixed monitor inbox."""
 
 import json
+import os
 import shutil
 import sys
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from io import BytesIO
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from monitor_inbox_cases import MonitorInboxFiles
 
-from aitm_usage import cli, monitor_control, monitor_registry
+from aitm_usage import cli, monitor_control, monitor_registry, scope_admission
+from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
 from aitm_usage.monitor_control import ControlInbox, ScopeInboxReader
 from aitm_usage.monitor_registry import (
     AnchorRequest,
     ControlCommand,
+    ControlStatus,
     ProjectRegistrationRequest,
+    RegisteredProject,
     Registry,
+    RegistryView,
+    _PhysicalDirectory,
+    _ServiceEvidence,
 )
 from aitm_usage.monitor_scope import Scope
 from aitm_usage.scope_admission import MarkRequest
@@ -26,21 +38,25 @@ NOW = datetime(2026, 11, 10, tzinfo=UTC)
 
 
 @pytest.fixture(autouse=True)
-def isolated_writer_guard(tmp_path, monkeypatch):
-    monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+def isolated_writer_guard(request, monkeypatch):
+    if "tmp_path" in request.fixturenames:
+        tmp_path = request.getfixturevalue("tmp_path")
+        monkeypatch.setattr(
+            "aitm_usage.ledger._control_root", lambda: tmp_path / "control"
+        )
+
+
+def _mark_document():
+    return {
+        "command_id": str(COMMAND),
+        "grant_id": str(GRANT),
+        "scope": {"project_id": str(PROJECT)},
+    }
 
 
 def _request_file(tmp_path):
     path = tmp_path / "scope.json"
-    path.write_text(
-        json.dumps(
-            {
-                "command_id": str(COMMAND),
-                "grant_id": str(GRANT),
-                "scope": {"project_id": str(PROJECT)},
-            }
-        )
-    )
+    path.write_text(json.dumps(_mark_document()))
     path.chmod(0o600)
     return path
 
@@ -55,80 +71,88 @@ def _cli(monkeypatch, path):
 
 
 def test_scope_cli_refuses_uninitialized_admission_without_creating_state(
-    tmp_path, monkeypatch, capsys
+    monkeypatch, capsys
 ):
-    root = tmp_path / "monitor"
+    root = Path("/fixture/missing-monitor")
+    path = Path("/fixture/scope.json")
+    exists = Mock(return_value=False)
+    owner_document = Mock(return_value=_mark_document())
+    pin = Mock(side_effect=AssertionError("Missing admission reached a directory pin"))
+    publish = Mock(side_effect=AssertionError("Missing admission reached publication"))
     monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
-    assert _cli(monkeypatch, _request_file(tmp_path)) == 1
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    monkeypatch.setattr(monitor_control, "_owner_document", owner_document)
+    monkeypatch.setattr(scope_admission, "_path_exists", exists)
+    monkeypatch.setattr(scope_admission, "_pin_directory", pin)
+    monkeypatch.setattr(ControlInbox, "publication", publish)
+
+    assert _cli(monkeypatch, path) == 1
     assert json.loads(capsys.readouterr().out) == {
         "command_id": str(COMMAND),
         "status": "unavailable",
     }
-    assert not root.exists()
+    owner_document.assert_called_once_with(path)
+    exists.assert_called_once_with(root)
+    pin.assert_not_called()
+    publish.assert_not_called()
 
 
 def test_scope_witness_renewal_preserves_exact_bytes_and_mixed_control_drain(
-    tmp_path, monkeypatch, capsys
+    monkeypatch, capsys
 ):
-    root = tmp_path / "monitor"
-    ledger = Ledger.initialize(tmp_path / "project", PROJECT)
-    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
-    inbox = ControlInbox(root)
-    path = _request_file(tmp_path)
-    request = MarkRequest(COMMAND, GRANT, Scope(PROJECT))
-    anchor = tmp_path / "checkout"
-    anchor.mkdir()
-    monkeypatch.setattr(monitor_control, "_scope_now", lambda: NOW)
-    with Registry(root).writer() as writer:
-        writer.register_project(
-            ProjectRegistrationRequest(PROJECT, str(ledger.root), "Project")
-        )
-        writer.source_evidence()
-        registry_path = root / "registry-v1.json"
-        original_registry = registry_path.read_bytes()
-        reader = ScopeInboxReader(writer, inbox)
-        reader.register(GRANT, PROJECT, ("mark",))
-        assert _cli(monkeypatch, path) == 1
-        assert json.loads(capsys.readouterr().out)["status"] == "unavailable"
-        proof = reader.probe(request)
-        reader.advertise(proof)
-        assert _cli(monkeypatch, path) == 0
-        assert capsys.readouterr().out == (
-            f'{{"command_id": "{COMMAND}", "status": "queued"}}\n'
-        )
-        publication = root / "inbox" / f"{COMMAND}.json"
-        original = publication.read_bytes()
-        monkeypatch.setattr(
-            monitor_control, "_scope_now", lambda: NOW + timedelta(seconds=10)
-        )
-        reader.advertise(reader.probe(request))
-        assert registry_path.read_bytes() == original_registry
-        assert _cli(monkeypatch, path) == 0
-        assert publication.read_bytes() == original
-        assert str(PROJECT) in original.decode()
+    state, anchor = _admission_control_files(monkeypatch)
+    writer, inbox = state.writer, state.inbox
+    _, reader, request = _admit_mark(state, monkeypatch, advertise=False)
+    path = state.root / "mark-input.json"
+    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: state.root)
+    monkeypatch.setattr(
+        monitor_control, "_owner_document", {path: _mark_document()}.__getitem__
+    )
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    original_registry = state.files[state.root][monitor_registry._STATE_FILE]
+    name = f"{COMMAND}.json"
+    assert _cli(monkeypatch, path) == 1
+    assert json.loads(capsys.readouterr().out) == {
+        "command_id": str(COMMAND),
+        "status": "unavailable",
+    }
+    assert not state.inbox_files
+    reader.advertise(reader.probe(request))
+    assert _cli(monkeypatch, path) == 0
+    assert capsys.readouterr().out == (
+        f'{{"command_id": "{COMMAND}", "status": "queued"}}\n'
+    )
+    original = state.inbox_files[name]
+    monkeypatch.setattr(
+        monitor_control, "_scope_now", lambda: NOW + timedelta(seconds=10)
+    )
+    reader.advertise(reader.probe(request))
+    assert state.files[state.root][monitor_registry._STATE_FILE] == original_registry
+    assert _cli(monkeypatch, path) == 0
+    assert state.inbox_files[name] == original
+    assert str(PROJECT) in original.decode()
 
-        control = ControlCommand(CONTROL, AnchorRequest(PROJECT, str(anchor)))
-        inbox.enqueue(control)
-        expected = {
-            "command": {
-                "command_id": str(CONTROL),
-                "format": control.format,
-                "payload": {"project_id": str(PROJECT), "anchor": str(anchor)},
-            },
-            "order": 2,
-        }
-        assert (root / "inbox" / f"{CONTROL}.json").read_bytes() == json.dumps(
-            expected, sort_keys=True, separators=(",", ":")
-        ).encode()
-        with inbox.publication() as locked:
-            proposals = tuple(reader.iter_verified(locked))
-        assert len(proposals) == 1
-        assert proposals[0].command_id == COMMAND
-        (applied,) = writer.apply_pending(inbox, writer.lease, None)
-        assert applied.command_id == CONTROL
-        assert applied.status == "applied"
-        assert publication.read_bytes() == original
-        assert writer.command_status(COMMAND) is None
+    control = ControlCommand(CONTROL, AnchorRequest(PROJECT, anchor))
+    inbox.enqueue(control)
+    expected = {
+        "command": {
+            "command_id": str(CONTROL),
+            "format": control.format,
+            "payload": {"project_id": str(PROJECT), "anchor": anchor},
+        },
+        "order": 2,
+    }
+    assert (
+        state.inbox_files[f"{CONTROL}.json"]
+        == json.dumps(expected, sort_keys=True, separators=(",", ":")).encode()
+    )
+    with inbox.publication() as locked:
+        (proposal,) = reader.iter_verified(locked)
+    assert proposal.command_id == COMMAND
+    (applied,) = writer.apply_pending(inbox, writer.lease, None)
+    assert (applied.command_id, applied.status) == (CONTROL, ControlStatus.APPLIED)
+    assert state.inbox_files == {name: original}
+    assert writer.command_status(COMMAND) is None
 
 
 @pytest.fixture
@@ -150,31 +174,78 @@ def ready(tmp_path, monkeypatch):
         yield writer, inbox, reader, request
 
 
-def test_witness_issuance_requires_exact_capability_from_same_reader(ready):
-    writer, inbox, reader, request = ready
+@pytest.fixture
+def admission_policy(monkeypatch):
+    state = MonitorInboxFiles(monkeypatch, PROJECT)
+    return _admit_mark(state, monkeypatch)
+
+
+def _admit_mark(state, monkeypatch, *, advertise=True):
+    monkeypatch.setattr(monitor_control, "_scope_now", lambda: NOW)
+    reader = ScopeInboxReader(state.writer, state.inbox)
+    reader.register(GRANT, PROJECT, ("mark",))
+    request = MarkRequest(COMMAND, GRANT, Scope(PROJECT))
+    if advertise:
+        reader.advertise(reader.probe(request))
+    return state, reader, request
+
+
+@pytest.fixture
+def admission_control_policy(monkeypatch):
+    state, anchor = _admission_control_files(monkeypatch)
+    return (*_admit_mark(state, monkeypatch), anchor)
+
+
+def _admission_control_files(monkeypatch):
+    root = Path("/fixture/monitor")
+    state_directory = _PhysicalDirectory("/fixture/project", (1, 10))
+    anchor = _PhysicalDirectory("/fixture/checkout", (1, 11))
+    directories = {directory.path: directory for directory in (state_directory, anchor)}
+    evidence = _ServiceEvidence(b"a" * 32)
+    writer = Registry(root, Mock())
+    monkeypatch.setattr(writer, "source_evidence", lambda: evidence)
+    monkeypatch.setattr(
+        monitor_registry, "_directory", lambda path, **_: directories[path]
+    )
+    ancestors = {Path("/"): (1, 1), Path("/fixture"): (1, 9)}
+    monkeypatch.setattr(monitor_registry, "_identity", ancestors.__getitem__)
+    initial = RegistryView(
+        projects=(
+            RegisteredProject(PROJECT, state_directory, "Project", None, (), None),
+        ),
+        source_key_id=evidence.key_id,
+    )
+    state = MonitorInboxFiles(monkeypatch, PROJECT, writer=writer, initial_view=initial)
+    return state, anchor.path
+
+
+def test_witness_issuance_requires_exact_capability_from_same_reader(admission_policy):
+    state, reader, request = admission_policy
     proof = reader.probe(request)
     with pytest.raises(LedgerError):
         reader.advertise(replace(proof))
     with pytest.raises(LedgerError):
-        ScopeInboxReader(writer, inbox).advertise(proof)
+        ScopeInboxReader(state.writer, state.inbox).advertise(proof)
     reader.advertise(proof)
     with pytest.raises(LedgerError):
         reader.advertise(proof)
 
 
 @pytest.mark.parametrize("offset", [60, 61, -6])
-def test_stale_or_future_witness_cannot_publish(ready, offset, monkeypatch):
-    _, inbox, _, request = ready
+def test_stale_or_future_witness_cannot_publish(admission_policy, offset, monkeypatch):
+    state, _, request = admission_policy
     monkeypatch.setattr(
         monitor_control, "_scope_now", lambda: NOW + timedelta(seconds=offset)
     )
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+        state.inbox.enqueue_scope(request)
+    assert not state.inbox_files
 
 
-def test_revocation_winning_between_lookup_and_publish_refuses(ready, monkeypatch):
-    _, inbox, reader, request = ready
+def test_revocation_winning_between_lookup_and_publish_refuses(
+    admission_policy, monkeypatch
+):
+    state, reader, request = admission_policy
     preliminary = monitor_control.preliminary_grant
 
     def revoke_after_lookup(*args):
@@ -184,72 +255,90 @@ def test_revocation_winning_between_lookup_and_publish_refuses(ready, monkeypatc
 
     monkeypatch.setattr(monitor_control, "preliminary_grant", revoke_after_lookup)
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+        state.inbox.enqueue_scope(request)
+    assert not state.inbox_files
     with pytest.raises(ConflictError):
         reader.register(GRANT, PROJECT, ("mark",))
     reader.register(GRANT, PROJECT, ("mark",), generation=2)
 
 
-def test_copied_account_and_wrong_project_do_not_grant_authority(ready, tmp_path):
-    _, inbox, _, request = ready
-    other = tmp_path / "copied-monitor"
-    shutil.copytree(inbox.root, other)
-    with pytest.raises(LedgerError):
+def test_copied_account_and_wrong_project_do_not_grant_authority(
+    admission_control_policy,
+):
+    state, _, request, _ = admission_control_policy
+    inbox = state.inbox
+    other = inbox.root.with_name("copied-monitor")
+    original = {
+        path.relative_to(inbox.root): contents.copy()
+        for path, contents in state.files.items()
+        if path.is_relative_to(inbox.root)
+    }
+    for path, contents in original.items():
+        state.files[other / path] = contents.copy()
+    assert state.identity(str(inbox.root)) != state.identity(str(other))
+    with pytest.raises(LedgerError, match="grant identity changed"):
         ControlInbox(other).enqueue_scope(request)
-    with pytest.raises(LedgerError):
+    with pytest.raises(LedgerError, match="grant is unavailable"):
         inbox.enqueue_scope(replace(request, scope=Scope(CONTROL)))
-    assert not tuple(other.glob("inbox/*.json"))
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+    assert state.files[other / monitor_control.INBOX_NAME] == {}
+    assert state.inbox_files == {}
 
 
 def test_scope_capacity_and_cross_format_conflicts_leave_controls_available(
-    ready, tmp_path, monkeypatch
+    admission_control_policy, monkeypatch
 ):
-    writer, inbox, _, request = ready
+    state, _, request, anchor = admission_control_policy
+    writer, inbox = state.writer, state.inbox
     monkeypatch.setattr(monitor_control, "_MAX_SCOPE_PENDING", 1)
     assert inbox.enqueue_scope(request)
     assert inbox.enqueue_scope(request)
     with pytest.raises(LedgerError):
         inbox.enqueue_scope(replace(request, command_id=UUID(int=17)))
-    anchor = tmp_path / "checkout"
-    anchor.mkdir()
-    control_payload = AnchorRequest(PROJECT, str(anchor))
+    control_payload = AnchorRequest(PROJECT, anchor)
     with pytest.raises(ConflictError):
         inbox.enqueue(ControlCommand(COMMAND, control_payload))
     inbox.enqueue(ControlCommand(CONTROL, control_payload))
     with pytest.raises(ConflictError):
         inbox.enqueue_scope(replace(request, command_id=CONTROL))
-    assert tuple(
-        item.command_id for item in writer.apply_pending(inbox, writer.lease, None)
-    ) == (CONTROL,)
+    (receipt,) = writer.apply_pending(inbox, writer.lease, None)
+    assert (receipt.command_id, receipt.status) == (CONTROL, ControlStatus.APPLIED)
 
 
 @pytest.mark.parametrize("bad_seal", ["f" * 64, "not-a-mac"])
-def test_invalid_scope_seal_cannot_block_unrelated_control(ready, tmp_path, bad_seal):
-    writer, inbox, reader, request = ready
-    assert inbox.enqueue_scope(request)
-    proposal = inbox.root / "inbox" / f"{COMMAND}.json"
-    tampered = json.loads(proposal.read_bytes())
+def test_invalid_scope_seal_cannot_block_unrelated_control(
+    admission_control_policy, bad_seal
+):
+    state, reader, mark, anchor = admission_control_policy
+    writer, inbox = state.writer, state.inbox
+    name = f"{COMMAND}.json"
+    assert inbox.enqueue_scope(mark)
+    with inbox.publication() as locked:
+        (original,) = reader.iter_verified(locked)
+    assert original.body.request == mark and original.seal != bad_seal
+    tampered = json.loads(state.inbox_files[name])
     tampered["command"]["seal"] = bad_seal
-    proposal.write_bytes(
-        json.dumps(tampered, sort_keys=True, separators=(",", ":")).encode()
-    )
-    anchor = tmp_path / "checkout"
-    anchor.mkdir()
-    inbox.enqueue(ControlCommand(CONTROL, AnchorRequest(PROJECT, str(anchor))))
-    with inbox.publication() as locked, pytest.raises(LedgerError):
+    data = json.dumps(tampered, sort_keys=True, separators=(",", ":")).encode()
+    state.inbox_files[name] = data
+    inbox.enqueue(ControlCommand(CONTROL, AnchorRequest(PROJECT, anchor)))
+    with (
+        inbox.publication() as locked,
+        pytest.raises(LedgerError, match="Scope envelope seal does not match"),
+    ):
         tuple(reader.iter_verified(locked))
-    assert tuple(
-        item.command_id for item in writer.apply_pending(inbox, writer.lease, None)
-    ) == (CONTROL,)
-    assert proposal.exists()
+    (receipt,) = writer.apply_pending(inbox, writer.lease, None)
+    assert (receipt.command_id, receipt.status) == (CONTROL, ControlStatus.APPLIED)
+    assert state.inbox_files == {name: data}
 
 
-def test_explicit_cli_no_abbreviations_or_separate_request_id(tmp_path, monkeypatch):
+def test_explicit_cli_no_abbreviations_or_separate_request_id(monkeypatch):
+    path = "/fixture/scope.json"
+    owner_document = Mock(
+        side_effect=AssertionError("invalid arguments read the request")
+    )
+    monkeypatch.setattr(monitor_control, "_owner_document", owner_document)
     for args in (
-        ("--req", str(_request_file(tmp_path))),
-        ("--request", str(_request_file(tmp_path)), "--request-id", str(COMMAND)),
+        ("--req", path),
+        ("--request", path, "--request-id", str(COMMAND)),
     ):
         monkeypatch.setattr(
             sys, "argv", ["aitm-usage", "monitor", "scope", "mark", *args]
@@ -257,91 +346,147 @@ def test_explicit_cli_no_abbreviations_or_separate_request_id(tmp_path, monkeypa
         with pytest.raises(SystemExit) as stopped:
             cli.main()
         assert stopped.value.code == 2
+    owner_document.assert_not_called()
 
 
-def test_replaced_project_ledger_key_does_not_preserve_grant(ready, tmp_path):
-    from aitm_usage.ledger import STORE_NAME
+def test_replaced_project_ledger_key_does_not_preserve_grant(
+    admission_policy, monkeypatch
+):
+    from test_ledger import _memory_ledger
 
-    _, inbox, _, request = ready
-    replacement = Ledger.initialize(tmp_path / "replacement", PROJECT)
-    state = tmp_path / "project"
-    (state / STORE_NAME).rename(tmp_path / "old-store")
-    (replacement.root / STORE_NAME).rename(state / STORE_NAME)
-    assert Ledger.open(state, PROJECT).identity == replacement.identity
-    with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+    state, _, request = admission_policy
+    original = state.ledger
+    replacement = _memory_ledger(ledger_module, PROJECT, b"r" * 32)
+    assert original.root == replacement.root
+    assert original.identity.key_id != replacement.identity.key_id
+    open_ledger = Mock(return_value=replacement)
+    monkeypatch.setattr(Ledger, "open", open_ledger)
+    with pytest.raises(LedgerError, match="project identity changed"):
+        state.inbox.enqueue_scope(request)
+    open_ledger.assert_called_once_with(original.root, PROJECT)
+    assert not state.inbox_files
 
 
 def test_scope_cli_handoff_and_disposition_with_distinct_pinned_requests(
-    tmp_path, monkeypatch, capsys
+    monkeypatch, capsys
 ):
+    from test_ledger import _memory_ledger
+
     from aitm_usage.scope_admission import DispositionRequest, HandoffRequest
     from aitm_usage.types import _encode
 
-    root = tmp_path / "monitor"
-    inbox = ControlInbox(root)
+    root = Path("/fixture/monitor")
+    origin = _PhysicalDirectory("/fixture/origin", (1, 10))
+    destination = _PhysicalDirectory("/fixture/destination", (1, 11))
+    evidence = _ServiceEvidence(b"a" * 32)
+    writer = Registry(root, Mock())
+    monkeypatch.setattr(writer, "source_evidence", lambda: evidence)
+    initial = RegistryView(
+        projects=(
+            RegisteredProject(PROJECT, origin, "Origin", None, (), None),
+            RegisteredProject(CONTROL, destination, "Destination", None, (), None),
+        ),
+        source_key_id=evidence.key_id,
+    )
+    state = MonitorInboxFiles(monkeypatch, PROJECT, writer=writer, initial_view=initial)
+    target = replace(
+        _memory_ledger(ledger_module, CONTROL, b"t" * 32), root=Path(destination.path)
+    )
+    state.identities[destination.path] = destination
+    state.ensure(target.root)
+    ledgers = {
+        (state.ledger.root, PROJECT): state.ledger,
+        (target.root, CONTROL): target,
+    }
+    monkeypatch.setattr(Ledger, "open", lambda path, project: ledgers[path, project])
     monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
+
     handoff = HandoffRequest(COMMAND, GRANT, PROJECT, Scope(CONTROL), 0)
     dispose = DispositionRequest(UUID(int=9), GRANT, PROJECT, COMMAND, True)
-    with Registry(root).writer() as writer:
-        for project in (PROJECT, CONTROL):
-            state = Ledger.initialize(tmp_path / f"project-{project}", project)
-            writer.register_project(
-                ProjectRegistrationRequest(project, str(state.root), "Project")
-            )
-        writer.source_evidence()
-        reader = ScopeInboxReader(writer, inbox)
-        reader.register(GRANT, PROJECT, ("handoff", "dispose"))
-        reader.advertise(reader.probe(handoff))
-        for action, request in (("handoff", handoff), ("dispose", dispose)):
-            path = tmp_path / f"{action}.json"
-            path.write_text(_encode(request, type(request)))
-            path.chmod(0o600)
-            monkeypatch.setattr(
-                sys,
-                "argv",
-                [
-                    "aitm-usage",
-                    "monitor",
-                    "scope",
-                    action,
-                    "--request",
-                    str(path),
-                    "--json",
-                ],
-            )
-            assert cli.main() == 0
-            assert capsys.readouterr().out == (
-                f'{{"command_id": "{request.command_id}", "status": "queued"}}\n'
-            )
+    requests = (("handoff", handoff), ("dispose", dispose))
+    inputs = {
+        Path(f"/fixture/{action}.json"): (fd, _encode(request, type(request)).encode())
+        for fd, (action, request) in enumerate(requests, start=20)
+    }
+    payloads = dict(inputs.values())
 
-        with inbox.publication() as locked:
-            assert tuple(
-                item.body.request for item in reader.iter_verified(locked)
-            ) == (
-                handoff,
-                dispose,
-            )
+    def validate_path(path, *, directory):
+        assert not directory
+        return ((1, inputs[path][0]),)
+
+    def open_input(path, flags):
+        assert flags == os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+        return inputs[path][0]
+
+    def open_descriptor(fd, mode):
+        assert mode == "rb"
+        return BytesIO(payloads[fd])
+
+    def pin_input(path, fd, directory, identities):
+        assert fd == inputs[path][0]
+        assert identities == validate_path(path, directory=directory)
+        return SimpleNamespace(check=Mock())
+
+    host = monitor_control.os
+    monkeypatch.setattr(
+        monitor_control,
+        "os",
+        SimpleNamespace(
+            **vars(host),
+            O_RDONLY=os.O_RDONLY,
+            O_NOFOLLOW=os.O_NOFOLLOW,
+            O_NONBLOCK=os.O_NONBLOCK,
+            open=open_input,
+            fdopen=open_descriptor,
+        ),
+    )
+    monkeypatch.setattr(monitor_control, "_validated_path", validate_path)
+    monkeypatch.setattr(monitor_control, "_PinnedPath", pin_input)
+    reader = ScopeInboxReader(writer, state.inbox)
+    reader.register(GRANT, PROJECT, ("handoff", "dispose"))
+    reader.advertise(reader.probe(handoff))
+    for action, request in requests:
+        path = Path(f"/fixture/{action}.json")
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "aitm-usage",
+                "monitor",
+                "scope",
+                action,
+                "--request",
+                str(path),
+                "--json",
+            ],
+        )
+        assert cli.main() == 0
+        assert capsys.readouterr().out == (
+            f'{{"command_id": "{request.command_id}", "status": "queued"}}\n'
+        )
+
+    with state.inbox.publication() as locked:
+        assert tuple(item.body.request for item in reader.iter_verified(locked)) == (
+            handoff,
+            dispose,
+        )
 
 
-def _active_grant_file(inbox):
-    directory = inbox.root / "scope-admission-v1" / str(GRANT)
-    return sorted(directory.glob("*.json"))[-1]
-
-
-def test_replayed_active_grant_file_cannot_reverse_revocation(ready):
-    _, inbox, reader, request = ready
-    before = _active_grant_file(inbox).read_bytes()
+def test_replayed_active_grant_file_cannot_reverse_revocation(admission_policy):
+    state, reader, request = admission_policy
+    commits = state.grant_files(GRANT)
+    before = commits[max(commits)]
     reader.revoke(GRANT)
-    _active_grant_file(inbox).write_bytes(before)
+    commits[max(commits)] = before
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+        state.inbox.enqueue_scope(request)
+    assert not state.inbox_files
 
 
-def test_witness_expiring_during_queue_preparation_cannot_publish(ready, monkeypatch):
-    _, inbox, _, request = ready
+def test_witness_expiring_during_queue_preparation_cannot_publish(
+    admission_policy, monkeypatch
+):
+    state, _, request = admission_policy
     pending = monitor_control._pending
 
     def elapsed(directory):
@@ -353,28 +498,32 @@ def test_witness_expiring_during_queue_preparation_cannot_publish(ready, monkeyp
 
     monkeypatch.setattr(monitor_control, "_pending", elapsed)
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+        state.inbox.enqueue_scope(request)
+    assert not state.inbox_files
 
 
-def test_withdrawn_witness_refuses_retry_then_renews_same_exact_proposal(ready):
-    _, inbox, reader, request = ready
+def test_withdrawn_witness_refuses_retry_then_renews_same_exact_proposal(
+    admission_policy,
+):
+    state, reader, request = admission_policy
+    inbox = state.inbox
     assert inbox.enqueue_scope(request)
-    publication = inbox.root / "inbox" / f"{COMMAND}.json"
-    original = publication.read_bytes()
+    publication = f"{COMMAND}.json"
+    original = state.inbox_files[publication]
     reader.withdraw(GRANT)
     with pytest.raises(LedgerError):
         inbox.enqueue_scope(request)
-    assert publication.read_bytes() == original
+    assert state.inbox_files[publication] == original
     reader.advertise(reader.probe(request))
     assert inbox.enqueue_scope(request)
-    assert publication.read_bytes() == original
+    assert state.inbox_files[publication] == original
 
 
-def test_scope_credential_cannot_authenticate_reader_witness(ready):
+def test_scope_credential_cannot_authenticate_reader_witness(admission_policy):
     from aitm_usage.scope_admission import _witness_tag, _write_grant, stored_grant
 
-    writer, inbox, _, request = ready
+    state, _, request = admission_policy
+    writer, inbox = state.writer, state.inbox
     record = stored_grant(inbox.root, GRANT)
     assert record is not None and record.witness is not None
     witness = record.witness
@@ -392,40 +541,77 @@ def test_scope_credential_cannot_authenticate_reader_witness(ready):
         _write_grant(writer, replace(record, witness=forged), record)
     with pytest.raises(LedgerError):
         inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+    assert not state.inbox_files
 
 
-def test_modified_committed_grant_cannot_mint_producer_authority(ready):
-    _, inbox, _, request = ready
-    active = _active_grant_file(inbox)
-    data = json.loads(active.read_bytes())
+def test_modified_committed_grant_cannot_mint_producer_authority(admission_policy):
+    state, _, request = admission_policy
+    grants = state.grant_files(GRANT)
+    active = max(grants)
+    data = json.loads(grants[active])
     data["record"]["grant"]["actions"] = ["dispose", "mark"]
     data["record"]["credential"] = "a" * 64
-    active.write_bytes(json.dumps(data, sort_keys=True, separators=(",", ":")).encode())
+    grants[active] = json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+        state.inbox.enqueue_scope(request)
+    assert not state.inbox_files
 
 
-def test_scope_request_refuses_noncanonical_selectors(tmp_path, monkeypatch, capsys):
-    path = _request_file(tmp_path)
-    root = tmp_path / "monitor"
-    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
-    data = json.loads(path.read_bytes())
+def test_scope_request_refuses_noncanonical_selectors(monkeypatch, capsys):
+    path = Path("/fixture/scope.json")
+    default_root = Mock(
+        side_effect=AssertionError("invalid request opened monitor state")
+    )
+    monkeypatch.setattr(monitor_registry, "default_monitor_root", default_root)
+    owner_document = Mock()
+    monkeypatch.setattr(monitor_control, "_owner_document", owner_document)
+    data = {
+        "command_id": str(COMMAND),
+        "grant_id": str(GRANT),
+        "scope": {"project_id": str(PROJECT)},
+    }
     for field, value in (("command_id", COMMAND), ("grant_id", GRANT)):
         for noncanonical in (value.hex, value.urn, "{" + str(value) + "}"):
-            path.write_text(json.dumps({**data, field: noncanonical}))
+            owner_document.return_value = {**data, field: noncanonical}
             assert _cli(monkeypatch, path) == 1
             assert json.loads(capsys.readouterr().out) == {"status": "unavailable"}
-    assert not root.exists()
+    default_root.assert_not_called()
 
 
 def test_project_substitution_during_preparation_cannot_publish(
-    ready, tmp_path, monkeypatch
+    request, tmp_path, monkeypatch, capsys
 ):
-    _, inbox, _, request = ready
-    pending = monitor_control._pending
+    from aitm_usage.ledger import STORE_NAME
+
+    root = tmp_path / "monitor"
+    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
+    assert _cli(monkeypatch, _request_file(tmp_path)) == 1
+    assert json.loads(capsys.readouterr().out) == {
+        "command_id": str(COMMAND),
+        "status": "unavailable",
+    }
+    assert not root.exists()
+
+    _, inbox, _, mark = request.getfixturevalue("ready")
+    copied = tmp_path / "copied-monitor"
+    shutil.copytree(inbox.root, copied)
+    with pytest.raises(LedgerError, match="grant identity changed"):
+        ControlInbox(copied).enqueue_scope(mark)
+    assert not tuple(copied.glob("inbox/*.json"))
+
     state = tmp_path / "project"
+    replacement = Ledger.initialize(tmp_path / "replacement", PROJECT)
+    saved_store = tmp_path / "original-store"
+    (state / STORE_NAME).rename(saved_store)
+    (replacement.root / STORE_NAME).rename(state / STORE_NAME)
+    assert Ledger.open(state, PROJECT).identity == replacement.identity
+    with pytest.raises(LedgerError, match="project identity changed"):
+        inbox.enqueue_scope(mark)
+    assert not tuple(inbox.root.glob("inbox/*.json"))
+    (state / STORE_NAME).rename(replacement.root / STORE_NAME)
+    saved_store.rename(state / STORE_NAME)
+
+    pending = monitor_control._pending
 
     def substituted(directory):
         result = pending(directory)
@@ -435,14 +621,15 @@ def test_project_substitution_during_preparation_cannot_publish(
 
     monkeypatch.setattr(monitor_control, "_pending", substituted)
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
+        inbox.enqueue_scope(mark)
     assert not tuple(inbox.root.glob("inbox/*.json"))
 
 
 def test_expiry_after_publication_withholds_ack_and_retry_reuses_exact_bytes(
-    ready, monkeypatch
+    admission_policy, monkeypatch
 ):
-    _, inbox, reader, request = ready
+    state, reader, request = admission_policy
+    inbox = state.inbox
     publish = monitor_control._publish
 
     def elapsed(*args, **kwargs):
@@ -455,17 +642,18 @@ def test_expiry_after_publication_withholds_ack_and_retry_reuses_exact_bytes(
     monkeypatch.setattr(monitor_control, "_publish", elapsed)
     with pytest.raises(LedgerError):
         inbox.enqueue_scope(request)
-    publication = inbox.root / "inbox" / f"{COMMAND}.json"
-    original = publication.read_bytes()
+    publication = f"{COMMAND}.json"
+    original = state.inbox_files[publication]
     monkeypatch.setattr(monitor_control, "_publish", publish)
     reader.advertise(reader.probe(request))
     assert inbox.enqueue_scope(request)
-    assert publication.read_bytes() == original
+    assert state.inbox_files[publication] == original
 
 
-def test_reader_capability_cannot_restore_withdrawn_admission(ready):
-    writer, inbox, reader, request = ready
-    other = ScopeInboxReader(writer, inbox)
+def test_reader_capability_cannot_restore_withdrawn_admission(admission_policy):
+    state, reader, request = admission_policy
+    inbox = state.inbox
+    other = ScopeInboxReader(state.writer, inbox)
     old = reader.probe(request)
     other.withdraw(GRANT)
     with pytest.raises(LedgerError, match="proof is unavailable"):
@@ -476,65 +664,63 @@ def test_reader_capability_cannot_restore_withdrawn_admission(ready):
     assert inbox.enqueue_scope(request)
 
 
-def test_adopted_scope_shape_refuses_separate_source_anchor_command(tmp_path):
+def test_adopted_scope_shape_refuses_separate_source_anchor_command():
+    from aitm_usage.monitor_registry import _ServiceEvidence
     from aitm_usage.scope_admission import adopted_request
     from aitm_usage.types import InboxCommand, SourceAnchorCommand
 
-    ledger = Ledger.initialize(tmp_path / "project", PROJECT)
+    evidence = _ServiceEvidence(b"scope-admission-test")
     command = InboxCommand(
         COMMAND,
         PROJECT,
         SourceAnchorCommand(
             COMMAND,
             PROJECT,
-            ledger.pseudonymize("test", "configuration"),
-            ledger.pseudonymize("test", "anchor"),
+            evidence.pseudonymize("test", "configuration"),
+            evidence.pseudonymize("test", "anchor"),
         ),
     )
     with pytest.raises(ValueError, match="legacy command"):
         adopted_request(command, UUID(int=92), None)
 
 
-def test_typed_adopted_producer_cannot_republish_durable_legacy_command(tmp_path):
-    from test_scope_legacy import commit_adoption
+def test_typed_adopted_producer_cannot_republish_durable_legacy_command(
+    monkeypatch, capsys
+):
+    from test_scope_legacy import ADOPTION, _memory_legacy
 
-    from aitm_usage import scopes
     from aitm_usage.scope_admission import adopted_request, legacy_grant_id
-    from aitm_usage.types import InboxCommand, ItemKey, ItemKind, ItemParent
-
-    ledger = Ledger.initialize(tmp_path / "project", PROJECT)
-    payload = ItemParent(
-        COMMAND, PROJECT, ItemKey(ItemKind.ISSUE, 1), ItemKey(ItemKind.ISSUE, 2)
+    from aitm_usage.types import (
+        CommandReceipt,
+        InboxCommand,
+        ItemKey,
+        ItemKind,
+        ItemParent,
+        MarkerDisposition,
     )
-    command = InboxCommand(COMMAND, PROJECT, payload)
-    assert scopes.enqueue_command(ledger.root, command) is None
-    with ledger.writer() as legacy_writer:
-        (stored,) = scopes.drain_inbox(legacy_writer, ()).receipts
-        assert stored.disposition == "accepted"
 
-    adoption_id = UUID(int=77)
-    commit_adoption(ledger, adoption_id)
-    root = tmp_path / "monitor"
-    inbox = ControlInbox(root)
-    with Registry(root).writer() as writer:
-        registered = writer.register_project(
-            ProjectRegistrationRequest(PROJECT, str(ledger.root), "Project")
-        )
-        with inbox.publication():
-            adopted = replace(registered, adopted_key_id=ledger.identity.key_id)
-            writer._save(replace(writer.view(), projects=(adopted,)))
-        writer.source_evidence()
-        reader = ScopeInboxReader(writer, inbox)
-        reader.register(
-            legacy_grant_id(PROJECT, adoption_id),
-            PROJECT,
-            ("legacy",),
-            adoption_id=adoption_id,
-        )
-        request = adopted_request(command, adoption_id, None)
-        reader.advertise(reader.probe(request))
+    memory = _memory_legacy(monkeypatch, capsys, monitor_registered=True)
+    ledger = memory.ledger
+    project = ledger.identity.project_id
+    payload = ItemParent(
+        COMMAND, project, ItemKey(ItemKind.ISSUE, 1), ItemKey(ItemKind.ISSUE, 2)
+    )
+    command = InboxCommand(COMMAND, project, payload)
+    stored = CommandReceipt(
+        command, ledger.validate_command(command), MarkerDisposition.ACCEPTED
+    )
+    memory.store_receipt(stored)
+    memory.publish_adoption()
+    inbox = memory.monitor.inbox
+    reader = ScopeInboxReader(memory.monitor.writer, inbox)
+    reader.register(
+        legacy_grant_id(project, ADOPTION), project, ("legacy",), adoption_id=ADOPTION
+    )
+    request = adopted_request(command, ADOPTION, None)
+    reader.advertise(reader.probe(request))
 
-        with pytest.raises(LedgerError, match="legacy command already has a receipt"):
-            inbox.enqueue_scope(request)
-        assert not tuple(root.glob("inbox/*.json"))
-        assert ledger.command_receipt(command) == stored
+    with pytest.raises(LedgerError, match="legacy command already has a receipt"):
+        inbox.enqueue_scope(request)
+    assert not memory.monitor.inbox_files
+    assert not memory.inbox
+    assert ledger.command_receipt(command) == stored

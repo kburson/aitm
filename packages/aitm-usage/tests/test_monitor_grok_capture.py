@@ -1,10 +1,13 @@
 import json
+from contextlib import contextmanager
 from hashlib import sha256
 from pathlib import Path
 from uuid import UUID
 
 import pytest
-from test_grok import grok_source as grok_source
+from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
+from test_grok import _policy_locator
+from test_grok import grok_policy as grok_policy
 
 from aitm_usage import monitor_registry as registry
 from aitm_usage import monitor_scope as scope
@@ -136,103 +139,73 @@ def test_grok_intervals_bind_entire_span_incarnation_and_live_generation():
     assert registry._grok_span_disposition(view, identity, 24, 26).value == "unknown"
 
 
-def test_grok_command_without_callback_holds_only_its_edge(tmp_path):
+def test_grok_command_without_callback_holds_only_its_edge(grok_capture_policy):
     from dataclasses import replace
 
     from aitm_usage.monitor_control import ControlInbox
 
-    private = tmp_path / "monitor"
-    project, grok, codex = (UUID(int=n) for n in range(1, 4))
-    project_dir = tmp_path / "project"
-    project_dir.mkdir(mode=0o700)
-    source_dirs = (tmp_path / "grok", tmp_path / "codex")
-    for root in source_dirs:
-        root.mkdir(mode=0o700)
-    with registry.Registry(private).writer() as writer:
-        writer.register_project(
-            registry.ProjectRegistrationRequest(project, str(project_dir), "Test")
+    f = grok_capture_policy
+    writer = f.writer
+    codex = UUID(int=3)
+    directory = registry._PhysicalDirectory("/fixture/codex", (1, 31))
+    approval = registry.SourceApprovalRequest(
+        codex,
+        "codex",
+        "codex-desktop-macos",
+        "Darwin",
+        "arm64",
+        "0.167.0-alpha.3.2",
+        1,
+        directory.path,
+    )
+    view = writer.view()
+    writer._save(
+        replace(
+            view, sources=(*view.sources, registry.ApprovedSource(approval, directory))
         )
-        grok_approval = registry.SourceApprovalRequest(
-            grok,
-            "grok",
-            "grok-build-macos",
-            "Darwin",
-            "arm64",
-            "1.0.77",
-            1,
-            str(source_dirs[0]),
-        )
-        codex_approval = registry.SourceApprovalRequest(
-            codex,
-            "codex",
-            "codex-desktop-macos",
-            "Darwin",
-            "arm64",
-            "0.167.0-alpha.3.2",
-            1,
-            str(source_dirs[1]),
-        )
-        writer._save(
-            replace(
-                writer.view(),
-                sources=tuple(
-                    registry.ApprovedSource(
-                        approval, registry._directory(approval.root)
-                    )
-                    for approval in (grok_approval, codex_approval)
-                ),
-            )
-        )
-        inbox = ControlInbox(private)
-        grok_on, grok_off, codex_off = tuple(
-            registry.ControlCommand(
-                UUID(int=n), registry.CaptureChange(project, source, enabled)
-            )
-            for n, source, enabled in (
-                (4, grok, True),
-                (5, grok, False),
-                (6, codex, False),
-            )
-        )
-        for command in (grok_on, grok_off, codex_off):
-            inbox.enqueue(command)
-        assert [
-            receipt.command_id
-            for receipt in writer.apply_pending(inbox, writer.lease, None)
-        ] == [codex_off.command_id]
-        assert writer.command_status(grok_on.command_id) is None
-        assert writer.command_status(grok_off.command_id) is None
-        assert (
-            writer.command_status(codex_off.command_id).status
-            is registry.ControlStatus.APPLIED
-        )
+    )
+    grok_on = f.submit(4, True)
+    grok_off = f.submit(5, False)
+    codex_off = registry.ControlCommand(
+        UUID(int=6), registry.CaptureChange(f.project, codex, False)
+    )
+    inbox = ControlInbox(writer.root)
+    inbox.enqueue(codex_off)
+    assert [
+        receipt.command_id
+        for receipt in writer.apply_pending(inbox, writer.lease, None)
+    ] == [codex_off.command_id]
+    assert writer.command_status(grok_on.command_id) is None
+    assert writer.command_status(grok_off.command_id) is None
+    assert (
+        writer.command_status(codex_off.command_id).status
+        is registry.ControlStatus.APPLIED
+    )
 
 
+@contextmanager
 def _grok_reader(source, rows, verifier):
     from aitm_usage.sources.grok import GrokAdapter
 
-    updates = source.directory / "updates.jsonl"
-    updates.write_bytes(b"".join(rows))
-    (source.directory / "usage.json").write_text(json.dumps(source.snapshot))
-    reader = GrokAdapter(
-        lambda path: source.origin if path == updates else None, verifier
-    )
-    (locator,) = reader.discover(source.root)
-    return reader, locator
+    reader = GrokAdapter(lambda _: source.origin, verifier)
+    with _policy_locator(source, rows, source.snapshot) as locator:
+        yield reader, locator
 
 
-def test_strict_grok_proves_mark_and_hookless_separately_and_restarts(grok_source):
+def test_strict_grok_proves_mark_and_hookless_separately_and_restarts(grok_policy):
     from aitm_usage.sources import grok
 
-    source = grok_source
+    source = grok_policy
     rows = [row for i, row in enumerate(source.rows) if i != 6]
 
     def verifier(*parts):
         return source.pending_receipts.get(parts)
 
-    reader, locator = _grok_reader(source, rows, verifier)
     proofs = []
-    batch = reader.read_delta(locator, None, _proofs=proofs, _receipt_verifier=verifier)
+    with _grok_reader(source, rows, verifier) as (reader, locator):
+        batch = reader.read_delta(
+            locator, None, _proofs=proofs, _receipt_verifier=verifier
+        )
     marked, hookless = proofs
     assert type(marked) is grok._VerifiedGrokMark
     assert type(hookless) is grok._VerifiedGrokHookless
@@ -244,16 +217,16 @@ def test_strict_grok_proves_mark_and_hookless_separately_and_restarts(grok_sourc
     assert hookless.end == batch.observations[1].position.ordinal + 1
     assert batch.cursor.checkpoint.offset == len(b"".join(rows))
     replay_proofs = []
-    reloaded, new_locator = _grok_reader(source, rows, verifier)
-    replay = reloaded.read_delta(
-        new_locator, batch.cursor, _proofs=replay_proofs, _receipt_verifier=verifier
-    )
-    assert replay.cursor == batch.cursor
-    assert replay.observations == () and replay_proofs == []
-    observational = reloaded.read_delta(new_locator, None)
-    refused = reloaded.read_delta(
-        new_locator, observational.cursor, _proofs=[], _receipt_verifier=verifier
-    )
+    with _grok_reader(source, rows, verifier) as (reloaded, new_locator):
+        replay = reloaded.read_delta(
+            new_locator, batch.cursor, _proofs=replay_proofs, _receipt_verifier=verifier
+        )
+        assert replay.cursor == batch.cursor
+        assert replay.observations == () and replay_proofs == []
+        observational = reloaded.read_delta(new_locator, None)
+        refused = reloaded.read_delta(
+            new_locator, observational.cursor, _proofs=[], _receipt_verifier=verifier
+        )
     assert refused.observations == ()
     assert "source-replaced" in {row.code.value for row in refused.diagnostics}
 
@@ -271,14 +244,20 @@ def test_strict_grok_proves_mark_and_hookless_separately_and_restarts(grok_sourc
         "mismatch",
     ],
 )
-def test_strict_grok_attempt_holds_at_start_and_can_retry(grok_source, receipt_case):
+def test_strict_grok_attempt_holds_at_start_and_can_retry(grok_policy, receipt_case):
     from aitm_usage.sources import grok
 
-    source = grok_source
+    source = grok_policy
     rows = source.rows.copy()
 
     def verifier(*parts):
         return source.pending_receipts.get(parts)
+
+    def read(rows, issuer, selected, cursor=None, *, proofs):
+        with _grok_reader(source, rows, issuer) as (reader, locator):
+            return reader.read_delta(
+                locator, cursor, _proofs=proofs, _receipt_verifier=selected
+            )
 
     selected = verifier
     if receipt_case == "missing":
@@ -304,9 +283,8 @@ def test_strict_grok_attempt_holds_at_start_and_can_retry(grok_source, receipt_c
         else:
             params["_meta"]["eventId"] = "no-matching-native-receipt"
         rows[0] = json.dumps(hook).encode() + b"\n"
-    reader, locator = _grok_reader(source, rows, verifier)
     proofs = []
-    batch = reader.read_delta(locator, None, _proofs=proofs, _receipt_verifier=selected)
+    batch = read(rows, verifier, selected, proofs=proofs)
     (held,) = proofs
     assert type(held) is grok._GrokAttemptHeld
     assert held.start == 0
@@ -316,15 +294,18 @@ def test_strict_grok_attempt_holds_at_start_and_can_retry(grok_source, receipt_c
     def trusted(*parts):
         return source.pending_receipts.get(parts)
 
-    reader, locator = _grok_reader(source, source.rows, trusted)
-    corrected = reader.read_delta(
-        locator, batch.cursor, _proofs=[], _receipt_verifier=trusted
-    )
+    corrected = read(source.rows, trusted, trusted, batch.cursor, proofs=[])
     assert len(corrected.observations) == 2
 
 
 @pytest.fixture
 def isolated_grok_capture(tmp_path, monkeypatch, request):
+    yield from _isolated_grok_capture(
+        tmp_path, monkeypatch, getattr(request, "param", None)
+    )
+
+
+def _isolated_grok_capture(tmp_path, monkeypatch, binary):
     import subprocess
     from dataclasses import replace
     from datetime import UTC, datetime, timedelta
@@ -346,7 +327,6 @@ def isolated_grok_capture(tmp_path, monkeypatch, request):
     expected = _LiveSourceTuple(
         "grok", "grok-build-macos", "Darwin", "arm64", "1.0.77", 1
     )
-    binary = getattr(request, "param", None)
     if binary is None:
         binary = tmp_path / "candidate"
         binary.write_bytes(b"isolated Grok image for exact owner signature tests")
@@ -575,13 +555,20 @@ def _routes(state, batch):
 
 
 def test_queued_grok_enable_routes_exact_marker_and_project_only_hookless_then_reloads(
-    isolated_grok_capture,
+    grok_capture_policy,
     monkeypatch,
 ):
+    from test_monitor_journal import _ClaimJournalRows
+
+    from aitm_usage import monitor_journal
     from aitm_usage.monitor_types import GrokCheckpoint
     from aitm_usage.sources.grok import GrokAdapter
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
+    rows = _ClaimJournalRows(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: rows)
+    _assert_original_journal_read_only(f)
+    f.reset_stream()
     # Both commands and marker proof go through persisted owner and writer authority.
     enable = f.submit(21, True)
     (applied,) = f.evaluate()
@@ -640,8 +627,8 @@ def test_queued_grok_enable_routes_exact_marker_and_project_only_hookless_then_r
         reopened.read_source(f.source_id, f.locator())
 
 
-def test_grok_open_disable_waits_then_cuts_before_next_turn(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_open_disable_waits_then_cuts_before_next_turn(grok_capture_policy):
+    f = grok_capture_policy
     f.submit(31, True)
     assert f.evaluate()[0].status is registry.ControlStatus.APPLIED
     f.write(f.rows[:2], 0)
@@ -668,38 +655,37 @@ def test_grok_open_disable_waits_then_cuts_before_next_turn(isolated_grok_captur
     assert epoch.end.offset == batch.cursor.checkpoint.offset
 
 
-def test_grok_duplicate_receipt_cannot_pass_as_a_later_completion(grok_source):
+def test_grok_duplicate_receipt_cannot_pass_as_a_later_completion(grok_policy):
     from aitm_usage.sources import grok
 
-    source = grok_source
+    source = grok_policy
     receipt = next(iter(source.pending_receipts.values()))
 
     def duplicate_receipt(*_):
         return receipt
 
-    reader, locator = _grok_reader(source, source.rows, duplicate_receipt)
-    notices = []
-    result = reader.read_delta(
-        locator, None, _proofs=notices, _receipt_verifier=duplicate_receipt
-    )
+    def read(rows):
+        reader = grok.GrokAdapter(lambda _: source.origin, duplicate_receipt)
+        notices = []
+        with _policy_locator(source, rows, source.snapshot) as locator:
+            result = reader.read_delta(
+                locator, None, _proofs=notices, _receipt_verifier=duplicate_receipt
+            )
+        return result, notices
+
+    result, notices = read(source.rows)
     assert type(notices[0]) is grok._VerifiedGrokMark
     assert type(notices[1]) is grok._GrokAttemptHeld
     assert len(result.observations) == 1
     assert result.cursor.checkpoint.offset == len(b"".join(source.rows[:6]))
 
-    reader, locator = _grok_reader(
-        source, [*source.rows[:5], *source.rows[:5]], duplicate_receipt
-    )
-    notices = []
-    retried = reader.read_delta(
-        locator, None, _proofs=notices, _receipt_verifier=duplicate_receipt
-    )
+    retried, notices = read([*source.rows[:5], *source.rows[:5]])
     assert type(notices[-1]) is grok._GrokAttemptHeld
     assert retried.cursor.checkpoint.offset == len(b"".join(source.rows[:5]))
 
 
-def test_grok_quiet_enable_skips_preexisting_unverified_marker(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_quiet_enable_skips_preexisting_unverified_marker(grok_capture_policy):
+    f = grok_capture_policy
     f.refs.clear()
     f.write(f.rows[:5], 1)
     unarmed = f.state.read_source(f.source_id, f.locator())
@@ -714,8 +700,8 @@ def test_grok_quiet_enable_skips_preexisting_unverified_marker(isolated_grok_cap
     assert batch.cursor.checkpoint.completions[0].observation is None
 
 
-def test_grok_open_enable_excludes_open_turn_at_cut(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_open_enable_excludes_open_turn_at_cut(grok_capture_policy):
+    f = grok_capture_policy
     f.write(f.rows[:2], 0)
     enable = f.submit(51, True)
     assert f.evaluate() == ()
@@ -729,9 +715,9 @@ def test_grok_open_enable_excludes_open_turn_at_cut(isolated_grok_capture):
 
 @pytest.mark.parametrize("failure", ["receipt", "cancelled", "malformed"])
 def test_grok_bad_open_terminal_closes_disable_at_verified_start(
-    isolated_grok_capture, failure
+    grok_capture_policy, failure
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(61, True)
     assert f.evaluate()
     f.write(f.rows[:2], 0)
@@ -755,8 +741,8 @@ def test_grok_bad_open_terminal_closes_disable_at_verified_start(
     assert batch.cursor.checkpoint.offset == 0
 
 
-def test_new_grok_stream_does_not_inherit_present_stream_cut(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_new_grok_stream_does_not_inherit_present_stream_cut(grok_capture_policy):
+    f = grok_capture_policy
     f.submit(71, True)
     assert f.evaluate()
     new_locator, write_new = f.add_stream()
@@ -767,8 +753,8 @@ def test_new_grok_stream_does_not_inherit_present_stream_cut(isolated_grok_captu
     assert not batch._grok_strict
 
 
-def test_grok_quiet_cut_is_frozen_while_other_stream_finishes(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_quiet_cut_is_frozen_while_other_stream_finishes(grok_capture_policy):
+    f = grok_capture_policy
     new_locator, write_new = f.add_stream()
     f.submit(81, True)
     assert f.evaluate()
@@ -792,10 +778,10 @@ def test_grok_quiet_cut_is_frozen_while_other_stream_finishes(isolated_grok_capt
     assert _routes(f.state, in_flight)[0].status is scope.RouteStatus.ROUTED
 
 
-def test_verified_grok_cut_refuses_a_rewritten_original_prefix(isolated_grok_capture):
+def test_verified_grok_cut_refuses_a_rewritten_original_prefix(grok_capture_policy):
     from aitm_usage.ledger import LedgerError
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.write(f.rows[:5], 1)
     f.submit(91, True)
     assert f.evaluate()
@@ -807,14 +793,14 @@ def test_verified_grok_cut_refuses_a_rewritten_original_prefix(isolated_grok_cap
 
 
 def test_unsupported_grok_surface_refuses_before_native_read(
-    isolated_grok_capture, monkeypatch
+    grok_capture_policy, monkeypatch
 ):
     from dataclasses import replace
 
     from aitm_usage.sources.grok import GrokAdapter
     from aitm_usage.types import DiagnosticCode
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     view = f.writer.view()
     (original,) = view.sources
     linux = replace(original.approval, surface="grok-build-linux", platform="Linux")
@@ -827,11 +813,24 @@ def test_unsupported_grok_surface_refuses_before_native_read(
     assert refused.value.code is DiagnosticCode.UNSUPPORTED_FORMAT
 
 
-def test_original_journal_remains_read_only_on_grok_prepare(isolated_grok_capture):
+def test_original_journal_remains_read_only_on_grok_prepare(
+    grok_capture_policy, monkeypatch
+):
+    from journal_disposition_cases import DispositionRows
+
+    from aitm_usage import monitor_journal
+
+    case = grok_capture_policy
+    rows = DispositionRows(case.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda writer: rows)
+    _assert_original_journal_read_only(case)
+    assert not rows.commits and not rows.rows and not rows.writes
+
+
+def _assert_original_journal_read_only(f):
     from aitm_usage.ledger import LedgerError
     from aitm_usage.monitor_journal import RoutingJournal
 
-    f = isolated_grok_capture
     f.write(f.rows, 2)
     batch = f.state.read_source(f.source_id, f.locator())
     assert len(batch.observations) == 2
@@ -840,12 +839,14 @@ def test_original_journal_remains_read_only_on_grok_prepare(isolated_grok_captur
     with pytest.raises(LedgerError, match="no verified native session"):
         journal.prepare(f.source_id, f.locator())
     assert journal.as_of() == before
+    with journal._store.transaction() as connection:
+        assert journal._store._current_version(connection) == 4
 
 
 def test_prior_grok_offer_cannot_be_reused_by_another_command(
-    isolated_grok_capture, monkeypatch
+    grok_capture_policy, monkeypatch
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     original = f.state._grok_capture_evidence
     saved = []
 
@@ -867,8 +868,8 @@ def test_prior_grok_offer_cannot_be_reused_by_another_command(
     assert f.evaluate()[0].command_id == disable.command_id
 
 
-def test_grok_pending_mixed_stream_reads_each_verified_bound(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_pending_mixed_stream_reads_each_verified_bound(grok_capture_policy):
+    f = grok_capture_policy
     new_locator, write_new = f.add_stream()
     f.submit(111, True)
     assert f.evaluate()
@@ -886,26 +887,40 @@ def test_grok_pending_mixed_stream_reads_each_verified_bound(isolated_grok_captu
 
 
 def test_grok_replaced_incarnation_has_no_previous_capture_authority(
-    isolated_grok_capture,
+    grok_capture_policy,
+    monkeypatch,
 ):
-    f = isolated_grok_capture
+    from dataclasses import replace
+
+    f = grok_capture_policy
     f.submit(121, True)
     assert f.evaluate()
     f.write(f.rows[1:5], 1)
     older = f.state.read_source(f.source_id, f.locator())
     assert older.observations
-    f.replace_incarnation()
+    path = f.locator()._source.path
+    changed = replace(
+        f.find_origin(path),
+        incarnation=f.writer.source_evidence().pseudonymize(
+            "grok-incarnation", "replaced"
+        ),
+    )
+    monkeypatch.setattr(
+        f.reader,
+        "verify_origin",
+        lambda candidate: changed if candidate == path else f.find_origin(candidate),
+    )
     with pytest.raises(scope._GrokCaptureHeld, match="incarnation"):
         f.state.read_source(f.source_id, f.locator(), cursor=older.cursor)
 
 
 def test_another_scope_reader_cannot_change_current_grok_receipt_verifier(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
     from aitm_usage.sources.grok import GrokAdapter
     from aitm_usage.types import DiagnosticCode
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(131, True)
     assert f.evaluate()
     f.write(f.rows[:5], 1)

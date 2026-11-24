@@ -1,16 +1,29 @@
 """Exercise routing journal authority with real native capture and scope evidence."""
 
 import json
-import os
 import shlex
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
-from shutil import copyfile
+from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from journal_disposition_cases import DispositionRows, _Rows
+from monitor_scope_snapshot_cases import disposition_snapshot
+from native_registry_cases import native_registry_policy
+from paired_settlement_cases import (
+    _assert_pair_refuses_before_write,
+    _issued_pair,
+    assert_committed_release_conflict_is_local,
+    assert_pair_refuses_changed_authority,
+    assert_pair_refuses_changed_completion,
+)
+from paired_settlement_cases import _bytes as _settlement_bytes
+from scanner_policy_cases import NativeTranscriptFiles
+from scope_state_cases import route_admission_case
 from test_codex import (
     AFTER,
     CUTOFF,
@@ -25,10 +38,16 @@ from test_codex import (
     write,
 )
 from test_monitor_scope import (
+    _COMPLETION_FILE_CASES,
     _COMPLETION_NATIVE_DISPROOFS,
     _damage_completed_disposition,
 )
 
+from aitm_usage import monitor_registry
+from aitm_usage._monitor_qualification import (
+    _InstallationProof,
+    _LiveSourceTuple,
+)
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
 from aitm_usage.monitor_registry import (
     CaptureChange,
@@ -54,13 +73,24 @@ A, B, LIVE, COPY = (UUID(int=number) for number in range(1, 5))
 
 
 @pytest.fixture
-def journal_disposition(tmp_path, monkeypatch, capsys):
+def late_projection_policy(monkeypatch):
+    from test_monitor_scope import MemoryNativeScopeFixture
+
+    from aitm_usage import monitor_journal, scopes
+
+    native = MemoryNativeScopeFixture(monkeypatch)
+    store = _ClaimJournalRows(native.evidence)
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
+    monkeypatch.setattr(scopes, "_read_private", native.state_files.read)
+    return _journal_disposition_scenario(native)
+
+
+def _journal_disposition_scenario(native):
     from test_monitor_scope import (
         SOURCE,
-        NativeScopeFixture,
         _authorize_handoff,
         _issue,
-        _sealed_disposition,
+        _queue_policy_disposition,
         _verify,
     )
 
@@ -69,10 +99,6 @@ def journal_disposition(tmp_path, monkeypatch, capsys):
 
     @contextmanager
     def prepare(release_previous=False):
-        monkeypatch.setattr(
-            "aitm_usage.ledger._control_root", lambda: tmp_path / "control"
-        )
-        native = NativeScopeFixture(tmp_path, monkeypatch)
         with native.registry.writer() as writer:
             scopes = ScopeState(writer)
             journal = RoutingJournal(writer, scopes)
@@ -126,16 +152,13 @@ def journal_disposition(tmp_path, monkeypatch, capsys):
             assert journal.reserve(first, prepared.progress).status == "pending"
             assert journal.cursor_for(SOURCE, native.locator()) == prior_cursor
             hold = scopes.hold(receipt, retain_route_target=True)
-            prefix = native.path.read_bytes()
+            prefix = native._transcript_bytes()
 
             command = Disposition(
                 command_id, A, hold_id, native.receipt_ref(command_id), release_previous
             )
-            inbox, reader, request, _, target, batch, followup, when = (
-                _sealed_disposition(
-                    native, writer, scopes, command, tmp_path, monkeypatch, capsys
-                )
-            )
+            publication = _queue_policy_disposition(native, writer, scopes, command)
+            inbox, reader, request, _, target, batch, followup, when = publication
             terminal = scopes.verify_boundary(command, owner, batch, target)
             proof = scopes.verify_route_disposition(command, terminal)
             assert batch.cursor is None
@@ -167,7 +190,6 @@ def journal_disposition(tmp_path, monkeypatch, capsys):
                 when=when,
                 prefix=prefix,
                 prior_cursor=prior_cursor,
-                scope_file=writer.root / "scope-v1.json",
             )
 
     return prepare
@@ -191,57 +213,74 @@ def _prior_journal_rows(journal):
 
 @pytest.mark.parametrize("release_previous", [False, True], ids=["gap", "resolved"])
 def test_journal_records_native_disposition_without_settlement(
-    journal_disposition, release_previous
+    monkeypatch, release_previous
 ):
-    with journal_disposition(release_previous) as case:
-        journal = case.journal
-        before = journal.as_of()
-        rows = _prior_journal_rows(journal)
-        scope_bytes = case.scope_file.read_bytes()
-        scope_view = case.scopes.view()
-        change = journal.record_disposition(case.proof)
-        assert change.sequence == before.sequence + 1
-        assert change.disposition.record == case.proof.record
-        assert change.disposition.record.outcome == (
-            "resolved" if release_previous else "gap"
-        )
-        assert change.disposition.hold_digest == case.proof.hold.command_digest
-        assert journal.record_disposition(case.proof) == change
-        after = journal.as_of()
-        assert replace(after, sequence=before.sequence, dispositions=()) == before
-        assert journal.as_of(before.sequence) == before
-        assert _prior_journal_rows(journal) == rows
-        (projection,) = after.dispositions
-        assert projection.change == change and projection.affected == (case.first,)
-        assert case.scopes.view() == scope_view
-        assert case.scope_file.read_bytes() == scope_bytes
-        assert (
-            journal.cursor_for(case.source_id, case.native.locator())
-            == case.prior_cursor
-        )
+    from aitm_usage.monitor_journal import _stream
+    from aitm_usage.sources.adapter import StreamCursor
+    from aitm_usage.types import ProviderCheckpoint, SourceCheckpoint, _encode
+
+    case, journal, store, proof, key = _disposition_with_first_claim(
+        monkeypatch, release=release_previous
+    )
+    batch = case.terminal._batch
+    source_id, locator = batch.source_id, batch._locator
+    saved_prefix = case.snapshot.held_route_targets[0].prefix
+    cursor = StreamCursor(
+        SourceCheckpoint(saved_prefix, ProviderCheckpoint(Provider.CODEX))
+    )
+    stream = _stream(source_id, locator)
+    store.progress[stream] = _encode(
+        cursor, StreamCursor, validate_ref=store.evidence.validate_source_ref
+    ).encode()
+    assert journal.cursor_for(source_id, locator) == cursor
+    before = journal.as_of()
+    scope = case.state.view()
+    snapshot = case.snapshot
+    claims = store.claims.copy()
+    case.publish.reset_mock()
+
+    change = journal.record_disposition(proof)
+    assert change.sequence == before.sequence + 1
+    assert change.disposition.record == proof.record
+    assert change.disposition.record.outcome == (
+        "resolved" if release_previous else "gap"
+    )
+    assert change.disposition.hold_digest == proof.hold.command_digest
+    assert journal.record_disposition(proof) == change
+
+    after = journal.as_of()
+    assert replace(after, sequence=before.sequence, dispositions=()) == before
+    assert journal.as_of(before.sequence) == before
+    (projection,) = after.dispositions
+    assert projection.change == change and projection.affected == (key,)
+    assert case.state.view() == scope
+    assert case.snapshot is snapshot
+    assert store.claims == claims
+    assert journal.cursor_for(source_id, locator) == cursor
+    case.publish.assert_not_called()
 
 
 def test_journal_disposition_preserves_old_projection_when_late_claim_arrives(
-    journal_disposition,
+    late_projection_policy,
 ):
     from test_monitor_scope import _finish_disposition_turn, _verify
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    with journal_disposition() as case:
+    with late_projection_policy() as case:
         journal, scopes, native = case.journal, case.scopes, case.native
         before = journal.as_of()
-        scope_bytes = case.scope_file.read_bytes()
+        scope_bytes = native._scope_bytes()
         scope_view = scopes.view()
         assert journal.cursor_for(case.source_id, native.locator()) == case.prior_cursor
         change = journal.record_disposition(case.proof)
         recorded = journal.as_of()
         assert recorded.dispositions[0].affected == (case.first,)
-        assert case.scope_file.read_bytes() == scope_bytes
+        assert native._scope_bytes() == scope_bytes
         assert scopes.view() == scope_view
         assert journal.cursor_for(case.source_id, native.locator()) == case.prior_cursor
         _finish_disposition_turn(native, case.followup, case.when)
-        assert native.path.read_bytes().startswith(case.prefix)
+        assert native._transcript_bytes().startswith(case.prefix)
         with pytest.raises(LedgerError):
             journal.record_disposition(case.proof)
         assert journal.as_of() == recorded
@@ -249,12 +288,12 @@ def test_journal_disposition_preserves_old_projection_when_late_claim_arrives(
         legacy = _verify(scopes, native, case.legacy, case.owner, batch, case.legacy_at)
         assert scopes.dispose(case.legacy, legacy).state == "resolved"
         resolved_view = scopes.view()
-        resolved_bytes = case.scope_file.read_bytes()
+        resolved_bytes = native._scope_bytes()
         with pytest.raises(LedgerError, match="Current scope hold cannot authorize"):
             journal.record_disposition(case.proof)
         assert journal.as_of() == recorded
         assert scopes.view() == resolved_view
-        assert case.scope_file.read_bytes() == resolved_bytes
+        assert native._scope_bytes() == resolved_bytes
         assert journal.cursor_for(case.source_id, native.locator()) == case.prior_cursor
         prepared = journal.prepare(case.source_id, native.locator())
         (late,) = (
@@ -275,156 +314,257 @@ def test_journal_disposition_preserves_old_projection_when_late_claim_arrives(
 
 
 def test_journal_disposition_rolls_back_sequence_and_row_on_final_recheck(
-    journal_disposition, monkeypatch
+    late_projection_policy, monkeypatch
 ):
-    with journal_disposition() as case:
+    with late_projection_policy() as case:
         journal = case.journal
-        before = journal.as_of()
-        scope_bytes = case.scope_file.read_bytes()
-        require = case.scopes.require_route_disposition
-        checks = []
-
-        def fail_final(proof):
-            record = require(proof)
-            checks.append(record)
-            if len(checks) == 2:
-                raise LedgerError("injected final authority refusal")
-            return record
-
-        with monkeypatch.context() as patch:
-            patch.setattr(case.scopes, "require_route_disposition", fail_final)
-            with pytest.raises(LedgerError, match="injected final authority refusal"):
-                journal.record_disposition(case.proof)
-        assert checks == [case.proof.record] * 2
-        assert journal.as_of() == before
-        assert case.scope_file.read_bytes() == scope_bytes
+        sequence = journal.as_of().sequence
+        scope_bytes = case.native._scope_bytes()
+        _assert_disposition_final_recheck_rolls_back(
+            monkeypatch, journal, case.scopes, case.proof
+        )
+        assert case.native._scope_bytes() == scope_bytes
         assert (
             journal.cursor_for(case.source_id, case.native.locator())
             == case.prior_cursor
         )
-        assert journal.record_disposition(case.proof).sequence == before.sequence + 1
+        assert journal.record_disposition(case.proof).sequence == sequence + 1
+
+
+def _assert_disposition_final_recheck_rolls_back(monkeypatch, journal, scopes, proof):
+    before = journal.as_of()
+    require = scopes.require_route_disposition
+    checks = []
+
+    def fail_final(proof):
+        record = require(proof)
+        checks.append(record)
+        if len(checks) == 2:
+            raise LedgerError("injected final authority refusal")
+        return record
+
+    with monkeypatch.context() as patch:
+        patch.setattr(scopes, "require_route_disposition", fail_final)
+        with pytest.raises(LedgerError, match="injected final authority refusal"):
+            journal.record_disposition(proof)
+    assert checks == [proof.record] * 2
+    assert journal.as_of() == before
 
 
 @pytest.mark.parametrize(
     "change", ["copy", "foreign-issuer", "consumed", "revoked", "expired", "withdrawn"]
 )
 def test_journal_disposition_requires_live_issuer_even_on_replay(
-    journal_disposition, monkeypatch, change
+    journal_disposition_policy, change
 ):
+    _assert_record_requires_current_proof(journal_disposition_policy, change)
+
+
+@pytest.fixture
+def journal_disposition_policy(monkeypatch):
+    from aitm_usage import monitor_journal
+
+    case = route_admission_case(monkeypatch, CUTOFF)
+    writer = case.state.registry
+    store = DispositionRows(writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
+    journal = monitor_journal.RoutingJournal(writer, case.state)
+    proof = case.state.verify_route_disposition(case.command, case.terminal)
+    return case, journal, store, proof
+
+
+def _disposition_with_first_claim(monkeypatch, *, release=False):
+    from aitm_usage import monitor_journal as journal_module
+    from aitm_usage.monitor_types import ObservationTimeBasis
+    from aitm_usage.types import ClientVersion, TokenCounts, UsageObservation, _encode
+
+    case = route_admission_case(monkeypatch, CUTOFF, release=release)
+    writer = case.state.registry
+    evidence = writer.source_evidence()
+    store = _ClaimJournalRows(evidence)
+    monkeypatch.setattr(journal_module, "JournalStore", lambda _: store)
+    journal = journal_module.RoutingJournal(writer, case.state)
+    proof = case.state.verify_route_disposition(case.command, case.terminal)
+
+    hold = proof.hold
+    position = hold.position
+    boundary = case.snapshot.held_route_targets[0].boundary
+    observed = UsageObservation(
+        boundary,
+        case.when,
+        ClientVersion.CODEX_0_167_0_ALPHA_3_2,
+        1,
+        TokenCounts(input_tokens=4, total_tokens=4),
+        Availability.COMPLETE,
+    )
+    material = journal_module._UsageMaterial(
+        observed, Scope(hold.project_id), ObservationTimeBasis.NATIVE_USAGE_EVENT
+    )
+    origin = journal_module.ClaimEvidence(
+        position.source_id,
+        position.surface,
+        position.session_ref,
+        position.stream_ref,
+        hold.affected.start,
+        hold.affected.end,
+        1,
+        boundary.boundary_ref,
+    )
+    claim = journal_module._ClaimPayload(material, origin)
+    key = evidence.pseudonymize("fixture-observation", "initial-claim")
+    store.commits.add(1)
+    store.claims[key.value] = (
+        str(hold.project_id),
+        journal_module._claim_digest(material),
+        _encode(claim, journal_module._ClaimPayload).encode(),
+        1,
+    )
+    return case, journal, store, proof, key
+
+
+def _assert_record_requires_current_proof(journal_case, change):
     from aitm_usage.monitor_control import _filename
     from aitm_usage.monitor_journal import RoutingJournal
 
-    with journal_disposition() as case:
-        journal, proof = case.journal, case.proof
-        recorded = journal.record_disposition(proof)
-        before = journal.as_of()
-        scope_bytes = case.scope_file.read_bytes()
-        if change == "copy":
-            proof = replace(proof)
-        elif change == "foreign-issuer":
-            writer = case.scopes.registry
-            journal = RoutingJournal(writer, ScopeState(writer))
-        elif change == "consumed":
-            with case.inbox.publication() as locked:
-                os.unlink(
-                    _filename(case.command.command_id), dir_fd=locked.directory.fd
-                )
-        elif change == "revoked":
-            case.reader.revoke(case.request.grant_id)
-        elif change == "withdrawn":
-            case.reader.withdraw(case.request.grant_id)
-        else:
-            future = datetime.now(UTC) + timedelta(minutes=2)
-            monkeypatch.setattr("aitm_usage.monitor_control._scope_now", lambda: future)
-        with pytest.raises(LedgerError):
-            journal.record_disposition(proof)
-        assert journal.as_of() == before
-        assert journal.as_of(recorded.sequence).dispositions[0].change == recorded
-        assert case.scope_file.read_bytes() == scope_bytes
-        assert (
-            journal.cursor_for(case.source_id, case.native.locator())
-            == case.prior_cursor
-        )
+    case, journal, store, proof = journal_case
+    recorded = journal.record_disposition(proof)
+    assert journal.record_disposition(proof) == recorded
+    before = journal.as_of()
+    scope = case.snapshot
+    rows = store.rows.copy()
+    writes = tuple(store.writes)
+    if change == "copy":
+        proof = replace(proof)
+    elif change == "foreign-issuer":
+        writer = case.state.registry
+        journal = RoutingJournal(writer, ScopeState(writer))
+    elif change == "consumed":
+        del case.files.inbox_files[_filename(case.command.command_id)]
+    elif change == "revoked":
+        case.reader.revoke(case.request.grant_id)
+    elif change == "withdrawn":
+        case.reader.withdraw(case.request.grant_id)
+    else:
+        case.witness_at += timedelta(minutes=2)
+    with pytest.raises(LedgerError):
+        journal.record_disposition(proof)
+    assert journal.as_of() == before
+    assert journal.as_of(recorded.sequence).dispositions[0].change == recorded
+    assert case.snapshot is scope
+    assert store.rows == rows
+    assert tuple(store.writes) == writes
 
 
 @pytest.mark.parametrize("conflict", ["same-command", "same-hold"])
 def test_journal_disposition_conflicting_durable_replay_preserves_the_row(
-    journal_disposition, conflict
+    journal_disposition_policy, conflict
 ):
     from aitm_usage.types import _encode
 
-    with journal_disposition() as case:
-        journal = case.journal
-        written = journal.record_disposition(case.proof)
-        payload = written.disposition
-        record = payload.record
-        evidence = journal._store.evidence
-        if conflict == "same-command":
-            changed = "0" * 64 if payload.hold_digest != "0" * 64 else "1" * 64
-            payload = replace(payload, hold_digest=changed)
-            expected = "command changed"
-        else:
-            other_id = UUID(int=0x634)
-            boundary = replace(
-                record.boundary,
-                receipt_ref=evidence.pseudonymize("scope-receipt", str(other_id)),
-            )
-            payload = replace(
-                payload, record=replace(record, command_id=other_id, boundary=boundary)
-            )
-            expected = "hold already has"
-        raw = _encode(payload, type(payload), validate_ref=evidence.validate_source_ref)
-        with journal._store.transaction(write=True) as connection:
-            connection.execute(
-                "UPDATE route_dispositions SET command = ?, payload = ? WHERE sequence = ?",
-                (str(payload.record.command_id), raw.encode("utf-8"), written.sequence),
-            )
-        before = journal.as_of()
-        with pytest.raises(ConflictError, match=expected):
-            journal.record_disposition(case.proof)
-        assert journal.as_of() == before
+    _, journal, store, proof = journal_disposition_policy
+    written = journal.record_disposition(proof)
+    payload = written.disposition
+    record = payload.record
+    evidence = store.evidence
+    if conflict == "same-command":
+        payload = replace(payload, hold_digest="0" * 64)
+        expected = "command changed"
+    else:
+        other_id = UUID(int=0x634)
+        boundary = replace(
+            record.boundary,
+            receipt_ref=evidence.pseudonymize("scope-receipt", str(other_id)),
+        )
+        payload = replace(
+            payload, record=replace(record, command_id=other_id, boundary=boundary)
+        )
+        expected = "hold already has"
+    raw = _encode(payload, type(payload), validate_ref=evidence.validate_source_ref)
+    _, hold, sequence, commit, _ = store.rows.pop(str(record.command_id))
+    command = str(payload.record.command_id)
+    expected_row = (command, hold, sequence, commit, raw.encode("utf-8"))
+    store.rows[command] = expected_row
+    before = journal.as_of()
+    writes = tuple(store.writes)
+    with pytest.raises(ConflictError, match=expected):
+        journal.record_disposition(proof)
+    assert journal.as_of() == before
+    assert store.rows == {command: expected_row}
+    assert tuple(store.writes) == writes
 
 
 @pytest.mark.parametrize(
     "damage", ["foreign-field", "noncanonical", "empty", "wrong-receipt", "wrong-hold"]
 )
 def test_journal_disposition_reader_refuses_invalid_stored_evidence(
-    journal_disposition, damage
+    monkeypatch, damage
 ):
-    with journal_disposition() as case:
-        journal = case.journal
-        written = journal.record_disposition(case.proof)
-        with journal._store.transaction(write=True) as connection:
-            (raw,) = connection.execute(
-                "SELECT payload FROM route_dispositions"
-            ).fetchone()
-            decoded = json.loads(raw)
-            hold = str(case.proof.hold.command_id)
-            if damage == "foreign-field":
-                decoded["foreign"] = None
-            elif damage == "empty":
-                decoded["end"] = decoded["start"]
-            elif damage == "wrong-receipt":
-                decoded["record"]["boundary"]["receipt_ref"] = (
-                    journal._store.evidence.pseudonymize("scope-receipt", "other").value
-                )
-            elif damage == "wrong-hold":
-                hold = str(UUID(int=0x635))
-            raw = json.dumps(decoded, separators=(",", ":")).encode("utf-8")
-            if damage == "noncanonical":
-                raw += b"\n"
-            connection.execute(
-                "UPDATE route_dispositions SET payload = ?, hold = ? WHERE sequence = ?",
-                (raw, hold, written.sequence),
-            )
-        with pytest.raises(
-            LedgerError, match="Invalid stored routing journal disposition"
-        ):
-            journal.as_of()
-        assert not journal.as_of(written.sequence - 1).dispositions
+    _assert_disposition_reader_refuses_row(monkeypatch, damage)
 
 
-def test_journal_disposition_projects_each_matching_origin_once(journal_disposition):
+def _damage_disposition_row(hold, raw, damage, evidence):
+    contents = json.loads(raw)
+    if damage == "foreign-field":
+        contents["foreign"] = None
+    elif damage == "empty":
+        contents["end"] = contents["start"]
+    elif damage == "wrong-receipt":
+        contents["record"]["boundary"]["receipt_ref"] = evidence.pseudonymize(
+            "scope-receipt", "other"
+        ).value
+    elif damage == "wrong-hold":
+        hold = str(UUID(int=0x635))
+    changed = json.dumps(contents, separators=(",", ":")).encode("utf-8")
+    return hold, changed + b"\n" if damage == "noncanonical" else changed
+
+
+def _assert_disposition_reader_refuses_row(monkeypatch, damage):
+    from aitm_usage import monitor_journal
+    from aitm_usage.types import _encode
+
+    snapshot, evidence = disposition_snapshot()
+    (hold,), (record,) = snapshot.holds, snapshot.route_dispositions
+    payload = monitor_journal._JournalDispositionPayload(
+        hold.project_id,
+        hold.position,
+        hold.affected.start,
+        hold.affected.end,
+        hold.command_digest,
+        record,
+    )
+    raw = _encode(
+        payload, type(payload), validate_ref=evidence.validate_source_ref
+    ).encode()
+    row = (str(record.command_id), str(record.hold_id), 1, 1, raw)
+
+    def execute(sql, parameters=()):
+        if "coalesce(max(sequence)" in sql:
+            return SimpleNamespace(fetchone=lambda: (1,))
+        assert sql.startswith("SELECT ")
+        if "FROM route_dispositions d" in sql and parameters[0] == 1:
+            return (row,)
+        return ()
+
+    connection = SimpleNamespace(execute=execute)
+    store = SimpleNamespace(
+        evidence=evidence,
+        transaction=lambda: nullcontext(connection),
+        _current_version=lambda _: 4,
+    )
+    monkeypatch.setattr(monitor_journal, "JournalStore", Mock(return_value=store))
+    coordinator = SimpleNamespace(lease=object())
+    journal = monitor_journal.RoutingJournal(coordinator, ScopeState(coordinator))
+    assert journal.as_of().dispositions[0].change.disposition == payload
+    altered_hold, altered_bytes = _damage_disposition_row(
+        row[1], row[4], damage, evidence
+    )
+    row = row[0], altered_hold, row[2], row[3], altered_bytes
+    with pytest.raises(LedgerError, match="Invalid stored routing journal disposition"):
+        journal.as_of()
+    assert journal.as_of(0).dispositions == ()
+
+
+def test_journal_disposition_projects_each_matching_origin_once(monkeypatch):
     from aitm_usage.monitor_journal import (
         ContentDispute,
         OwnershipDispute,
@@ -433,80 +573,113 @@ def test_journal_disposition_projects_each_matching_origin_once(journal_disposit
     )
     from aitm_usage.monitor_types import NativeSurface
 
-    with journal_disposition() as case:
-        journal = case.journal
-        change = journal.record_disposition(case.proof)
-        payload = change.disposition
-        first = next(
-            claim for claim in journal.as_of().claims if claim.key == case.first
+    _, journal, _, proof, first_key = _disposition_with_first_claim(monkeypatch)
+    change = journal.record_disposition(proof)
+    payload = change.disposition
+    (first,) = journal.as_of().claims
+    assert first.key == first_key
+    origin = first.evidence
+    evidence = journal._store.evidence
+
+    def key(label):
+        return evidence.pseudonymize("fixture-observation", label)
+
+    other_source = replace(origin, source_id=UUID(int=0x636))
+    contender_key = key("ownership")
+    assert contender_key not in proof.hold.affected.observation_keys
+    accepted_key = key("content-accepted")
+    rival_key = key("content-contender")
+    claims = [first, replace(first, key=contender_key, project_id=UUID(int=0x635))]
+    for label, wrong_origin in (
+        ("source", other_source),
+        ("surface", replace(origin, surface=NativeSurface.CLAUDE_CODE_MACOS)),
+        ("session", replace(origin, session_ref=key("different-session"))),
+        ("stream", replace(origin, stream_ref=key("different-stream"))),
+        ("left", replace(origin, start=payload.start - 1, end=payload.start)),
+        ("right", replace(origin, start=payload.end, end=payload.end + 1)),
+    ):
+        claims.append(replace(first, key=key(label), evidence=wrong_origin))
+
+    prefix = payload.record.prefix
+    matching_edge = _ContentEdge(
+        key("material"),
+        origin,
+        origin.end,
+        prefix.anchor_ref,
+        prefix.locator_ref,
+        prefix.incarnation_ref,
+    )
+    other_edge = replace(matching_edge, origin=other_source)
+    disputes = [
+        OwnershipDispute(contender_key, payload.project_id, origin, change.sequence),
+        OwnershipDispute(first.key, payload.project_id, origin, change.sequence),
+        OwnershipDispute(
+            key("foreign-project"), UUID(int=0x635), origin, change.sequence
+        ),
+    ]
+    content = [
+        ContentDispute(
+            accepted_key,
+            payload.project_id,
+            key("common-a"),
+            matching_edge,
+            other_edge,
+            change.sequence,
+        ),
+        ContentDispute(
+            rival_key,
+            payload.project_id,
+            key("common-b"),
+            other_edge,
+            matching_edge,
+            change.sequence,
+        ),
+    ]
+    expected = tuple(
+        sorted(
+            (first.key, contender_key, accepted_key, rival_key),
+            key=lambda ref: ref.value,
         )
-        origin = first.evidence
-        evidence = journal._store.evidence
+    )
+    assert _affected_disposition_keys(payload, claims, disputes, content) == expected
 
-        def key(label):
-            return evidence.pseudonymize("fixture-observation", label)
 
-        other_source = replace(origin, source_id=UUID(int=0x636))
-        contender_key = key("ownership")
-        assert contender_key not in case.proof.hold.affected.observation_keys
-        accepted_key = key("content-accepted")
-        rival_key = key("content-contender")
-        claims = [first, replace(first, key=contender_key, project_id=B)]
-        for label, wrong_origin in (
-            ("source", other_source),
-            ("surface", replace(origin, surface=NativeSurface.CLAUDE_CODE_MACOS)),
-            ("session", replace(origin, session_ref=key("different-session"))),
-            ("stream", replace(origin, stream_ref=key("different-stream"))),
-            ("left", replace(origin, start=payload.start - 1, end=payload.start)),
-            ("right", replace(origin, start=payload.end, end=payload.end + 1)),
-        ):
-            claims.append(replace(first, key=key(label), evidence=wrong_origin))
-
-        prefix = payload.record.prefix
-        matching_edge = _ContentEdge(
-            key("material"),
-            origin,
-            origin.end,
-            prefix.anchor_ref,
-            prefix.locator_ref,
-            prefix.incarnation_ref,
-        )
-        other_edge = replace(matching_edge, origin=other_source)
-        disputes = [
-            OwnershipDispute(contender_key, A, origin, change.sequence),
-            OwnershipDispute(first.key, A, origin, change.sequence),
-            OwnershipDispute(key("foreign-project"), B, origin, change.sequence),
+class _JournalTranscriptInputs:
+    def turn(self, number, *, checkout=A, increment=4, prior=None):
+        turn = UUID(int=0x200 + number)
+        time = AFTER + timedelta(seconds=number)
+        prior = 4 * (number - 1) if prior is None else prior
+        total = usage(prior + increment, prior + increment)
+        last = usage(increment, increment)
+        return [
+            *begin(self.anchors[checkout], turn, time=time),
+            response(f"native-response-{number}", total, last, time=time, turn=turn),
+            counter(total, last, time=time),
+            end(turn, time=time),
         ]
-        content = [
-            ContentDispute(
-                accepted_key,
-                A,
-                key("common-a"),
-                matching_edge,
-                other_edge,
-                change.sequence,
-            ),
-            ContentDispute(
-                rival_key,
-                A,
-                key("common-b"),
-                other_edge,
-                matching_edge,
-                change.sequence,
-            ),
-        ]
-        expected = tuple(
-            sorted(
-                (first.key, contender_key, accepted_key, rival_key),
-                key=lambda ref: ref.value,
+
+    def locator(self, source=LIVE):
+        (locator,) = self.adapter.discover(self.roots[source])
+        return locator
+
+    def _source_rows(self, source, rows):
+        if source != COPY or not self.independent_copy:
+            return rows
+        replacement = str(UUID(int=0x1190))
+        prepared = []
+        for row in rows:
+            payload = dict(row["payload"])
+            fields = (
+                ("id", "session_id")
+                if row["type"] == "session_meta"
+                else ("session_id", "thread_id")
             )
-        )
-        assert (
-            _affected_disposition_keys(payload, claims, disputes, content) == expected
-        )
+            payload.update({name: replacement for name in fields if name in payload})
+            prepared.append({**row, "payload": payload})
+        return prepared
 
 
-class NativeJournalFixture:
+class NativeJournalFixture(_JournalTranscriptInputs):
     def __init__(self, base, monkeypatch, *, independent_copy=False):
         monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: base / "control")
         monkeypatch.setattr(
@@ -580,41 +753,8 @@ class NativeJournalFixture:
                     )
                     writer.set_permission(change, proof)
 
-    def turn(self, number, *, checkout=A, increment=4, prior=None):
-        turn = UUID(int=0x200 + number)
-        time = AFTER + timedelta(seconds=number)
-        prior = 4 * (number - 1) if prior is None else prior
-        total = usage(prior + increment, prior + increment)
-        last = usage(increment, increment)
-        return [
-            *begin(self.anchors[checkout], turn, time=time),
-            response(f"native-response-{number}", total, last, time=time, turn=turn),
-            counter(total, last, time=time),
-            end(turn, time=time),
-        ]
-
-    def _source_rows(self, source, rows):
-        if source != COPY or not self.independent_copy:
-            return rows
-        replacement = str(UUID(int=0x1190))
-        prepared = []
-        for row in rows:
-            payload = dict(row["payload"])
-            fields = (
-                ("id", "session_id")
-                if row["type"] == "session_meta"
-                else ("session_id", "thread_id")
-            )
-            payload.update({name: replacement for name in fields if name in payload})
-            prepared.append({**row, "payload": payload})
-        return prepared
-
     def append(self, source, rows):
         write(self.paths[source], self._source_rows(source, rows), append=True)
-
-    def locator(self, source=LIVE):
-        (locator,) = self.adapter.discover(self.roots[source])
-        return locator
 
 
 @pytest.fixture
@@ -622,8 +762,341 @@ def native(tmp_path, monkeypatch):
     return NativeJournalFixture(tmp_path, monkeypatch)
 
 
-def test_verified_first_claim_is_immutable_across_exact_replay(native):
+class _ClaimJournalRows(DispositionRows):
+    """Model the current claims and cursor rows needed by capture policy tests."""
+
+    def __init__(self, evidence):
+        super().__init__(evidence)
+        self.claims = {}
+        self.progress = {}
+        self.disputes = {}
+
+    @contextmanager
+    def transaction(self, *, write=False):
+        claims = self.claims.copy()
+        progress = self.progress.copy()
+        disputes = self.disputes.copy()
+        try:
+            with super().transaction(write=write):
+                yield self
+        except Exception:
+            self.claims, self.progress, self.disputes = claims, progress, disputes
+            raise
+        if not write:
+            assert (self.claims, self.progress, self.disputes) == (
+                claims,
+                progress,
+                disputes,
+            )
+
+    def execute(self, sql, parameters=()):
+        if sql == "PRAGMA user_version":
+            return _Rows([(self._current_version(self),)])
+        if sql.startswith("SELECT cursor FROM progress WHERE "):
+            cursor = self.progress.get(parameters)
+            return _Rows() if cursor is None else _Rows([(cursor,)])
+        if sql.startswith("INSERT INTO progress("):
+            *stream, sequence, cursor = parameters
+            assert sequence in self.commits
+            self.progress[tuple(stream)] = cursor
+            return _Rows()
+        if sql == "SELECT project,digest,payload,sequence FROM claims WHERE key = ?":
+            (key,) = parameters
+            row = self.claims.get(key)
+            return _Rows() if row is None else _Rows([row])
+        if sql.startswith("INSERT INTO claims("):
+            key, project, digest, payload, sequence = parameters
+            assert key not in self.claims and sequence in self.commits
+            self.claims[key] = project, digest, payload, sequence
+            return _Rows()
+        if sql.startswith("SELECT key,project,payload,digest,sequence FROM claims"):
+            (limit,) = parameters
+            return _Rows(
+                sorted(
+                    (
+                        (key, project, payload, digest, sequence)
+                        for key, (
+                            project,
+                            digest,
+                            payload,
+                            sequence,
+                        ) in self.claims.items()
+                        if sequence <= limit
+                    ),
+                    key=lambda row: (row[-1], row[0]),
+                )
+            )
+        if (
+            sql
+            == "SELECT sequence FROM disputes WHERE (key,contender,digest,evidence) = (?,?,?,?)"
+        ):
+            sequence = self.disputes.get(parameters)
+            return _Rows() if sequence is None else _Rows([(sequence,)])
+        if sql.startswith("INSERT INTO disputes("):
+            *identity, sequence = parameters
+            assert tuple(identity) not in self.disputes and sequence in self.commits
+            self.disputes[tuple(identity)] = sequence
+            return _Rows()
+        if sql == "SELECT min(sequence) FROM disputes WHERE key = ?":
+            (key,) = parameters
+            sequence = min(
+                (sequence for row, sequence in self.disputes.items() if row[0] == key),
+                default=None,
+            )
+            return _Rows([(sequence,)])
+        if sql.startswith("SELECT key, contender, evidence, sequence FROM disputes "):
+            (limit,) = parameters
+            return _Rows(
+                (key, contender, raw, sequence)
+                for (key, contender, _, raw), sequence in sorted(
+                    self.disputes.items(), key=lambda entry: (entry[1], entry[0])
+                )
+                if sequence <= limit
+            )
+        if sql.startswith(
+            (
+                "SELECT sequence,payload FROM content_disputes WHERE key = ?",
+                "SELECT sequence,later_ordinal,material,predecessor,payload FROM claim_revisions",
+            )
+        ):
+            return _Rows()
+        return super().execute(sql, parameters)
+
+
+class _ClaudeJournalRows(_ClaimJournalRows):
+    """Supply immutable committed revision rows to the real journal readers."""
+
+    _READ_REVISIONS = (
+        "SELECT sequence,later_ordinal,material,predecessor,payload"
+        " FROM claim_revisions WHERE key = ?"
+    )
+
+    def __init__(self, evidence):
+        super().__init__(evidence)
+        self.revisions = {}
+        self.content_disputes = {}
+
+    @contextmanager
+    def transaction(self, *, write=False):
+        revisions = self.revisions.copy()
+        disputes = self.content_disputes.copy()
+        try:
+            with super().transaction(write=write):
+                yield self
+        except Exception:
+            self.revisions = revisions
+            self.content_disputes = disputes
+            raise
+        if not write:
+            assert self.revisions == revisions and self.content_disputes == disputes
+
+    def execute(self, sql, parameters=()):
+        from aitm_usage.monitor_journal import (
+            _CONTENT_DISPUTE_ROWS,
+            _OWNERSHIP_DISPUTE_ROWS,
+        )
+
+        if sql.startswith("INSERT INTO content_disputes("):
+            key, sequence, raw = parameters
+            assert key in self.claims and key not in self.content_disputes
+            assert sequence in self.commits
+            self.content_disputes[key] = sequence, raw
+            return _Rows()
+        if sql == "SELECT sequence,payload FROM content_disputes WHERE key = ?":
+            (key,) = parameters
+            row = self.content_disputes.get(key)
+            return _Rows() if row is None else _Rows([row])
+        if sql.startswith(_CONTENT_DISPUTE_ROWS):
+            return self._joined_content(sql, parameters)
+        if sql.startswith(_OWNERSHIP_DISPUTE_ROWS):
+            assert not self.disputes
+            return _Rows()
+        if sql.startswith(
+            "SELECT d.key,c.project,c.payload,c.digest,d.sequence,d.payload"
+            " FROM content_disputes d JOIN claims"
+        ):
+            return self._joined_content(sql, parameters)
+        if sql == "SELECT count(*) FROM claim_revisions":
+            assert not parameters
+            return _Rows([(len(self.revisions),)])
+        if sql.startswith("INSERT INTO claim_revisions("):
+            key, sequence, ordinal, material, predecessor, payload = parameters
+            identity = key, material
+            assert identity not in self.revisions and sequence in self.commits
+            self.revisions[identity] = sequence, ordinal, material, predecessor, payload
+            return _Rows()
+        if sql.startswith(self._READ_REVISIONS):
+            key, *criteria = parameters
+            if sql == self._READ_REVISIONS + " AND material = ?":
+                (material,) = criteria
+                row = self.revisions.get((key, material))
+                return _Rows() if row is None else _Rows([row])
+            rows = [row for (claim, _), row in self.revisions.items() if claim == key]
+            if sql == self._READ_REVISIONS:
+                assert not criteria
+                return _Rows(rows)
+            assert sql == (
+                self._READ_REVISIONS + " AND sequence <= ?"
+                " ORDER BY sequence DESC, later_ordinal DESC LIMIT 1"
+            )
+            (cutoff,) = criteria
+            latest = max(
+                (row for row in rows if row[0] <= cutoff),
+                key=lambda row: row[:2],
+                default=None,
+            )
+            return _Rows() if latest is None else _Rows([latest])
+        return super().execute(sql, parameters)
+
+    def _joined_content(self, sql, parameters):
+        for key, (sequence, raw) in sorted(
+            self.content_disputes.items(), key=lambda row: (row[1][0], row[0])
+        ):
+            if "d.sequence <= ?" in sql:
+                (limit,) = parameters
+                includes = sequence <= limit
+            elif "d.sequence > ?" in sql:
+                (limit,) = parameters
+                includes = sequence > limit
+            else:
+                assert "d.sequence=? AND d.key=?" in sql
+                includes = parameters == (sequence, key)
+            if includes:
+                project, digest, first, _ = self.claims[key]
+                yield key, project, first, digest, sequence, raw
+
+
+class _MemoryJournalTranscripts(_JournalTranscriptInputs):
+    def __init__(self, monkeypatch, *, competing=False, independent_copy=False):
+        from aitm_usage import monitor_journal
+
+        if independent_copy:
+            assert competing
+        self.independent_copy = independent_copy
+        self.files = NativeTranscriptFiles(monkeypatch)
+        self.anchors = {A: self.files.checkout}
+        if competing:
+            self.anchors[B] = self.files.checkout.with_name("other-checkout")
+            self.files.checkout_paths.add(self.anchors[B])
+        self.adapter = ProviderAdapter()
+        self.evidence = monitor_registry._ServiceEvidence(b"j" * 32)
+        self.roots = {
+            source: SourceRoot(
+                self.files.root / str(source),
+                CUTOFF,
+                tuple(self.anchors.values()),
+                self.evidence,
+            )
+            for source in (LIVE, COPY)
+        }
+        self.paths = {
+            source: root.path / "desktop.jsonl" for source, root in self.roots.items()
+        }
+
+        def physical(path):
+            return monitor_registry._PhysicalDirectory(
+                str(path), self.files._identity(path)
+            )
+
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        projects = tuple(
+            monitor_registry.RegisteredProject(
+                project,
+                physical(Path("/fixture") / f"project-{project.int}"),
+                f"Project {project.int}",
+                None,
+                (physical(anchor),),
+                None,
+            )
+            for project, anchor in self.anchors.items()
+        )
+        installations = tuple(
+            _InstallationProof(
+                physical(root.path),
+                _LiveSourceTuple(
+                    "codex",
+                    "codex-desktop-macos",
+                    "Darwin",
+                    "arm64",
+                    "0.167.0-alpha.3.2",
+                    1,
+                ),
+                self.evidence.pseudonymize("executable", "fixture"),
+            )
+            for root in self.roots.values()
+        )
+        state = native_registry_policy(
+            monkeypatch,
+            self.files,
+            control=physical(Path("/fixture/monitor")),
+            projects=projects,
+            installations=installations,
+            evidence=self.evidence,
+        )
+        self.registry = state.registry
+        self.state_files = state.files
+        journal = _ClaimJournalRows(self.evidence)
+        monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: journal)
+        with self.registry.writer() as writer:
+            for source, root in self.roots.items():
+                checkout = B if source == COPY and independent_copy else A
+                self.files.write(
+                    self.paths[source],
+                    self._source_rows(
+                        source,
+                        [
+                            startup(self.anchors[checkout], originator="Codex Desktop"),
+                            *self.turn(1, checkout=checkout),
+                        ],
+                    ),
+                )
+                writer.approve_source(
+                    SourceApprovalRequest(
+                        source,
+                        "codex",
+                        "codex-desktop-macos",
+                        "Darwin",
+                        "arm64",
+                        "0.167.0-alpha.3.2",
+                        1,
+                        str(root.path),
+                    )
+                )
+                armed = [
+                    (change, writer.capture_frontier(change, self.locator(source)))
+                    for project in self.anchors
+                    for change in (CaptureChange(project, source, True),)
+                ]
+                self.append(source, self.turn(2, checkout=checkout))
+                for change, frontier in armed:
+                    proof = writer.verify_boundary(
+                        change, self.locator(source), frontier
+                    )
+                    writer.set_permission(change, proof)
+
+    def append(self, source, rows):
+        path = self.paths[source]
+        previous = self.files.contents[path]
+        self.files.write(path, self._source_rows(source, rows))
+        self.files.contents[path] = previous + self.files.contents[path]
+
+
+@pytest.fixture
+def journal_transcript_policy(monkeypatch):
+    return _MemoryJournalTranscripts(monkeypatch)
+
+
+def test_verified_first_claim_is_immutable_across_exact_replay(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
@@ -647,8 +1120,12 @@ def test_verified_first_claim_is_immutable_across_exact_replay(native):
         assert journal.as_of() == first
 
 
-def test_journal_rejects_cloned_proof_and_foreign_physical_cursor(native):
+def test_journal_rejects_cloned_proof_and_foreign_physical_cursor(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
@@ -667,16 +1144,20 @@ def test_journal_rejects_cloned_proof_and_foreign_physical_cursor(native):
         assert journal.cursor_for(COPY, copied) is None
 
 
-def test_native_transcript_copy_deduplicates_but_a_distinct_retry_counts(native):
+def test_native_transcript_copy_deduplicates_but_a_distinct_retry_counts(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
 
+    native = journal_transcript_policy
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
         live, copied = native.locator(), native.locator(COPY)
         # Both installations are independently admitted against their own
         # exact physical prefixes. Copy bytes without replacing the enrolled inode.
-        copyfile(native.paths[LIVE], native.paths[COPY])
-        assert native.paths[LIVE].read_bytes() == native.paths[COPY].read_bytes()
+        native.files.contents[native.paths[COPY]] = native.files.contents[
+            native.paths[LIVE]
+        ]
         prepared = journal.prepare(LIVE, live)
         (first,) = prepared.candidates
         first_result = journal.reserve(first, prepared.progress)
@@ -714,10 +1195,12 @@ def test_native_transcript_copy_deduplicates_but_a_distinct_retry_counts(native)
         }
 
 
-def test_competing_project_claims_cannot_double_charge(native):
+def test_competing_project_claims_cannot_double_charge(monkeypatch):
     from aitm_usage.monitor_journal import RoutingJournal
 
-    copy_prefix = native.paths[COPY].read_bytes()
+    native = _MemoryJournalTranscripts(monkeypatch, competing=True)
+    copy_path = native.paths[COPY]
+    copy_prefix = native.files.contents[copy_path]
     native.append(COPY, native.turn(3, checkout=B))
     native.append(LIVE, native.turn(3))
     with native.registry.writer() as writer:
@@ -761,7 +1244,7 @@ def test_competing_project_claims_cannot_double_charge(native):
         assert journal.reserve(original, owner_replay.progress).status == "disputed"
         assert journal.as_of() == after
 
-        native.paths[COPY].write_bytes(copy_prefix)
+        native.files.contents[copy_path] = copy_prefix
         native.append(COPY, native.turn(3, checkout=A, increment=5))
         changed = journal.prepare(COPY, native.locator(COPY))
         (unrecorded,) = (
@@ -775,8 +1258,12 @@ def test_competing_project_claims_cannot_double_charge(native):
         assert journal.as_of() == after
 
 
-def test_changed_same_owner_usage_is_held_without_advancing_prior_cursor(native):
+def test_changed_same_owner_usage_is_held_without_advancing_prior_cursor(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
@@ -839,9 +1326,12 @@ def test_reservation_and_cursor_commit_together(native, monkeypatch):
         assert claim.usage.tokens.input_tokens == 4
 
 
-def test_partial_batch_keeps_prior_across_reopen_until_whole_batch_settles(native):
+def test_partial_batch_keeps_prior_across_reopen_until_whole_batch_settles(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
 
+    native = journal_transcript_policy
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
         initial = journal.prepare(LIVE, native.locator())
@@ -878,9 +1368,12 @@ def test_partial_batch_keeps_prior_across_reopen_until_whole_batch_settles(nativ
         assert len(reopened.as_of().claims) == 3
 
 
-def test_stale_expected_prior_and_replaced_incarnation_are_refused(native):
+def test_stale_expected_prior_and_replaced_incarnation_are_refused(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
 
+    native = journal_transcript_policy
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
         old = journal.prepare(LIVE, native.locator())
@@ -893,10 +1386,9 @@ def test_stale_expected_prior_and_replaced_incarnation_are_refused(native):
 
         original = native.paths[LIVE]
         prior = native.locator()
-        replacement = original.with_suffix(".new")
-        copyfile(original, replacement)
-        replacement.replace(original)
+        old_identity = native.files.identities.pop(original)
         replaced = native.locator()
+        assert native.files.identities[original] != old_identity
         assert prior.stream_ref == replaced.stream_ref
         assert journal.cursor_for(LIVE, replaced) is None
         with pytest.raises(LedgerError):
@@ -904,8 +1396,12 @@ def test_stale_expected_prior_and_replaced_incarnation_are_refused(native):
         assert len(journal.as_of().claims) == 2
 
 
-def test_existing_native_identity_conflict_diagnostic_blocks_progress(native):
+def test_existing_native_identity_conflict_diagnostic_blocks_progress(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     with native.registry.writer() as writer:
         state = ScopeState(writer)
@@ -935,8 +1431,12 @@ def test_existing_native_identity_conflict_diagnostic_blocks_progress(native):
         assert journal.cursor_for(LIVE, locator) == first.progress
 
 
-def test_unfinished_native_turn_cannot_reserve_without_a_cursor(native):
+def test_unfinished_native_turn_cannot_reserve_without_a_cursor(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     native.append(LIVE, native.turn(3)[:-1])
     with native.registry.writer() as writer:
@@ -950,15 +1450,19 @@ def test_unfinished_native_turn_cannot_reserve_without_a_cursor(native):
         assert journal.cursor_for(LIVE, locator) is None
 
 
-def test_copy_without_verified_native_session_cannot_create_an_owner(native):
+def test_copy_without_verified_native_session_cannot_create_an_owner(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     original = native.locator()
     copy_path = native.paths[LIVE].with_name("no-session.jsonl")
     header = startup(native.anchors[A], originator="Codex Desktop")
     del header["payload"]["id"]
     del header["payload"]["session_id"]
-    write(copy_path, [header, *native.turn(1), *native.turn(2)])
+    native.files.write(copy_path, [header, *native.turn(1), *native.turn(2)])
     copy = next(
         item
         for item in native.adapter.discover(native.roots[LIVE])
@@ -975,10 +1479,12 @@ def test_copy_without_verified_native_session_cannot_create_an_owner(native):
         assert journal.cursor_for(LIVE, original) is None
 
 
-def _append_terminal_receipt(native, command_id):
+def _append_terminal_receipt(native, command_id, *, project=None):
     turn = native.turn(3)
     moment = AFTER + timedelta(seconds=3)
-    call, output = tool_call(native.ledgers[A]), tool_output(command_id)
+    if project is None:
+        project = native.ledgers[A]
+    call, output = tool_call(project), tool_output(command_id)
     call["timestamp"] = output["timestamp"] = moment.isoformat()
     followup = UUID(int=0x204)
     next_moment = moment + timedelta(seconds=1)
@@ -1000,9 +1506,12 @@ def _append_terminal_receipt(native, command_id):
     )
 
 
-def test_terminal_receipt_without_following_usage_requires_exact_scope_event(native):
+def test_terminal_receipt_without_following_usage_requires_exact_scope_event(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
 
+    native = journal_transcript_policy
     command_id = UUID(int=0x301)
     scope = Scope(A, ItemKey(ItemKind.ISSUE, 118), WorkPhase.PLANNING)
     receipt = native.evidence.pseudonymize("scope-receipt", str(command_id))
@@ -1015,12 +1524,12 @@ def test_terminal_receipt_without_following_usage_requires_exact_scope_event(nat
         (first,) = initial.candidates
         assert journal.reserve(first, initial.progress).status == "pending"
 
-        _append_terminal_receipt(native, command_id)
+        _append_terminal_receipt(native, command_id, project=state._ledger(A))
         locator = native.locator()
         batch = state.read_source(LIVE, locator)
         assert batch.diagnostics == ()
-        assert (
-            batch.cursor.checkpoint.cursor.offset == native.paths[LIVE].stat().st_size
+        assert batch.cursor.checkpoint.cursor.offset == len(
+            native.files.contents[native.paths[LIVE]]
         )
         (target,) = [
             item for item in batch.boundaries if item.boundary.receipt_ref == receipt
@@ -1063,10 +1572,12 @@ def test_terminal_receipt_without_following_usage_requires_exact_scope_event(nat
 
 
 def test_journal_reconfirms_visible_scope_replacement_before_durable_progress(
-    native, monkeypatch
+    journal_transcript_policy, monkeypatch
 ):
+    from aitm_usage import monitor_scope
     from aitm_usage.monitor_journal import RoutingJournal
 
+    native = journal_transcript_policy
     command_id = UUID(int=0x305)
     scope = Scope(A, ItemKey(ItemKind.ISSUE, 118), WorkPhase.PLANNING)
     receipt = native.evidence.pseudonymize("scope-receipt", str(command_id))
@@ -1077,7 +1588,9 @@ def test_journal_reconfirms_visible_scope_replacement_before_durable_progress(
         initial = journal.prepare(LIVE, native.locator())
         journal.reserve_batch(initial)
         original = journal.as_of()
-        _append_terminal_receipt(native, command_id)
+        project = writer.view().projects[0]
+        ledger = Ledger.open(Path(project.state.path), A)
+        _append_terminal_receipt(native, command_id, project=ledger)
         locator = native.locator()
         batch = state.read_source(LIVE, locator)
         (target,) = [
@@ -1086,19 +1599,21 @@ def test_journal_reconfirms_visible_scope_replacement_before_durable_progress(
         authority = state.operator(A)
         state.authorize(mark, authority)
         proof = state.verify_boundary(mark, authority, batch, target)
-        root = native.registry.root
-        actual_sync = os.fsync
+        files = native.state_files
+        publish = monitor_scope._publish
+
+        def publish_then_sync(directory, name, data, *, replace_pending):
+            publish(directory, name, data, replace_pending=replace_pending)
+            monitor_scope.os.fsync(directory.fd)
 
         def interrupted_scope_sync(fd):
-            if (
-                os.path.samestat(os.fstat(fd), root.stat())
-                and (root / "scope-v1.json").exists()
-            ):
+            root = files.descriptors[fd]
+            if root == writer.root and "scope-v1.json" in files.files[root]:
                 raise OSError("scope directory sync interrupted")
-            actual_sync(fd)
 
         with monkeypatch.context() as interrupted:
-            interrupted.setattr(os, "fsync", interrupted_scope_sync)
+            interrupted.setattr(monitor_scope, "_publish", publish_then_sync)
+            interrupted.setattr(monitor_scope.os, "fsync", interrupted_scope_sync)
             with pytest.raises(OSError, match="scope directory sync"):
                 state.apply_mark(mark, proof)
             assert state.view().events
@@ -1120,6 +1635,24 @@ def journal_claude(tmp_path, monkeypatch):
 
     monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
     return ClaudeScopeFixture(NativeScopeFixture(tmp_path, monkeypatch))
+
+
+@pytest.fixture
+def journal_claude_policy(monkeypatch):
+    from test_monitor_scope import ClaudeScopeFixture, MemoryNativeScopeFixture
+
+    from aitm_usage import monitor_journal
+
+    native = MemoryNativeScopeFixture(monkeypatch, with_claude=True)
+    rows = _ClaudeJournalRows(native.evidence)
+
+    def open_rows(writer):
+        assert writer.root == native.registry.root
+        assert writer.source_evidence() == rows.evidence
+        return rows
+
+    monkeypatch.setattr(monitor_journal, "JournalStore", open_rows)
+    return ClaudeScopeFixture(native)
 
 
 def _claude_candidates(prepared, ordinal):
@@ -1171,12 +1704,12 @@ def _prepare_claude_mark(state, native):
     return command, boundary
 
 
-def test_causal_revision_survives_stale_replay_after_restart(journal_claude):
+def test_causal_revision_survives_stale_replay_after_restart(journal_claude_policy):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1239,12 +1772,20 @@ def test_causal_revision_survives_stale_replay_after_restart(journal_claude):
         assert journal.cursor_for(native.source_id, native.locator()) is None
 
 
-def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(journal_claude):
-    _assert_claude_cold_read_preserves_cursor(journal_claude, explicit_quota=False)
+def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(
+    journal_claude_policy,
+):
+    _assert_claude_cold_read_preserves_cursor(
+        journal_claude_policy, explicit_quota=False
+    )
 
 
-def test_journal_claude_explicit_quota_gap_preserves_earlier_cursor(journal_claude):
-    _assert_claude_cold_read_preserves_cursor(journal_claude, explicit_quota=True)
+def test_journal_claude_explicit_quota_gap_preserves_earlier_cursor(
+    journal_claude_policy,
+):
+    _assert_claude_cold_read_preserves_cursor(
+        journal_claude_policy, explicit_quota=True
+    )
 
 
 def _assert_claude_cold_read_preserves_cursor(native, *, explicit_quota):
@@ -1293,7 +1834,7 @@ def _assert_claude_cold_read_preserves_cursor(native, *, explicit_quota):
         assert diagnostic.provider is Provider.CLAUDE
         assert batch.source_id == native.source_id
         assert diagnostic.source_ref == native.locator().stream_ref
-        raw = native.path.read_bytes().splitlines()
+        raw = native._transcript_bytes().splitlines()
         if explicit_quota:
             assert diagnostic.ordinal == quota_at
             assert json.loads(raw[quota_at])["type"] == "rate_limit_event"
@@ -1320,13 +1861,15 @@ def _assert_claude_cold_read_preserves_cursor(native, *, explicit_quota):
 
 
 @pytest.mark.parametrize("rewrite", ["before-original", "between-edges", "predecessor"])
-def test_v2_claude_replay_requires_the_whole_durable_edge(journal_claude, rewrite):
+def test_v2_claude_replay_requires_the_whole_durable_edge(
+    journal_claude_policy, rewrite
+):
     from test_claude import usage as claude_usage
     from test_claude import user as claude_user
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1341,13 +1884,13 @@ def test_v2_claude_replay_requires_the_whole_durable_edge(journal_claude, rewrit
         assert journal.reserve(successor, current.progress).status == "pending"
         saved = journal.as_of()
 
-    rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    rows = [json.loads(line) for line in native._transcript_bytes().splitlines()]
     if rewrite == "predecessor":
         rows[ordinal]["message"]["usage"] = claude_usage(output=5)
     else:
         edited = before if rewrite == "before-original" else between
         rows[edited]["message"]["content"] = "rewritten without changing usage"
-    write(native.path, rows)
+    native._write_rows(rows)
     native.append(native.request(3, counts=claude_usage(output=7)))
 
     with registry.writer() as writer:
@@ -1365,14 +1908,14 @@ def test_v2_claude_replay_requires_the_whole_durable_edge(journal_claude, rewrit
 
 
 def test_v1_layout_genesis_reauthenticates_normalized_material_after_capture(
-    journal_claude,
+    journal_claude_policy,
 ):
     from test_claude import usage as claude_usage
     from test_claude import user as claude_user
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1388,9 +1931,9 @@ def test_v1_layout_genesis_reauthenticates_normalized_material_after_capture(
                 "SELECT count(*) FROM claim_revisions"
             ).fetchone() == (0,)
 
-    rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    rows = [json.loads(line) for line in native._transcript_bytes().splitlines()]
     rows[padding]["message"]["content"] = "rewritten after the original capture witness"
-    write(native.path, rows)
+    native._write_rows(rows)
     native.append(native.request(3, counts=claude_usage(output=6)))
     with registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
@@ -1401,12 +1944,14 @@ def test_v1_layout_genesis_reauthenticates_normalized_material_after_capture(
         assert journal.as_of(saved.sequence) == saved
 
 
-def test_claude_revision_archive_can_replay_but_cannot_advance_owner(journal_claude):
+def test_claude_revision_archive_can_replay_but_cannot_advance_owner(
+    journal_claude_policy, monkeypatch
+):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal, _original_capture
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1424,33 +1969,11 @@ def test_claude_revision_archive_can_replay_but_cannot_advance_owner(journal_cla
             current._read.batch, A, original_evidence, writer.view()
         )
 
-        root_path = native.root.path.with_name("claude-archive")
-        root_path.mkdir()
-        path = root_path / "claude.jsonl"
-        root = replace(native.root, path=root_path)
         archive_source = UUID(int=7)
-        rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
-        write(path, rows[:1])
-        writer.approve_source(
-            SourceApprovalRequest(
-                archive_source,
-                "claude",
-                "claude-code-macos",
-                "Darwin",
-                "arm64",
-                "2.1.318",
-                1,
-                str(root_path),
-            )
-        )
-        (locator,) = native.native.adapter.discover(root)
-        capture = CaptureChange(A, archive_source, True)
-        frontier = writer.capture_frontier(capture, locator)
-        write(path, rows[1:], append=True)
-        (locator,) = native.native.adapter.discover(root)
-        writer.set_permission(
-            capture, writer.verify_boundary(capture, locator, frontier)
-        )
+        _expose_claude_archive_directory(native, archive_source, monkeypatch)
+        rows = [json.loads(line) for line in native._transcript_bytes().splitlines()]
+        path, locate = _claude_archive(native, writer, rows, archive_source)
+        locator = locate()
 
         archive = journal.prepare(archive_source, locator)
         assert not _original_capture(
@@ -1461,8 +1984,10 @@ def test_claude_revision_archive_can_replay_but_cannot_advance_owner(journal_cla
         assert journal.reserve(original, archive.progress).status == "replay"
         assert journal.reserve(known, archive.progress).status == "replay"
 
-        write(path, [native.request(3, counts=claude_usage(output=7))], append=True)
-        (locator,) = native.native.adapter.discover(root)
+        native.files.write(
+            path, [native.request(3, counts=claude_usage(output=7))], append=True
+        )
+        locator = locate()
         extended = journal.prepare(archive_source, locator)
         _, _, new = _claude_candidates(extended, ordinal)
         assert journal._scopes.verified_revision(extended._read.batch, new.observation)
@@ -1472,12 +1997,12 @@ def test_claude_revision_archive_can_replay_but_cannot_advance_owner(journal_cla
         assert journal.cursor_for(archive_source, locator) is None
 
 
-def test_claude_journal_never_bypasses_a_disabled_intermediate(journal_claude):
+def test_claude_journal_never_bypasses_a_disabled_intermediate(journal_claude_policy):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1499,13 +2024,13 @@ def test_claude_journal_never_bypasses_a_disabled_intermediate(journal_claude):
 
 
 def test_claude_revision_rolls_back_when_the_final_read_check_fails(
-    journal_claude, monkeypatch
+    journal_claude_policy, monkeypatch
 ):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1517,19 +2042,7 @@ def test_claude_revision_rolls_back_when_the_final_read_check_fails(
         native.append(native.request(3, counts=claude_usage(output=6)))
         prepared = journal.prepare(native.source_id, native.locator())
         _, successor = _claude_candidates(prepared, ordinal)
-        fresh = journal._fresh_view
-        checked = False
-
-        def reject_final(connection, read):
-            nonlocal checked
-            if checked:
-                raise LedgerError("test final native custody failure")
-            checked = True
-            return fresh(connection, read)
-
-        monkeypatch.setattr(journal, "_fresh_view", reject_final)
-        with pytest.raises(LedgerError, match="test final native custody failure"):
-            journal.reserve(successor, prepared.progress)
+        _assert_failed_final_read(monkeypatch, journal, successor, prepared.progress)
         assert journal.as_of() == saved
 
     with registry.writer() as writer:
@@ -1542,12 +2055,30 @@ def test_claude_revision_rolls_back_when_the_final_read_check_fails(
         assert journal.as_of().sequence == saved.sequence + 1
 
 
-def test_verified_claude_revision_does_not_change_saved_original_scope(journal_claude):
+def _assert_failed_final_read(monkeypatch, journal, candidate, progress):
+    fresh = journal._fresh_view
+    observed = []
+
+    def reject_final(connection, read):
+        if observed:
+            raise LedgerError("injected final native custody failure")
+        observed.append(read)
+        return fresh(connection, read)
+
+    with monkeypatch.context() as fault:
+        fault.setattr(journal, "_fresh_view", reject_final)
+        with pytest.raises(LedgerError, match="injected final native custody failure"):
+            journal.reserve(candidate, progress)
+
+
+def test_verified_claude_revision_does_not_change_saved_original_scope(
+    journal_claude_policy,
+):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1571,10 +2102,11 @@ def test_verified_claude_revision_does_not_change_saved_original_scope(journal_c
         assert journal.as_of() == saved
 
 
-def test_journal_refuses_mismatched_v1_first_claim_payload(native):
+def test_journal_refuses_mismatched_v1_first_claim_payload(journal_transcript_policy):
     from aitm_usage.monitor_journal import RoutingJournal, _ClaimPayload
     from aitm_usage.types import _decode, _encode
 
+    native = journal_transcript_policy
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
         locator = native.locator()
@@ -1582,22 +2114,22 @@ def test_journal_refuses_mismatched_v1_first_claim_payload(native):
         (candidate,) = prepared.candidates
         assert journal.reserve(candidate, prepared.progress).status == "pending"
         key = candidate.observation.key.value
-        with journal._store.transaction(write=True) as connection:
-            (raw,) = connection.execute(
-                "SELECT payload FROM claims WHERE key = ?", (key,)
-            ).fetchone()
-            original = _decode(raw, _ClaimPayload)
-            changed_usage = replace(
-                original.material.usage,
-                observed_at=original.material.usage.observed_at + timedelta(seconds=1),
-            )
-            corrupt = replace(
-                original, material=replace(original.material, usage=changed_usage)
-            )
-            connection.execute(
-                "UPDATE claims SET payload = ? WHERE key = ?",
-                (_encode(corrupt, _ClaimPayload).encode(), key),
-            )
+        claims = journal._store.claims
+        project_id, digest, raw, sequence = claims[key]
+        original = _decode(raw, _ClaimPayload)
+        changed_usage = replace(
+            original.material.usage,
+            observed_at=original.material.usage.observed_at + timedelta(seconds=1),
+        )
+        corrupt = replace(
+            original, material=replace(original.material, usage=changed_usage)
+        )
+        claims[key] = (
+            project_id,
+            digest,
+            _encode(corrupt, _ClaimPayload).encode(),
+            sequence,
+        )
 
         replay = journal.prepare(LIVE, locator)
         (same,) = replay.candidates
@@ -1609,12 +2141,19 @@ def test_journal_refuses_mismatched_v1_first_claim_payload(native):
 
 def _claude_archive(native, writer, rows, source_id, *, projects=(A,), relocate=False):
     root_path = native.root.path.with_name(f"claude-archive-{source_id.int}")
-    root_path.mkdir()
     path = root_path / "claude.jsonl"
     root = replace(native.root, path=root_path)
-    if relocate:
-        native.path.rename(path)
-    write(path, rows[:1])
+    if native.files is None:
+        root_path.mkdir()
+        if relocate:
+            native.path.rename(path)
+        write_rows = write
+    else:
+        if relocate:
+            native.files.contents[path] = native.files.contents.pop(native.path)
+            native.files.identities[path] = native.files.identities.pop(native.path)
+        write_rows = native.files.write
+    write_rows(path, rows[:1])
     writer.approve_source(
         SourceApprovalRequest(
             source_id,
@@ -1637,12 +2176,30 @@ def _claude_archive(native, writer, rows, source_id, *, projects=(A,), relocate=
         for project in projects
         for change in (CaptureChange(project, source_id, True),)
     ]
-    write(path, rows[1:3], append=True)
+    write_rows(path, rows[1:3], append=True)
     for change, frontier in armed:
         proof = writer.verify_boundary(change, locate(), frontier)
         writer.set_permission(change, proof)
-    write(path, rows[3:], append=True)
+    write_rows(path, rows[3:], append=True)
     return path, locate
+
+
+def _expose_claude_archive_directory(native, source_id, monkeypatch):
+    root = native.root.path.with_name(f"claude-archive-{source_id.int}")
+    observed = monitor_registry._PhysicalDirectory(
+        str(root), native.files._identity(root)
+    )
+    directory = monitor_registry._directory
+    resolve = Path.resolve
+
+    def directory_at(path, **options):
+        return observed if path == observed.path else directory(path, **options)
+
+    def resolve_path(path, *args, **kwargs):
+        return path if path == root else resolve(path, *args, **kwargs)
+
+    monkeypatch.setattr(monitor_registry, "_directory", directory_at)
+    monkeypatch.setattr(Path, "resolve", resolve_path)
 
 
 def _common_claude_revision(native, writer):
@@ -1658,21 +2215,30 @@ def _common_claude_revision(native, writer):
     prepared = journal.prepare(native.source_id, native.locator())
     _, common = _claude_candidates(prepared, ordinal)
     assert journal.reserve(common, prepared.progress).status == "pending"
-    rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    rows = [json.loads(line) for line in native._transcript_bytes().splitlines()]
     return journal, ordinal, rows
 
 
 @pytest.mark.parametrize("descendant", [False, True], ids=["head-child", "later-head"])
 def test_verified_claude_branches_record_one_durable_content_dispute(
-    journal_claude, descendant, monkeypatch
+    request, descendant, monkeypatch
 ):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    fixture = "journal_claude_policy" if descendant else "journal_claude"
+    native = request.getfixturevalue(fixture)
     registry = native.native.registry
     source_id, exact_source = UUID(int=7), UUID(int=8)
+    if descendant:
+        for archive_id in (source_id, exact_source, UUID(int=9), UUID(int=10)):
+            _expose_claude_archive_directory(native, archive_id, monkeypatch)
+    write_rows = native.files.write if descendant else write
+
+    def archive_bytes(path):
+        return native.files.contents[path] if descendant else path.read_bytes()
+
     with registry.writer() as writer:
         journal, ordinal, prefix = _common_claude_revision(native, writer)
         archive_path, locate = _claude_archive(native, writer, prefix, source_id)
@@ -1682,7 +2248,7 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
         assert journal.as_of() == before
 
         native.append(native.request(3, counts=claude_usage(output=7)))
-        write(
+        write_rows(
             archive_path,
             [native.request(3, counts=claude_usage(output=8))],
             append=True,
@@ -1708,10 +2274,15 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
         )
         assert journal.reserve(contender, rival.progress).status == "held"
         assert journal.as_of() == before
+        if not descendant:
+            persisted = _prior_journal_rows(journal)
+            _assert_failed_final_read(monkeypatch, journal, accepted, live.progress)
+            assert journal.as_of() == before
+            assert _prior_journal_rows(journal) == persisted
         assert journal.reserve(accepted, live.progress).status == "pending"
 
         exact_rows = [
-            json.loads(line) for line in native.path.read_bytes().splitlines()
+            json.loads(line) for line in native._transcript_bytes().splitlines()
         ]
         _, exact_locate = _claude_archive(native, writer, exact_rows, exact_source)
         exact = journal.prepare(exact_source, exact_locate())
@@ -1743,22 +2314,7 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
         saved = journal.as_of()
         rival = journal.prepare(source_id, locate())
         *_, contender = _claude_candidates(rival, ordinal)
-        fresh = journal._fresh_view
-        checked = False
-
-        def reject_final(connection, read):
-            nonlocal checked
-            if checked:
-                raise LedgerError("injected content dispute final custody failure")
-            checked = True
-            return fresh(connection, read)
-
-        with monkeypatch.context() as fault:
-            fault.setattr(journal, "_fresh_view", reject_final)
-            with pytest.raises(
-                LedgerError, match="injected content dispute final custody"
-            ):
-                journal.reserve(contender, rival.progress)
+        _assert_failed_final_read(monkeypatch, journal, contender, rival.progress)
         assert journal.as_of() == saved
         outcome = journal.reserve(contender, rival.progress)
         assert outcome.status == "disputed" and outcome.project_id == A
@@ -1781,7 +2337,7 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
 
         foreign_source = UUID(int=10)
         rival_rows = [
-            json.loads(line) for line in archive_path.read_bytes().splitlines()
+            json.loads(line) for line in archive_bytes(archive_path).splitlines()
         ]
         _, foreign_locate = _claude_archive(native, writer, rival_rows, foreign_source)
         foreign = journal.prepare(foreign_source, foreign_locate())
@@ -1859,13 +2415,16 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
             assert journal.as_of(saved.sequence) == saved
 
 
-def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(journal_claude):
+def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(
+    journal_claude_policy, monkeypatch
+):
     from test_claude import usage as claude_usage
     from test_claude import user as claude_user
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     source_id = UUID(int=7)
+    _expose_claude_archive_directory(native, source_id, monkeypatch)
     with registry.writer() as writer:
         native.approve(writer)
         padding = native.append(claude_user(native.anchor))
@@ -1878,7 +2437,7 @@ def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(journal_
         current = journal.prepare(native.source_id, native.locator())
         _, common = _claude_candidates(current, ordinal)
         assert journal.reserve(common, current.progress).status == "pending"
-        prefix = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        prefix = [json.loads(line) for line in native._transcript_bytes().splitlines()]
         archive_path, locate = _claude_archive(native, writer, prefix, source_id)
         native.append(native.request(3, counts=claude_usage(output=7)))
         live = journal.prepare(native.source_id, native.locator())
@@ -1886,12 +2445,15 @@ def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(journal_
             journal.reserve(_claude_candidates(live, ordinal)[-1], live.progress).status
             == "pending"
         )
-        changed = [json.loads(line) for line in archive_path.read_bytes().splitlines()]
+        changed = [
+            json.loads(line)
+            for line in native.files.contents[archive_path].splitlines()
+        ]
         changed[padding]["message"]["content"] = (
             "changed raw prefix, equal normalized counters"
         )
-        write(archive_path, changed)
-        write(
+        native.files.write(archive_path, changed)
+        native.files.write(
             archive_path,
             [native.request(3, counts=claude_usage(output=8))],
             append=True,
@@ -1918,12 +2480,14 @@ def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(journal_
 
 @pytest.mark.parametrize("ownership_first", [True, False], ids=["before", "after"])
 def test_claude_content_and_ownership_disputes_remain_separate(
-    journal_claude, ownership_first
+    journal_claude_policy, monkeypatch, ownership_first
 ):
     from test_claude import usage as claude_usage
 
-    native = journal_claude
+    native = journal_claude_policy
     source_id, other_source = UUID(int=7), UUID(int=8)
+    _expose_claude_archive_directory(native, source_id, monkeypatch)
+    _expose_claude_archive_directory(native, other_source, monkeypatch)
     with native.native.registry.writer() as writer:
         journal, ordinal, prefix = _common_claude_revision(native, writer)
         _, locate = _claude_archive(
@@ -1972,19 +2536,22 @@ def test_claude_content_and_ownership_disputes_remain_separate(
         assert journal.cursor_for(other_source, other_locate()) is None
 
 
-def test_claude_genesis_alone_cannot_prove_a_common_dispute_parent(journal_claude):
+def test_claude_genesis_alone_cannot_prove_a_common_dispute_parent(
+    journal_claude_policy, monkeypatch
+):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     source_id = UUID(int=7)
+    _expose_claude_archive_directory(native, source_id, monkeypatch)
     with native.native.registry.writer() as writer:
         native.approve(writer)
         ordinal = native.append(native.request(3, stop=None))
         journal = RoutingJournal(writer, ScopeState(writer))
         journal.reserve_batch(journal.prepare(native.source_id, native.locator()))
-        prefix = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        prefix = [json.loads(line) for line in native._transcript_bytes().splitlines()]
         _, locate = _claude_archive(
             native,
             writer,
@@ -1997,6 +2564,10 @@ def test_claude_genesis_alone_cannot_prove_a_common_dispute_parent(journal_claud
         assert journal.reserve(accepted, live.progress).status == "pending"
         saved = journal.as_of()
         rival = journal.prepare(source_id, locate())
+        original = live._read.batch._native_cursor
+        archived = rival._read.batch._native_cursor
+        assert original.source_ref == archived.source_ref
+        assert original.incarnation_ref != archived.incarnation_ref
         _, contender = _claude_candidates(rival, ordinal)
         assert journal._scopes.verified_revision(
             rival._read.batch, contender.observation
@@ -2005,13 +2576,16 @@ def test_claude_genesis_alone_cannot_prove_a_common_dispute_parent(journal_claud
         assert journal.as_of() == saved
 
 
-def test_claude_common_usage_repeat_cannot_create_a_content_dispute(journal_claude):
+def test_claude_common_usage_repeat_cannot_create_a_content_dispute(
+    journal_claude_policy, monkeypatch
+):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import _distinct_accepted_child
 
-    native = journal_claude
+    native = journal_claude_policy
     source_id = UUID(int=7)
+    _expose_claude_archive_directory(native, source_id, monkeypatch)
     with native.native.registry.writer() as writer:
         journal, ordinal, prefix = _common_claude_revision(native, writer)
         _, locate = _claude_archive(
@@ -2046,13 +2620,15 @@ def test_claude_common_usage_repeat_cannot_create_a_content_dispute(journal_clau
 
 @pytest.mark.parametrize("control", ["equal-child", "disabled", "relocated"])
 def test_claude_conflict_requires_distinct_usage_and_current_independent_custody(
-    journal_claude, control
+    journal_claude_policy, monkeypatch, control
 ):
     from test_claude import usage as claude_usage
     from test_claude import user as claude_user
 
-    native = journal_claude
+    native = journal_claude_policy
     source_id = UUID(int=7)
+    _expose_claude_archive_directory(native, source_id, monkeypatch)
+    write_rows = native.files.write
     with native.native.registry.writer() as writer:
         journal, ordinal, prefix = _common_claude_revision(native, writer)
         native.append(native.request(3, counts=claude_usage(output=7)))
@@ -2067,16 +2643,16 @@ def test_claude_conflict_requires_distinct_usage_and_current_independent_custody
             native, writer, prefix, source_id, relocate=control == "relocated"
         )
         if control == "equal-child":
-            write(archive_path, [claude_user(native.anchor)], append=True)
+            write_rows(archive_path, [claude_user(native.anchor)], append=True)
         if control == "disabled":
             disable = CaptureChange(A, source_id, False)
             frontier = writer.capture_frontier(disable, locate())
-            write(archive_path, [native.request(4)], append=True)
+            write_rows(archive_path, [native.request(4)], append=True)
             writer.set_permission(
                 disable, writer.verify_boundary(disable, locate(), frontier)
             )
         output = 7 if control == "equal-child" else 8
-        write(
+        write_rows(
             archive_path,
             [native.request(3, counts=claude_usage(output=output))],
             append=True,
@@ -2084,7 +2660,7 @@ def test_claude_conflict_requires_distinct_usage_and_current_independent_custody
         if control == "disabled":
             enable = CaptureChange(A, source_id, True)
             frontier = writer.capture_frontier(enable, locate())
-            write(archive_path, [native.request(5)], append=True)
+            write_rows(archive_path, [native.request(5)], append=True)
             writer.set_permission(
                 enable, writer.verify_boundary(enable, locate(), frontier)
             )
@@ -2113,44 +2689,18 @@ def test_claude_conflict_requires_distinct_usage_and_current_independent_custody
         assert journal.as_of() == saved
 
 
-def test_journal_holds_keyed_grok_contradiction_without_touching_codex(
-    tmp_path, monkeypatch
-):
-    from test_grok import FIXTURES, GROK_BINARY, SESSION
-    from test_monitor_scope import SOURCE, NativeScopeFixture
+def test_journal_holds_keyed_grok_contradiction_without_touching_codex(monkeypatch):
+    from test_monitor_scope import SOURCE, MemoryNativeScopeFixture
 
+    from aitm_usage import monitor_journal
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import resolve_route
-    from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
 
-    monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
-    native = NativeScopeFixture(tmp_path, monkeypatch)
+    native = MemoryNativeScopeFixture(monkeypatch, with_grok=True)
+    store = _ClaimJournalRows(native.evidence)
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
     source_id = UUID(int=6)
-    approved_root = tmp_path / "grok-transcripts"
-    session = approved_root / SESSION
-    session.mkdir(parents=True)
-    updates = session / "updates.jsonl"
-    updates.write_bytes((FIXTURES / "updates.jsonl").read_bytes())
-    usage_path = session / "usage.json"
-    usage_path.write_bytes((FIXTURES / "usage.json").read_bytes())
-    root = replace(
-        native.root, path=approved_root, cutoff=datetime(2026, 1, 1, tzinfo=UTC)
-    )
-    origin = GrokOrigin(
-        session_id=SESSION,
-        system="Darwin",
-        architecture="arm64",
-        version="1.0.77",
-        build="50ca579fa996",
-        executable_digest=GROK_BINARY,
-        format_version=1,
-        lineage_id=SESSION,
-        incarnation=native.evidence.pseudonymize("grok-incarnation", "fixture"),
-        checkout=native.anchor_ref(A),
-    )
-    reader = GrokAdapter(
-        lambda path: origin if path == updates else None, lambda *_: None
-    )
+    root, reader, usage_path = native.grok_source(monkeypatch, lambda *_: None)
     (locator,) = reader.discover(root)
 
     with native.registry.writer() as writer:
@@ -2170,16 +2720,16 @@ def test_journal_holds_keyed_grok_contradiction_without_touching_codex(
                 "arm64",
                 "1.0.77",
                 1,
-                str(approved_root),
+                str(root.path),
             )
         )
         original_view = state.view()
         clean = state.read_source(source_id, locator)
         assert len(clean.observations) == 2
         first = clean.observations[0]
-        body = json.loads(usage_path.read_bytes())
+        body = json.loads(native.files.contents[usage_path])
         body["turns"][0]["modelUsage"]["grok-4.7-build"]["costUsdTicks"] += 1
-        usage_path.write_text(json.dumps(body))
+        native.files.contents[usage_path] = json.dumps(body).encode()
         conflict = state.read_source(source_id, locator)
         (diagnostic,) = conflict.diagnostics
         assert diagnostic.code is DiagnosticCode.IDENTITY_CONFLICT
@@ -2199,13 +2749,13 @@ def test_journal_holds_keyed_grok_contradiction_without_touching_codex(
 
 
 def test_journal_holds_independently_admitted_claude_copy_with_changed_scope(
-    journal_claude, monkeypatch
+    journal_claude_policy, monkeypatch
 ):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal, _claim_span
 
-    native = journal_claude
+    native = journal_claude_policy
     with native.native.registry.writer() as writer:
         native.approve(writer)
         scopes = ScopeState(writer)
@@ -2230,7 +2780,8 @@ def test_journal_holds_independently_admitted_claude_copy_with_changed_scope(
         saved = journal.as_of()
         live_cursor = journal.cursor_for(native.source_id, native.locator())
         copy_source = UUID(int=7)
-        prefix = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        _expose_claude_archive_directory(native, copy_source, monkeypatch)
+        prefix = [json.loads(line) for line in native._transcript_bytes().splitlines()]
         _, locate = _claude_archive(native, writer, prefix, copy_source)
         copy = journal.prepare(copy_source, locate())
         _, reproduced = _claude_candidates(copy, ordinal)
@@ -2314,11 +2865,11 @@ def test_journal_holds_independently_admitted_claude_copy_with_changed_scope(
 
 
 def test_journal_distinguishes_generic_native_codex_gap_from_quota(
-    tmp_path, monkeypatch
+    journal_transcript_policy,
 ):
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = NativeJournalFixture(tmp_path, monkeypatch)
+    native = journal_transcript_policy
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
         prior = journal.prepare(LIVE, native.locator())
@@ -2334,7 +2885,7 @@ def test_journal_distinguishes_generic_native_codex_gap_from_quota(
         assert diagnostic.code is DiagnosticCode.COVERAGE_GAP
         assert diagnostic.provider is Provider.CODEX
         assert diagnostic.source_ref == locator.stream_ref and batch.source_id == LIVE
-        raw = native.paths[LIVE].read_bytes().splitlines()
+        raw = native.files.contents[native.paths[LIVE]].splitlines()
         assert json.loads(raw[diagnostic.ordinal])["payload"]["type"] == "task_complete"
         assert journal._boundaries_settled(current._read, journal._scopes.view(batch))
         assert all(
@@ -2346,14 +2897,14 @@ def test_journal_distinguishes_generic_native_codex_gap_from_quota(
 
 @pytest.mark.parametrize("mixed", [False, True], ids=["aggregate-overlap", "mixed"])
 def test_journal_holds_native_claude_agent_overlap_and_mixed_diagnostics(
-    journal_claude, mixed
+    journal_claude_policy, mixed
 ):
     from test_claude import rate_event
     from test_monitor_adapters import _restart_rows
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     with native.native.registry.writer() as writer:
         native.approve(writer)
         native.append(native.request(3))
@@ -2386,7 +2937,7 @@ def test_journal_holds_native_claude_agent_overlap_and_mixed_diagnostics(
             if item.code is DiagnosticCode.OVERLAP_UNVERIFIED
         ]
         assert start + 2 in overlap
-        raw = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        raw = [json.loads(line) for line in native._transcript_bytes().splitlines()]
         assert raw[start + 2]["toolUseResult"]["status"] == "completed"
         assert any(
             item.usage.availability is Availability.UNKNOWN
@@ -2456,16 +3007,149 @@ def test_v3_upgrade_preserves_native_journal_historical_views(tmp_path, monkeypa
 
 @pytest.fixture
 def journal_pair(native, tmp_path, monkeypatch, capsys):
+    yield from _journal_pair(native, monkeypatch, tmp_path=tmp_path, capsys=capsys)
+
+
+class _PairedClaimJournalRows(_ClaimJournalRows):
+    """Expose committed ownership, settlement, and progress bytes to the journal."""
+
+    def __init__(self, evidence):
+        super().__init__(evidence)
+        self.version = 4
+        self.pairs = {}
+        self.progress_by_commit = {}
+
+    @contextmanager
+    def transaction(self, *, write=False):
+        before = (self.version, self.pairs.copy(), self.progress_by_commit.copy())
+        try:
+            with super().transaction(write=write):
+                yield self
+        except Exception:
+            self.version, self.pairs, self.progress_by_commit = before
+            raise
+        if not write:
+            assert (self.version, self.pairs, self.progress_by_commit) == before
+
+    def _current_version(self, connection):
+        assert connection is self
+        return self.version
+
+    def _enable_paired(self, connection):
+        assert connection is self and self.version == 4
+        self.version = 5
+
+    def execute(self, sql, parameters=()):
+        if sql in {
+            "SELECT 1 FROM route_dispositions WHERE command IN (?,?,?,?)"
+            " OR hold IN (?,?,?,?) LIMIT 1",
+            "SELECT 1 FROM route_dispositions WHERE command IN (?,?)"
+            " OR hold IN (?,?) LIMIT 1",
+        }:
+            count = len(parameters) // 2
+            return _Rows(
+                (1,)
+                for command, hold, *_ in self.rows.values()
+                if command in parameters[:count] or hold in parameters[count:]
+            )
+        if sql == "SELECT sequence FROM claims WHERE key = ?":
+            (key,) = parameters
+            claim = self.claims.get(key)
+            return _Rows([(claim[-1],)] if claim is not None else [])
+        if sql == "SELECT sequence FROM disputes WHERE key = ?":
+            (key,) = parameters
+            return SimpleNamespace(
+                fetchall=lambda: [
+                    (sequence,)
+                    for (claim, *_), sequence in self.disputes.items()
+                    if claim == key
+                ]
+            )
+        if sql == "SELECT 1 FROM content_disputes WHERE key = ?":
+            return _Rows()
+        if sql == "SELECT payload,digest FROM claims WHERE key = ?":
+            (key,) = parameters
+            row = self.claims.get(key)
+            return _Rows([(row[2], row[1])] if row is not None else [])
+        if sql.startswith("INSERT INTO progress("):
+            *key, data = parameters
+            result = super().execute(sql, parameters)
+            self.progress_by_commit[tuple(key)] = data
+            return result
+        if sql == (
+            "SELECT cursor FROM progress"
+            " WHERE (source,surface,stream,locator,incarnation,sequence) = (?,?,?,?,?,?)"
+        ):
+            cursor = self.progress_by_commit.get(parameters)
+            return _Rows([(cursor,)] if cursor is not None else [])
+        if sql == "SELECT count(*) FROM progress WHERE sequence = ?":
+            (sequence,) = parameters
+            return _Rows(
+                [(sum(key[-1] == sequence for key in self.progress_by_commit),)]
+            )
+        if sql == "INSERT INTO paired_settlements VALUES (?,?)":
+            sequence, data = parameters
+            assert sequence in self.commits and sequence not in self.pairs
+            self.pairs[sequence] = data
+            return _Rows()
+        if sql == (
+            "SELECT s.sequence,s.payload,c.sequence FROM paired_settlements s"
+            " LEFT JOIN commits c ON c.sequence=s.sequence"
+            " WHERE s.sequence <= ? ORDER BY s.sequence"
+        ):
+            (limit,) = parameters
+            return _Rows(
+                (seq, data, seq if seq in self.commits else None)
+                for seq, data in sorted(self.pairs.items())
+                if seq <= limit
+            )
+        return super().execute(sql, parameters)
+
+
+@pytest.fixture
+def journal_pair_policy(monkeypatch):
+    from test_ledger import _memory_ledger
+
+    from aitm_usage import ledger as ledger_module
+    from aitm_usage import monitor_journal, scopes
+
+    native = _MemoryJournalTranscripts(monkeypatch, competing=True)
+    journal = _PairedClaimJournalRows(native.evidence)
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: journal)
+    native.ledgers = {}
+    for project in native.registry.view().projects:
+        path = Path(project.state.path)
+        ledger = _memory_ledger(
+            ledger_module, project.project_id, project.project_id.bytes
+        )
+        native.ledgers[project.project_id] = replace(ledger, root=path)
+        native.state_files.ensure(path)
+        native.state_files.identities[project.state.path] = project.state
+
+    def open_ledger(path, project):
+        ledger = native.ledgers[project]
+        assert path == ledger.root
+        return ledger
+
+    monkeypatch.setattr(Ledger, "open", open_ledger)
+    monkeypatch.setattr(scopes, "_read_private", native.state_files.read)
+    yield from _journal_pair(native, monkeypatch)
+
+
+def _journal_pair(native, monkeypatch, *, tmp_path=None, capsys=None):
     from test_monitor_scope import (
         NativeScopeFixture,
         _append_completed_disposition,
         _issue,
+        _queue_policy_disposition,
         _sealed_disposition,
     )
 
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import Disposition, Handoff
     from aitm_usage.sources.scan import checkout_anchor_reference
+
+    memory = isinstance(native, _MemoryJournalTranscripts)
 
     class Carrier(NativeScopeFixture):
         def __init__(self, source_id, project, clock):
@@ -2478,6 +3162,20 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
 
         def locator(self):
             return native.locator(self.source_id)
+
+        def _transcript_bytes(self):
+            if memory:
+                return native.files.contents[self.path]
+            return super()._transcript_bytes()
+
+        def _replace_transcript(self, contents):
+            if memory:
+                native.files.contents[self.path] = contents
+            else:
+                super()._replace_transcript(contents)
+
+        def _append_rows(self, rows):
+            native.append(self.source_id, rows)
 
         def append(self, command_id=None, *, checkout=None, **kwargs):
             return super().append(command_id, checkout=self.project, **kwargs)
@@ -2502,12 +3200,12 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
                     output = tool_output(command)
                     output["timestamp"] = when.isoformat()
                     rows.append(output)
-                write(self.path, [*rows, end(turn, time=when)], append=True)
+                self._append_rows([*rows, end(turn, time=when)])
 
             append_turn(f"boundary-tool-{command_id}", command=command_id)
             if shared and self.project == A:
                 self.padding(1)
-            ordinal = len(self.path.read_bytes().splitlines())
+            ordinal = len(self._transcript_bytes().splitlines())
             append_turn(
                 "paired-obligation" if shared else f"boundary-usage-{command_id}"
             )
@@ -2523,7 +3221,7 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
                 }
                 for _ in range(count)
             ]
-            write(self.path, rows, append=True)
+            self._append_rows(rows)
 
         def prepare(self, writer, journal):
             state = ScopeState(writer, clock=lambda: self.clock[0])
@@ -2591,10 +3289,23 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
                     carrier, command, request, stdout, project_id=self.project
                 )
 
-            with monkeypatch.context() as patch:
-                patch.setattr("test_monitor_scope._append_ordered_disposition", append)
-                _, self.reader, self.request, _, _, _, self.closed_turn, self.when = (
-                    _sealed_disposition(
+            grant_id = UUID(int=0xA00 + self.source_id.int)
+            if memory:
+                publication = _queue_policy_disposition(
+                    self,
+                    writer,
+                    self.state,
+                    self.command,
+                    source_id=self.source_id,
+                    grant_id=grant_id,
+                    append=append,
+                )
+            else:
+                with monkeypatch.context() as patch:
+                    patch.setattr(
+                        "test_monitor_scope._append_ordered_disposition", append
+                    )
+                    publication = _sealed_disposition(
                         self,
                         writer,
                         self.state,
@@ -2603,9 +3314,11 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
                         patch,
                         capsys,
                         source_id=self.source_id,
-                        grant_id=UUID(int=0xA00 + self.source_id.int),
+                        grant_id=grant_id,
                     )
-                )
+            _, self.reader, self.request, _, _, _, self.closed_turn, self.when = (
+                publication
+            )
 
         def prove(self):
             batch = self.state.read_source(
@@ -2619,8 +3332,7 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
         def late_usage(self):
             self.total += 4
             total, delta = usage(self.total, self.total), usage(4, 4)
-            write(
-                self.path,
+            self._append_rows(
                 [
                     response(
                         "same-turn-after-close",
@@ -2630,8 +3342,7 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
                         turn=self.closed_turn,
                     ),
                     counter(total, delta, time=self.when),
-                ],
-                append=True,
+                ]
             )
 
     clock = [datetime(2026, 11, 10, tzinfo=UTC)]
@@ -2656,6 +3367,24 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
         assert first.key == dispute.key
         for side in (owner, rival):
             side.complete(writer)
+
+        def scope_bytes():
+            if memory:
+                return native.state_files.files[writer.root]["scope-v1.json"]
+            return (writer.root / "scope-v1.json").read_bytes()
+
+        def recorded_rows():
+            if not memory:
+                return _prior_journal_rows(journal)
+            store = journal._store
+            return (
+                store.commits.copy(),
+                store.rows.copy(),
+                store.claims.copy(),
+                store.disputes.copy(),
+                store.progress.copy(),
+            )
+
         yield SimpleNamespace(
             journal=journal,
             writer=writer,
@@ -2667,20 +3396,26 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
             dispute=dispute,
             clock=clock,
             restart=restart,
+            scope_bytes=scope_bytes,
+            recorded_rows=recorded_rows,
         )
 
 
-def test_pair_settles_two_frontiers_and_preserves_first_ownership(journal_pair):
-    case = journal_pair
+def test_pair_settles_two_frontiers_and_preserves_first_ownership(journal_pair_policy):
+    _assert_pair_commit(journal_pair_policy)
+
+
+def _assert_pair_commit(case):
     journal = case.journal
     before = journal.as_of()
     owner, rival = case.owner.prove(), case.rival.prove()
-    scope = case.writer.root / "scope-v1.json"
-    scope_bytes = scope.read_bytes()
+    scope_bytes = case.scope_bytes()
     old = [
         journal.cursor_for(side.source_id, side.locator())
         for side in (case.owner, case.rival)
     ]
+    with journal._store.transaction() as connection:
+        assert connection.execute("PRAGMA user_version").fetchone() == (4,)
     change = journal.settle_disposition(case.key, owner, rival)
     assert change.sequence == before.sequence + 1
     assert journal.as_of(before.sequence) == before
@@ -2690,7 +3425,7 @@ def test_pair_settles_two_frontiers_and_preserves_first_ownership(journal_pair):
     assert all(claim in settled.claims for claim in before.claims)
     assert change.paired.owner.release.hold.project_id == A
     assert change.paired.rival.release.hold.project_id == B
-    assert scope.read_bytes() == scope_bytes
+    assert case.scope_bytes() == scope_bytes
     for carrier, previous, proof in zip(
         (case.owner, case.rival), old, (owner, rival), strict=True
     ):
@@ -2701,11 +3436,13 @@ def test_pair_settles_two_frontiers_and_preserves_first_ownership(journal_pair):
         assert previous != proof.progress.cursor
         assert carrier.hold in carrier.state.view().holds
     with journal._store.transaction() as connection:
+        assert connection.execute("PRAGMA user_version").fetchone() == (5,)
         assert connection.execute(
             "SELECT count(*) FROM progress WHERE sequence = ?", (change.sequence,)
         ).fetchone() == (2,)
     assert journal.settle_disposition(case.key, owner, rival) == change
     assert journal.as_of().sequence == change.sequence
+    return change
 
 
 @pytest.mark.parametrize("broken", ["owner", "rival"])
@@ -2714,40 +3451,25 @@ def test_pair_settles_two_frontiers_and_preserves_first_ownership(journal_pair):
     ["late", "copy", "grant", "expired-hold", "changed-route", "disabled", "swap"],
 )
 def test_pair_refuses_one_bad_side_without_moving_either_frontier(
-    journal_pair, broken, failure
+    request, monkeypatch, broken, failure
 ):
-    case = journal_pair
+    index = int(broken == "rival")
+    if failure in {"copy", "expired-hold", "changed-route"}:
+        assert_pair_refuses_changed_authority(monkeypatch, index, failure)
+        return
+    if failure == "late":
+        _assert_pair_refuses_late_same_turn_usage(monkeypatch, index)
+        return
+
+    case = request.getfixturevalue("journal_pair_policy")
     journal = case.journal
     good = [case.owner.prove(), case.rival.prove()]
     carriers = (case.owner, case.rival)
-    index = int(broken == "rival")
     source = carriers[index]
     prior = journal.as_of()
-    original_rows = _prior_journal_rows(journal)
-    if failure == "late":
-        source.late_usage()
-    elif failure == "copy":
-        good[index] = replace(good[index])
-    elif failure == "grant":
+    original_rows = case.recorded_rows()
+    if failure == "grant":
         source.reader.withdraw(source.request.grant_id)
-    elif failure == "expired-hold":
-        source.state._clock = lambda: source.hold.expires_at
-    elif failure == "changed-route":
-        state = source.state._snapshot()
-        event = next(
-            item for item in state.events if item.position.source_id == source.source_id
-        )
-        changed = replace(
-            event, scope=replace(event.scope, item=ItemKey(ItemKind.ISSUE, 999))
-        )
-        source.state._save(
-            replace(
-                state,
-                events=tuple(
-                    changed if item is event else item for item in state.events
-                ),
-            )
-        )
     elif failure == "disabled":
         source.append()
         change = CaptureChange(source.project, source.source_id, False)
@@ -2757,15 +3479,58 @@ def test_pair_refuses_one_bad_side_without_moving_either_frontier(
         case.writer.set_permission(change, boundary)
     elif failure == "swap":
         good.reverse()
-    scope = case.writer.root / "scope-v1.json"
-    scope_bytes = scope.read_bytes()
-    with pytest.raises(LedgerError):
+    scope_bytes = case.scope_bytes()
+    if failure in {"grant", "disabled"}:
+        monkeypatch.setattr(
+            journal,
+            "_build_settlement_change",
+            Mock(
+                side_effect=AssertionError(
+                    "invalid authority reached settlement writes"
+                )
+            ),
+        )
+    reason = "Paired settlement first ownership changed" if failure == "swap" else None
+    with pytest.raises(LedgerError, match=reason):
         journal.settle_disposition(case.key, *good)
     assert journal.as_of() == prior
-    assert _prior_journal_rows(journal) == original_rows
-    assert scope.read_bytes() == scope_bytes
+    assert case.recorded_rows() == original_rows
+    assert case.scope_bytes() == scope_bytes
     with journal._store.transaction() as connection:
         assert connection.execute("PRAGMA user_version").fetchone() == (4,)
+
+
+def _assert_pair_refuses_late_same_turn_usage(monkeypatch, index):
+    case = _issued_pair(monkeypatch)
+    source = case.carriers[index]
+    good = case.carriers[1 - index]
+    delta, total = usage(4, 4), usage(source.total + 4, source.total + 4)
+    session = source.fixture.session_id
+    late = [
+        response(
+            "same-turn-after-close",
+            total,
+            delta,
+            time=source.when,
+            turn=source.turn,
+            thread=session,
+            root=session,
+        ),
+        counter(total, delta, time=source.when),
+    ]
+    case.contents[source.path] += _settlement_bytes(late)
+    assert good.issuer.completion_witness(
+        good.command, good.authority, good.batch, good.target
+    )
+    assert (
+        source.issuer.completion_witness(
+            source.command, source.authority, source.batch, source.target
+        )
+        is None
+    )
+    _assert_pair_refuses_before_write(
+        monkeypatch, case, case.proofs, "current owned completion proof"
+    )
 
 
 def test_pair_rolls_back_staged_upgrade_claims_and_both_cursors(
@@ -2792,12 +3557,12 @@ def test_pair_rolls_back_staged_upgrade_claims_and_both_cursors(
 
 
 def test_committed_pair_survives_expired_grant_hold_and_late_same_turn_usage(
-    journal_pair, monkeypatch
+    journal_pair_policy, monkeypatch
 ):
     from aitm_usage.monitor_control import _scope_now
     from aitm_usage.scope_admission import WITNESS_LIFETIME
 
-    case = journal_pair
+    case = journal_pair_policy
     journal = case.journal
     owner, rival = case.owner.prove(), case.rival.prove()
     change = journal.settle_disposition(case.key, owner, rival)
@@ -2847,87 +3612,59 @@ def test_committed_pair_survives_expired_grant_hold_and_late_same_turn_usage(
     "conflict", ["legacy-resolution", "changed-hold", "changed-route", "v4-proposal"]
 )
 def test_committed_pair_conflict_stalls_affected_source_without_regressing_history(
-    journal_pair, conflict, tmp_path, monkeypatch, capsys
+    request, conflict, monkeypatch
 ):
-    from test_monitor_scope import _sealed_disposition
+    if conflict != "v4-proposal":
+        assert_committed_release_conflict_is_local(monkeypatch, conflict)
+        return
+
+    from test_monitor_scope import _queue_policy_disposition
 
     from aitm_usage.monitor_journal import RoutingJournal
-    from aitm_usage.monitor_scope import Disposition, _Resolution
+    from aitm_usage.monitor_scope import Disposition
 
-    case = journal_pair
+    case = request.getfixturevalue("journal_pair_policy")
     journal, carrier = case.journal, case.owner
     owner, rival = carrier.prove(), case.rival.prove()
     change = journal.settle_disposition(case.key, owner, rival)
     history = journal.as_of(change.sequence)
     state = carrier.state._snapshot()
-    if conflict == "v4-proposal":
-        command_id = UUID(int=0xA20)
-        command = Disposition(
-            command_id,
-            A,
-            carrier.hold.command_id,
-            carrier.receipt_ref(command_id),
-            True,
-        )
-        _, _, _, _, target, batch, followup, when = _sealed_disposition(
-            carrier,
-            case.writer,
-            carrier.state,
-            command,
-            tmp_path,
-            monkeypatch,
-            capsys,
-            source_id=carrier.source_id,
-            grant_id=UUID(int=0xA21),
-        )
-        terminal = carrier.state.verify_boundary(command, carrier.auth, batch, target)
-        proposal = carrier.state.verify_route_disposition(command, terminal)
-        RoutingJournal(case.writer, carrier.state).record_disposition(proposal)
-        # Separate the v4 journal conflict from the scope proposal in this control.
-        carrier.state._save(state)
-        carrier.total += 4
-        delta, total = usage(4, 4), usage(carrier.total, carrier.total)
-        write(
-            carrier.path,
-            [
-                response(
-                    "complete-competing-next-turn",
-                    total,
-                    delta,
-                    time=when,
-                    turn=followup,
-                ),
-                counter(total, delta, time=when),
-                end(followup, time=when),
-            ],
-            append=True,
-        )
-    elif conflict == "changed-route":
-        event = next(
-            row for row in state.events if row.position.source_id == carrier.source_id
-        )
-        amended = replace(
-            event, scope=replace(event.scope, item=ItemKey(ItemKind.ISSUE, 999))
-        )
-        carrier.state._save(
-            replace(
-                state,
-                events=tuple(amended if row is event else row for row in state.events),
-            )
-        )
-        carrier.append()
-    else:
-        if conflict == "changed-hold":
-            changed = replace(
-                carrier.hold, expires_at=carrier.hold.expires_at + timedelta(seconds=1)
-            )
-            resolutions = state.resolutions
-        else:
-            changed = replace(carrier.hold, state=type(carrier.hold.state).RESOLVED)
-            resolutions = (_Resolution(UUID(int=0xA22), "a" * 64, changed),)
-        holds = tuple(changed if row == carrier.hold else row for row in state.holds)
-        carrier.state._save(replace(state, holds=holds, resolutions=resolutions))
-        carrier.append()
+    command_id = UUID(int=0xA20)
+    command = Disposition(
+        command_id,
+        A,
+        carrier.hold.command_id,
+        carrier.receipt_ref(command_id),
+        True,
+    )
+    _, _, _, _, target, batch, followup, when = _queue_policy_disposition(
+        carrier,
+        case.writer,
+        carrier.state,
+        command,
+        source_id=carrier.source_id,
+        grant_id=UUID(int=0xA21),
+    )
+    terminal = carrier.state.verify_boundary(command, carrier.auth, batch, target)
+    proposal = carrier.state.verify_route_disposition(command, terminal)
+    RoutingJournal(case.writer, carrier.state).record_disposition(proposal)
+    # Separate the v4 journal conflict from the scope proposal in this control.
+    carrier.state._save(state)
+    carrier.total += 4
+    delta, total = usage(4, 4), usage(carrier.total, carrier.total)
+    carrier._append_rows(
+        [
+            response(
+                "complete-competing-next-turn",
+                total,
+                delta,
+                time=when,
+                turn=followup,
+            ),
+            counter(total, delta, time=when),
+            end(followup, time=when),
+        ],
+    )
     with pytest.raises(LedgerError, match="Committed settlement conflicts"):
         journal.prepare(carrier.source_id, carrier.locator())
     assert (
@@ -2939,17 +3676,15 @@ def test_committed_pair_conflict_stalls_affected_source_without_regressing_histo
     assert journal.prepare(case.rival.source_id, case.rival.locator()).candidates
 
 
-def test_corrupt_pair_payload_refuses_routing_without_moving_frontiers(journal_pair):
-    case = journal_pair
+def test_corrupt_pair_payload_refuses_routing_without_moving_frontiers(
+    journal_pair_policy,
+):
+    case = journal_pair_policy
     journal, carrier = case.journal, case.owner
     owner, rival = carrier.prove(), case.rival.prove()
     before = journal.as_of()
     change = journal.settle_disposition(case.key, owner, rival)
-    with journal._store.transaction(write=True) as connection:
-        connection.execute(
-            "UPDATE paired_settlements SET payload = ? WHERE sequence = ?",
-            (b"{}", change.sequence),
-        )
+    journal._store.pairs[change.sequence] = b"{}"
     assert journal.as_of(before.sequence) == before
     with pytest.raises(LedgerError, match="Invalid stored paired settlement"):
         journal.as_of()
@@ -2969,12 +3704,19 @@ def test_corrupt_pair_payload_refuses_routing_without_moving_frontiers(journal_p
 @pytest.mark.parametrize("side", [0, 1], ids=["owner", "rival"])
 @pytest.mark.parametrize("disproof", _COMPLETION_NATIVE_DISPROOFS)
 def test_pair_preserves_frontiers_when_one_native_completion_is_invalid(
-    journal_pair, side, disproof
+    request, monkeypatch, side, disproof
 ):
-    case = journal_pair
+    if disproof not in _COMPLETION_FILE_CASES:
+        assert_pair_refuses_changed_completion(monkeypatch, side, disproof)
+        return
+    if side == 1 and disproof in {"missing-baseline", "physical-tail"}:
+        _assert_pair_refuses_changed_prefix(monkeypatch, side, disproof)
+        return
+
+    case = request.getfixturevalue("journal_pair_policy")
     carriers = (case.owner, case.rival)
     bad, other = carriers[side], carriers[1 - side]
-    prior, rows = case.journal.as_of(), _prior_journal_rows(case.journal)
+    prior, rows = case.journal.as_of(), case.recorded_rows()
     proofs = tuple(carrier.prove() for carrier in carriers)
     _damage_completed_disposition(
         bad, disproof, bad.when, bad.closed_turn, other_project=other.project
@@ -3000,19 +3742,77 @@ def test_pair_preserves_frontiers_when_one_native_completion_is_invalid(
             bad.state.completion_witness(bad.command, bad.auth, batch, target) is None
             for target in targets
         )
+    monkeypatch.setattr(
+        case.journal,
+        "_build_settlement_change",
+        Mock(
+            side_effect=AssertionError("invalid completion reached settlement writes")
+        ),
+    )
     with pytest.raises(LedgerError):
         case.journal.settle_disposition(case.key, *proofs)
     assert case.journal.as_of() == prior
-    assert _prior_journal_rows(case.journal) == rows
+    assert case.recorded_rows() == rows
 
 
-def test_pair_resumes_clean_next_turn_from_committed_prefix_after_restart(journal_pair):
-    case = journal_pair
-    change = case.journal.settle_disposition(
-        case.key, case.owner.prove(), case.rival.prove()
+def _assert_pair_refuses_changed_prefix(monkeypatch, side, disproof):
+    from test_monitor_scope import _damage_completion_rows
+
+    from aitm_usage.sources.scan import _capture_position, _CaptureDiscontinuity
+
+    case = _issued_pair(monkeypatch)
+    bad, good = case.carriers[side], case.carriers[1 - side]
+    source = bad.batch._locator._source
+    if disproof == "missing-baseline":
+        _damage_completion_rows(
+            bad.rows,
+            disproof,
+            bad.when,
+            bad.turn,
+            other_checkout=Path("/fixture/unused-checkout"),
+            total=bad.total,
+        )
+        case.contents[bad.path] = _settlement_bytes(bad.rows)
+        with pytest.raises(_CaptureDiscontinuity):
+            fixed = bad.held_target.prefix
+            _capture_position(source, fixed, fixed=fixed)
+    else:
+        case.contents[bad.path] += b'{"type":'
+        current = _capture_position(source, None)
+        assert current.partial_ordinal is not None
+        assert current.cursor != bad.batch._native_cursor
+
+    good_proof = good.issuer.verify_settlement_side(
+        good.command, good.authority, good.batch, good.target
     )
+    assert good_proof.hold == case.proofs[1 - side].hold
+    assert good_proof.progress.cursor == case.proofs[1 - side].progress.cursor
+    assert (
+        bad.issuer.completion_witness(bad.command, bad.authority, bad.batch, bad.target)
+        is None
+    )
+    _assert_pair_refuses_before_write(
+        monkeypatch, case, case.proofs, "current owned completion proof"
+    )
+
+
+def test_pair_resumes_clean_next_turn_from_committed_prefix_after_restart(
+    journal_pair, tmp_path, monkeypatch, capsys
+):
+    from test_monitor_scope import _sealed_disposition
+
+    from aitm_usage.monitor_journal import RoutingJournal
+    from aitm_usage.monitor_scope import Disposition
+
+    case = journal_pair
+    change = _assert_pair_commit(case)
     historical = case.journal.as_of(change.sequence)
     journal = case.restart()
+    with journal._store.transaction() as connection:
+        assert connection.execute("PRAGMA user_version").fetchone() == (5,)
+        assert connection.execute(
+            "SELECT count(*) FROM progress WHERE sequence = ?", (change.sequence,)
+        ).fetchone() == (2,)
     for carrier in (case.owner, case.rival):
         prior = journal.cursor_for(carrier.source_id, carrier.locator())
         carrier.append()
@@ -3029,25 +3829,60 @@ def test_pair_resumes_clean_next_turn_from_committed_prefix_after_restart(journa
     assert journal.as_of(change.sequence) == historical
     assert journal.as_of().settlements == (change,)
 
+    carrier = case.owner
+    state = journal._scopes
+    command_id = UUID(int=0xA20)
+    command = Disposition(
+        command_id,
+        A,
+        carrier.hold.command_id,
+        carrier.receipt_ref(command_id),
+        True,
+    )
+    _, _, _, _, target, batch, _, _ = _sealed_disposition(
+        carrier,
+        journal._writer,
+        state,
+        command,
+        tmp_path,
+        monkeypatch,
+        capsys,
+        source_id=carrier.source_id,
+        grant_id=UUID(int=0xA21),
+    )
+    terminal = state.verify_boundary(command, state.operator(A), batch, target)
+    proof = state.verify_route_disposition(command, terminal)
+    disposition_journal = RoutingJournal(journal._writer, state)
+    with disposition_journal._store.transaction() as connection:
+        rows = connection.execute("SELECT * FROM route_dispositions").fetchall()
+    _assert_disposition_final_recheck_rolls_back(
+        monkeypatch, disposition_journal, state, proof
+    )
+    with disposition_journal._store.transaction() as connection:
+        assert connection.execute("SELECT * FROM route_dispositions").fetchall() == rows
+
 
 @pytest.mark.parametrize(
     "after_commit", (False, True), ids=("before-commit", "after-commit")
 )
 def test_paired_revocation_retains_only_committed_history(
-    journal_pair, monkeypatch, legacy_monitor_qualification, after_commit
+    request, monkeypatch, legacy_monitor_qualification, after_commit
 ):
     from contextlib import contextmanager
     from types import MethodType
 
     from test_monitor_qualification import qualify
 
-    case = journal_pair
+    case = request.getfixturevalue(
+        "journal_pair" if after_commit else "journal_pair_policy"
+    )
     monkeypatch.setattr(
         case.writer,
         "_require_live_source",
         MethodType(legacy_monitor_qualification, case.writer),
     )
-    qualify(case.writer)
+    if after_commit:
+        qualify(case.writer)
     owner, rival = case.owner.prove(), case.rival.prove()
     journal = case.journal
     before = journal.as_of()
@@ -3162,8 +3997,89 @@ def test_paired_settlement_can_follow_a_coverage_first_v6_upgrade(
         assert journal._store._current_version(connection) == 6
 
 
-def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(native):
-    from aitm_usage.monitor_journal import RoutingJournal
+class _DisputePublicationRows(_ClaimJournalRows):
+    """Expose canonical ownership rows and their original claim to publication."""
+
+    def __init__(self, evidence):
+        super().__init__(evidence)
+        self.version = 4
+
+    @contextmanager
+    def transaction(self, *, write=False):
+        with super().transaction(write=write) as connection:
+            self._current_version(connection)
+            yield connection
+            self._current_version(connection)
+
+    def _current_version(self, connection):
+        assert connection is self
+        return self.version
+
+    def _enable_delivery(self, connection):
+        assert connection is self and self.version == 6
+        self.version = 7
+
+    def execute(self, sql, parameters=()):
+        from aitm_usage.monitor_journal import (
+            _CONTENT_DISPUTE_ROWS,
+            _OWNERSHIP_DISPUTE_ROWS,
+        )
+
+        if sql.startswith(
+            (
+                _CONTENT_DISPUTE_ROWS,
+                "SELECT s.sequence,s.payload,c.sequence FROM paired_settlements",
+            )
+        ):
+            return _Rows()
+        order = " ORDER BY d.sequence,d.key,d.contender,d.digest,d.evidence"
+        rows = []
+        if sql == _OWNERSHIP_DISPUTE_ROWS + " WHERE d.sequence > ?" + order:
+            (after,) = parameters
+            selected = (
+                (key, contender, digest, evidence, sequence)
+                for (
+                    key,
+                    contender,
+                    digest,
+                    evidence,
+                ), sequence in self.disputes.items()
+                if sequence > after
+            )
+        elif sql == _OWNERSHIP_DISPUTE_ROWS + " WHERE d.sequence=? AND d.key=?" + order:
+            selected = (
+                (key, contender, digest, evidence, sequence)
+                for (
+                    key,
+                    contender,
+                    digest,
+                    evidence,
+                ), sequence in self.disputes.items()
+                if (sequence, key) == parameters
+            )
+        else:
+            return super().execute(sql, parameters)
+        for key, contender, digest, evidence, sequence in sorted(
+            selected, key=lambda row: (row[-1], *row[:-1])
+        ):
+            project, claim_digest, raw, _ = self.claims[key]
+            rows.append(
+                (key, contender, project, digest, evidence, sequence, raw, claim_digest)
+            )
+        return _Rows(rows)
+
+
+def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(monkeypatch):
+    from test_monitor_journal_store import _journal_metadata
+
+    from aitm_usage import monitor_journal
+    from aitm_usage._monitor_journal_store import _DELIVERY_SCHEMA_VERSION, JournalStore
+    from aitm_usage.monitor_journal import ClaimEvidence, RoutingJournal
+    from aitm_usage.types import _decode
+
+    native = _MemoryJournalTranscripts(monkeypatch, competing=True)
+    store = _DisputePublicationRows(native.evidence)
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
 
     for number in (3, 4):
         native.append(LIVE, native.turn(number))
@@ -3186,34 +4102,27 @@ def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(nativ
         assert one.identity != two.identity
         assert journal.publication_candidate(first) == one
         assert journal.as_of() == before
+        owner = writer.view().projects[0]
+        ledger = Ledger.open(Path(owner.state.path), A)
         for false in (
             replace(first.dispute, row_digest="0" * 64),
             replace(first.dispute, identity=two.identity),
             replace(
                 first.dispute,
-                identity=native.ledgers[A].pseudonymize(
-                    "foreign-journal-proof", "candidate"
-                ),
+                identity=ledger.pseudonymize("foreign-journal-proof", "candidate"),
             ),
             replace(first.dispute, record=second.dispute.record),
         ):
             for _ in range(2):
                 with pytest.raises(LedgerError):
                     journal.publication_candidate(replace(first, dispute=false))
-        from aitm_usage._monitor_journal_store import _DELIVERY_SCHEMA_VERSION, _open
-        from aitm_usage.monitor_journal import ClaimEvidence
-        from aitm_usage.types import _decode
-
         key = first.dispute.record.key.value
-        with journal._store.transaction(write=True) as connection:
-            (raw,) = connection.execute(
-                "SELECT evidence FROM disputes WHERE key=?", (key,)
-            ).fetchone()
-            noncanonical = raw + b" "
-            assert _decode(noncanonical, ClaimEvidence) == first.dispute.record.evidence
-            connection.execute(
-                "UPDATE disputes SET evidence=? WHERE key=?", (noncanonical, key)
-            )
+        (identity,) = (row for row in store.disputes if row[0] == key)
+        raw = identity[-1]
+        noncanonical = raw + b" "
+        assert _decode(noncanonical, ClaimEvidence) == first.dispute.record.evidence
+        altered = (*identity[:-1], noncanonical)
+        store.disputes[altered] = store.disputes.pop(identity)
         with pytest.raises(LedgerError, match="Verified journal-only publication"):
             journal.publication_candidate(first)
         with pytest.raises(LedgerError, match="Verified journal-only publication"):
@@ -3221,68 +4130,100 @@ def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(nativ
         assert journal.publication_candidate(second) == two
 
         previous_commit = first.sequence - 1
-        with journal._store.transaction(write=True) as connection:
-            assert connection.execute(
-                "SELECT sequence FROM commits WHERE sequence=?", (previous_commit,)
-            ).fetchone() == (previous_commit,)
-            connection.execute(
-                "UPDATE disputes SET sequence=?,evidence=? WHERE key=?",
-                (previous_commit, raw, key),
-            )
+        assert previous_commit in store.commits
+        del store.disputes[altered]
+        store.disputes[identity] = previous_commit
         moved, unchanged = journal.dispute_changes(0)
         assert moved.sequence == previous_commit and unchanged == second
         assert journal.publication_candidate(moved).identity != one.identity
         with pytest.raises(LedgerError, match="Verified journal-only publication"):
             journal.publication_candidate(first)
 
-        with journal._store.transaction(write=True) as connection:
-            journal._store._enable_coverage(connection)
+        # Observe supported schema transitions while keeping the encoded rows fixed.
+        store.version = 6
         journal.enable_delivery(journal.as_of().sequence)
         assert journal.dispute_changes(0) == (moved, second)
         assert journal.publication_candidate(second) == two
-        database = writer.root / "routing-journal-v1" / "journal.sqlite3"
-        with _open(database, write=True) as connection:
-            connection.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION + 1}")
+        schema = _journal_metadata(monkeypatch, _DELIVERY_SCHEMA_VERSION + 1)
+        schema_owner = SimpleNamespace(_key_id="fixture-key")
+        monkeypatch.setattr(
+            store,
+            "_current_version",
+            lambda _: JournalStore._current_version(schema_owner, schema),
+        )
         for read in (
             lambda: journal.dispute_changes(0),
             lambda: journal.publication_candidate(second),
         ):
             with pytest.raises(LedgerError, match="Unsupported routing journal schema"):
                 read()
-        with _open(database, write=False) as connection:
-            assert connection.execute("PRAGMA user_version").fetchone() == (
-                _DELIVERY_SCHEMA_VERSION + 1,
-            )
+        assert schema.execute("PRAGMA user_version").fetchone() == (
+            _DELIVERY_SCHEMA_VERSION + 1,
+        )
 
 
-def test_journal_only_candidates_refuse_pre_content_dispute_schema(native):
-    from aitm_usage._monitor_journal_store import _open
-    from aitm_usage.monitor_journal import JournalChange, RoutingJournal
+def test_journal_only_candidates_refuse_pre_content_dispute_schema(
+    journal_transcript_policy, monkeypatch
+):
+    from test_monitor_journal_store import _journal_metadata
 
-    native.append(LIVE, native.turn(3))
-    native.append(COPY, native.turn(3, checkout=B))
+    from aitm_usage._monitor_journal_store import JournalStore
+    from aitm_usage.monitor_journal import (
+        _OWNERSHIP_DISPUTE_ROWS,
+        ClaimEvidence,
+        JournalChange,
+        RoutingJournal,
+    )
+    from aitm_usage.types import _encode
+
+    native = journal_transcript_policy
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
-        for source in (LIVE, COPY):
-            prepared = journal.prepare(source, native.locator(source))
-            journal.reserve_batch(prepared)
+        journal.reserve_batch(journal.prepare(LIVE, native.locator()))
+        (claim,) = journal.as_of().claims
+        rows = journal._store
+        key = claim.key.value
+        project, digest, original, _ = rows.claims[key]
+        sequence = claim.sequence + 1
+        rows.commits.add(sequence)
+        dispute = (
+            key,
+            str(B),
+            project,
+            digest,
+            _encode(claim.evidence, ClaimEvidence).encode(),
+            sequence,
+            original,
+            digest,
+        )
+        read_rows = rows.execute
+        version = rows._current_version(rows)
+
+        def execute(query, values=()):
+            if query.startswith(_OWNERSHIP_DISPUTE_ROWS):
+                assert version >= 3, "unsupported schema reached dispute rows"
+                return _Rows([dispute])
+            return read_rows(query, values)
+
+        monkeypatch.setattr(rows, "execute", execute)
+        monkeypatch.setattr(rows, "_current_version", lambda _: version)
         (change,) = journal.dispute_changes(0)
-        database = writer.root / "routing-journal-v1" / "journal.sqlite3"
-        with _open(database, write=True) as conn:
-            conn.execute("BEGIN IMMEDIATE")
-            conn.execute("DROP TABLE route_dispositions")
-            conn.execute("DROP TABLE content_disputes")
-            conn.execute("PRAGMA user_version = 2")
-            conn.execute("COMMIT")
+        assert journal.publication_candidate(change).basis == "ownership"
+        version = 2
+        schema_reader = _journal_metadata(monkeypatch, version)
+        schema_owner = SimpleNamespace(_key_id="fixture-key")
+        monkeypatch.setattr(
+            rows,
+            "_current_version",
+            lambda _: JournalStore._current_version(schema_owner, schema_reader),
+        )
         for read in (
             lambda: journal.dispute_changes(0),
             lambda: journal.publication_candidate(change),
         ):
-            with pytest.raises(LedgerError):
+            with pytest.raises(LedgerError, match="Verified journal-only publication"):
                 read()
-        with _open(database, write=False) as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (2,)
-            assert conn.execute("SELECT count(*) FROM disputes").fetchone() == (1,)
+        assert rows.commits == {claim.sequence, sequence}
         for field in ("coverage", "paired", "disposition"):
             with pytest.raises(ValueError):
                 JournalChange(

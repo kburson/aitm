@@ -3,24 +3,31 @@
 import errno
 import os
 import socket
+import stat
 import sys
+from contextlib import nullcontext
 from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import monotonic
+from types import SimpleNamespace
+from unittest.mock import MagicMock, Mock, call
 
 import pytest
-from test_monitor_coverage import admitted_sources as admitted_sources
-from test_monitor_delivery import _enable, _journal, _reserve
-from test_monitor_delivery import independent as independent
-from test_monitor_journal import COPY, LIVE, A, B
-from test_monitor_qualification import qualify
-from test_monitor_scope import SOURCE
+from delivery_policy_cases import delivery_destinations, delivery_journal_rows
+from test_monitor_delivery import _journal, _reserve
+from test_monitor_journal import (
+    COPY,
+    LIVE,
+    A,
+    B,
+    _MemoryJournalTranscripts,
+)
 
-from aitm_usage import cli, monitor_control, monitor_registry
-from aitm_usage.ledger import Ledger, LedgerError
+from aitm_usage import cli, monitor_control, monitor_registry, monitor_scheduler
+from aitm_usage.ledger import LedgerError
 from aitm_usage.monitor_control import WakeIngress
-from aitm_usage.monitor_registry import Registry
+from aitm_usage.monitor_registry import Registry, RegistryView, _ServiceEvidence
 from aitm_usage.monitor_scheduler import (
     ResolvedWake,
     Scheduler,
@@ -58,24 +65,135 @@ def wake():
     # Native sun_path is shorter than many pytest basetemp paths.
     with TemporaryDirectory(prefix="aitm-wake-") as temporary:
         with Registry(Path(temporary).resolve() / "m").writer() as writer:
-            evidence = writer.source_evidence()
-            now = [0.0]
-            scheduler = Scheduler(writer, clock=lambda: now[0], lease_ttl=3.0)
+            yield _wake_context(writer)
 
-            def ref(name):
-                return evidence.pseudonymize("wake-test", name)
 
-            facts = ResolvedWake(
-                MonitorProvider.CODEX,
-                ref("stream"),
-                ref("raw-session-canary"),
-                ref("raw-turn-canary"),
-                ref("project"),
-                ref("raw-cursor-canary"),
-                current_stop=True,
-            )
-            resolver = Resolver(writer, facts)
-            yield scheduler, resolver, ref, now
+def _wake_context(writer):
+    evidence = writer.source_evidence()
+    now = [0.0]
+    scheduler = Scheduler(writer, clock=lambda: now[0], lease_ttl=3.0)
+
+    def ref(name):
+        return evidence.pseudonymize("wake-test", name)
+
+    facts = ResolvedWake(
+        MonitorProvider.CODEX,
+        ref("stream"),
+        ref("raw-session-canary"),
+        ref("raw-turn-canary"),
+        ref("project"),
+        ref("raw-cursor-canary"),
+        current_stop=True,
+    )
+    return scheduler, Resolver(writer, facts), ref, now
+
+
+@pytest.fixture
+def wake_policy(monkeypatch):
+    evidence = _ServiceEvidence(b"wake-policy-fixture")
+    view = RegistryView(source_key_id=evidence.key_id)
+    writer = SimpleNamespace(
+        root=Path("/fixture/monitor"),
+        lease=Mock(),
+        view=lambda: view,
+        source_evidence=lambda: evidence,
+    )
+    _attach_wake_files(monkeypatch)
+    return _wake_context(writer)
+
+
+def _attach_wake_files(monkeypatch):
+    files = {}
+    root = SimpleNamespace(check=Mock())
+    directory = SimpleNamespace(fd=7, check=Mock())
+
+    def read(location, filename):
+        assert location is directory
+        return files.get(filename)
+
+    def publish(location, filename, data, *, replace_pending):
+        assert location is directory
+        assert replace_pending == (filename in files)
+        files[filename] = data
+        return True
+
+    monkeypatch.setattr(
+        monitor_scheduler, "_pin_directory", lambda path: nullcontext(root)
+    )
+    monkeypatch.setattr(
+        monitor_scheduler, "_private_child", lambda *args, **_: nullcontext(directory)
+    )
+    monkeypatch.setattr(monitor_scheduler, "_publication", nullcontext)
+    monkeypatch.setattr(
+        monitor_scheduler,
+        "os",
+        SimpleNamespace(listdir=lambda fd: tuple(files), fsync=Mock()),
+    )
+    monkeypatch.setattr(monitor_scheduler, "_read_private", read)
+    monkeypatch.setattr(monitor_scheduler, "_publish", publish)
+
+
+@pytest.fixture
+def listener_policy(wake_policy, monkeypatch):
+    scheduler, resolver, _, now = wake_policy
+    directory = SimpleNamespace(path=resolver.writer.root, fd=7, check=Mock())
+    endpoint = directory.path / "wake.sock"
+    uid = 501
+    info = os.stat_result((stat.S_IFSOCK | 0o600, 9, 1, 1, uid, 0, 0, 0, 0, 0))
+    queued = []
+    received = []
+    client = MagicMock(spec=socket.socket)
+    client.fileno.return_value = 27
+
+    def stat_socket(name, *, dir_fd, follow_symlinks):
+        assert (name, dir_fd, follow_symlinks) == (endpoint.name, directory.fd, False)
+        return info
+
+    def lstat_socket(path):
+        assert path == str(endpoint)
+        return info
+
+    def accept():
+        received[:] = [queued.pop(0), b""]
+        return client, None
+
+    def read(fd, size):
+        assert fd == 27
+        data = received.pop(0)
+        assert size >= len(data)
+        return data
+
+    def readable(readers, write, errors, remaining):
+        assert (readers, write, errors) == ([27], [], [])
+        assert remaining > 0
+        return readers, [], []
+
+    monkeypatch.setattr(
+        hooks,
+        "os",
+        SimpleNamespace(
+            fsencode=os.fsencode,
+            path=os.path,
+            geteuid=lambda: uid,
+            stat=stat_socket,
+            lstat=lstat_socket,
+            read=read,
+        ),
+    )
+    monkeypatch.setattr(hooks, "select", SimpleNamespace(select=readable))
+    monkeypatch.setattr(
+        monitor_control, "os", SimpleNamespace(path=os.path, geteuid=lambda: uid)
+    )
+    monkeypatch.setattr(monitor_control, "_peer_uid", lambda _: uid)
+    server = SimpleNamespace(accept=accept)
+    listener = monitor_control._WakeListener(
+        scheduler, resolver, directory, server, info
+    )
+
+    def send(event):
+        queued.append(hooks._frame(event))
+
+    return scheduler, resolver, now, listener, send, uid
 
 
 def _change(scheduler, resolver, kind=WakeKind.CHANGE):
@@ -90,8 +208,8 @@ def _new_fact(resolver, **changes):
     )
 
 
-def test_park_final_catchup_then_late_write_reopens(wake):
-    scheduler, resolver, ref, now = wake
+def test_park_final_catchup_then_late_write_reopens(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     assert _change(scheduler, resolver)
     (first,) = scheduler.take_due(now[0], 1)
     assert first.state is ScheduleState.ACTIVE
@@ -110,8 +228,8 @@ def test_park_final_catchup_then_late_write_reopens(wake):
     assert reopened.generation > last.generation
 
 
-def test_stale_stop_cannot_park_newer_turn(wake):
-    scheduler, resolver, ref, now = wake
+def test_stale_stop_cannot_park_newer_turn(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     assert _change(scheduler, resolver)
     older = resolver.result
     _new_fact(resolver, turn=ref("second-turn"), fact=ref("second-fact"))
@@ -128,8 +246,8 @@ def test_stale_stop_cannot_park_newer_turn(wake):
     ]
 
 
-def test_verified_stop_only_new_turn_gets_exactly_one_catchup(wake):
-    scheduler, resolver, ref, now = wake
+def test_verified_stop_only_new_turn_gets_exactly_one_catchup(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     assert _change(scheduler, resolver)
     assert _change(scheduler, resolver, WakeKind.STOP)
     (first,) = scheduler.take_due(now[0], 1)
@@ -152,8 +270,8 @@ def test_verified_stop_only_new_turn_gets_exactly_one_catchup(wake):
     }
 
 
-def test_duplicate_and_missing_hooks_keep_idempotent_progress(wake):
-    scheduler, resolver, ref, now = wake
+def test_duplicate_and_missing_hooks_keep_idempotent_progress(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     assert _change(scheduler, resolver)
     assert _change(scheduler, resolver)
     (item,) = scheduler.take_due(now[0], 3)
@@ -169,8 +287,8 @@ def test_duplicate_and_missing_hooks_keep_idempotent_progress(wake):
     assert fallback.generation > item.generation
 
 
-def test_restart_recovers_pending_wake_without_its_old_lease(wake):
-    scheduler, resolver, _, now = wake
+def test_restart_recovers_pending_wake_without_its_old_lease(wake_policy):
+    scheduler, resolver, _, now = wake_policy
     assert _change(scheduler, resolver)
     (first,) = scheduler.take_due(now[0], 1)
     restored = Scheduler(resolver.writer, clock=lambda: now[0], lease_ttl=3.0)
@@ -188,8 +306,8 @@ def test_restart_recovers_pending_wake_without_its_old_lease(wake):
     assert len(restored.take_due(now[0], 1)) == 1
 
 
-def test_full_project_does_not_starve_another_due_project(wake):
-    scheduler, resolver, ref, now = wake
+def test_full_project_does_not_starve_another_due_project(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     assert _change(scheduler, resolver)
     first_project = resolver.result.facts.project
     for label in ("two", "three"):
@@ -210,8 +328,8 @@ def test_full_project_does_not_starve_another_due_project(wake):
     assert scheduler.take_due(now[0], 1) == ()
 
 
-def test_due_turns_rotate_by_stream_inside_one_project(wake):
-    scheduler, resolver, ref, now = wake
+def test_due_turns_rotate_by_stream_inside_one_project(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     original = resolver.result.facts.stream
     assert _change(scheduler, resolver)
     now[0] += 1
@@ -232,15 +350,19 @@ def test_due_turns_rotate_by_stream_inside_one_project(wake):
     assert third.stream == original
 
 
-@pytest.mark.usefixtures("legacy_monitor_qualification")
 def test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack(
-    independent,
+    monkeypatch,
 ):
-    native = independent
+    native = _MemoryJournalTranscripts(
+        monkeypatch, competing=True, independent_copy=True
+    )
+    _attach_wake_files(monkeypatch)
+    store = delivery_journal_rows(monkeypatch, native.registry)
     with native.registry.writer() as writer:
         journal = _journal(writer, cap=1)
+        open_destination = delivery_destinations(monkeypatch, journal, A, B)
         (original,) = _reserve(native, journal)
-        _enable(native, journal)
+        store.delivery_enabled = True
         prior = journal.cursor_for(LIVE, native.locator(LIVE))
         native.append(LIVE, native.turn(3))
         now = [0.0]
@@ -273,7 +395,7 @@ def test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack(
         independent_item = wake_source(COPY, B)
         (other,) = _reserve(native, journal, COPY)
         assert (other.status, other.project_id) == ("pending", B)
-        with Ledger.open(native.ledgers[B].root, B).writer() as destination:
+        with open_destination(B) as destination:
             delivery = ProjectDelivery.attach(journal, destination)
             ticket = journal.reserve_delivery(other.key, 1)
             result = delivery.commit(ticket)
@@ -284,7 +406,7 @@ def test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack(
         assert journal.cursor_for(LIVE, native.locator(LIVE)) == prior
         assert scheduler.take_due(now[0], 1) == ()
 
-        with Ledger.open(native.ledgers[A].root, A).writer() as destination:
+        with open_destination(A) as destination:
             delivery = ProjectDelivery.attach(journal, destination)
             original_ticket = journal.reserve_delivery(original.key, 1)
             journal.ack(delivery, original_ticket, delivery.commit(original_ticket))
@@ -299,24 +421,22 @@ def test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack(
         assert scheduler.finish(retry, caught_up=True)
 
 
-def test_wire_cannot_notify_without_approved_resolution(wake, monkeypatch):
-    scheduler, resolver, _, now = wake
-    sender = HookSender(resolver.writer.root)
+def test_wire_cannot_notify_without_approved_resolution(listener_policy, monkeypatch):
+    scheduler, resolver, now, listener, send, uid = listener_policy
     event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/raw-path-canary")
     resolver.result = WakeResolution(WakeResolutionKind.UNKNOWN_LOCATOR)
-    with WakeIngress(scheduler, resolver).listen() as listener:
-        assert sender.notify(event) is WakeDisposition.SENT
-        assert not listener.serve_once()
-        assert resolver.calls == [event]
-        assert scheduler.take_due(now[0], 1) == ()
-        monkeypatch.setattr(monitor_control, "_peer_uid", lambda _: os.geteuid() + 1)
-        monkeypatch.setattr(
-            monitor_control,
-            "_read_frame",
-            lambda *_: pytest.fail("mismatched peer reached frame parsing"),
-        )
-        assert sender.notify(event) is WakeDisposition.SENT
-        assert not listener.serve_once()
+    send(event)
+    assert not listener.serve_once()
+    assert resolver.calls == [event]
+    assert scheduler.take_due(now[0], 1) == ()
+    monkeypatch.setattr(monitor_control, "_peer_uid", lambda _: uid + 1)
+    monkeypatch.setattr(
+        monitor_control,
+        "_read_frame",
+        lambda *_: pytest.fail("mismatched peer reached frame parsing"),
+    )
+    send(event)
+    assert not listener.serve_once()
     assert resolver.calls == [event]
     with pytest.raises(LedgerError):
         scheduler.notify(WakeHint())
@@ -327,6 +447,7 @@ def test_real_socket_and_park_cli_retain_only_keyed_wake_bytes(
 ):
     scheduler, resolver, _, now = wake
     sender = HookSender(resolver.writer.root)
+    _check_real_endpoint_refusal(scheduler, resolver, sender)
     event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/raw-path-canary")
     monkeypatch.setattr(
         monitor_registry, "default_monitor_root", lambda: resolver.writer.root
@@ -345,8 +466,16 @@ def test_real_socket_and_park_cli_retain_only_keyed_wake_bytes(
         assert listener.serve_once()
         (item,) = scheduler.take_due(now[0], 1)
         assert item.state is ScheduleState.SETTLING
-        assert scheduler.finish(item, caught_up=True)
-        assert scheduler.take_due(now[0], 1) == ()
+        reopened = Scheduler(resolver.writer, clock=lambda: now[0])
+        assert not reopened.finish(item, caught_up=True)
+        (recovered,) = reopened.take_due(now[0], 1)
+        assert (recovered.stream, recovered.generation, recovered.state) == (
+            item.stream,
+            item.generation,
+            item.state,
+        )
+        assert reopened.finish(recovered, caught_up=True)
+        assert reopened.take_due(now[0], 1) == ()
     for path in (resolver.writer.root / "wake").iterdir():
         for raw in (
             b"/raw-path-canary",
@@ -375,30 +504,30 @@ def test_wake_wire_refuses_noncanonical_or_unbounded_frames(raw):
         _parse_frame(raw)
 
 
-def test_decoder_failure_refuses_wake_and_keeps_listener_live(wake, monkeypatch):
-    scheduler, resolver, _, now = wake
-    sender = HookSender(resolver.writer.root)
+def test_decoder_failure_refuses_wake_and_keeps_listener_live(
+    listener_policy, monkeypatch
+):
+    scheduler, resolver, now, listener, send, _ = listener_policy
     event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/raw-path-canary")
 
     def exhausted_decoder(*args, **kwargs):
         raise RecursionError("decoder exhausted")
 
-    with WakeIngress(scheduler, resolver).listen() as listener:
-        with monkeypatch.context() as patch:
-            patch.setattr(hooks.json, "loads", exhausted_decoder)
-            assert sender.notify(event) is WakeDisposition.SENT
-            assert not listener.serve_once()
-        assert resolver.calls == []
-        assert scheduler.take_due(now[0], 1) == ()
-        assert sender.notify(event) is WakeDisposition.SENT
-        assert listener.serve_once()
-        assert len(scheduler.take_due(now[0], 1)) == 1
+    with monkeypatch.context() as patch:
+        patch.setattr(hooks.json, "loads", exhausted_decoder)
+        send(event)
+        assert not listener.serve_once()
+    assert resolver.calls == []
+    assert scheduler.take_due(now[0], 1) == ()
+    send(event)
+    assert listener.serve_once()
+    assert len(scheduler.take_due(now[0], 1)) == 1
 
 
-def test_wake_publication_failure_creates_no_memory_only_due_work(wake, monkeypatch):
-    from aitm_usage import monitor_scheduler
-
-    scheduler, resolver, _, now = wake
+def test_wake_publication_failure_creates_no_memory_only_due_work(
+    wake_policy, monkeypatch
+):
+    scheduler, resolver, _, now = wake_policy
     with monkeypatch.context() as fault:
         fault.setattr(monitor_scheduler, "_publish", lambda *_a, **_k: False)
         with pytest.raises(LedgerError):
@@ -408,10 +537,8 @@ def test_wake_publication_failure_creates_no_memory_only_due_work(wake, monkeypa
     assert len(scheduler.take_due(now[0], 1)) == 1
 
 
-def test_sender_unavailable_and_listener_refuses_an_unsafe_endpoint(wake):
-    scheduler, resolver, _, _ = wake
+def _check_real_endpoint_refusal(scheduler, resolver, sender):
     root = resolver.writer.root
-    sender = HookSender(root)
     event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/unavailable")
     assert sender.notify(event) is WakeDisposition.UNAVAILABLE
     endpoint = root / "wake.sock"
@@ -431,79 +558,256 @@ def test_sender_unavailable_and_listener_refuses_an_unsafe_endpoint(wake):
             pytest.fail("unverified pre-chmod endpoint was reclaimed")
     endpoint.chmod(0o600)
     assert sender.notify(event) is WakeDisposition.UNAVAILABLE
-    with WakeIngress(scheduler, resolver).listen() as listener:
+
+
+def test_sender_unavailable_and_listener_refuses_an_unsafe_endpoint(
+    listener_policy, monkeypatch
+):
+    scheduler, resolver, _, transport, deliver, uid = listener_policy
+    directory = transport.directory
+    root = directory.path
+    endpoint = root / "wake.sock"
+    event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/unavailable")
+    sender = HookSender(root)
+    mode, inode = None, 9
+
+    def observe():
+        if mode is None:
+            raise FileNotFoundError(endpoint)
+        return os.stat_result((mode, inode, 1, 1, uid, 0, 0, 0, 0, 0))
+
+    def stat_endpoint(name, *, dir_fd, follow_symlinks):
+        assert (name, dir_fd, follow_symlinks) == (endpoint.name, directory.fd, False)
+        return observe()
+
+    def lstat_endpoint(address):
+        assert address == str(endpoint)
+        return observe()
+
+    def unlink_endpoint(name, *, dir_fd):
+        nonlocal mode
+        assert (name, dir_fd) == (endpoint.name, directory.fd)
+        mode = None
+
+    def bind_endpoint(address):
+        nonlocal mode, inode
+        assert address == str(endpoint) and mode is None
+        mode, inode = stat.S_IFSOCK | 0o644, 10
+
+    def chmod_endpoint(name, permissions, *, dir_fd, follow_symlinks):
+        nonlocal mode
+        assert (name, dir_fd, follow_symlinks) == (endpoint.name, directory.fd, False)
+        assert inode == 10
+        mode = stat.S_IFSOCK | permissions
+
+    unlink = Mock(wraps=unlink_endpoint)
+    sync = Mock()
+    server = MagicMock(spec=socket.socket)
+    server.bind.side_effect = bind_endpoint
+    server.accept.side_effect = transport.server.accept
+    probe = MagicMock(spec=socket.socket)
+    probe.connect_ex.return_value = errno.ECONNREFUSED
+    client = MagicMock(spec=socket.socket)
+    client.connect_ex.side_effect = lambda _: (
+        0 if server.listen.called else errno.ECONNREFUSED
+    )
+
+    def send_bytes(data):
+        assert bytes(data) == hooks._frame(event)
+        deliver(event)
+        return len(data)
+
+    client.send.side_effect = send_bytes
+    opener = Mock(side_effect=map(nullcontext, (server, server, server, probe)))
+    for module, open_socket in (
+        (hooks, Mock(return_value=nullcontext(client))),
+        (monitor_control, opener),
+    ):
+        monkeypatch.setattr(module, "_pin_directory", lambda _: nullcontext(directory))
+        monkeypatch.setattr(
+            module,
+            "socket",
+            SimpleNamespace(
+                socket=open_socket,
+                AF_UNIX=socket.AF_UNIX,
+                SOCK_STREAM=socket.SOCK_STREAM,
+                SHUT_WR=socket.SHUT_WR,
+            ),
+        )
+    monkeypatch.setattr(hooks.os, "stat", stat_endpoint)
+    monkeypatch.setattr(hooks.os, "lstat", lstat_endpoint)
+    monkeypatch.setattr(monitor_control.os, "unlink", unlink, raising=False)
+    monkeypatch.setattr(monitor_control.os, "chmod", chmod_endpoint, raising=False)
+    monkeypatch.setattr(monitor_control.os, "fsync", sync, raising=False)
+    real_select = hooks.select.select
+    monkeypatch.setattr(
+        hooks.select,
+        "select",
+        lambda reads, writes, errors, remaining: (
+            ([], writes, [])
+            if writes
+            else real_select(reads, writes, errors, remaining)
+        ),
+    )
+
+    ingress = WakeIngress(scheduler, resolver)
+    assert sender.notify(event) is WakeDisposition.UNAVAILABLE
+    mode = stat.S_IFLNK | 0o777
+    with pytest.raises(LedgerError, match="socket identity is unavailable"):
+        with ingress.listen():
+            pytest.fail("unsafe socket accepted")
+    mode = stat.S_IFSOCK | 0o644
+    with pytest.raises(LedgerError, match="requires owner removal"):
+        with ingress.listen():
+            pytest.fail("unverified pre-chmod endpoint was reclaimed")
+    client.connect_ex.assert_not_called()
+    unlink.assert_not_called()
+    mode = stat.S_IFSOCK | 0o600
+    assert sender.notify(event) is WakeDisposition.UNAVAILABLE
+    with ingress.listen() as listener:
+        probe.connect_ex.assert_called_once_with(str(endpoint))
+        unlink.assert_called_once_with(endpoint.name, dir_fd=directory.fd)
+        sync.assert_called_once_with(directory.fd)
         assert sender.notify(event) is WakeDisposition.SENT
         assert listener.serve_once()
+    assert mode is None
+    assert resolver.calls == [event]
 
 
 @pytest.mark.parametrize("replace_root", [False, True], ids=["socket", "root"])
-def test_replaced_endpoint_is_refused_and_preserved(wake, replace_root):
+def test_replaced_endpoint_is_refused_and_preserved(request, monkeypatch, replace_root):
+    if replace_root:
+        scheduler, resolver, now, listener, _, _ = request.getfixturevalue(
+            "listener_policy"
+        )
+        changed = LedgerError("Private ledger path identity changed")
+        listener.directory.check.side_effect = changed
+        accept = Mock(side_effect=AssertionError("Changed root accepted a connection"))
+        unlink, sync = Mock(), Mock()
+        monkeypatch.setattr(listener.server, "accept", accept)
+        monkeypatch.setattr(monitor_control.os, "unlink", unlink, raising=False)
+        monkeypatch.setattr(monitor_control.os, "fsync", sync, raising=False)
+        assert not listener.serve_once()
+        assert resolver.calls == []
+        WakeIngress._retire(listener.directory, scheduler.lease, listener.identity)
+        accept.assert_not_called()
+        unlink.assert_not_called()
+        sync.assert_not_called()
+        lease = scheduler.lease
+        lease.check.reset_mock()
+        lease.check.side_effect = changed
+        scheduler._writer = Registry(resolver.writer.root, lease)
+        with pytest.raises(LedgerError, match="Private ledger path"):
+            scheduler.take_due(now[0], 1)
+        lease.check.assert_called_once_with()
+        return
+
+    wake = request.getfixturevalue("wake")
     scheduler, resolver, _, now = wake
     root = resolver.writer.root
     endpoint = root / "wake.sock"
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as foreign:
         with WakeIngress(scheduler, resolver).listen() as listener:
-            if replace_root:
-                root.rename(root.with_name("previous"))
-                root.mkdir(mode=0o700)
-            else:
-                endpoint.unlink()
+            endpoint.unlink()
             foreign.bind(str(endpoint))
             endpoint.chmod(0o600)
             replacement = endpoint.lstat()
             assert not listener.serve_once()
             assert resolver.calls == []
         assert os.path.samestat(replacement, endpoint.lstat())
-    if replace_root:
-        with pytest.raises(LedgerError, match="Private ledger path"):
-            scheduler.take_due(now[0], 1)
-    else:
-        assert scheduler.take_due(now[0], 1) == ()
+    assert scheduler.take_due(now[0], 1) == ()
 
 
-def test_saturated_listener_is_preserved_and_sender_returns(wake, monkeypatch):
-    scheduler, resolver, _, _ = wake
+def test_saturated_listener_is_preserved_and_sender_returns(
+    listener_policy, monkeypatch
+):
+    scheduler, resolver, _, listener, _, _ = listener_policy
     root = resolver.writer.root
     endpoint = root / "wake.sock"
     event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/backlog")
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as occupied:
-        occupied.bind(str(endpoint))
-        endpoint.chmod(0o600)
-        occupied.listen(1)
-        inode = endpoint.lstat()
+    directory = listener.directory
+    sender, server, probe = (Mock(spec=socket.socket) for _ in range(3))
+    for connection in (sender, probe):
+        connection.connect_ex.return_value = errno.EAGAIN
+    pin = Mock(side_effect=lambda path: nullcontext(directory))
+    opened = Mock(side_effect=map(nullcontext, (sender, server, probe, sender)))
+    for module in (hooks, monitor_control):
+        monkeypatch.setattr(module, "_pin_directory", pin)
+        monkeypatch.setattr(
+            module,
+            "socket",
+            SimpleNamespace(
+                socket=opened,
+                AF_UNIX=socket.AF_UNIX,
+                SOCK_STREAM=socket.SOCK_STREAM,
+                SOL_SOCKET=socket.SOL_SOCKET,
+                SO_ERROR=socket.SO_ERROR,
+            ),
+        )
+    unlink, fsync = Mock(), Mock()
+    monkeypatch.setattr(monitor_control.os, "unlink", unlink, raising=False)
+    monkeypatch.setattr(monitor_control.os, "fsync", fsync, raising=False)
+    writable = Mock(return_value=([], [], []))
+    monkeypatch.setattr(hooks.select, "select", writable)
+    monkeypatch.setattr(hooks, "monotonic", lambda: 0.0)
 
-        # Backlog limits vary by kernel. Preserve the real bound inode and
-        # make the saturated-connect branch deterministic on every host.
-        def saturated(connection, address):
-            assert connection.getblocking() is False
-            assert address == str(endpoint)
-            return errno.EAGAIN
+    assert HookSender(root).notify(event) is WakeDisposition.UNAVAILABLE
+    writable.assert_called_once_with([], [sender], [], 0.03)
+    sender.send.assert_not_called()
+    with pytest.raises(LedgerError, match="active or unavailable"):
+        with WakeIngress(scheduler, resolver).listen():
+            pytest.fail("active endpoint was reclaimed")
+    for connection in (sender, probe):
+        assert connection.method_calls == [
+            call.setblocking(False),
+            call.connect_ex(str(endpoint)),
+        ]
+    assert pin.call_args_list == [call(root), call(root)]
+    server.bind.assert_not_called()
+    unlink.assert_not_called()
+    fsync.assert_not_called()
 
-        monkeypatch.setattr(socket.socket, "connect_ex", saturated)
-        began = monotonic()
-        assert HookSender(root).notify(event) is WakeDisposition.UNAVAILABLE
-        assert monotonic() - began < 0.3
-        with pytest.raises(LedgerError, match="active or unavailable"):
-            with WakeIngress(scheduler, resolver).listen():
-                pytest.fail("active endpoint was reclaimed")
-        assert os.path.samestat(inode, endpoint.lstat())
+    writable.reset_mock()
+    writable.side_effect = [([], [sender], []), ([], [sender], []), ([], [], [])]
+    sender.getsockopt.return_value = 0
+    sender.send.side_effect = BlockingIOError
+    assert HookSender(root).notify(event) is WakeDisposition.UNAVAILABLE
+    sender.getsockopt.assert_called_once_with(socket.SOL_SOCKET, socket.SO_ERROR)
+    sender.send.assert_called_once()
+    assert bytes(sender.send.call_args.args[0]) == hooks._frame(event)
+    assert writable.call_count == 3
 
 
-def test_wake_socket_refuses_a_path_past_the_native_byte_limit(tmp_path, wake):
-    _, resolver, _, _ = wake
-    long_root = tmp_path / ("x" * 104)
-    with Registry(long_root).writer() as writer:
-        writer.source_evidence()
-        with pytest.raises(LedgerError, match="address is too long"):
-            with WakeIngress(Scheduler(writer), resolver).listen():
-                pytest.fail("oversized address was opened")
-        assert not (long_root / "wake.sock").exists()
+def test_wake_socket_refuses_a_path_past_the_native_byte_limit(
+    wake_policy, monkeypatch
+):
+    scheduler, resolver, _, _ = wake_policy
+    long_root = Path("/fixture") / ("x" * 104)
+    resolver.writer.root = long_root
+    directory = SimpleNamespace(path=long_root)
+    pin = Mock(return_value=nullcontext(directory))
+    server = Mock()
+    open_socket = Mock(return_value=nullcontext(server))
+    monkeypatch.setattr(monitor_control, "_pin_directory", pin)
+    monkeypatch.setattr(
+        monitor_control,
+        "socket",
+        SimpleNamespace(
+            socket=open_socket, AF_UNIX=socket.AF_UNIX, SOCK_STREAM=socket.SOCK_STREAM
+        ),
+    )
+    with pytest.raises(LedgerError, match="address is too long"):
+        with WakeIngress(scheduler, resolver).listen():
+            pytest.fail("oversized address was opened")
+    pin.assert_called_once_with(long_root)
+    open_socket.assert_called_once_with(socket.AF_UNIX, socket.SOCK_STREAM)
+    server.bind.assert_not_called()
 
 
-def test_approved_real_locator_can_issue_wake(admitted_sources):
-    native, _ = admitted_sources
+def test_approved_real_locator_can_issue_wake(monkeypatch):
+    native = _MemoryJournalTranscripts(monkeypatch)
+    _attach_wake_files(monkeypatch)
     with native.registry.writer() as writer:
-        qualify(writer)
         evidence = writer.source_evidence()
         locator = native.locator()
         path = str(locator._source._path)
@@ -514,9 +818,7 @@ def test_approved_real_locator_can_issue_wake(admitted_sources):
                 assert lease is writer.lease
                 if request.locator != path:
                     return WakeResolution(WakeResolutionKind.UNKNOWN_LOCATOR)
-                _, current, _ = writer._approved_candidate(
-                    writer.view(), SOURCE, locator
-                )
+                _, current, _ = writer._approved_candidate(writer.view(), LIVE, locator)
 
                 def fact(value):
                     return evidence.pseudonymize("wake-native-test", value)

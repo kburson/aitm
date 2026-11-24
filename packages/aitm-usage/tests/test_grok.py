@@ -1,8 +1,10 @@
 """Native Grok evidence replay and conservative failure cases."""
 
 import json
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 from uuid import UUID
@@ -12,6 +14,7 @@ from test_monitor_adapters import Evidence
 
 from aitm_usage import monitor_types
 from aitm_usage.ledger import Ledger
+from aitm_usage.monitor_registry import _ServiceEvidence
 from aitm_usage.sources import adapter
 from aitm_usage.types import (
     DiagnosticCode,
@@ -33,13 +36,33 @@ GROK_BINARY = "197c66a63e5ac46e07450b0ca21d141ce665050a412180f185dadfae1c7a5b2a"
 
 @pytest.fixture
 def grok_source(tmp_path, monkeypatch):
-    from aitm_usage.sources import grok
-
     monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
     key = Ledger.initialize(tmp_path / "evidence", UUID(int=115))
     approved_root = tmp_path / "private-approved-root"
     directory = approved_root / SESSION
     directory.mkdir(parents=True)
+
+    def disallow_project_access(*args):
+        pytest.fail("adapter attempted destination access")
+
+    monkeypatch.setattr(Ledger, "open", disallow_project_access)
+    monkeypatch.setattr(Ledger, "writer", disallow_project_access)
+    return _grok_inputs(key, approved_root)
+
+
+@pytest.fixture
+def grok_policy(monkeypatch):
+    source = _grok_inputs(
+        _ServiceEvidence(b"grok-adapter-policy-fixture"),
+        Path("/fixture/private-approved-root"),
+    )
+    source.monkeypatch = monkeypatch
+    return source
+
+
+def _grok_inputs(key, approved_root):
+    from aitm_usage.sources import grok
+
     checkout = key.pseudonymize("grok-checkout", "verified-checkout")
     origin = grok.GrokOrigin(
         session_id=SESSION,
@@ -64,15 +87,10 @@ def grok_source(tmp_path, monkeypatch):
     snapshot = json.loads((FIXTURES / "usage.json").read_text())
     headless = json.loads((FIXTURES / "headless.json").read_text())
 
-    def disallow_project_access(*args):
-        pytest.fail("adapter attempted destination access")
-
-    monkeypatch.setattr(Ledger, "open", disallow_project_access)
-    monkeypatch.setattr(Ledger, "writer", disallow_project_access)
     return SimpleNamespace(
         key=key,
         root=root,
-        directory=directory,
+        directory=approved_root / SESSION,
         origin=origin,
         rows=rows,
         snapshot=snapshot,
@@ -99,15 +117,71 @@ def _batch(
         snapshot_path.unlink(missing_ok=True)
     else:
         snapshot_path.write_text(json.dumps(snapshot))
-    reader = source.module.GrokAdapter(
+    reader = _reader(source, origin, verifier, headless)
+    (locator,) = reader.discover(source.root)
+    return reader.read_delta(locator, cursor)
+
+
+def _reader(source, origin, verifier, headless):
+    return source.module.GrokAdapter(
         lambda _: source.origin if origin is None else origin,
         verifier
         if verifier is not None
         else lambda *parts: source.pending_receipts.get(parts),
         headless,
     )
-    (locator,) = reader.discover(source.root)
-    return reader.read_delta(locator, cursor)
+
+
+def _unit_batch(
+    source,
+    rows,
+    snapshot=None,
+    cursor=None,
+    *,
+    origin=None,
+    verifier=None,
+    headless=None,
+):
+    reader = _reader(source, origin, verifier, headless)
+    with _policy_locator(source, rows, snapshot, origin) as locator:
+        return reader.read_delta(locator, cursor)
+
+
+@contextmanager
+def _policy_locator(source, rows, snapshot, origin=None):
+    path = source.directory / "updates.jsonl"
+    identity = ((1, 2), (1, 3))
+    origin = source.origin if origin is None else origin
+    source_ref = source.root.evidence.pseudonymize("grok-stream", origin.lineage_id)
+    locator = adapter.SourceLocator(
+        adapter._GrokSource(
+            path, origin, source.root, SimpleNamespace(identity=identity), source_ref
+        )
+    )
+    with _policy_input_files(source, rows, snapshot, identity):
+        yield locator
+
+
+@contextmanager
+def _policy_input_files(source, rows, snapshot, identity):
+    path = source.directory / "updates.jsonl"
+    contents = {path: b"".join(rows)}
+    if snapshot is not None:
+        contents[path.with_name("usage.json")] = json.dumps(snapshot).encode()
+
+    def open_snapshot(file, *, identity_prefix):
+        assert identity_prefix == (identity if file == path else identity[:-1])
+        if file not in contents:
+            raise FileNotFoundError(file)
+        data = contents[file]
+        return nullcontext(
+            (BytesIO(data), SimpleNamespace(stat=SimpleNamespace(st_size=len(data))))
+        )
+
+    with source.monkeypatch.context() as patch:
+        patch.setattr(source.module, "_open_snapshot", open_snapshot)
+        patch.setattr(source.module, "_verify_snapshot", lambda *args: None)
+        yield
 
 
 def _set_usage(row, **values):
@@ -131,8 +205,8 @@ def test_grok_surface_is_separate_from_the_legacy_provider():
 
 
 @pytest.mark.parametrize("provider", [Provider.CODEX, Provider.CLAUDE])
-def test_pre_grok_stream_cursor_bytes_still_round_trip(grok_source, provider):
-    ref = grok_source.key.pseudonymize("old-cursor", "fixture")
+def test_pre_grok_stream_cursor_bytes_still_round_trip(grok_policy, provider):
+    ref = grok_policy.key.pseudonymize("old-cursor", "fixture")
     checkpoint = SourceCheckpoint(
         SourceCursor(ref, ref, ref, 0, ref),
         ProviderCheckpoint(provider),
@@ -143,57 +217,57 @@ def test_pre_grok_stream_cursor_bytes_still_round_trip(grok_source, provider):
     assert _encode(decoded, adapter.StreamCursor) == old
 
 
-def test_grok_observation_round_trips_in_the_versioned_payload(grok_source):
-    s = grok_source
-    first = _batch(s, s.rows, s.snapshot).observations[0]
+def test_grok_observation_round_trips_in_the_versioned_payload(grok_policy):
+    s = grok_policy
+    first = _unit_batch(s, s.rows, s.snapshot).observations[0]
     revision = monitor_types.MonitorRevision(first.key, first.revision, first.usage)
     encoded = _encode(revision, monitor_types.MonitorRevision)
     assert _decode(encoded, monitor_types.MonitorRevision) == revision
     assert json.loads(encoded)["observation"]["provider"] == "grok"
 
 
-def test_resume_and_snapshot_replay_count_two_distinct_turns(grok_source):
-    s = grok_source
-    single = _batch(s, s.rows, s.snapshot)
+def test_resume_and_snapshot_replay_count_two_distinct_turns(grok_policy):
+    s = grok_policy
+    single = _unit_batch(s, s.rows, s.snapshot)
     assert single.diagnostics == ()
     assert len(single.observations) == len(single.boundaries) == 2
     assert len({item.key for item in single.observations}) == 2
     assert single.observations[0].usage.observed_at == datetime.fromtimestamp(
         1793491200.010, UTC
     )
-    first = _batch(
+    first = _unit_batch(
         s, s.rows[:5], {"sessionId": SESSION, "turns": s.snapshot["turns"][:1]}
     )
     assert len(first.observations) == 1
     restored = _decode(
         _encode(first.cursor, adapter.StreamCursor), adapter.StreamCursor
     )
-    second = _batch(s, s.rows, s.snapshot, restored)
+    second = _unit_batch(s, s.rows, s.snapshot, restored)
     assert (*first.observations, *second.observations) == single.observations
     assert second.observations[0].project_context == s.checkout
-    repeat = _batch(s, s.rows, s.snapshot, second.cursor)
+    repeat = _unit_batch(s, s.rows, s.snapshot, second.cursor)
     assert repeat.observations == repeat.diagnostics == ()
     assert repeat.cursor == second.cursor
 
 
-def test_cold_restart_at_every_native_row_and_with_partial_tail(grok_source):
-    s = grok_source
-    complete = _batch(s, s.rows, s.snapshot)
+def test_cold_restart_at_every_native_row_and_with_partial_tail(grok_policy):
+    s = grok_policy
+    complete = _unit_batch(s, s.rows, s.snapshot)
     for cut in range(len(s.rows) + 1):
-        prior = _batch(s, s.rows[:cut], s.snapshot)
+        prior = _unit_batch(s, s.rows[:cut], s.snapshot)
         wire = adapter.StreamCursor | None
         restored = _decode(_encode(prior.cursor, wire), wire)
-        later = _batch(s, s.rows, s.snapshot, restored)
+        later = _unit_batch(s, s.rows, s.snapshot, restored)
         assert (*prior.observations, *later.observations) == complete.observations
-    partial = _batch(s, [*s.rows[:4], s.rows[4][:20]], s.snapshot)
+    partial = _unit_batch(s, [*s.rows[:4], s.rows[4][:20]], s.snapshot)
     assert not partial.observations and not partial.cursor
 
 
-def test_grok_positions_match_the_marked_and_next_unmarked_completions(grok_source):
-    s = grok_source
+def test_grok_positions_match_the_marked_and_next_unmarked_completions(grok_policy):
+    s = grok_policy
     first_hook = (SESSION, PROMPT_A, "synthetic-event-1")
     receipt = s.pending_receipts[first_hook]
-    batch = _batch(
+    batch = _unit_batch(
         s,
         s.rows,
         s.snapshot,
@@ -220,30 +294,30 @@ def test_grok_positions_match_the_marked_and_next_unmarked_completions(grok_sour
     assert marked.position.ordinal < following.position.ordinal
 
 
-def test_hookless_eligible_completion_keeps_native_interval(grok_source):
-    s = grok_source
-    result = _batch(
+def test_hookless_eligible_completion_keeps_native_interval(grok_policy):
+    s = grok_policy
+    result = _unit_batch(
         s, s.rows[1:5], {"sessionId": SESSION, "turns": s.snapshot["turns"][:1]}
     )
     (item,) = result.observations
     assert not result.boundaries
     assert item.time_basis is monitor_types.ObservationTimeBasis.NATIVE_COMPLETION
     assert item.project_context == s.checkout
-    absent = _batch(s, s.rows[1:5], origin=replace(s.origin, checkout=None))
+    absent = _unit_batch(s, s.rows[1:5], origin=replace(s.origin, checkout=None))
     assert absent.observations[0].project_context is None
 
 
-def test_fork_excludes_inherited_turns(grok_source):
-    s = grok_source
+def test_fork_excludes_inherited_turns(grok_policy):
+    s = grok_policy
     origin = replace(s.origin, inherited_prompt_ids=frozenset({PROMPT_A}))
-    result = _batch(s, s.rows, _second_snapshot(s), origin=origin)
+    result = _unit_batch(s, s.rows, _second_snapshot(s), origin=origin)
     assert len(result.observations) == 1
     assert result.observations[0].usage.tokens.output_tokens == 38
 
 
 @pytest.mark.parametrize("fork", [False, True])
-def test_nearby_excluded_turn_does_not_dispute_an_eligible_turn(grok_source, fork):
-    s = grok_source
+def test_nearby_excluded_turn_does_not_dispute_an_eligible_turn(grok_policy, fork):
+    s = grok_policy
     followup = []
     for row, tick in zip(s.rows[6:], (150, 160, 190, 200), strict=True):
         envelope = json.loads(row)
@@ -256,31 +330,31 @@ def test_nearby_excluded_turn_does_not_dispute_an_eligible_turn(grok_source, for
         s.origin = replace(s.origin, inherited_prompt_ids=frozenset({PROMPT_A}))
     else:
         s.root = replace(s.root, cutoff=datetime.fromtimestamp(1793491200.100, UTC))
-    prefix = _batch(s, s.rows[:5])
+    prefix = _unit_batch(s, s.rows[:5])
     assert not prefix.observations
     wire = adapter.StreamCursor
     prior = _decode(_encode(prefix.cursor, wire), wire)
-    result = _batch(s, [*s.rows[:5], *followup], s.snapshot, prior)
+    result = _unit_batch(s, [*s.rows[:5], *followup], s.snapshot, prior)
     (eligible,) = result.observations
     assert eligible.usage.tokens.output_tokens == 38
     assert DiagnosticCode.IDENTITY_CONFLICT not in _codes(result)
 
 
-def test_late_folded_parent_never_adds_to_child(grok_source):
-    s = grok_source
-    child = _batch(s, s.rows[:5])
+def test_late_folded_parent_never_adds_to_child(grok_policy):
+    s = grok_policy
+    child = _unit_batch(s, s.rows[:5])
     (prior,) = child.observations
     folded = _set_usage(s.rows[4], modelCalls=2)
-    after = _batch(s, [*s.rows[:5], folded], cursor=child.cursor)
+    after = _unit_batch(s, [*s.rows[:5], folded], cursor=child.cursor)
     assert not after.observations and after.cursor == child.cursor
     (gap,) = after.diagnostics
     assert gap.code is DiagnosticCode.OVERLAP_UNVERIFIED
     assert gap.observation_key == prior.key
 
 
-def test_snapshot_conflict_and_cache_categories(grok_source):
-    s = grok_source
-    result = _batch(s, s.rows, s.snapshot)
+def test_snapshot_conflict_and_cache_categories(grok_policy):
+    s = grok_policy
+    result = _unit_batch(s, s.rows, s.snapshot)
     tokens = result.observations[0].usage.tokens
     assert (
         tokens.uncached_input_tokens,
@@ -293,7 +367,7 @@ def test_snapshot_conflict_and_cache_categories(grok_source):
     turn["totalTokens"] += 1
     turn["modelUsage"]["grok-4.7-build"]["inputTokens"] += 1
     turn["modelUsage"]["grok-4.7-build"]["totalTokens"] += 1
-    conflict = _batch(s, s.rows, changed, result.cursor)
+    conflict = _unit_batch(s, s.rows, changed, result.cursor)
     assert not conflict.observations
     assert conflict.cursor.checkpoint.offset == result.cursor.checkpoint.offset
     assert conflict.cursor != result.cursor
@@ -304,14 +378,14 @@ def test_snapshot_conflict_and_cache_categories(grok_source):
     )
 
 
-def test_native_cache_creation_uses_its_own_bucket(grok_source):
-    s = grok_source
+def test_native_cache_creation_uses_its_own_bucket(grok_policy):
+    s = grok_policy
     row = json.loads(s.rows[4])
     usage = row["params"]["update"]["usage"]
     usage["cacheCreationTokens"] = 120
     usage["modelUsage"]["grok-4.7-build"]["cacheCreationTokens"] = 120
     native = json.dumps(row).encode() + b"\n"
-    result = _batch(s, [*s.rows[:4], native])
+    result = _unit_batch(s, [*s.rows[:4], native])
     (item,) = result.observations
     assert item.usage.tokens.uncached_input_tokens == 12669
     assert item.usage.tokens.cache_read_tokens == 1152
@@ -319,12 +393,12 @@ def test_native_cache_creation_uses_its_own_bucket(grok_source):
     assert item.usage.tokens.total_tokens == 14140
 
 
-def test_internally_conflicting_snapshot_disputes_the_matched_turn(grok_source):
-    s = grok_source
-    before = _batch(s, s.rows, s.snapshot)
+def test_internally_conflicting_snapshot_disputes_the_matched_turn(grok_policy):
+    s = grok_policy
+    before = _unit_batch(s, s.rows, s.snapshot)
     s.snapshot["turns"][0]["modelUsage"]["grok-4.7-build"]["costUsdTicks"] += 1
-    cold = _batch(s, s.rows, s.snapshot)
-    resumed = _batch(s, s.rows, s.snapshot, before.cursor)
+    cold = _unit_batch(s, s.rows, s.snapshot)
+    resumed = _unit_batch(s, s.rows, s.snapshot, before.cursor)
     assert cold.observations == before.observations[1:]
     assert cold.boundaries == before.boundaries[1:]
     assert not resumed.observations and not resumed.boundaries
@@ -336,32 +410,34 @@ def test_internally_conflicting_snapshot_disputes_the_matched_turn(grok_source):
 
 
 def test_retained_snapshot_dispute_allows_later_turns_and_cannot_clear_itself(
-    grok_source,
+    grok_policy,
 ):
-    s = grok_source
-    clean = _batch(s, s.rows, s.snapshot)
+    s = grok_policy
+    clean = _unit_batch(s, s.rows, s.snapshot)
     changed = json.loads(json.dumps(s.snapshot))
     changed["turns"][0]["costUsdTicks"] += 1
-    first = _batch(s, s.rows[:5], {"sessionId": SESSION, "turns": changed["turns"][:1]})
+    first = _unit_batch(
+        s, s.rows[:5], {"sessionId": SESSION, "turns": changed["turns"][:1]}
+    )
     assert not first.observations and not first.boundaries
     wire = adapter.StreamCursor
     prior = _decode(_encode(first.cursor, wire), wire)
-    second = _batch(s, s.rows, changed, prior)
+    second = _unit_batch(s, s.rows, changed, prior)
     assert second.observations == clean.observations[1:]
     assert second.boundaries == clean.boundaries[1:]
     assert second.cursor.checkpoint.offset > prior.checkpoint.offset
     assert second.diagnostics == first.diagnostics
-    replay = _batch(s, s.rows, s.snapshot, second.cursor)
+    replay = _unit_batch(s, s.rows, s.snapshot, second.cursor)
     assert not replay.observations and not replay.boundaries
     assert replay.diagnostics == first.diagnostics
     assert replay.cursor == second.cursor
 
 
 def test_duplicate_prompt_with_conflicting_verified_marker_disputes_after_restart(
-    grok_source,
+    grok_policy,
 ):
-    s = grok_source
-    before = _batch(s, s.rows[:5])
+    s = grok_policy
+    before = _unit_batch(s, s.rows[:5])
     restored = _decode(
         _encode(before.cursor, adapter.StreamCursor), adapter.StreamCursor
     )
@@ -371,7 +447,7 @@ def test_duplicate_prompt_with_conflicting_verified_marker_disputes_after_restar
         s.key.pseudonymize("grok-receipt", "different-scope")
     )
     replay = [*s.rows[:5], json.dumps(hook).encode() + b"\n", *s.rows[1:5]]
-    result = _batch(s, replay, cursor=restored)
+    result = _unit_batch(s, replay, cursor=restored)
     assert not result.observations and not result.boundaries
     (dispute,) = result.diagnostics
     assert dispute.code is DiagnosticCode.IDENTITY_CONFLICT
@@ -379,22 +455,22 @@ def test_duplicate_prompt_with_conflicting_verified_marker_disputes_after_restar
     assert result.cursor == restored
 
 
-def test_late_hook_cannot_backdate_a_receipt(grok_source):
-    s = grok_source
-    before = _batch(s, s.rows[1:5])
-    late = _batch(s, [*s.rows[1:5], s.rows[0], s.rows[4]], cursor=before.cursor)
+def test_late_hook_cannot_backdate_a_receipt(grok_policy):
+    s = grok_policy
+    before = _unit_batch(s, s.rows[1:5])
+    late = _unit_batch(s, [*s.rows[1:5], s.rows[0], s.rows[4]], cursor=before.cursor)
     assert not late.observations and not late.boundaries and not late.diagnostics
     assert late.cursor.checkpoint.offset > before.cursor.checkpoint.offset
 
 
-def test_duplicate_cannot_evade_dispute_by_crossing_the_cutoff(grok_source):
-    s = grok_source
+def test_duplicate_cannot_evade_dispute_by_crossing_the_cutoff(grok_policy):
+    s = grok_policy
     s.root = replace(s.root, cutoff=datetime.fromtimestamp(1793491200, UTC))
-    before = _batch(s, s.rows[:5])
+    before = _unit_batch(s, s.rows[:5])
     duplicate = json.loads(s.rows[4])
     duplicate["timestamp"] -= 1
     duplicate["params"]["_meta"]["agentTimestampMs"] -= 1000
-    revised = _batch(
+    revised = _unit_batch(
         s, [*s.rows[:5], json.dumps(duplicate).encode() + b"\n"], cursor=before.cursor
     )
     assert not revised.observations and revised.cursor == before.cursor
@@ -403,12 +479,12 @@ def test_duplicate_cannot_evade_dispute_by_crossing_the_cutoff(grok_source):
     assert dispute.observation_key == before.observations[0].key
 
 
-def test_bounded_snapshot_records_all_keyed_disputes(grok_source):
-    s = grok_source
-    before = _batch(s, s.rows, s.snapshot)
+def test_bounded_snapshot_records_all_keyed_disputes(grok_policy):
+    s = grok_policy
+    before = _unit_batch(s, s.rows, s.snapshot)
     for row in s.snapshot["turns"]:
         row["costUsdTicks"] += 1
-    replay = _batch(s, s.rows, s.snapshot, before.cursor)
+    replay = _unit_batch(s, s.rows, s.snapshot, before.cursor)
     assert not replay.observations
     assert replay.cursor.checkpoint.offset == before.cursor.checkpoint.offset
     assert replay.cursor != before.cursor
@@ -416,50 +492,50 @@ def test_bounded_snapshot_records_all_keyed_disputes(grok_source):
         item.key for item in before.observations
     }
     assert _codes(replay) == {DiagnosticCode.IDENTITY_CONFLICT}
-    held = _batch(
+    held = _unit_batch(
         s, s.rows, {**s.snapshot, "padding": "x" * (2 * 1024 * 1024)}, before.cursor
     )
     assert not held.observations and held.cursor == before.cursor
     assert _codes(held) == {DiagnosticCode.COVERAGE_GAP}
 
 
-def test_conflicting_native_turn_counts_hold_overlap(grok_source):
-    s = grok_source
+def test_conflicting_native_turn_counts_hold_overlap(grok_policy):
+    s = grok_policy
     native = _set_usage(s.rows[4], numTurns=1, turnCount=2)
-    result = _batch(s, [*s.rows[:4], native])
+    result = _unit_batch(s, [*s.rows[:4], native])
     assert not result.observations and not result.cursor
     assert _codes(result) == {DiagnosticCode.OVERLAP_UNVERIFIED}
 
 
-def test_complete_native_only_counts_with_corroboration_gap(grok_source):
-    s = grok_source
-    result = _batch(s, s.rows)
+def test_complete_native_only_counts_with_corroboration_gap(grok_policy):
+    s = grok_policy
+    result = _unit_batch(s, s.rows)
     assert len(result.observations) == 2
     assert _codes(result) == {DiagnosticCode.UNRECONCILED_USAGE}
     too_old = json.loads(json.dumps(s.snapshot))
     too_old["turns"][0]["endedAt"] = "2026-01-01T00:00:00+00:00"
-    replay = _batch(s, s.rows, too_old)
+    replay = _unit_batch(s, s.rows, too_old)
     assert replay.observations == result.observations
     assert DiagnosticCode.UNRECONCILED_USAGE in _codes(replay)
     assert DiagnosticCode.IDENTITY_CONFLICT not in _codes(replay)
 
 
-def test_snapshot_only_does_not_charge(grok_source):
-    s = grok_source
-    result = _batch(s, [], s.snapshot)
+def test_snapshot_only_does_not_charge(grok_policy):
+    s = grok_policy
+    result = _unit_batch(s, [], s.snapshot)
     assert not result.observations
     assert DiagnosticCode.UNRECONCILED_USAGE in _codes(result)
 
 
-def test_headless_projection_is_only_corroboration(grok_source):
-    s = grok_source
+def test_headless_projection_is_only_corroboration(grok_policy):
+    s = grok_policy
     verified = {entry["requestId"]: entry for entry in s.headless}
-    baseline = _batch(
+    baseline = _unit_batch(
         s, s.rows, s.snapshot, headless=lambda _session, prompt: verified[prompt]
     )
     assert len(baseline.observations) == 2 and not baseline.diagnostics
     verified[PROMPT_A]["usage"]["input_tokens"] += 1152
-    forged = _batch(
+    forged = _unit_batch(
         s, s.rows, s.snapshot, headless=lambda _session, prompt: verified[prompt]
     )
     assert DiagnosticCode.IDENTITY_CONFLICT in _codes(
@@ -481,19 +557,19 @@ def test_headless_projection_is_only_corroboration(grok_source):
         {"format_version": 2},
     ],
 )
-def test_unsupported_source_never_emits_usage(grok_source, changes):
-    s = grok_source
-    result = _batch(s, s.rows, s.snapshot, origin=replace(s.origin, **changes))
+def test_unsupported_source_never_emits_usage(grok_policy, changes):
+    s = grok_policy
+    result = _unit_batch(s, s.rows, s.snapshot, origin=replace(s.origin, **changes))
     assert not result.observations and not result.cursor
     assert _codes(result) == {DiagnosticCode.UNSUPPORTED_FORMAT}
 
 
-def test_receipts_only_carry_verified_keyed_evidence(grok_source):
-    s = grok_source
-    baseline = _batch(s, s.rows, s.snapshot)
-    absent = _batch(s, s.rows, s.snapshot, verifier=lambda *_: None)
+def test_receipts_only_carry_verified_keyed_evidence(grok_policy):
+    s = grok_policy
+    baseline = _unit_batch(s, s.rows, s.snapshot)
+    absent = _unit_batch(s, s.rows, s.snapshot, verifier=lambda *_: None)
     forged_ref = SourceRef("hmac-sha256:" + "0" * 64 + ":" + "0" * 64)
-    forged = _batch(s, s.rows, s.snapshot, verifier=lambda *_: forged_ref)
+    forged = _unit_batch(s, s.rows, s.snapshot, verifier=lambda *_: forged_ref)
     assert not absent.boundaries
     assert absent.observations == baseline.observations
     assert forged == absent
@@ -515,8 +591,8 @@ def test_receipts_only_carry_verified_keyed_evidence(grok_source):
         )
 
 
-def test_cancellation_concurrent_turns_and_invalid_clock_fail_closed(grok_source):
-    s = grok_source
+def test_cancellation_concurrent_turns_and_invalid_clock_fail_closed(grok_policy):
+    s = grok_policy
     cancelled = json.loads(s.rows[4])
     cancelled["params"]["update"]["stop_reason"] = "cancelled"
     bad_clock = json.loads(s.rows[4])
@@ -526,22 +602,46 @@ def test_cancellation_concurrent_turns_and_invalid_clock_fail_closed(grok_source
         [s.rows[0], s.rows[6], s.rows[4]],
         [json.dumps(bad_clock).encode() + b"\n"],
     ):
-        result = _batch(s, mutation)
+        result = _unit_batch(s, mutation)
         assert not result.observations and not result.cursor
 
 
-def test_rewind_and_copy_cannot_add_a_second_identity(grok_source):
-    s = grok_source
-    first = _batch(s, s.rows[:5])
+def test_rewind_and_copy_cannot_add_a_second_identity(grok_policy, monkeypatch):
+    s = grok_policy
+    directory = object()
+    root_identity = ((1, 2),)
+    file_identity = (*root_identity, (1, 3))
+    monkeypatch.setattr(
+        s.module, "_directory", lambda root: nullcontext((directory, root_identity, ()))
+    )
+
+    def locate(descriptor, root):
+        assert (descriptor, root) == (directory, s.root.path)
+        return iter((s.directory / "updates.jsonl",))
+
+    monkeypatch.setattr(s.module, "_transcripts", locate)
+    monkeypatch.setattr(
+        s.module, "_probe", lambda path: SimpleNamespace(identity=file_identity)
+    )
+
+    def read(rows, snapshot=None, cursor=None, *, origin=None):
+        reader = _reader(s, origin, None, None)
+        with _policy_input_files(s, rows, snapshot, file_identity):
+            (locator,) = reader.discover(s.root)
+            return reader.read_delta(locator, cursor)
+
+    first = read(s.rows[:5])
     assert len(first.observations) == 1
-    rewind = _batch(s, s.rows[1:5], cursor=first.cursor)
+    wire = adapter.StreamCursor
+    restored = _decode(_encode(first.cursor, wire), wire)
+    resumed = read(s.rows, s.snapshot, restored)
+    assert len(resumed.observations) == 1
+    assert resumed.observations[0].key != first.observations[0].key
+    rewind = read(s.rows[1:5], cursor=first.cursor)
     assert not rewind.observations and rewind.cursor == first.cursor
     assert DiagnosticCode.SOURCE_REPLACED in _codes(rewind)
-    copy = s.root.path / "archive" / SESSION
-    copy.mkdir(parents=True)
-    (s.directory / "updates.jsonl").unlink()
-    s.directory = copy
-    fresh = _batch(s, s.rows[:5])
+    s.directory = s.root.path / "archive" / SESSION
+    fresh = read(s.rows[:5])
     assert fresh.observations[0].key == first.observations[0].key
-    unproven = _batch(s, s.rows[:5], origin=replace(s.origin, lineage_id=None))
+    unproven = read(s.rows[:5], origin=replace(s.origin, lineage_id=None))
     assert not unproven.observations and not unproven.cursor

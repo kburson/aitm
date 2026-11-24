@@ -1,15 +1,35 @@
 import json
 import os
 import sys
+from contextlib import nullcontext
+from dataclasses import replace
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from scanner_policy_cases import NativeTranscriptFiles
+from test_accounting import reference_rates as reference_rates
+from test_ledger import _LedgerRows, _memory_ledger
 
-from aitm_usage import cli
+from aitm_usage import cli, service
+from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import Ledger
-from aitm_usage.types import Provider, UsageObservation
+from aitm_usage.scopes import InboxDrain
+from aitm_usage.types import (
+    LedgerBatch,
+    LedgerView,
+    Provider,
+    ProviderCheckpoint,
+    Revision,
+    SourceCheckpoint,
+    SourceCursor,
+    UsageObservation,
+    _encode,
+)
 
 PROJECT = UUID(int=920)
 CUTOFF = "2026-11-09T16:00:00+00:00"
@@ -54,26 +74,321 @@ def _fixtures(sources, checkout, *, partial=False):
         )
 
 
-def test_service_commands_and_coverage(project):
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout, partial=True)
-    result = command("register", "--config", str(config), "--json")
-    assert result["cutoff"] == CUTOFF
-    ledger = Ledger.open(root, PROJECT)
-    assert not ledger.as_of().checkpoints
+@pytest.fixture
+def collector_policy(monkeypatch, reference_rates):
+    native = NativeTranscriptFiles(monkeypatch)
+    ledger = replace(
+        _memory_ledger(ledger_module, PROJECT, b"c" * 32), _writer=object()
+    )
+    cutoff = datetime.fromisoformat(CUTOFF)
+    private_files = {}
+    view = LedgerView(PROJECT, 0, (), ())
+    directory = object()
+    read_view, write_batch = Ledger.as_of, Ledger._apply
+    directory_available = service._directory_available
 
-    with ledger.writer():
-        refused = command("collect-once", "--json", expected=1)
-        assert "writer-active" in json.dumps(refused)
-        before = command("status", "--json")
-        assert before["heartbeat"] is None
-        assert before["producer_mode"] is None
-        assert before["producer_pid"] is None
-    command("collect-once", "--json")
-    status = command("status", "--json")
+    def configure(**changes):
+        nonlocal view
+        config = service._Config(
+            PROJECT, (str(native.root),), (str(native.checkout),), cutoff, (), (), ()
+        )
+        config = replace(config, **changes)
+        private_files[service.REGISTRATION_NAME] = _encode(
+            config, service._Config
+        ).encode()
+        view = LedgerView(
+            PROJECT, 1, (service._registration_revision(ledger, config),), ()
+        )
+
+    def commit_revisions(*revisions):
+        nonlocal view
+        view = replace(
+            view, sequence=view.sequence + 1, revisions=(*view.revisions, *revisions)
+        )
+
+    def apply(writer, batch):
+        nonlocal view
+        assert writer is ledger
+        checkpoints = {item.cursor.source_ref: item for item in view.checkpoints}
+        if batch.checkpoint is not None:
+            key = batch.checkpoint.cursor.source_ref
+            assert checkpoints.get(key) == batch.prior_checkpoint
+            checkpoints[key] = batch.checkpoint
+        view = LedgerView(
+            PROJECT,
+            view.sequence + 1,
+            (*view.revisions, *batch.revisions),
+            tuple(checkpoints.values()),
+        )
+        return view.sequence
+
+    def read_private(pinned, name):
+        assert pinned is directory
+        return private_files.get(name)
+
+    def publish(pinned, name, data, *, replace_pending):
+        assert pinned is directory and name == service.STATUS_NAME and replace_pending
+        private_files[name] = data
+
+    def open_ledger(path, project_id):
+        assert (path, project_id) == (ledger.root, PROJECT)
+        return ledger
+
+    monkeypatch.setattr(Ledger, "open", staticmethod(open_ledger))
+    monkeypatch.setattr(Ledger, "as_of", lambda writer: view)
+    monkeypatch.setattr(Ledger, "writer", lambda writer: nullcontext(writer))
+    monkeypatch.setattr(Ledger, "require_writer", lambda writer: None)
+    monkeypatch.setattr(Ledger, "_apply", apply)
+    monkeypatch.setattr(
+        service, "_directory_available", lambda path: path == native.root
+    )
+    monkeypatch.setattr(service, "_pin_directory", lambda _: nullcontext(directory))
+    monkeypatch.setattr(service, "_read_private", read_private)
+    monkeypatch.setattr(service, "_private_child", lambda *a, **k: nullcontext(None))
+    monkeypatch.setattr(service, "drain_inbox", lambda *a: InboxDrain())
+    monkeypatch.setattr(service, "_abandoned_publications", lambda _: 0)
+    monkeypatch.setattr(service, "_publish", publish)
+    monkeypatch.setattr(service, "load_rate_card", lambda: reference_rates)
+    monkeypatch.setattr(service, "version", lambda _: "1.2.3")
+    monkeypatch.setattr(
+        service, "platform", SimpleNamespace(python_version=lambda: "3.13.9")
+    )
+    monkeypatch.setattr(service, "os", SimpleNamespace(getpid=lambda: 123))
+    clock = Mock(wraps=datetime)
+    clock.now.return_value = cutoff
+    monkeypatch.setattr(service, "datetime", clock)
+
+    def collect():
+        service.collect_once(service.load_registration(ledger), ledger)
+        return status()
+
+    def status():
+        return service.status_report(ledger.root, ledger)
+
+    def use_ledger_rows():
+        rows = _LedgerRows(ledger.identity, ledger_module.APPLICATION_ID, ())
+        monkeypatch.setattr(Ledger, "as_of", read_view)
+        monkeypatch.setattr(Ledger, "_apply", write_batch)
+        monkeypatch.setattr(Ledger, "reader", lambda _: rows.connect(write=False))
+        monkeypatch.setattr(
+            Ledger, "_write_transaction", lambda _: rows.connect(write=True)
+        )
+        ledger.apply(LedgerBatch(view.revisions))
+        return rows, private_files
+
+    return SimpleNamespace(
+        native=native,
+        ledger=ledger,
+        configure=configure,
+        collect=collect,
+        status=status,
+        clock=clock,
+        commit_revisions=commit_revisions,
+        use_ledger_rows=use_ledger_rows,
+        directory_available=directory_available,
+    )
+
+
+@pytest.fixture
+def anchor_policy(collector_policy, monkeypatch, capsys):
+    from aitm_usage import scopes
+
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    added = native.checkout.with_name("added-private-anchor")
+    native.checkout_paths.add(added)
+    native.write(native.root / "codex.jsonl", _codex_transcript(added))
+    case.configure()
+    rows, project_files = case.use_ledger_rows()
+    anchors = ledger.root / service.ANCHORS_NAME
+    inbox = ledger.root / scopes.INBOX_NAME
+    acks = inbox / scopes.ACKS_NAME
+    files = {ledger.root: project_files}
+
+    def pin(path):
+        assert path in files
+        return nullcontext(SimpleNamespace(path=path, fd=path, check=Mock()))
+
+    def child(parent, name, *, create):
+        path = parent.path / name
+        if create:
+            files.setdefault(path, {})
+        return pin(path) if path in files else nullcontext(None)
+
+    def publish(directory, name, data, *, replace_pending=False):
+        entries = files[directory.path]
+        if name in entries and not replace_pending:
+            return False
+        entries[name] = data
+        return True
+
+    def unlink(name, *, dir_fd):
+        del files[dir_fd][name]
+
+    class ObservedDirectory:
+        def __init__(self, path):
+            self.path = path
+
+        def resolve(self, *, strict):
+            assert strict
+            if self.path != native.root and self.path not in native.checkout_paths:
+                raise FileNotFoundError(self.path)
+            return self
+
+        def is_dir(self):
+            return True
+
+    for module in (scopes, service):
+        monkeypatch.setattr(module, "_pin_directory", pin)
+        monkeypatch.setattr(module, "_private_child", child)
+        monkeypatch.setattr(module, "_publish", publish)
+        monkeypatch.setattr(
+            module,
+            "_read_private",
+            lambda directory, name: files[directory.path].get(name),
+        )
+    monkeypatch.setattr(scopes, "_publication", lambda _: nullcontext())
+    monkeypatch.setattr(
+        scopes,
+        "os",
+        SimpleNamespace(
+            listdir=lambda fd: tuple(files[fd]), unlink=unlink, fsync=Mock()
+        ),
+    )
+    monkeypatch.setattr(service, "drain_inbox", scopes.drain_inbox)
+    monkeypatch.setattr(
+        service,
+        "_directory_available",
+        lambda path: case.directory_available(ObservedDirectory(path)),
+    )
+    monkeypatch.setattr(
+        service,
+        "os",
+        SimpleNamespace(
+            getpid=service.os.getpid,
+            R_OK=os.R_OK,
+            X_OK=os.X_OK,
+            access=lambda directory, mode: mode == os.R_OK | os.X_OK,
+        ),
+    )
+    monkeypatch.setattr(
+        service.monitor_registry, "check_legacy_mutation", lambda _: None
+    )
+    monkeypatch.setattr(cli, "open_project", lambda _: ledger)
+    monkeypatch.setattr(cli, "version", lambda _: "1.2.3")
+
+    def committed_revision_sequence(connection, revision, cutoff):
+        assert connection.store is rows and not connection.write
+        commits, revisions, _ = connection.history
+        key = (revision.key.value, revision.revision, _encode(revision, Revision))
+        return next(
+            (
+                sequence
+                for ref, number, sequence, data in revisions
+                if (ref, number, data) == key
+                and sequence <= cutoff
+                and (sequence,) in commits
+            ),
+            None,
+        )
+
+    monkeypatch.setattr(
+        service, "_committed_revision_sequence", committed_revision_sequence
+    )
+
+    def command(*args, expected=0):
+        monkeypatch.setattr(
+            sys, "argv", ["aitm-usage", "--project", str(ledger.root), *args]
+        )
+        result = cli.main()
+        output = capsys.readouterr()
+        assert result == expected, output.err
+        return json.loads(output.out) if output.out else output.err
+
+    def proposal(anchor_id):
+        path = ledger.root / "input.json"
+        raw = json.dumps(
+            {
+                "command_id": str(anchor_id),
+                "project_id": str(PROJECT),
+                "checkout": str(added),
+            }
+        ).encode()
+
+        def open_input(mode):
+            assert mode == "rb"
+            return BytesIO(raw)
+
+        read_input = service._input
+
+        def read_proposal(actual, model):
+            assert actual == path and model is service._AnchorProposal
+            return read_input(SimpleNamespace(open=open_input), model)
+
+        monkeypatch.setattr(service, "_input", read_proposal)
+        return "source", "add-anchor", "--anchor", str(path), "--json"
+
+    return SimpleNamespace(
+        ledger=ledger,
+        native=native,
+        added=added,
+        files=files,
+        anchors=anchors,
+        inbox=inbox,
+        acks=acks,
+        rows=rows,
+        command=command,
+        proposal=proposal,
+    )
+
+
+def _codex_transcript(checkout):
+    from test_codex import begin, counter, response, startup, usage
+
+    counts = usage(12, 4)
+    return [
+        startup(checkout),
+        *begin(checkout),
+        response("collector-policy-response", counts, counts),
+        counter(counts, counts),
+    ]
+
+
+def test_service_commands_and_coverage(collector_policy, monkeypatch):
+    from datetime import timedelta
+
+    from aitm_usage.rollup import rollup
+    from aitm_usage.types import ItemKey, ItemKind
+
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    absent_registration = Mock(
+        side_effect=AssertionError("an unregistered project attempted a session write")
+    )
+    with monkeypatch.context() as unregistered:
+        unregistered.setattr(service, "_private_child", absent_registration)
+        service.remember_claude_session(
+            ledger, ledger.pseudonymize("claude-session", "unregistered-test-session")
+        )
+    assert ledger.as_of().sequence == 0
+    absent_registration.assert_not_called()
+    case.configure()
+    _, private_files = case.use_ledger_rows()
+    partial = b'{"private":"unfinished'
+    for provider in ("codex", "claude"):
+        data = (FIXTURES / provider / "usage.jsonl").read_bytes()
+        native.contents[native.root / f"{provider}.jsonl"] = (
+            data.replace(b"CHECKOUT", os.fsencode(native.checkout)) + partial
+        )
+    assert not ledger.as_of().checkpoints
+    assert case.status()["heartbeat"] is None
+    case.clock.now.return_value += timedelta(minutes=5)
+    status = case.collect()
     assert status["heartbeat"] is not None
     assert status["producer_mode"] == "one-shot"
-    assert status["producer_pid"] == os.getpid()
+    assert status["producer_pid"] == 123
+    assert status["collector_version"] == "1.2.3"
+    assert status["collector_interpreter_version"] == "3.13.9"
     assert not status["read_gap"]
     assert set(status["coverage"]) == {"codex", "claude"}
     assert status["coverage"]["codex"]["quota"] == "unknown"
@@ -82,68 +397,126 @@ def test_service_commands_and_coverage(project):
     assert status["task_quota"] == "unknown"
     assert len(status["sources"]) == 2
     for source in status["sources"]:
-        path = sources / f"{source['provider']}.jsonl"
-        assert source["offset"] == path.stat().st_size - len(b'{"private":"unfinished')
+        path = native.root / f"{source['provider']}.jsonl"
+        assert source["offset"] == len(native.contents[path]) - len(partial)
         assert source["observed_through"] < status["heartbeat"]
         assert source["lag_seconds"] > 0
         assert source["retention_seconds"] is None
-    current = ledger.as_of().current
+    view = ledger.as_of()
     assert {
-        r.record.boundary.provider
-        for r in current
-        if isinstance(r.record, UsageObservation)
+        row.record.boundary.provider
+        for row in view.current
+        if isinstance(row.record, UsageObservation)
     } == set(Provider)
-    assert str(checkout) not in json.dumps(status)
+    assert str(native.checkout) not in json.dumps(status)
 
-    rollup = command("rollup", "--item", "83", "--json")
-    assert rollup["direct"]["observation_count"] == 0
-    assert rollup["unattributed"]["tokens"]["output_tokens"] == 8
-    assert rollup["unattributed"]["unknown_price_count"] > 0
+    totals = rollup(ItemKey(ItemKind.ISSUE, 83), view)
+    assert totals.direct.observation_count == 0
+    assert totals.unattributed.tokens["output_tokens"] == 8
+    assert totals.unattributed.unknown_price_count > 0
 
-    sources.chmod(0o000)
-    try:
-        command("collect-once", "--json")
-        unavailable = command("status", "--json")
-    finally:
-        sources.chmod(0o700)
+    with monkeypatch.context() as unavailable:
+        unavailable.setattr(service, "_directory_available", lambda _: False)
+        _assert_unavailable_root_watermarks(status, case.collect())
+
+    malformed = {
+        **json.loads(private_files[service.STATUS_NAME]),
+        "producer_pid": "123",
+    }
+    private_files[service.STATUS_NAME] = json.dumps(
+        malformed, separators=(",", ":"), sort_keys=True
+    ).encode()
+    _assert_malformed_service_status_keeps_watermarks(status, case.status())
+
+
+def _assert_unavailable_root_watermarks(previous, unavailable):
     assert unavailable["root_gaps"] == 1
     assert unavailable["missing_sources"] == 2
     assert [entry["offset"] for entry in unavailable["sources"]] == [
-        entry["offset"] for entry in status["sources"]
+        entry["offset"] for entry in previous["sources"]
+    ]
+
+
+def _assert_malformed_service_status_keeps_watermarks(previous, rejected):
+    assert rejected["producer_mode"] is None and rejected["producer_pid"] is None
+    assert rejected["heartbeat"] is None
+    assert [entry["offset"] for entry in rejected["sources"]] == [
+        entry["offset"] for entry in previous["sources"]
     ]
 
 
 def test_registration_retry_requires_exact_private_and_typed_authority(
-    project, monkeypatch
+    collector_policy, monkeypatch, capsys
 ):
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    _, files = case.use_ledger_rows()
+    config = ledger.root / "fixture-config.json"
+    data = {
+        "project_id": str(PROJECT),
+        "source_roots": [str(native.root)],
+        "checkout_anchors": [str(native.checkout)],
+        "cutoff": CUTOFF,
+    }
+    altered = {**data, "cutoff": "2026-11-09T15:00:00+00:00"}
+    supplied = data
+    path_open = Path.open
 
-    def interrupted(self, batch):
-        raise OSError("synthetic interrupted registration")
+    def open_config(path, mode, *args, **kwargs):
+        if path == config:
+            assert mode == "rb" and not args and not kwargs
+            return BytesIO(json.dumps(supplied).encode())
+        return path_open(path, mode, *args, **kwargs)
+
+    def publish(directory, name, content, *, replace_pending=False):
+        assert name == service.REGISTRATION_NAME and not replace_pending
+        assert name not in files
+        files[name] = content
+        return True
+
+    def run(*arguments, expected=0):
+        argv = ["aitm-usage", "--project", str(ledger.root), *arguments, "--json"]
+        monkeypatch.setattr(sys, "argv", argv)
+        assert cli.main() == expected, capsys.readouterr()
+        capsys.readouterr()
+
+    monkeypatch.setattr(Path, "open", open_config)
+    monkeypatch.setattr(service, "_publish", publish)
+    monkeypatch.setattr(
+        service, "_path_exists", lambda path: path == ledger.database_path.parent
+    )
+    monkeypatch.setattr(
+        service,
+        "_directory_available",
+        lambda path: path in (native.root, native.checkout),
+    )
+    monkeypatch.setattr(service.monitor_registry, "check_legacy_mutation", Mock())
+    monkeypatch.setattr(cli, "open_project", lambda _: ledger)
+    monkeypatch.setattr(cli, "version", lambda _: "1.2.3")
+    register = ("register", "--config", str(config))
 
     with monkeypatch.context() as patch:
-        patch.setattr(Ledger, "apply", interrupted)
-        command("register", "--config", str(config), "--json", expected=1)
-    ledger = Ledger.open(root, PROJECT)
+        patch.setattr(
+            Ledger, "apply", Mock(side_effect=OSError("interrupted registration"))
+        )
+        run(*register, expected=1)
+    original = files[service.REGISTRATION_NAME]
     assert ledger.as_of().sequence == 0
-    command("collect-once", "--json", expected=1)
+    run("collect-once", expected=1)
     assert ledger.as_of().sequence == 0
 
-    data = json.loads(config.read_text())
-    config.write_text(json.dumps({**data, "cutoff": "2026-11-09T15:00:00+00:00"}))
-    command("register", "--config", str(config), "--json", expected=1)
-    config.write_text(json.dumps(data))
-    command("register", "--config", str(config), "--json")
-    sequence = ledger.as_of().sequence
-    assert sequence == 1
-    command("register", "--config", str(config), "--json")
-    assert ledger.as_of().sequence == sequence
-    stored = root / "registration.json"
-    assert stored.stat().st_mode & 0o777 == 0o600
-    stored.write_text(json.dumps({**data, "cutoff": "2026-11-09T15:00:00+00:00"}))
-    command("collect-once", "--json", expected=1)
-    assert ledger.as_of().sequence == sequence
+    supplied = altered
+    run(*register, expected=1)
+    assert files[service.REGISTRATION_NAME] == original
+    supplied = data
+    run(*register)
+    assert ledger.as_of().sequence == 1
+    run(*register)
+    assert ledger.as_of().sequence == 1
+    assert files[service.REGISTRATION_NAME] == original
+    files[service.REGISTRATION_NAME] = json.dumps(altered).encode()
+    run("collect-once", expected=1)
+    assert ledger.as_of().sequence == 1
 
 
 def _json_file(directory, name, payload):
@@ -153,7 +526,7 @@ def _json_file(directory, name, payload):
 
 
 def test_anchor_staging_retry_requires_a_matching_receipt_and_effect(
-    project, monkeypatch
+    anchor_policy, monkeypatch
 ):
     from aitm_usage import scopes
     from aitm_usage.sources.scan import checkout_anchor_reference
@@ -164,22 +537,11 @@ def test_anchor_staging_retry_requires_a_matching_receipt_and_effect(
         SourceAnchorCommand,
     )
 
-    root, sources, checkout, config, command = project
-    added = checkout.with_name("add-secret")
-    added.mkdir()
-    _fixtures(sources, added)
-    command("register", "--config", str(config), "--json")
-    ledger = Ledger.open(root, PROJECT)
+    case = anchor_policy
+    ledger, command, added = case.ledger, case.command, case.added
     anchor_id = UUID(int=921)
-    anchor = _json_file(
-        root.parent,
-        "add.json",
-        {
-            "command_id": str(anchor_id),
-            "project_id": str(PROJECT),
-            "checkout": str(added),
-        },
-    )
+    name = f"{anchor_id}.json"
+    args = case.proposal(anchor_id)
 
     def interrupted(*args):
         raise OSError("interrupted after private publication")
@@ -187,14 +549,14 @@ def test_anchor_staging_retry_requires_a_matching_receipt_and_effect(
     publish = scopes._publish
 
     def interrupted_inbox(directory, *args, **kwargs):
-        if directory.path == root / "inbox":
+        if directory.path == case.inbox:
             interrupted()
         return publish(directory, *args, **kwargs)
 
     with monkeypatch.context() as patch:
         patch.setattr(scopes, "_publish", interrupted_inbox)
-        command("source", "add-anchor", "--anchor", str(anchor), "--json", expected=1)
-    assert (root / "source-anchors" / f"{anchor_id}.json").is_file()
+        command(*args, expected=1)
+    assert name in case.files[case.anchors]
     command("collect-once", "--json")
     assert not any(
         isinstance(r.record, UsageObservation) for r in ledger.as_of().current
@@ -232,31 +594,27 @@ def test_anchor_staging_retry_requires_a_matching_receipt_and_effect(
     assert not any(
         isinstance(r.record, UsageObservation) for r in ledger.as_of().current
     )
-    assert (
-        command("source", "add-anchor", "--anchor", str(anchor), "--json")["status"]
-        == "queued"
-    )
-    assert (
-        str(added).encode() not in (root / "inbox" / f"{anchor_id}.json").read_bytes()
-    )
+    assert command(*args)["status"] == "queued"
+    assert str(added).encode() not in case.files[case.inbox][name]
     with monkeypatch.context() as patch:
         patch.setattr(scopes, "_acknowledge", interrupted)
         command("collect-once", "--json", expected=1)
     # A fresh poll reconstructs authority from the exact accepted pair and
     # retires the already committed queue item.
     command("collect-once", "--json")
-    assert (
-        command("source", "add-anchor", "--anchor", str(anchor), "--json")["status"]
-        == "accepted"
-    )
-    assert not (root / "inbox" / f"{anchor_id}.json").exists()
+    assert command(*args)["status"] == "accepted"
+    assert name not in case.files[case.inbox]
     assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
-    assert str(added).encode() not in ledger.database_path.read_bytes()
+    assert all(
+        str(added) not in row[-1] for table in case.rows.history[1:] for row in table
+    )
     config_cutoff = command("status", "--json")["cutoff"]
     assert config_cutoff == CUTOFF
 
 
-def test_collection_does_not_scan_after_the_qualifying_drain(project, monkeypatch):
+def test_collection_does_not_scan_after_the_qualifying_drain(
+    collector_policy, monkeypatch
+):
     from test_codex import (
         SESSION,
         begin,
@@ -266,26 +624,28 @@ def test_collection_does_not_scan_after_the_qualifying_drain(project, monkeypatc
         tool_call,
         tool_output,
         usage,
-        write,
     )
 
-    from aitm_usage import scopes, service
+    from aitm_usage import scopes
+    from aitm_usage.rollup import rollup
     from aitm_usage.sources.codex import codex_request_boundary_reference
     from aitm_usage.types import (
         BoundaryKind,
+        InboxCommand,
         ItemKey,
         ItemKind,
+        MarkerDisposition,
         ScopeMarker,
         WorkPhase,
-        encode_marker,
     )
 
-    root, sources, checkout, config, command = project
-    command("register", "--config", str(config), "--json")
-    ledger = Ledger.open(root, PROJECT)
-    monkeypatch.setenv("CODEX_THREAD_ID", str(SESSION))
-    source = sources / "codex.jsonl"
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    case.configure()
+    checkout = native.checkout
+    source = native.root / "codex.jsonl"
     marker_id = UUID(int=922)
+    item = ItemKey(ItemKind.ISSUE, 83)
     session = scopes.session_reference(ledger, Provider.CODEX, str(SESSION))
     marker = ScopeMarker(
         marker_id,
@@ -295,87 +655,93 @@ def test_collection_does_not_scan_after_the_qualifying_drain(project, monkeypatc
         BoundaryKind.REQUEST,
         codex_request_boundary_reference(ledger, session, marker_id),
         datetime.fromisoformat(CUTOFF),
-        ItemKey(ItemKind.ISSUE, 83),
+        item,
         WorkPhase.PLANNING,
         ledger.pseudonymize("test-participant", "private"),
         PROJECT,
         receipt_ref=ledger.pseudonymize("scope-receipt", str(marker_id)),
     )
-    marker_path = root.parent / "scope.json"
-    marker_path.write_bytes(encode_marker(marker))
-    write(source, [startup(checkout)])
-    observed_size = source.stat().st_size
-    before = service.drain_inbox
+    marker_path = Path("/fixture/scope.json")
+    command = InboxCommand(marker_id, PROJECT, marker)
+    observed_size = native.write(source, [startup(checkout)])
+    drains = 0
 
     def race(writer, evidence):
-        outcome = before(writer, evidence)
-        reply = command("scope", "mark", "--marker", str(marker_path), "--json")
-        prior_usage, counts, total = usage(8, 2), usage(9, 3), usage(17, 5)
-        write(
-            source,
-            [
-                *begin(checkout),
-                tool_call(ledger, marker_path),
-                response("private-before-snapshot", prior_usage, prior_usage),
-                tool_output(marker_id, stdout=json.dumps(reply)),
-                counter(prior_usage, prior_usage),
-                response("private-after-snapshot", total, counts),
-                counter(total, counts),
-            ],
-            append=True,
-        )
-        return outcome
+        nonlocal drains
+        assert writer is ledger
+        drains += 1
+        if drains == 1:
+            prior_usage, counts, total = usage(8, 2), usage(9, 3), usage(17, 5)
+            native.write(
+                source,
+                [
+                    *begin(checkout),
+                    tool_call(ledger, marker_path),
+                    response("private-before-snapshot", prior_usage, prior_usage),
+                    tool_output(marker_id),
+                    counter(prior_usage, prior_usage),
+                    response("private-after-snapshot", total, counts),
+                    counter(total, counts),
+                ],
+                append=True,
+            )
+        if drains == 2:
+            disposition, _, effects = scopes._evaluate(
+                writer, command, writer.as_of(), evidence, {}
+            )
+            assert disposition is MarkerDisposition.ACCEPTED
+            assert effects
+            case.commit_revisions(*effects)
+        return InboxDrain()
 
-    with monkeypatch.context() as patch:
-        patch.setattr(service, "drain_inbox", race)
-        command("collect-once", "--json")
+    monkeypatch.setattr(service, "drain_inbox", race)
+    case.collect()
     first = ledger.as_of()
     assert first.checkpoints[0].cursor.offset == observed_size
     assert not any(isinstance(r.record, UsageObservation) for r in first.current)
 
-    command("collect-once", "--json")
+    deferred = case.collect()
     # The admitted selector changed in the qualifying drain. Discard the
     # pre-change projection and defer until a new pre-drain selected scan.
     assert ledger.as_of().checkpoints == first.checkpoints
-    command("collect-once", "--json")
-    totals = command("rollup", "--item", "83", "--json")
-    assert totals["direct"]["tokens"]["output_tokens"] == 3
-    assert totals["direct"]["observation_count"] == 1
+    assert deferred["deferred_sources"] == 1
+    case.collect()
+    assert drains == 3
+    totals = rollup(item, ledger.as_of())
+    assert totals.direct.tokens["output_tokens"] == 3
+    assert totals.direct.observation_count == 1
 
 
 def test_status_interruption_does_not_claim_new_observed_time_and_busy_keeps_heartbeat(
-    project, monkeypatch
+    collector_policy, monkeypatch
 ):
     import sqlite3
+    from datetime import timedelta
 
-    from aitm_usage import service
+    from test_codex import end
 
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    first = command("status", "--json")
-    old = next(source for source in first["sources"] if source["provider"] == "codex")
-    path = sources / "codex.jsonl"
-    with path.open("ab") as transcript:
-        transcript.write(
-            b'{"type":"event_msg","timestamp":"2026-11-09T16:00:06Z",'
-            b'"payload":{"type":"task_complete",'
-            b'"turn_id":"00000000-0000-0000-0000-000000000102"}}\n'
-        )
+    case = collector_policy
+    native = case.native
+    case.configure()
+    path = native.root / "codex.jsonl"
+    native.write(path, _codex_transcript(native.checkout))
+    first = case.collect()
+    (old,) = first["sources"]
+    assert old["observed_through"] is not None
+    case.clock.now.return_value += timedelta(minutes=1)
+    final_offset = native.write(path, [end()], append=True)
 
     def fail_publish(*args, **kwargs):
         raise OSError("synthetic status interruption")
 
     with monkeypatch.context() as patch:
         patch.setattr(service, "_publish", fail_publish)
-        command("collect-once", "--json", expected=1)
-    status = command("status", "--json")
-    changed = next(
-        source for source in status["sources"] if source["provider"] == "codex"
-    )
+        with pytest.raises(OSError, match="synthetic status interruption"):
+            case.collect()
+    status = case.status()
+    (changed,) = status["sources"]
     assert status["heartbeat"] == first["heartbeat"]
-    assert changed["offset"] > old["offset"]
+    assert changed["offset"] == final_offset > old["offset"]
     assert changed["observed_through"] is None
     assert changed["lag_seconds"] is None
 
@@ -384,7 +750,7 @@ def test_status_interruption_does_not_claim_new_observed_time_and_busy_keeps_hea
 
     with monkeypatch.context() as patch:
         patch.setattr(Ledger, "as_of", busy)
-        status = command("status", "--json")
+        status = case.status()
     assert status["read_gap"]
     assert status["heartbeat"] == first["heartbeat"]
     assert status["sources"] == []
@@ -530,6 +896,8 @@ def test_continuous_writer_acknowledges_binding_correction_and_anchor(
             marked = command(*mark_args)
             bound = command(*bind_args)
             assert marked["status"] == bound["status"] == "queued"
+            (memo,) = (root / service.CLAUDE_SESSIONS_NAME).iterdir()
+            assert memo.read_bytes() == json.dumps(cl_session.value).encode()
             shell = shlex.join(("aitm-usage", "--project", str(root), *mark_args))
             claude.write(
                 sources / "claude.jsonl",
@@ -613,30 +981,53 @@ def test_continuous_writer_acknowledges_binding_correction_and_anchor(
     for path in (root / "claude-sessions").iterdir():
         assert str(claude.SESSION).encode() not in path.read_bytes()
 
+    denied_id = UUID(int=933)
+    denied = checkout.with_name("uncommitted-anchor")
+    denied.mkdir()
+    proposal = _json_file(
+        root.parent,
+        "uncommitted-anchor.json",
+        {
+            "command_id": str(denied_id),
+            "project_id": str(PROJECT),
+            "checkout": str(denied),
+        },
+    )
+    _assert_generic_anchor_cannot_replace_admission(
+        ledger,
+        command,
+        ("source", "add-anchor", "--anchor", str(proposal), "--json"),
+        denied_id,
+        lambda: (path.name for path in (root / "source-anchors").iterdir()),
+        lambda target: (root / "inbox" / target).exists(),
+        "effect-first",
+        monkeypatch,
+    )
+
 
 @pytest.mark.parametrize("account_provider", ["codex", "claude"])
-def test_quota_authority_is_exact_stream_and_provider(project, account_provider):
+def test_quota_authority_is_exact_stream_and_provider(
+    collector_policy, account_provider
+):
     from aitm_usage.scopes import session_reference
 
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
-    ledger = Ledger.initialize(root, PROJECT)
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    for provider in ("codex", "claude"):
+        data = (FIXTURES / provider / "usage.jsonl").read_bytes()
+        native.contents[native.root / f"{provider}.jsonl"] = data.replace(
+            b"CHECKOUT", str(native.checkout).encode()
+        )
     session_ref = session_reference(ledger, Provider.CODEX, str(UUID(int=0x101)))
     stream = ledger.pseudonymize("codex-stream", session_ref.value)
     account = ledger.pseudonymize("account", "private-confirmed-account")
-    data = json.loads(config.read_text())
-    data["account_refs"] = [
-        {
-            "provider": account_provider,
-            "stream_ref": stream.value,
-            "account_ref": account.value,
-        }
-    ]
-    data["retention_limits"] = [{"provider": "codex", "seconds": 604800}]
-    config.write_text(json.dumps(data))
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    status = command("status", "--json")
+    case.configure(
+        account_refs=(
+            service._AccountAuthority(Provider(account_provider), stream, account),
+        ),
+        retention_limits=(service._RetentionLimit(Provider.CODEX, 604800),),
+    )
+    status = case.collect()
     expected = "observed" if account_provider == "codex" else "unknown"
     assert status["coverage"]["codex"]["quota"] == expected
     assert status["coverage"]["claude"]["quota"] == "unknown"
@@ -652,18 +1043,18 @@ def test_quota_authority_is_exact_stream_and_provider(project, account_provider)
 
 @pytest.mark.parametrize("explicit", [False, True])
 def test_unresolved_earlier_segment_holds_frontier_unless_positively_excluded(
-    project, explicit
+    collector_policy, explicit
 ):
-    from test_claude import request, usage, user, write
+    from test_claude import request, usage, user
 
     from aitm_usage.sources.scan import discover, scan
-    from aitm_usage.types import Registration
 
-    root, sources, checkout, config, command = project
+    case = collector_policy
+    native, ledger = case.native, case.ledger
+    checkout = native.checkout
     unrelated = checkout.with_name("unrelated-private")
-    unrelated.mkdir()
-    write(
-        sources / "claude.jsonl",
+    native.write(
+        native.root / "claude.jsonl",
         [
             user(unrelated),
             request(
@@ -675,45 +1066,31 @@ def test_unresolved_earlier_segment_holds_frontier_unless_positively_excluded(
             ),
         ],
     )
+    case.configure()
     if explicit:
-        Ledger.initialize(root, PROJECT)
-        registration = Registration(
-            PROJECT, root, (sources,), (checkout,), datetime.fromisoformat(CUTOFF)
-        )
+        registration = service.load_registration(ledger)
         (candidate,) = discover(registration)
         batch = scan(candidate, None, registration.cutoff)
-        data = json.loads(config.read_text())
-        data["excluded_segments"] = [batch.frames[0].segment_ref.value]
-        config.write_text(json.dumps(data))
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    view = Ledger.open(root, PROJECT).as_of()
+        case.configure(excluded_segments=(batch.frames[0].segment_ref,))
+    status = case.collect()
+    view = ledger.as_of()
     measured = [
         r.record.tokens.output_tokens
         for r in view.current
         if isinstance(r.record, UsageObservation)
     ]
     assert measured == ([4] if explicit else [])
-    assert command("status", "--json")["held_sources"] == (0 if explicit else 1)
+    assert status["held_sources"] == (0 if explicit else 1)
 
 
-def test_status_matches_producer_runtime_and_authenticates_observed_time(project):
-    from importlib.metadata import version
-    from platform import python_version
+def test_status_matches_producer_runtime_and_authenticates_observed_time(monkeypatch):
+    def change_watermark(payload):
+        payload["observed"][0]["through"] = "2026-11-09T16:01:00+00:00"
 
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    first = command("status", "--json")
-    assert first["collector_version"] == version("aitm-usage")
-    assert first["collector_interpreter_version"] == python_version()
-    path = root / "status.json"
-    data = json.loads(path.read_text())
-    ref = data["observed"][0]["source_ref"]
-    data["observed"][0]["through"] = "2026-11-09T16:01:00+00:00"
-    path.write_text(json.dumps(data, separators=(",", ":"), sort_keys=True))
-    status = command("status", "--json")
+    first, status = _read_changed_status(monkeypatch, change_watermark)
+    assert first["collector_version"] == "1.2.3"
+    assert first["collector_interpreter_version"] == "3.13.9"
+    ref = first["sources"][0]["source_ref"]
     source = next(source for source in status["sources"] if source["source_ref"] == ref)
     assert source["observed_through"] is None
     assert source["lag_seconds"] is None
@@ -721,23 +1098,26 @@ def test_status_matches_producer_runtime_and_authenticates_observed_time(project
 
 
 @pytest.mark.parametrize("owner_matches", [True, False])
-def test_claude_quota_still_requires_native_same_segment_owner(project, owner_matches):
+def test_claude_quota_still_requires_native_same_segment_owner(
+    collector_policy, owner_matches
+):
     from datetime import timedelta
 
-    from test_claude import ACCOUNT, AFTER, SESSION, owner, request, row, user, write
+    from test_claude import ACCOUNT, AFTER, SESSION, owner, request, row, user
 
     from aitm_usage.scopes import session_reference
     from aitm_usage.types import AccountObservation
 
-    root, sources, checkout, config, command = project
-    ledger = Ledger.initialize(root, PROJECT)
+    case = collector_policy
+    native, ledger = case.native, case.ledger
+    checkout = native.checkout
     session_ref = session_reference(ledger, Provider.CLAUDE, str(SESSION))
     stream = ledger.pseudonymize("claude-stream", session_ref.value)
     account = ledger.pseudonymize(
         "claude-account", str(ACCOUNT if owner_matches else UUID(int=987))
     )
-    write(
-        sources / "claude.jsonl",
+    native.write(
+        native.root / "claude.jsonl",
         [
             user(checkout),
             request(checkout),
@@ -754,18 +1134,10 @@ def test_claude_quota_still_requires_native_same_segment_owner(project, owner_ma
             ),
         ],
     )
-    data = json.loads(config.read_text())
-    data["account_refs"] = [
-        {
-            "provider": "claude",
-            "stream_ref": stream.value,
-            "account_ref": account.value,
-        }
-    ]
-    config.write_text(json.dumps(data))
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    status = command("status", "--json")
+    case.configure(
+        account_refs=(service._AccountAuthority(Provider.CLAUDE, stream, account),),
+    )
+    status = case.collect()
     assert status["coverage"]["claude"]["quota"] == (
         "observed" if owner_matches else "unknown"
     )
@@ -783,26 +1155,30 @@ def test_claude_quota_still_requires_native_same_segment_owner(project, owner_ma
         assert not quota
 
 
-def test_unstaged_typed_anchor_command_cannot_enroll(project):
-    from aitm_usage.scopes import enqueue_command
+def test_unstaged_typed_anchor_command_cannot_enroll(collector_policy, monkeypatch):
+    from aitm_usage import scopes
     from aitm_usage.sources.scan import checkout_anchor_reference
     from aitm_usage.types import (
+        CommandReceipt,
         InboxCommand,
         MarkerDisposition,
         ProjectRegistration,
+        Revision,
         SourceAnchorCommand,
     )
 
-    root, sources, checkout, config, command = project
-    added = checkout.with_name("private-unstaged")
-    added.mkdir()
-    _fixtures(sources, added)
-    command("register", "--config", str(config), "--json")
-    ledger = Ledger.open(root, PROJECT)
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    added = native.checkout.with_name("private-unstaged")
+    native.checkout_paths.add(added)
+    monkeypatch.setattr(
+        service, "_directory_available", lambda path: path in {native.root, added}
+    )
+    native.write(native.root / "codex.jsonl", _codex_transcript(added))
+    case.configure()
+    before = ledger.as_of()
     (registration,) = [
-        r.record
-        for r in ledger.as_of().current
-        if isinstance(r.record, ProjectRegistration)
+        r.record for r in before.current if isinstance(r.record, ProjectRegistration)
     ]
     anchor_id = UUID(int=929)
     payload = SourceAnchorCommand(
@@ -812,9 +1188,56 @@ def test_unstaged_typed_anchor_command_cannot_enroll(project):
         checkout_anchor_reference(ledger, added),
     )
     proposal = InboxCommand(anchor_id, PROJECT, payload)
-    assert enqueue_command(root, proposal) is None
-    command("collect-once", "--json")
+    key = ledger.pseudonymize("inbox-command", str(anchor_id))
+    pinned, inbox = object(), SimpleNamespace(fd=8)
+    queued_bytes = {}
+
+    def publish(directory, name, data):
+        assert directory is inbox and name not in queued_bytes
+        queued_bytes[name] = data
+        return True
+
+    def read_receipt(query, params):
+        assert query.startswith("SELECT revision, payload FROM revisions WHERE key")
+        assert params == (key.value,)
+        receipt = next(
+            (revision for revision in ledger.as_of().current if revision.key == key),
+            None,
+        )
+        row = (
+            None if receipt is None else (receipt.revision, _encode(receipt, Revision))
+        )
+        return SimpleNamespace(fetchone=lambda: row)
+
+    monkeypatch.setattr(scopes, "_pin_directory", lambda _: nullcontext(pinned))
+    monkeypatch.setattr(
+        scopes, "_inbox_publication", lambda *a, **k: nullcontext((pinned, inbox))
+    )
+    monkeypatch.setattr(scopes, "_read_private", lambda _, name: queued_bytes.get(name))
+    monkeypatch.setattr(scopes, "_publish", publish)
+    monkeypatch.setattr(
+        scopes, "os", SimpleNamespace(listdir=lambda _: tuple(queued_bytes))
+    )
+    monkeypatch.setattr(
+        ledger_module.Ledger,
+        "reader",
+        lambda _: nullcontext(SimpleNamespace(execute=read_receipt)),
+    )
+
+    assert scopes.enqueue_command(ledger.root, proposal) is None
+    (publication,) = scopes._read_publications(inbox, ledger).publications
+    assert publication.command == proposal
+    digest = ledger.validate_command(proposal)
+    disposition, evidence, effects = scopes._evaluate(
+        ledger, publication.command, before, (), {}
+    )
+    assert (disposition, evidence, effects) == (MarkerDisposition.CONFLICT, None, ())
+    case.commit_revisions(
+        Revision(key, 1, CommandReceipt(proposal, digest, disposition))
+    )
     assert ledger.command_receipt(proposal).disposition is MarkerDisposition.CONFLICT
+    case.collect()
+    assert service.load_registration(ledger).checkout_anchors == (native.checkout,)
     checkpoints = ledger.as_of().checkpoints
     assert checkpoints and all(entry.cursor.offset == 0 for entry in checkpoints)
     assert not any(
@@ -822,63 +1245,84 @@ def test_unstaged_typed_anchor_command_cannot_enroll(project):
     )
 
 
-def test_exact_queued_anchor_retries_when_checkout_returns(project):
-    root, sources, checkout, config, command = project
-    added = checkout.with_name("temporarily-unavailable")
-    added.mkdir()
-    _fixtures(sources, added)
-    command("register", "--config", str(config), "--json")
-    anchor = _json_file(
-        root.parent,
-        "queued-anchor.json",
-        {
-            "command_id": str(UUID(int=930)),
-            "project_id": str(PROJECT),
-            "checkout": str(added),
-        },
-    )
-    args = ("source", "add-anchor", "--anchor", str(anchor), "--json")
+def test_exact_queued_anchor_retries_when_checkout_returns(anchor_policy):
+    case = anchor_policy
+    anchor_id = UUID(int=930)
+    name = f"{anchor_id}.json"
+    command, args = case.command, case.proposal(anchor_id)
     assert command(*args)["status"] == "queued"
-    elsewhere = added.with_suffix(".away")
-    added.rename(elsewhere)
+    queued = case.files[case.inbox][name]
+    case.native.checkout_paths.remove(case.added)
     command("collect-once", "--json")
     assert command(*args)["status"] == "pending"
-    checkpoints = Ledger.open(root, PROJECT).as_of().checkpoints
+    assert case.files[case.inbox][name] == queued
+    checkpoints = case.ledger.as_of().checkpoints
     assert checkpoints and all(entry.cursor.offset == 0 for entry in checkpoints)
-    elsewhere.rename(added)
+    case.native.checkout_paths.add(case.added)
     command("collect-once", "--json")
     assert command(*args)["status"] == "accepted"
     command("collect-once", "--json")
-    assert Ledger.open(root, PROJECT).as_of().checkpoints
+    assert case.ledger.as_of().checkpoints
 
 
-def test_reused_locator_keeps_previous_checkpoint_and_reports_missing_stream(project):
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    ledger = Ledger.open(root, PROJECT)
+def test_reused_locator_keeps_previous_checkpoint_and_reports_missing_stream(
+    collector_policy,
+):
+    from test_codex import SESSION
+
+    from aitm_usage.types import Diagnostic, DiagnosticCode
+
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    case.configure()
+    path = native.root / "codex.jsonl"
+    native.write(path, _codex_transcript(native.checkout))
+    initial = case.collect()
     before = ledger.as_of()
-    path = sources / "codex.jsonl"
-    path.write_bytes(
-        path.read_bytes().replace(
-            str(UUID(int=0x101)).encode(), str(UUID(int=0x123)).encode()
-        )
+    assert len(before.checkpoints) == 1 and initial["missing_sources"] == 0
+    (observed,) = (r for r in before.current if isinstance(r.record, UsageObservation))
+    assert observed.record.tokens.output_tokens == 4
+    native.contents[path] = native.contents[path].replace(
+        str(SESSION).encode(), str(UUID(int=0x123)).encode()
     )
-    command("collect-once", "--json")
+    status = case.collect()
     after = ledger.as_of()
     assert after.checkpoints == before.checkpoints
     assert [r for r in after.current if isinstance(r.record, UsageObservation)] == [
-        r for r in before.current if isinstance(r.record, UsageObservation)
+        observed
     ]
-    status = command("status", "--json")
     assert status["missing_sources"] == 1
-    assert status["coverage"]["codex"]["diagnostics"] > 0
+    assert any(
+        isinstance(r.record, Diagnostic)
+        and r.record.code is DiagnosticCode.SOURCE_REPLACED
+        for r in after.current
+    )
 
 
 @pytest.mark.parametrize("layout", ["effect-first", "receipt-first", "same-commit"])
 def test_generic_anchor_writes_cannot_replace_inbox_admission(
-    project, monkeypatch, layout
+    anchor_policy, monkeypatch, layout
+):
+    case = anchor_policy
+    anchor_id = UUID(int=933)
+
+    def queue_contains(target):
+        return target.name in case.files.get(case.inbox / target.parent, {})
+
+    _assert_generic_anchor_cannot_replace_admission(
+        case.ledger,
+        case.command,
+        case.proposal(anchor_id),
+        anchor_id,
+        lambda: case.files[case.anchors],
+        queue_contains,
+        layout,
+        monkeypatch,
+    )
+
+
+def _assert_generic_anchor_cannot_replace_admission(
+    ledger, command, args, anchor_id, anchor_files, queue_contains, layout, monkeypatch
 ):
     from aitm_usage import service
     from aitm_usage.ledger import LedgerError
@@ -892,23 +1336,13 @@ def test_generic_anchor_writes_cannot_replace_inbox_admission(
         SourceAnchor,
     )
 
-    root, sources, checkout, config, command = project
-    added = checkout.with_name("new-private-anchor")
-    added.mkdir()
-    _fixtures(sources, added)
-    command("register", "--config", str(config), "--json")
-    ledger = Ledger.open(root, PROJECT)
-    anchor_id = UUID(int=933)
-    anchor = _json_file(
-        root.parent,
-        "new-anchor.json",
-        {
-            "command_id": str(anchor_id),
-            "project_id": str(PROJECT),
-            "checkout": str(added),
-        },
+    previous_usage = tuple(
+        row
+        for row in ledger.as_of().current
+        if isinstance(row.record, UsageObservation)
     )
-    staged = service.stage_source_anchor(ledger, anchor)
+    name = f"{anchor_id}.json"
+    staged = service.stage_source_anchor(ledger, Path(args[3]))
     payload = staged.payload
     effect = Revision(
         ledger.pseudonymize("collector-source-anchor", str(anchor_id)),
@@ -926,14 +1360,18 @@ def test_generic_anchor_writes_cannot_replace_inbox_admission(
     if layout != "same-commit":
         # A genuine dispatcher decision is interrupted before commit. A
         # private route proof must not turn split writes into an atomic pair.
-        assert (
-            command("source", "add-anchor", "--anchor", str(anchor), "--json")["status"]
-            == "queued"
-        )
+        assert command(*args)["status"] == "queued"
 
         def interrupted(*args, **kwargs):
             assert (
-                len(list((root / "source-anchors").glob(f"{anchor_id}.*.attested")))
+                len(
+                    [
+                        name
+                        for name in anchor_files()
+                        if name.startswith(f"{anchor_id}.")
+                        and name.endswith(".attested")
+                    ]
+                )
                 == 1
             )
             raise OSError("synthetic interruption before inbox commit")
@@ -967,46 +1405,43 @@ def test_generic_anchor_writes_cannot_replace_inbox_admission(
     assert command("collect-once", "--json", expected=1) == {
         "status": "collection-failed"
     }
-    retry = command(
-        "source", "add-anchor", "--anchor", str(anchor), "--json", expected=1
-    )
+    retry = command(*args, expected=1)
     assert retry.strip() == "aitm-usage: invalid private inbox command or project"
     if layout != "same-commit":
-        assert (root / "inbox" / f"{anchor_id}.json").exists()
-    assert not (root / "inbox" / "acks" / f"{anchor_id}.json").exists()
-    assert not any(
-        isinstance(r.record, UsageObservation) for r in ledger.as_of().current
+        assert queue_contains(Path(name))
+    assert not queue_contains(Path("acks") / name)
+    assert (
+        tuple(
+            row
+            for row in ledger.as_of().current
+            if isinstance(row.record, UsageObservation)
+        )
+        == previous_usage
     )
 
 
 def test_anchor_route_retry_after_private_attestation_interruption(
-    project, monkeypatch
+    anchor_policy, monkeypatch
 ):
-    from aitm_usage import service
     from aitm_usage.types import Diagnostic, DiagnosticCode, LedgerBatch, Revision
 
-    root, sources, checkout, config, command = project
-    added = checkout.with_name("retry-after-attestation")
-    added.mkdir()
-    _fixtures(sources, added)
-    command("register", "--config", str(config), "--json")
-    ledger = Ledger.open(root, PROJECT)
+    case = anchor_policy
+    ledger, command, added = case.ledger, case.command, case.added
+    checkout = case.native.checkout
     anchor_id = UUID(int=934)
-    anchor = _json_file(
-        root.parent,
-        "retry-anchor.json",
-        {
-            "command_id": str(anchor_id),
-            "project_id": str(PROJECT),
-            "checkout": str(added),
-        },
-    )
-    args = ("source", "add-anchor", "--anchor", str(anchor), "--json")
+    args = case.proposal(anchor_id)
     assert command(*args)["status"] == "queued"
-    proofs = root / "source-anchors"
+    proofs = case.files[case.anchors]
+
+    def attestations():
+        return [
+            name
+            for name in proofs
+            if name.startswith(f"{anchor_id}.") and name.endswith(".attested")
+        ]
 
     def interrupted(*args, **kwargs):
-        assert len(list(proofs.glob(f"{anchor_id}.*.attested"))) == 1
+        assert len(attestations()) == 1
         raise OSError("synthetic interruption after attestation")
 
     with monkeypatch.context() as patch:
@@ -1014,8 +1449,8 @@ def test_anchor_route_retry_after_private_attestation_interruption(
         command("collect-once", "--json", expected=1)
     assert service.load_registration(ledger).checkout_anchors == (checkout,)
     assert command(*args)["status"] == "queued"
-    (orphan,) = proofs.glob(f"{anchor_id}.*.attested")
-    original = orphan.read_bytes()
+    (orphan,) = attestations()
+    original = proofs[orphan]
 
     # Retry after another legitimate commit moved the expected sequence.
     ledger.apply(
@@ -1037,22 +1472,20 @@ def test_anchor_route_retry_after_private_attestation_interruption(
     assert service.load_registration(ledger).checkout_anchors == tuple(
         sorted((checkout, added))
     )
-    assert orphan.read_bytes() == original
-    assert len(list(proofs.glob(f"{anchor_id}.*.attested"))) == 2
+    assert proofs[orphan] == original
+    assert len(attestations()) == 2
     command("collect-once", "--json")
     assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
 
 
-def test_zero_held_frontier_pins_identity_before_source_replacement(project):
-    root, sources, checkout, config, command = project
-    unapproved = checkout.with_name("unbound-private")
-    unapproved.mkdir()
-    source = sources / "codex.jsonl"
-    fixture = (FIXTURES / "codex" / "usage.jsonl").read_bytes()
-    source.write_bytes(fixture.replace(b"CHECKOUT", os.fsencode(unapproved)))
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    ledger = Ledger.open(root, PROJECT)
+def test_zero_held_frontier_pins_identity_before_source_replacement(collector_policy):
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    case.configure()
+    source = native.root / "codex.jsonl"
+    unapproved = native.checkout.with_name("unbound-private")
+    native.write(source, _codex_transcript(unapproved))
+    case.collect()
     (checkpoint,) = ledger.as_of().checkpoints
     assert checkpoint.cursor.offset == checkpoint.provider.ordinal == 0
     assert checkpoint.provider.baseline is None
@@ -1061,73 +1494,60 @@ def test_zero_held_frontier_pins_identity_before_source_replacement(project):
         isinstance(r.record, UsageObservation) for r in ledger.as_of().current
     )
 
-    replacement = sources / "replacement"
-    replacement.write_bytes(fixture.replace(b"CHECKOUT", os.fsencode(checkout)))
-    replacement.replace(source)
-    command("collect-once", "--json")
+    # The same locator now observes a second inode with eligible checkout bytes.
+    old_identity = native.identities.pop(source)
+    native.write(source, _codex_transcript(native.checkout))
+    status = case.collect()
+    assert native.identities[source] != old_identity
     view = ledger.as_of()
     assert view.checkpoints == (checkpoint,)
     assert not any(isinstance(r.record, UsageObservation) for r in view.current)
-    assert command("status", "--json")["coverage"]["codex"]["diagnostics"] > 0
+    assert status["coverage"]["codex"]["diagnostics"] > 0
 
 
 @pytest.mark.parametrize("loss", ["after-interrupted-ack", "before-first-ack"])
 def test_unproven_accepted_anchor_preserves_queue_until_proof_restored(
-    project, monkeypatch, loss
+    anchor_policy, monkeypatch, loss
 ):
     from aitm_usage import scopes
 
-    root, sources, checkout, config, command = project
-    added = checkout.with_name("private-proof-lost")
-    added.mkdir()
-    _fixtures(sources, added)
-    command("register", "--config", str(config), "--json")
-    ledger = Ledger.open(root, PROJECT)
+    case = anchor_policy
     anchor_id = UUID(int=935)
-    anchor = _json_file(
-        root.parent,
-        "proof-lost.json",
-        {
-            "command_id": str(anchor_id),
-            "project_id": str(PROJECT),
-            "checkout": str(added),
-        },
-    )
-    args = ("source", "add-anchor", "--anchor", str(anchor), "--json")
+    name = f"{anchor_id}.json"
+    ledger, command = case.ledger, case.command
+    args = case.proposal(anchor_id)
     assert command(*args)["status"] == "queued"
-    queued = root / "inbox" / f"{anchor_id}.json"
-    ack = root / "inbox" / "acks" / f"{anchor_id}.json"
-    proof_dir = root / "source-anchors"
-    saved = None
-
-    def remove_proof():
-        nonlocal saved
-        (proof,) = proof_dir.glob(f"{anchor_id}.*.attested")
-        saved = (proof, proof.read_bytes())
-        proof.unlink()
-
+    attestations = case.files[case.anchors]
+    queued = case.files[case.inbox]
     original_commit = Ledger.commit_command
+
+    saved = {}
+
+    def lose_proof():
+        (proof,) = [key for key in attestations if key.endswith(".attested")]
+        saved[proof] = attestations.pop(proof)
 
     def commit_without_proof(*args, **kwargs):
         receipt = original_commit(*args, **kwargs)
-        remove_proof()
+        lose_proof()
         return receipt
 
     def interrupt_ack(*args, **kwargs):
         raise OSError("synthetic interruption before acknowledgment")
 
     with monkeypatch.context() as patch:
-        if loss == "before-first-ack":
-            patch.setattr(Ledger, "commit_command", commit_without_proof)
-        else:
+        if loss == "after-interrupted-ack":
             patch.setattr(scopes, "_acknowledge", interrupt_ack)
+        else:
+            patch.setattr(Ledger, "commit_command", commit_without_proof)
         assert command("collect-once", "--json", expected=1) == {
             "status": "collection-failed"
         }
-    assert queued.exists()
-    assert not ack.exists()
     if loss == "after-interrupted-ack":
-        remove_proof()
+        lose_proof()
+
+    acks = case.files[case.acks]
+    assert name in queued and name not in acks
     sequence = ledger.as_of().sequence
     assert command("collect-once", "--json", expected=1) == {
         "status": "collection-failed"
@@ -1137,28 +1557,33 @@ def test_unproven_accepted_anchor_preserves_queue_until_proof_restored(
     status = command("status", "--json")
     assert status["registration_gap"] is True
     assert status["read_gap"] is False
-    assert str(added) not in json.dumps(status)
-    assert queued.exists()
-    assert not ack.exists()
+    assert str(case.added) not in json.dumps(status)
+    assert name in queued and name not in acks
     assert ledger.as_of().sequence == sequence
     assert not ledger.as_of().checkpoints
 
-    proof, data = saved
-    proof.write_bytes(data)
-    proof.chmod(0o600)
+    attestations.update(saved)
     command("collect-once", "--json")
     assert command(*args)["status"] == "accepted"
-    assert ack.exists()
-    assert not queued.exists()
+    assert name in acks and name not in queued
     assert command("status", "--json")["registration_gap"] is False
     assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
 
 
-def test_one_shot_status_uses_collecting_subprocess_pid(project, pytestconfig):
+def test_one_shot_status_uses_collecting_subprocess_pid(
+    project, pytestconfig, monkeypatch
+):
     import subprocess
 
     root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
+    _fixtures(sources, checkout, partial=True)
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            Ledger, "apply", Mock(side_effect=OSError("registration interrupted"))
+        )
+        command("register", "--config", str(config), "--json", expected=1)
+    assert Ledger.open(root, PROJECT).as_of().sequence == 0
+    assert (root / service.REGISTRATION_NAME).stat().st_mode & 0o777 == 0o600
     command("register", "--config", str(config), "--json")
     runner = FIXTURES / "service" / "run_cli.py"
     console = Path(sys.executable).with_name("aitm-usage")
@@ -1195,21 +1620,29 @@ def test_one_shot_status_uses_collecting_subprocess_pid(project, pytestconfig):
     assert status["producer_mode"] == "one-shot"
     assert status["producer_pid"] == child_pid
     assert status["producer_pid"] != os.getpid()
+    assert len(status["sources"]) == 2
+    for source in status["sources"]:
+        path = sources / f"{source['provider']}.jsonl"
+        assert source["offset"] == path.stat().st_size - len(b'{"private":"unfinished')
+
+    sources.chmod(0o000)
+    try:
+        command("collect-once", "--json")
+        unavailable = command("status", "--json")
+    finally:
+        sources.chmod(0o700)
+    _assert_unavailable_root_watermarks(status, unavailable)
+
+    stored = root / service.STATUS_NAME
+    malformed = {**json.loads(stored.read_text()), "producer_pid": "123"}
+    stored.write_text(json.dumps(malformed, separators=(",", ":"), sort_keys=True))
+    _assert_malformed_service_status_keeps_watermarks(
+        status, command("status", "--json")
+    )
 
 
-def test_legacy_status_keeps_heartbeat_and_authenticated_watermarks(project):
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    before = command("status", "--json")
-    path = root / "status.json"
-    payload = json.loads(path.read_text())
-    payload.pop("producer_mode", None)
-    payload.pop("producer_pid", None)
-    path.write_text(json.dumps(payload, separators=(",", ":"), sort_keys=True))
-
-    legacy = command("status", "--json")
+def test_legacy_status_keeps_heartbeat_and_authenticated_watermarks(monkeypatch):
+    before, legacy = _status_with_private_input(monkeypatch, {})
     assert legacy["producer_mode"] is None
     assert legacy["producer_pid"] is None
     for key in (
@@ -1228,6 +1661,72 @@ def test_legacy_status_keeps_heartbeat_and_authenticated_watermarks(project):
         assert current["observed_through"] == previous["observed_through"]
 
 
+def _read_changed_status(monkeypatch, mutate):
+    ledger = _memory_ledger(ledger_module, PROJECT, b"h" * 32)
+    when = datetime.fromisoformat(CUTOFF)
+    config = service._Config(
+        PROJECT, ("/fixture/transcripts",), ("/fixture/checkout",), when, (), (), ()
+    )
+    registration = service._registration_revision(ledger, config)
+
+    def ref(value):
+        return ledger.pseudonymize("fixture", value)
+
+    checkpoint = SourceCheckpoint(
+        SourceCursor(ref("stream"), ref("locator"), ref("file"), 1024, ref("prefix")),
+        ProviderCheckpoint(Provider.CODEX, format_version=1),
+    )
+    view = LedgerView(PROJECT, 2, (registration,), (checkpoint,))
+    committed = service._Status(
+        PROJECT,
+        registration.record.configuration_ref,
+        when,
+        "1.2.3",
+        "3.13.9",
+        service.CollectionReport(2, 0, 0, 0, 0, 0, False),
+        (
+            service._Observed(
+                checkpoint.cursor.source_ref,
+                service._observed_proof(ledger, checkpoint, when),
+                when,
+            ),
+        ),
+        service._ProducerMode.SERVICE,
+        123,
+    )
+    pinned = object()
+    files = {
+        service.STATUS_NAME: _encode(committed, service._Status).encode(),
+        service.REGISTRATION_NAME: _encode(config, service._Config).encode(),
+    }
+
+    def private_read(directory, name):
+        assert directory is pinned
+        return files[name]
+
+    monkeypatch.setattr(Ledger, "as_of", lambda self: view)
+    monkeypatch.setattr(service, "_pin_directory", lambda path: nullcontext(pinned))
+    monkeypatch.setattr(service, "_read_private", private_read)
+    monkeypatch.setattr(service, "version", lambda _: "1.2.3")
+    before = service.status_report(ledger.root, ledger)
+    assert before["sources"][0]["observed_through"] == CUTOFF
+    assert before["producer_pid"] == 123
+    payload = json.loads(files[service.STATUS_NAME])
+    mutate(payload)
+    files[service.STATUS_NAME] = json.dumps(
+        payload, separators=(",", ":"), sort_keys=True
+    ).encode()
+    return before, service.status_report(ledger.root, ledger)
+
+
+def _status_with_private_input(monkeypatch, invalid):
+    def change_producer(payload):
+        del payload["producer_mode"], payload["producer_pid"]
+        payload.update(invalid)
+
+    return _read_changed_status(monkeypatch, change_producer)
+
+
 @pytest.mark.parametrize(
     "invalid",
     [
@@ -1239,21 +1738,8 @@ def test_legacy_status_keeps_heartbeat_and_authenticated_watermarks(project):
         {"producer_mode": "unexpected-private-mode", "producer_pid": 123},
     ],
 )
-def test_status_refuses_malformed_or_half_producer_witness(project, invalid):
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    before = command("status", "--json")
-    path = root / "status.json"
-    payload = json.loads(path.read_text())
-    payload.pop("producer_mode", None)
-    payload.pop("producer_pid", None)
-    path.write_text(
-        json.dumps({**payload, **invalid}, separators=(",", ":"), sort_keys=True)
-    )
-
-    status = command("status", "--json")
+def test_status_refuses_malformed_or_half_producer_witness(monkeypatch, invalid):
+    before, status = _status_with_private_input(monkeypatch, invalid)
     assert status["producer_mode"] is None
     assert status["producer_pid"] is None
     assert status["heartbeat"] is None

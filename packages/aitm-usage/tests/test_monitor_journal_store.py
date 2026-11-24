@@ -1,17 +1,23 @@
 """Private routing journal custody, publication and transaction boundaries."""
 
+import ctypes
+import errno
 import os
 import shutil
 import sqlite3
-from contextlib import closing, contextmanager
+import stat
+from contextlib import closing, contextmanager, nullcontext
+from hashlib import sha256
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import ANY, MagicMock, Mock, call
 
 import pytest
 
 from aitm_usage import _monitor_journal_store as journal
-from aitm_usage import host_fs
+from aitm_usage import host_fs, ledger, monitor_registry
 from aitm_usage.ledger import LedgerError
-from aitm_usage.monitor_registry import Registry
+from aitm_usage.monitor_registry import Registry, RegistryView, _ServiceEvidence
 
 _V1_APPLICATION_ID = 0x4149544A
 # Exact schema from the last v1 writer, before any upgrade code existed.
@@ -198,7 +204,18 @@ def _durable_bytes(registry):
     }
 
 
-def _assert_exact_legacy_upgrade(tmp_path, version):
+def _assert_physical_damage_refuses_attachment(registry, writer, damage, message):
+    with _sqlite(_database(registry)) as conn:
+        conn.execute(damage)
+    identities = _storage_identity(registry)
+    expected_bytes = _durable_bytes(registry)
+    with pytest.raises(LedgerError, match=message):
+        journal.JournalStore(writer)
+    _assert_storage_identity(identities)
+    assert _durable_bytes(registry) == expected_bytes
+
+
+def _assert_exact_legacy_upgrade(tmp_path, monkeypatch, version):
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
         evidence = _create_legacy_store(writer, version)
@@ -207,7 +224,20 @@ def _assert_exact_legacy_upgrade(tmp_path, version):
             original_schema = _schema_objects(conn)
             original_rows = _legacy_rows(conn, version)
             old_tip = conn.execute("SELECT max(sequence) FROM commits").fetchone()
-        store = journal.JournalStore(writer)
+        statements = []
+        open_database = journal._open
+
+        @contextmanager
+        def trace_migration(database, *, write):
+            with open_database(database, write=write) as conn:
+                if write:
+                    conn.set_trace_callback(statements.append)
+                yield conn
+
+        with monkeypatch.context() as patch:
+            patch.setattr(journal, "_open", trace_migration)
+            store = journal.JournalStore(writer)
+        _assert_upgrade_trace(statements, version)
         assert store.evidence == evidence
         with store.transaction() as conn:
             assert conn.execute("PRAGMA user_version").fetchone() == (4,)
@@ -251,17 +281,17 @@ def _assert_exact_legacy_upgrade(tmp_path, version):
             assert _schema_objects(conn) == new_schema
 
 
-def test_exact_v1_upgrade_preserves_rows_and_matches_fresh_v2(tmp_path):
+def test_exact_v1_upgrade_preserves_rows_and_matches_fresh_v2(tmp_path, monkeypatch):
     # Retain the baseline node ID after later schema upgrades.
-    _assert_exact_legacy_upgrade(tmp_path, 1)
+    _assert_exact_legacy_upgrade(tmp_path, monkeypatch, 1)
 
 
-def test_exact_v2_upgrade_preserves_rows_and_matches_fresh_v3(tmp_path):
-    _assert_exact_legacy_upgrade(tmp_path, 2)
+def test_exact_v2_upgrade_preserves_rows_and_matches_fresh_v3(tmp_path, monkeypatch):
+    _assert_exact_legacy_upgrade(tmp_path, monkeypatch, 2)
 
 
-def test_exact_v3_upgrade_preserves_rows_and_matches_fresh_v4(tmp_path):
-    _assert_exact_legacy_upgrade(tmp_path, 3)
+def test_exact_v3_upgrade_preserves_rows_and_matches_fresh_v4(tmp_path, monkeypatch):
+    _assert_exact_legacy_upgrade(tmp_path, monkeypatch, 3)
 
 
 def _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, version):
@@ -329,24 +359,99 @@ def _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, version):
             assert conn.execute("PRAGMA user_version").fetchone() == (version,)
             assert _schema_objects(conn) == original_schema
             assert _legacy_rows(conn, version) == original_rows
+        if version == 1 and failure == "interrupt":
+            _assert_physical_damage_refuses_attachment(
+                registry, writer, "UPDATE claims SET sequence = 999", "foreign key"
+            )
+            with _sqlite(_database(registry)) as conn:
+                conn.execute("UPDATE claims SET sequence = 1 WHERE key = 'key'")
         with journal.JournalStore(writer).transaction() as conn:
             assert conn.execute("PRAGMA user_version").fetchone() == (4,)
             assert _legacy_rows(conn, version) == original_rows
 
 
 @pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
-def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
-    _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, 1)
+def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(request, monkeypatch, failure):
+    if failure == "replace-directory":
+        _observe_upgrade_requests(monkeypatch, 1, failure=failure)
+        return
+    _assert_legacy_upgrade_rolls_back(
+        request.getfixturevalue("tmp_path"), monkeypatch, failure, 1
+    )
 
 
 @pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
-def test_v2_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
-    _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, 2)
+def test_v2_upgrade_rolls_back_after_ddl_and_can_retry(monkeypatch, failure):
+    _observe_upgrade_requests(monkeypatch, 2, failure=failure)
 
 
 @pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
-def test_v3_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
-    _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, 3)
+def test_v3_upgrade_rolls_back_after_ddl_and_can_retry(monkeypatch, failure):
+    _observe_upgrade_requests(monkeypatch, 3, failure=failure)
+
+
+def _journal_metadata(
+    monkeypatch, version, damage=None, *, key_id="fixture-key", observe_catalog=False
+):
+    identity = ("table", "identity", "identity", "fixture identity DDL")
+    claims = (
+        "table",
+        "claims",
+        "claims",
+        "CREATE TABLE claims (sequence INTEGER) STRICT",
+    )
+    expected_schema = (claims, identity)
+    observed_schema = expected_schema
+    values = {
+        "PRAGMA application_id": (journal._APPLICATION_ID,),
+        "PRAGMA user_version": (version,),
+        "PRAGMA journal_mode": ("wal",),
+        "SELECT singleton, key_id FROM identity": [(1, key_id)],
+        "PRAGMA foreign_key_check": None,
+    }
+    if damage == "PRAGMA application_id = 0":
+        values["PRAGMA application_id"] = (0,)
+    elif damage is not None and damage.startswith("PRAGMA user_version = "):
+        stored_version = int(damage.rsplit(" ", 1)[-1])
+        values["PRAGMA user_version"] = (stored_version,)
+        observed_schema += (("table", f"unexpected-v{version}", "legacy", None),)
+    elif damage == "ALTER TABLE claims ADD COLUMN unexpected TEXT":
+        observed_schema = (
+            (
+                *claims[:3],
+                "CREATE TABLE claims (sequence INTEGER, unexpected TEXT) STRICT",
+            ),
+            identity,
+        )
+    elif damage is not None and damage.startswith(("CREATE TABLE ", "ALTER TABLE ")):
+        observed_schema += (("table", "unexpected", "unexpected", None),)
+    elif damage == "UPDATE identity SET key_id = 'foreign'":
+        values["SELECT singleton, key_id FROM identity"] = [(1, "foreign")]
+    elif damage == "DELETE FROM identity":
+        values["SELECT singleton, key_id FROM identity"] = []
+    elif damage == "UPDATE claims SET sequence = 999":
+        values["PRAGMA foreign_key_check"] = ("claims", 1, "commits", 0)
+    else:
+        assert damage is None
+
+    def read(sql):
+        if (
+            observe_catalog
+            and sql
+            == "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name"
+        ):
+            return observed_schema
+        result = values[sql]
+        return Mock(
+            fetchone=Mock(return_value=result), fetchall=Mock(return_value=result)
+        )
+
+    connection = Mock(spec=sqlite3.Connection)
+    connection.execute.side_effect = read
+    if not observe_catalog:
+        monkeypatch.setattr(journal, "_schema_objects", lambda conn: observed_schema)
+    monkeypatch.setattr(journal, "_supported_schema", lambda version: expected_schema)
+    return connection
 
 
 @pytest.mark.parametrize(
@@ -364,40 +469,36 @@ def test_v3_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, fa
         ("UPDATE claims SET sequence = 999", "foreign key"),
     ],
 )
-def test_invalid_v1_is_refused_before_upgrade(tmp_path, damage, message):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        _create_v1_store(writer)
-        with _sqlite(_database(registry)) as conn:
-            conn.execute(damage)
-        identities = _storage_identity(registry)
-        expected_bytes = _durable_bytes(registry)
-        with pytest.raises(LedgerError, match=message):
-            journal.JournalStore(writer)
-        _assert_storage_identity(identities)
-        assert _durable_bytes(registry) == expected_bytes
+def test_invalid_v1_is_refused_before_upgrade(monkeypatch, damage, message):
+    connection = _journal_metadata(monkeypatch, 1, damage)
+
+    with pytest.raises(LedgerError, match=message):
+        journal._validate_identity(connection, "fixture-key", version=None)
+        journal._validate_foreign_keys(connection)
 
 
-def test_exact_v1_validation_refuses_v2_without_modifying_either_store(tmp_path):
-    v1_registry = Registry(tmp_path / "v1")
-    v2_registry = Registry(tmp_path / "v2")
-    with v1_registry.writer() as writer:
-        v1 = _create_v1_store(writer)
-    with v2_registry.writer() as writer:
-        v2 = _create_v2_store(writer)
-        with _sqlite(_database(writer)) as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (2,)
-    expected_bytes = [
-        _durable_bytes(registry) for registry in (v1_registry, v2_registry)
+def test_damaged_legacy_store_is_left_byte_for_byte_unchanged(monkeypatch):
+    _assert_observed_damage_refuses_attachment(
+        monkeypatch, 1, "UPDATE claims SET sequence = 999", "foreign key"
+    )
+
+
+def test_exact_v1_validation_refuses_v2_without_modifying_either_store(monkeypatch):
+    v1 = _journal_metadata(monkeypatch, 1)
+    v2 = _journal_metadata(monkeypatch, 2)
+    assert journal._validate_identity(v1, "fixture-key", version=1) == 1
+    with pytest.raises(LedgerError, match="schema version"):
+        journal._validate_identity(v2, "fixture-key", version=1)
+
+    header_reads = [("PRAGMA application_id",), ("PRAGMA user_version",)]
+    assert [call.args for call in v1.execute.call_args_list] == [
+        *header_reads,
+        ("PRAGMA journal_mode",),
+        ("SELECT singleton, key_id FROM identity",),
     ]
-    with _sqlite(_database(v1_registry)) as conn:
-        journal._validate_identity(conn, v1.key_id, version=1)
-    with _sqlite(_database(v2_registry)) as conn:
-        with pytest.raises(LedgerError, match="schema version"):
-            journal._validate_identity(conn, v2.key_id, version=1)
-    assert [
-        _durable_bytes(registry) for registry in (v1_registry, v2_registry)
-    ] == expected_bytes
+    assert [call.args for call in v2.execute.call_args_list] == header_reads
+    v1.commit.assert_not_called()
+    v2.commit.assert_not_called()
 
 
 def test_revision_table_enforces_foreign_keys_and_uniqueness_in_writes(tmp_path):
@@ -446,38 +547,121 @@ def test_genesis_is_private_and_retains_exact_identity_on_reopen(tmp_path):
         assert all(
             os.path.samestat(info, path.stat()) for path, info in identities.items()
         )
+        database = _database(registry)
+        database.chmod(0o644)
+        try:
+            with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+                _sequences(reopened)
+            with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+                journal.JournalStore(writer)
+        finally:
+            database.chmod(0o600)
+        assert _sequences(reopened) == [(1,)]
+        saved = tmp_path / "displaced-database"
+        database.rename(saved)
+        try:
+            with pytest.raises(LedgerError, match="unavailable"):
+                _sequences(reopened)
+            with pytest.raises(LedgerError, match="unavailable"):
+                journal.JournalStore(writer)
+            assert not database.exists()
+        finally:
+            saved.rename(database)
+        assert _sequences(reopened) == [(1,)]
+        _assert_native_store_swap_aborts_transaction(registry, reopened)
+        _assert_physical_damage_refuses_attachment(
+            registry,
+            writer,
+            "ALTER TABLE claims ADD COLUMN unexpected TEXT",
+            "table schema",
+        )
 
 
 @pytest.mark.parametrize("arrives_during_publication", [False, True])
 def test_preexisting_empty_store_is_never_replaced(
-    tmp_path, monkeypatch, arrives_during_publication
+    monkeypatch, arrives_during_publication
 ):
-    registry = Registry(tmp_path / "monitor")
+    if not arrives_during_publication:
+        memory = _journal_observations(monkeypatch)
+        for name in journal._FILES:
+            del memory.files[memory.store / name]
+        before = dict(memory.files)
+        create = Mock(side_effect=AssertionError("attachment tried to replace a store"))
+        monkeypatch.setattr(journal.JournalStore, "_create", create)
+        with pytest.raises(LedgerError, match="unavailable"):
+            journal.JournalStore(memory.writer)
+        assert memory.files == before
+        create.assert_not_called()
+        memory.open_database.assert_not_called()
+        return
+
+    memory = _journal_observations(monkeypatch)
+    root = memory.writer.root
+    staging_path = root / ".journal-initializing-fixture"
+    staging = SimpleNamespace(
+        path=staging_path, identities=((1, 1), (1, 2), (1, 31)), check=Mock()
+    )
+    competitor = memory.files.pop(memory.store)
+    for name in journal._FILES:
+        memory.files[staging_path / name] = memory.files.pop(memory.store / name)
+    default_pin = memory.pin.side_effect
+    memory.pin.side_effect = lambda path: (
+        nullcontext(staging) if path == staging_path else default_pin(path)
+    )
+
+    @contextmanager
+    def initialize_directory(*, prefix, dir):
+        assert (prefix, dir) == (".journal-initializing-", root)
+        try:
+            yield str(staging_path)
+        finally:
+            for name in journal._FILES:
+                del memory.files[staging_path / name]
+
+    def lose_exclusive_rename(*_):
+        assert memory.store not in memory.files
+        memory.files[memory.store] = competitor
+        ctypes.set_errno(errno.EEXIST)
+        return -1
+
+    initialize = Mock(side_effect=lambda pin, _: journal._StoreIdentity.capture(pin))
+    rename = Mock(side_effect=lose_exclusive_rename)
+    monkeypatch.setattr(journal, "TemporaryDirectory", initialize_directory)
+    monkeypatch.setattr(journal, "_initialize_database", initialize)
+    monkeypatch.setattr(host_fs, "_native_rename", lambda _: rename)
+    with pytest.raises(LedgerError, match="Private routing journal already exists"):
+        journal.JournalStore(memory.writer)
+    initialize.assert_called_once_with(staging, memory.writer.view().source_key_id)
+    root_fd = memory.control.fd
+    assert rename.call_args.args[:4] == (
+        root_fd,
+        os.fsencode(staging_path.name),
+        root_fd,
+        os.fsencode(memory.store.name),
+    )
+    assert rename.call_count == 1
+    assert memory.files[memory.store] is competitor
+    assert all(path.parent not in {staging_path, memory.store} for path in memory.files)
+    memory.open_database.assert_not_called()
+    journal.os.fsync.assert_not_called()
+
+
+def _assert_native_competing_store_preserved(registry, writer, monkeypatch):
     directory = _directory(registry)
     identity = None
+    publish = host_fs.publish_noreplace
 
-    def create_empty_store():
+    def publish_with_competing_target(*args):
         nonlocal identity
         directory.mkdir(mode=0o700)
         identity = directory.stat()
-
-    def publish_with_competing_target(*args):
-        create_empty_store()
         return publish(*args)
 
-    with registry.writer() as writer:
-        writer.source_evidence()
-        if arrives_during_publication:
-            publish = host_fs.publish_noreplace
-            monkeypatch.setattr(
-                host_fs, "publish_noreplace", publish_with_competing_target
-            )
-        else:
-            create_empty_store()
-        with pytest.raises(LedgerError):
-            journal.JournalStore(writer)
-        assert identity is not None and os.path.samestat(identity, directory.stat())
-        assert list(directory.iterdir()) == []
+    monkeypatch.setattr(host_fs, "publish_noreplace", publish_with_competing_target)
+    with pytest.raises(LedgerError, match="Private routing journal already exists"):
+        journal.JournalStore(writer)
+    assert identity is not None and os.path.samestat(identity, directory.stat())
+    assert list(directory.iterdir()) == []
 
 
 def test_genesis_refuses_a_replaced_staging_database(tmp_path, monkeypatch):
@@ -494,10 +678,12 @@ def test_genesis_refuses_a_replaced_staging_database(tmp_path, monkeypatch):
 
     with registry.writer() as writer:
         writer.source_evidence()
-        monkeypatch.setattr(os, "open", replace_staged_database)
-        with pytest.raises(LedgerError):
-            journal.JournalStore(writer)
+        with monkeypatch.context() as patch:
+            patch.setattr(os, "open", replace_staged_database)
+            with pytest.raises(LedgerError):
+                journal.JournalStore(writer)
         assert not _directory(registry).exists()
+        _assert_native_competing_store_preserved(registry, writer, monkeypatch)
 
 
 def test_interrupted_parent_sync_is_confirmed_on_reopen(tmp_path, monkeypatch):
@@ -541,25 +727,39 @@ def test_interrupted_parent_sync_is_confirmed_on_reopen(tmp_path, monkeypatch):
 @pytest.mark.parametrize(
     "key_state", ["uninitialized", "unrecorded", "missing", "changed"]
 )
-def test_attachment_never_initializes_or_adopts_source_key(tmp_path, key_state):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        if key_state in {"missing", "changed"}:
-            writer.source_evidence()
-        if key_state == "missing":
-            _key(registry).unlink()
-        if key_state in {"unrecorded", "changed"}:
-            _key(registry).write_bytes(b"X" * 32)
-            _key(registry).chmod(0o600)
-        expected_key_id = writer.view().source_key_id
-        with pytest.raises(LedgerError):
-            journal.JournalStore(writer)
-        assert writer.view().source_key_id == expected_key_id
-        assert not _directory(registry).exists()
-        if key_state in {"unrecorded", "changed"}:
-            assert _key(registry).read_bytes() == b"X" * 32
-        else:
-            assert not _key(registry).exists()
+def test_attachment_never_initializes_or_adopts_source_key(monkeypatch, key_state):
+    memory = _journal_observations(monkeypatch)
+    if key_state in {"uninitialized", "unrecorded"}:
+        memory.writer.view = Mock(return_value=RegistryView())
+    for path in tuple(memory.files):
+        if path.is_relative_to(memory.store):
+            del memory.files[path]
+    key_path = _key(memory.writer)
+    if key_state in {"uninitialized", "missing"}:
+        del memory.files[key_path]
+    if key_state == "changed":
+        journal._read_private.return_value = b"X" * 32
+    message = {
+        "missing": "Private ledger path is unavailable",
+        "changed": "Routing journal source key changed",
+    }.get(key_state, "requires an initialized source key")
+    before = dict(memory.files)
+    expected_key_id = memory.writer.view().source_key_id
+    with pytest.raises(LedgerError, match=message):
+        journal.JournalStore(memory.writer)
+    assert memory.writer.view().source_key_id == expected_key_id
+    assert memory.files == before
+    memory.writer.source_evidence.assert_not_called()
+    if key_state in {"changed", "missing"}:
+        memory.pin.assert_called_once_with(memory.writer.root)
+    else:
+        memory.pin.assert_not_called()
+    if key_state == "changed":
+        assert journal._read_private.call_args.args[1] == journal._SOURCE_KEY_FILE
+        assert journal._read_private.return_value == b"X" * 32
+    else:
+        journal._read_private.assert_not_called()
+    memory.open_database.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -572,60 +772,219 @@ def test_attachment_never_initializes_or_adopts_source_key(tmp_path, key_state):
         "DELETE FROM identity",
     ],
 )
-def test_foreign_or_damaged_schema_refuses_without_repair(tmp_path, damage):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        writer.source_evidence()
+def test_foreign_or_damaged_schema_refuses_without_repair(monkeypatch, damage):
+    connection = _journal_metadata(monkeypatch, journal._SCHEMA_VERSION, damage)
+
+    with pytest.raises(LedgerError):
+        journal._validate_identity(connection, "fixture-key", version=None)
+
+
+def test_damaged_current_store_is_left_byte_for_byte_unchanged(monkeypatch):
+    _assert_observed_damage_refuses_attachment(
+        monkeypatch, 4, "ALTER TABLE claims ADD COLUMN unexpected TEXT", "table schema"
+    )
+
+
+def _assert_observed_damage_refuses_attachment(monkeypatch, version, damage, message):
+    validate = journal._validate_identity
+    memory = _journal_observations(monkeypatch)
+    before = dict(memory.files)
+    monkeypatch.setattr(journal, "_validate_identity", validate)
+    catalog = _journal_metadata(
+        monkeypatch,
+        version,
+        damage,
+        key_id=memory.writer.view().source_key_id,
+        observe_catalog=True,
+    )
+    opened = []
+
+    def connection(path, *, write):
+        assert path == memory.store / journal._DATABASE
+        expected = "BEGIN IMMEDIATE" if write else "BEGIN"
+        connection = MagicMock(spec=sqlite3.Connection)
+        connection.execute.side_effect = lambda sql: (
+            None if sql == expected else catalog.execute(sql)
+        )
+        opened.append((write, connection))
+        return nullcontext(connection)
+
+    memory.open_database.side_effect = connection
+    with pytest.raises(LedgerError, match=message) as error:
+        journal.JournalStore(memory.writer)
+    assert memory.files == before
+    assert [write for write, _ in opened] == (
+        [False, True] if version == 1 else [False]
+    )
+    _, latest = opened[-1]
+    latest.__exit__.assert_called_once_with(LedgerError, error.value, ANY)
+    assert latest.execute.call_args.args == (
+        "PRAGMA foreign_key_check"
+        if version == 1
+        else "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name",
+    )
+    assert all(not connection.commit.called for _, connection in opened)
+    journal.os.fsync.assert_not_called()
+
+
+def _journal_observations(monkeypatch):
+    key = b"j" * 32
+    evidence = _ServiceEvidence(key)
+    root_path = Path("/fixture/monitor")
+    store_path = root_path / journal._STORE
+    root_ids = ((1, 1), (1, 2))
+    root = SimpleNamespace(path=root_path, identities=root_ids, check=Mock(), fd=3)
+    folder = SimpleNamespace(
+        path=store_path, identities=(*root_ids, (1, 3)), check=Mock()
+    )
+    lease = SimpleNamespace(identities=(*root_ids, (1, 4)), check=Mock())
+    view = RegistryView(source_key_id=sha256(key).hexdigest())
+    writer = SimpleNamespace(
+        root=root_path,
+        lease=lease,
+        view=lambda: view,
+        source_evidence=Mock(return_value=evidence),
+    )
+    files = {
+        path: SimpleNamespace(
+            st_mode=stat.S_IFREG | 0o600,
+            st_nlink=1,
+            st_uid=os.geteuid(),
+            st_dev=1,
+            st_ino=index,
+        )
+        for index, path in enumerate(
+            [
+                root_path / journal._SOURCE_KEY_FILE,
+                *(store_path / name for name in journal._FILES),
+            ],
+            start=5,
+        )
+    }
+    files[store_path] = SimpleNamespace(st_mode=stat.S_IFDIR | 0o700)
+
+    def lstat(path):
+        try:
+            return files[path]
+        except KeyError:
+            raise FileNotFoundError(path) from None
+
+    connection = MagicMock()
+    connection.execute.return_value.fetchall.return_value = []
+    open_database = Mock(return_value=nullcontext(connection))
+    monkeypatch.setattr(Path, "lstat", lstat)
+    monkeypatch.setattr(ledger, "_check_acl", Mock())
+    pinned = {root_path: root, store_path: folder}
+    pin = Mock(side_effect=lambda path: nullcontext(pinned[path]))
+    monkeypatch.setattr(journal, "_pin_directory", pin)
+    monkeypatch.setattr(journal, "_read_private", Mock(return_value=key))
+    monkeypatch.setattr(journal, "_open", open_database)
+    monkeypatch.setattr(
+        journal, "_validate_identity", Mock(return_value=journal._SCHEMA_VERSION)
+    )
+    monkeypatch.setattr(journal, "os", SimpleNamespace(fsync=Mock()))
+    return SimpleNamespace(
+        writer=writer,
+        store=store_path,
+        control=root,
+        directory=folder,
+        files=files,
+        pin=pin,
+        open_database=open_database,
+    )
+
+
+def _assert_journal_path_policy_refuses_open(monkeypatch, suffix, damage):
+    memory = _journal_observations(monkeypatch)
+    writer, store_path = memory.writer, memory.store
+    open_database, files = memory.open_database, memory.files
+    store = journal.JournalStore(writer)
+    open_database.assert_called_once_with(store_path / journal._DATABASE, write=False)
+    open_database.reset_mock()
+
+    path = store_path / (journal._DATABASE + suffix)
+    if damage == "permissions":
+        files[path].st_mode = stat.S_IFREG | 0o644
+    elif damage == "hardlink":
+        files[path].st_nlink = 2
+    elif damage == "symlink":
+        files[path].st_mode = stat.S_IFLNK | 0o777
+    else:
+        del files[path]
+
+    message = "unavailable" if damage == "missing" else "Unsafe private ledger path"
+    with pytest.raises(LedgerError, match=message):
+        _sequences(store)
+    with pytest.raises(LedgerError, match=message):
         journal.JournalStore(writer)
-        database = _database(registry)
-        with closing(sqlite3.connect(database)) as conn, conn:
-            conn.setconfig(sqlite3.SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, True)
-            conn.execute(damage)
-        original = database.stat()
-        expected_bytes = {
-            path: path.read_bytes()
-            for path in _directory(registry).iterdir()
-            if not path.name.endswith("-shm")
-        }
-        with pytest.raises(LedgerError):
-            journal.JournalStore(writer)
-        assert os.path.samestat(original, database.stat())
-        assert {path: path.read_bytes() for path in expected_bytes} == expected_bytes
+    open_database.assert_not_called()
 
 
 @pytest.mark.parametrize("suffix", ["", "-wal", "-shm"])
 @pytest.mark.parametrize("damage", ["permissions", "symlink", "hardlink", "missing"])
-def test_unsafe_database_and_sidecars_refuse_before_open(tmp_path, suffix, damage):
+def test_unsafe_database_and_sidecars_refuse_before_open(
+    request, monkeypatch, suffix, damage
+):
+    if (damage, suffix) != ("symlink", "-shm"):
+        _assert_journal_path_policy_refuses_open(monkeypatch, suffix, damage)
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
         writer.source_evidence()
         store = journal.JournalStore(writer)
-        path = _database(registry).with_name(_database(registry).name + suffix)
-        saved = tmp_path / "original"
-        if damage == "permissions":
-            path.chmod(0o644)
-        elif damage == "hardlink":
-            os.link(path, saved)
-        else:
-            path.rename(saved)
-            if damage == "symlink":
-                path.symlink_to(saved)
-        with pytest.raises(LedgerError):
+        database = _database(registry)
+        wal = database.with_name(database.name + "-wal")
+        hardlink = tmp_path / "wal-alias"
+        os.link(wal, hardlink)
+        try:
+            assert os.path.samestat(wal.stat(), hardlink.stat())
+            with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+                _sequences(store)
+            with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+                journal.JournalStore(writer)
+        finally:
+            hardlink.unlink()
+        assert _sequences(store) == []
+
+        shm = database.with_name(database.name + suffix)
+        saved = shm.rename(tmp_path / "original")
+        shm.symlink_to(saved)
+        with pytest.raises(LedgerError, match="Unsafe private ledger path"):
             _sequences(store)
-        with pytest.raises(LedgerError):
+        with pytest.raises(LedgerError, match="Unsafe private ledger path"):
             journal.JournalStore(writer)
-        if damage == "missing":
-            assert not path.exists()
-        if damage == "symlink":
-            assert path.is_symlink()
+        assert shm.is_symlink()
 
 
 def test_live_handle_refuses_replacement_key_with_identical_bytes(tmp_path):
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
         evidence = writer.source_evidence()
-        store = journal.JournalStore(writer)
         key = _key(registry)
+        original = key.read_bytes()
+        key_id = writer.view().source_key_id
+        absent_key = tmp_path / "displaced-key"
+        key.rename(absent_key)
+        try:
+            with pytest.raises(LedgerError, match="Private ledger path is unavailable"):
+                journal.JournalStore(writer)
+            assert writer.view().source_key_id == key_id
+            assert not _directory(registry).exists()
+            assert not key.exists()
+        finally:
+            absent_key.rename(key)
+        key.write_bytes(b"X" * 32)
+        try:
+            with pytest.raises(LedgerError, match="Routing journal source key changed"):
+                journal.JournalStore(writer)
+            assert key.read_bytes() == b"X" * 32
+            assert writer.view().source_key_id == key_id
+            assert not _directory(registry).exists()
+        finally:
+            key.write_bytes(original)
+        store = journal.JournalStore(writer)
         replacement = tmp_path / "replacement"
         shutil.copy2(key, replacement)
         replacement.replace(key)
@@ -636,93 +995,270 @@ def test_live_handle_refuses_replacement_key_with_identical_bytes(tmp_path):
         assert writer.source_evidence() == evidence
 
 
-def test_live_handle_refuses_store_swap_and_rolls_back_staged_sequence(tmp_path):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        writer.source_evidence()
-        store = journal.JournalStore(writer)
-        directory = _directory(registry)
-        saved = registry.root / "saved"
-        with pytest.raises(LedgerError):
-            with store.transaction(write=True) as conn:
-                conn.execute("INSERT INTO commits VALUES (1)")
-                directory.rename(saved)
-                shutil.copytree(saved, directory)
+def test_live_handle_refuses_store_swap_and_rolls_back_staged_sequence(monkeypatch):
+    memory = _journal_observations(monkeypatch)
+    store = journal.JournalStore(memory.writer)
+    connection = MagicMock(spec=sqlite3.Connection)
+    memory.open_database.reset_mock()
+    memory.open_database.return_value = nullcontext(connection)
+    identities = memory.directory.identities
+    with pytest.raises(
+        LedgerError, match="Pinned routing journal storage changed"
+    ) as error:
+        with store.transaction(write=True) as conn:
+            assert conn is connection
+            conn.execute("INSERT INTO commits VALUES (1)")
+            memory.directory.identities = (*identities[:-1], (1, 999))
+    assert connection.execute.call_args_list == [
+        call("BEGIN IMMEDIATE"),
+        call("INSERT INTO commits VALUES (1)"),
+    ]
+    connection.__exit__.assert_called_once_with(LedgerError, error.value, ANY)
+    connection.commit.assert_not_called()
+
+
+def _assert_native_store_swap_aborts_transaction(registry, store):
+    directory = _directory(registry)
+    saved = registry.root / "saved"
+    with pytest.raises(LedgerError):
+        with store.transaction(write=True) as conn:
+            conn.execute("INSERT INTO commits VALUES (2)")
+            directory.rename(saved)
+            shutil.copytree(saved, directory)
+    try:
         shutil.rmtree(directory)
+    finally:
         saved.rename(directory)
-        assert _sequences(store) == []
+    assert _sequences(store) == [(1,)]
+    with pytest.raises(RuntimeError, match="injected body failure"):
+        with store.transaction(write=True) as conn:
+            conn.execute("INSERT INTO commits VALUES (2)")
+            raise RuntimeError("injected body failure")
+    assert _sequences(store) == [(1,)]
 
 
-def test_body_failure_rolls_back_private_transaction(tmp_path):
-    registry = Registry(tmp_path / "monitor")
+def test_body_failure_rolls_back_private_transaction(monkeypatch):
+    memory = _journal_observations(monkeypatch)
+    store = journal.JournalStore(memory.writer)
+    connection = MagicMock(spec=sqlite3.Connection)
+    memory.open_database.reset_mock()
+    memory.open_database.return_value = nullcontext(connection)
+    failure = RuntimeError("injected body failure")
+
+    with pytest.raises(RuntimeError, match="injected body failure") as error:
+        with store.transaction(write=True) as conn:
+            assert conn is connection
+            conn.execute("INSERT INTO commits VALUES (1)")
+            raise failure
+
+    assert error.value is failure
+    memory.open_database.assert_called_once_with(
+        memory.store / journal._DATABASE, write=True
+    )
+    assert connection.execute.call_args_list == [
+        call("BEGIN IMMEDIATE"),
+        call("INSERT INTO commits VALUES (1)"),
+    ]
+    connection.__exit__.assert_called_once_with(RuntimeError, failure, ANY)
+    connection.commit.assert_not_called()
+
+
+def test_retired_writer_cannot_reopen_or_use_saved_store(monkeypatch):
+    memory = _journal_observations(monkeypatch)
+    registry = Registry(memory.writer.root)
+    monkeypatch.setattr(monitor_registry, "_ensure_private_directory", Mock())
+    monkeypatch.setattr(
+        monitor_registry,
+        "_lease",
+        lambda path, *, create: nullcontext(
+            SimpleNamespace(identities=memory.writer.lease.identities, check=Mock())
+        ),
+    )
+    monkeypatch.setattr(Registry, "view", lambda self: memory.writer.view())
+    monkeypatch.setattr(
+        Registry, "source_evidence", lambda self: memory.writer.source_evidence()
+    )
+
     with registry.writer() as writer:
-        writer.source_evidence()
-        store = journal.JournalStore(writer)
-        with pytest.raises(RuntimeError, match="injected body failure"):
-            with store.transaction(write=True) as conn:
-                conn.execute("INSERT INTO commits VALUES (1)")
-                raise RuntimeError("injected body failure")
-        assert _sequences(store) == []
-
-
-def test_retired_writer_cannot_reopen_or_use_saved_store(tmp_path):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        writer.source_evidence()
         store = journal.JournalStore(writer)
     with registry.writer() as replacement:
         assert _sequences(journal.JournalStore(replacement)) == []
-        with pytest.raises(LedgerError):
+        memory.pin.reset_mock()
+        memory.open_database.reset_mock()
+        with pytest.raises(LedgerError, match="coordinator lease is required"):
             _ = store.evidence
-        with pytest.raises(LedgerError):
+        with pytest.raises(LedgerError, match="coordinator lease is required"):
             _sequences(store)
-        with pytest.raises(LedgerError):
+        with pytest.raises(LedgerError, match="coordinator lease is required"):
             journal.JournalStore(writer)
+        memory.pin.assert_not_called()
+        memory.open_database.assert_not_called()
 
 
 @pytest.mark.parametrize("version", [1, 2, 3])
 def test_legacy_upgrade_uses_one_transaction_and_only_final_version(
-    tmp_path, monkeypatch, version
+    monkeypatch, version
 ):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        _create_legacy_store(writer, version)
-        statements = []
-        open_database = journal._open
+    _observe_upgrade_requests(monkeypatch, version)
 
-        @contextmanager
-        def trace_migration(database, *, write):
-            with open_database(database, write=write) as conn:
-                if write:
-                    conn.set_trace_callback(statements.append)
-                yield conn
 
-        monkeypatch.setattr(journal, "_open", trace_migration)
-        journal.JournalStore(writer)
-        normalized = [" ".join(sql.split()).upper() for sql in statements]
-        assert normalized.count("BEGIN IMMEDIATE") == 1
-        assert normalized.count("COMMIT") == 1
+def _assert_upgrade_trace(statements, version):
+    normalized = [" ".join(sql.split()).upper() for sql in statements]
+    assert normalized.count("BEGIN IMMEDIATE") == 1
+    assert normalized.count("COMMIT") == 1
+    assert [sql for sql in normalized if sql.startswith("PRAGMA USER_VERSION =")] == [
+        "PRAGMA USER_VERSION = 4"
+    ]
+    creates = [sql for sql in normalized if sql.startswith("CREATE TABLE")]
+    assert len(creates) == 4 - version
+    assert creates[-1].startswith("CREATE TABLE ROUTE_DISPOSITIONS")
+
+
+def _observe_upgrade_requests(monkeypatch, version, *, failure=None):
+    def normalize(sql):
+        return " ".join(sql.rstrip().removesuffix(";").split())
+
+    def table_row(statement):
+        ddl = normalize(statement)
+        name = ddl.split()[2]
+        return "table", name, name, ddl
+
+    base = tuple(table_row(sql) for sql in _V1_SCHEMA.split(";") if sql.strip())
+    migrations = tuple(
+        table_row(sql)
+        for sql in (_V2_REVISION_SCHEMA, _V3_CONTENT_SCHEMA, _V4_DISPOSITION_SCHEMA)
+    )
+
+    def supported(schema_version):
+        assert schema_version in {1, 2, 3, 4}
+        return tuple(sorted((*base, *migrations[: schema_version - 1])))
+
+    reported = version
+    catalog = list(supported(version))
+    statements = []
+    validate = journal._validate_identity
+    memory = _journal_observations(monkeypatch)
+    original_ids = memory.directory.identities
+    monkeypatch.setattr(journal, "_validate_identity", validate)
+    monkeypatch.setattr(journal, "_supported_schema", supported)
+
+    def check_directory():
+        if failure == "interrupt" and reported == 4:
+            assert tuple(sorted(catalog)) == supported(4)
+            raise RuntimeError("injected interruption after migration DDL")
+
+    memory.directory.check.side_effect = check_directory
+
+    def connect(path, *, write):
+        assert path == memory.store / journal._DATABASE
+        before = reported, catalog.copy()
+
+        def execute(statement):
+            nonlocal reported
+            sql = normalize(statement)
+            if write:
+                statements.append(sql)
+            if sql == ("BEGIN IMMEDIATE" if write else "BEGIN"):
+                return None
+            metadata = {
+                "PRAGMA application_id": (_V1_APPLICATION_ID,),
+                "PRAGMA user_version": (reported,),
+                "PRAGMA journal_mode": ("wal",),
+                "SELECT singleton, key_id FROM identity": [
+                    (1, memory.writer.view().source_key_id)
+                ],
+                "PRAGMA foreign_key_check": None,
+            }
+            if sql in metadata:
+                if (
+                    failure == "replace-directory"
+                    and write
+                    and reported == 4
+                    and sql == "PRAGMA foreign_key_check"
+                ):
+                    memory.directory.identities = (*original_ids[:-1], (1, 99))
+                value = metadata[sql]
+                return SimpleNamespace(fetchone=lambda: value, fetchall=lambda: value)
+            if (
+                sql
+                == "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name"
+            ):
+                return sorted(catalog)
+            assert write, f"Read-only journal issued {sql}"
+            if sql.startswith("PRAGMA user_version = "):
+                reported = int(sql.split()[-1])
+            else:
+                row = table_row(sql)
+                assert row in migrations and row not in catalog
+                catalog.append(row)
+            return None
+
+        def close_transaction(error, *_):
+            nonlocal reported, catalog
+            if not write:
+                return
+            if error is None:
+                statements.append("COMMIT")
+            else:
+                statements.append("ROLLBACK")
+                reported, catalog = before
+
+        connection = MagicMock(spec=sqlite3.Connection)
+        connection.execute.side_effect = execute
+        connection.__exit__.side_effect = close_transaction
+        return nullcontext(connection)
+
+    memory.open_database.side_effect = connect
+    if failure is not None:
+        error, message = {
+            "replace-directory": (
+                LedgerError,
+                "Pinned routing journal storage changed",
+            ),
+            "interrupt": (RuntimeError, "injected interruption after migration DDL"),
+        }[failure]
+        with pytest.raises(error, match=message):
+            journal.JournalStore(memory.writer)
         assert [
-            sql for sql in normalized if sql.startswith("PRAGMA USER_VERSION =")
-        ] == ["PRAGMA USER_VERSION = 4"]
-        creates = [sql for sql in normalized if sql.startswith("CREATE TABLE")]
-        assert len(creates) == 4 - version
-        assert creates[-1].startswith("CREATE TABLE ROUTE_DISPOSITIONS")
+            entry.kwargs["write"] for entry in memory.open_database.call_args_list
+        ] == [
+            False,
+            True,
+        ]
+        if failure == "replace-directory":
+            assert memory.directory.identities != original_ids
+        assert statements[-2:] == ["PRAGMA foreign_key_check", "ROLLBACK"]
+        assert "COMMIT" not in statements
+        assert reported == version
+        assert tuple(sorted(catalog)) == supported(version)
+
+        memory.directory.identities = original_ids
+        failure = None
+        memory.open_database.reset_mock()
+        statements.clear()
+    journal.JournalStore(memory.writer)
+    assert [entry.kwargs["write"] for entry in memory.open_database.call_args_list] == [
+        False,
+        True,
+    ]
+    assert reported == 4
+    assert tuple(sorted(catalog)) == supported(4)
+    _assert_upgrade_trace(statements, version)
 
 
 @pytest.mark.parametrize("version", [1, 2, 3])
 def test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes(
-    tmp_path, version
+    monkeypatch, version
 ):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        evidence = writer.source_evidence()
-        journal.JournalStore(writer)
-        expected = {p: p.read_bytes() for p in _directory(registry).iterdir()}
-        with journal._open(_database(registry), write=False) as conn:
-            with pytest.raises(LedgerError, match="schema version"):
-                journal._validate_identity(conn, evidence.key_id, version=version)
-        assert {p: p.read_bytes() for p in expected} == expected
+    connection = _journal_metadata(monkeypatch, journal._SCHEMA_VERSION)
+
+    with pytest.raises(LedgerError, match="schema version"):
+        journal._validate_identity(connection, "fixture-key", version=version)
+
+    assert [call.args for call in connection.execute.call_args_list] == [
+        ("PRAGMA application_id",),
+        ("PRAGMA user_version",),
+    ]
 
 
 @pytest.mark.parametrize("version", [1, 2])
@@ -736,19 +1272,12 @@ def test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes(
     ],
 )
 def test_mixed_or_unknown_legacy_schema_is_refused_without_migration(
-    tmp_path, version, damage
+    monkeypatch, version, damage
 ):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        (_create_v1_store if version == 1 else _create_v2_store)(writer)
-        with _sqlite(_database(registry)) as conn:
-            conn.execute(damage)
-        identities = _storage_identity(registry)
-        expected = _durable_bytes(registry)
-        with pytest.raises(LedgerError):
-            journal.JournalStore(writer)
-        _assert_storage_identity(identities)
-        assert _durable_bytes(registry) == expected
+    connection = _journal_metadata(monkeypatch, version, damage)
+
+    with pytest.raises(LedgerError):
+        journal._validate_identity(connection, "fixture-key", version=None)
 
 
 def test_content_dispute_table_enforces_private_strict_foreign_keys(tmp_path):
@@ -789,31 +1318,70 @@ def test_route_disposition_table_enforces_strict_identity_and_commit(tmp_path):
                     conn.execute(insert, values)
 
 
-def test_paired_journal_upgrade_occurs_only_with_first_committed_pair(tmp_path):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        writer.source_evidence()
-        store = journal.JournalStore(writer)
-        with store.transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (4,)
-        with pytest.raises(RuntimeError, match="abort pair"):
-            with store.transaction(write=True) as conn:
-                store._enable_paired(conn)
-                raise RuntimeError("abort pair")
-        with store.transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (4,)
+def test_paired_journal_upgrade_occurs_only_with_first_committed_pair(monkeypatch):
+    memory = _journal_observations(monkeypatch)
+    version = 4
+    attempts = []
+
+    def connection(path, *, write):
+        nonlocal version
+        assert path == memory.store / journal._DATABASE
+        before = version
+        migrations = []
+        conn = MagicMock()
+        conn.in_transaction = False
+
+        def execute(sql, params=()):
+            nonlocal version
+            if sql == ("BEGIN IMMEDIATE" if write else "BEGIN"):
+                assert not conn.in_transaction
+                conn.in_transaction = True
+            elif sql == "PRAGMA foreign_key_check":
+                return SimpleNamespace(fetchone=lambda: None)
+            elif sql == "PRAGMA user_version":
+                return SimpleNamespace(fetchone=lambda: (version,))
+            elif write and sql == journal._PAIRED_SCHEMA:
+                migrations.append(sql)
+            elif write and sql == "PRAGMA user_version = 5":
+                assert migrations == [journal._PAIRED_SCHEMA]
+                version = 5
+            else:
+                pytest.fail(f"Unexpected journal statement {sql}")
+
+        def finish(error, *_):
+            nonlocal version
+            if write:
+                attempts.append((len(migrations), error is None))
+                if error is not None:
+                    version = before
+
+        conn.execute.side_effect = execute
+        conn.__exit__.side_effect = finish
+        return nullcontext(conn)
+
+    def validate(conn, key, *, version=None):
+        assert key == memory.writer.view().source_key_id
+        (reported,) = conn.execute("PRAGMA user_version").fetchone()
+        if version is not None and reported != version:
+            raise LedgerError("Unsupported routing journal schema version")
+        return reported
+
+    memory.open_database.side_effect = connection
+    monkeypatch.setattr(journal, "_validate_identity", validate)
+    writer = memory.writer
+    store = journal.JournalStore(writer)
+    with store.transaction() as conn:
+        assert conn.execute("PRAGMA user_version").fetchone() == (4,)
+    with pytest.raises(RuntimeError, match="abort pair"):
         with store.transaction(write=True) as conn:
             store._enable_paired(conn)
-            conn.execute("INSERT INTO commits VALUES (1)")
-            conn.execute("INSERT INTO paired_settlements VALUES (1, ?)", (b"pair",))
-    with registry.writer() as writer:
-        store = journal.JournalStore(writer)
-        with store.transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (5,)
-            assert conn.execute("SELECT * FROM paired_settlements").fetchall() == [
-                (1, b"pair")
-            ]
-            with pytest.raises(
-                LedgerError, match="Unsupported routing journal schema version"
-            ):
-                journal._validate_identity(conn, writer.view().source_key_id, version=4)
+            raise RuntimeError("abort pair")
+    with store.transaction() as conn:
+        assert conn.execute("PRAGMA user_version").fetchone() == (4,)
+    with store.transaction(write=True) as conn:
+        store._enable_paired(conn)
+    reopened = journal.JournalStore(writer)
+    with reopened.transaction() as conn:
+        assert conn.execute("PRAGMA user_version").fetchone() == (5,)
+        reopened._enable_paired(conn)
+    assert attempts == [(1, False), (1, True)]

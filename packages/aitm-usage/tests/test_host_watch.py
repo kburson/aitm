@@ -6,10 +6,13 @@ import os
 import platform
 import subprocess
 import sys
+from contextlib import nullcontext
 from hashlib import sha256
 from pathlib import Path
 from threading import Event, Thread
 from time import monotonic
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -43,84 +46,207 @@ def _startup(watches, root):
     )
 
 
-def test_native_watch_reports_change_and_retires_resources(tmp_path):
-    root = _root(tmp_path)
+def test_native_watch_reports_change_and_retires_resources(tmp_path, monkeypatch):
+    watched, lost, healthy, linked = (
+        tmp_path / name for name in ("watched", "lost", "healthy", "linked")
+    )
+    for path in (watched, lost, healthy, linked):
+        path.mkdir()
+    root, lost_root, healthy_root, linked_root = (
+        _root(path, path.name) for path in (watched, lost, healthy, linked)
+    )
     payload = root.path / "transcript.jsonl"
     payload.write_text("initial")
-    with WatchSet((root,)) as watches:
-        _startup(watches, root)
+    roots = (root, lost_root, healthy_root, linked_root)
+    with WatchSet(roots) as watches:
+        assert {item.key for item in watches.events(0) if item.reason == "startup"} == {
+            item.key for item in roots
+        }
         payload.write_text("same length, changed content")
         event = _next(watches, lambda event: event.kind is WatchKind.CHANGED)
         assert event.key == root.key
+        retired = watched.rename(tmp_path / "retired")
+        watched.mkdir()
+        terminal = _next(watches, lambda event: event.kind is WatchKind.ROOT_REPLACED)
+        assert terminal.key == root.key
+
+        lost.rename(tmp_path / "moved")
+        assert (
+            _next(watches, lambda event: event.kind is WatchKind.ROOT_LOST).key
+            == lost_root.key
+        )
+        (healthy / "active.jsonl").touch()
+        assert (
+            _next(
+                watches,
+                lambda event: (
+                    event.kind is WatchKind.CHANGED and event.key == healthy_root.key
+                ),
+            ).key
+            == healthy_root.key
+        )
+
+        previous = linked.rename(tmp_path / "previous")
+        linked.symlink_to(previous, target_is_directory=True)
+        assert (
+            _next(watches, lambda event: event.kind is WatchKind.ROOT_REPLACED).key
+            == linked_root.key
+        )
+        (retired / "late.jsonl").touch()
+        (previous / "late.jsonl").touch()
+        assert not {root.key, linked_root.key}.intersection(
+            event.key for event in watches.events(0.10)
+        )
+
+        healthy.rename(tmp_path / "last-retired")
+        assert (
+            _next(watches, lambda event: event.kind is WatchKind.ROOT_LOST).key
+            == healthy_root.key
+        )
+        if watches._darwin is not None:
+            watches._darwin._thread.join(1)
+            assert not watches._darwin.alive()
+        assert watches.events(0) == ()
     watches.close()
     assert watches.events(0) == ()
+
+    # A fresh, quiet root guarantees the reader reaches its actual native wait.
+    quiet = tmp_path / "quiet"
+    quiet.mkdir()
+    quiet_root = _root(quiet)
+    with WatchSet((quiet_root,)) as waiting:
+        _startup(waiting, quiet_root)
+        _assert_close_wakes_consumer(waiting, monkeypatch)
 
 
 @pytest.mark.parametrize(
     "replacement",
     [None, "directory", "symlink"],
 )
-def test_root_loss_and_replacement_are_terminal(tmp_path, replacement):
-    watched = tmp_path / "watched"
-    watched.mkdir()
-    root = _root(watched)
-    other = tmp_path / "previous"
-    with WatchSet((root,)) as watches:
+def test_root_loss_and_replacement_are_terminal(monkeypatch, replacement):
+    observed = _observed_watch(monkeypatch, "root")
+    (root,) = observed.roots
+    with observed.watches as watches:
         _startup(watches, root)
-        watched.rename(other)
+        observed.notify(root.key, 0)
         if replacement == "directory":
-            watched.mkdir()
-        elif replacement == "symlink":
-            watched.symlink_to(other, target_is_directory=True)
-        expected = WatchKind.ROOT_REPLACED if replacement else WatchKind.ROOT_LOST
-        item = _next(watches, lambda event: event.kind is expected)
-        assert item.key == root.key
-        (other / "late.jsonl").touch()
-        assert watches.events(0.10) == ()
+            chain = observed.directories[root.path]
+            observed.directories[root.path] = (*chain[:-1], (1, 100, 0))
+        else:
+            error = errno.ELOOP if replacement == "symlink" else errno.ENOENT
+            observed.directories[root.path] = OSError(
+                error, "observed unavailable root"
+            )
+        expected = (
+            WatchKind.ROOT_LOST if replacement is None else WatchKind.ROOT_REPLACED
+        )
+
+        (terminal,) = watches.events(0)
+        assert (terminal.key, terminal.kind) == (root.key, expected)
+        observed.native.drop.assert_called_once_with(root.key)
+        observed.notify(root.key, 0)
+        assert watches.events(0) == ()
+    observed.native.close.assert_called_once_with()
 
 
-def test_losing_one_root_preserves_other_watch_events(tmp_path):
-    lost, healthy = (tmp_path / name for name in ("lost", "healthy"))
-    lost.mkdir()
-    healthy.mkdir()
-    first, second = _root(lost, "lost"), _root(healthy, "healthy")
-    with WatchSet((first, second)) as watches:
+def _observed_watch(monkeypatch, *names):
+    roots = tuple(
+        WatchRoot(
+            SourceRef(f"hmac-sha256:{'a' * 64}:{sha256(name.encode()).hexdigest()}"),
+            Path("/fixture") / name,
+            (1, index),
+        )
+        for index, name in enumerate(names, start=2)
+    )
+    directories = {root.path: ((1, 1, 0), (*root.identity, 0)) for root in roots}
+    native = Mock()
+    native.alive.return_value = True
+    backend = Mock(return_value=native)
+
+    def directory(selected):
+        observation = directories[selected]
+        if isinstance(observation, OSError):
+            raise observation
+        return nullcontext((90, observation, ()))
+
+    monkeypatch.setattr(host_watch, "_directory", directory)
+    monkeypatch.setattr(host_watch, "_Darwin", backend)
+    monkeypatch.setattr(
+        host_watch, "platform", SimpleNamespace(system=lambda: "Darwin")
+    )
+    watches = WatchSet(roots)
+    return SimpleNamespace(
+        roots=roots,
+        directories=directories,
+        native=native,
+        watches=watches,
+        notify=backend.call_args.args[1],
+    )
+
+
+def test_losing_one_root_preserves_other_watch_events(monkeypatch):
+    observed = _observed_watch(monkeypatch, "lost", "healthy")
+    first, second = observed.roots
+    with observed.watches as watches:
         assert {event.key for event in watches.events(0)} == {first.key, second.key}
-        lost.rename(tmp_path / "moved")
-        assert (
-            _next(watches, lambda event: event.kind is WatchKind.ROOT_LOST).key
-            == first.key
-        )
-        (healthy / "active.jsonl").touch()
-        assert (
-            _next(watches, lambda event: event.kind is WatchKind.CHANGED).key
-            == second.key
-        )
+        observed.directories[first.path] = FileNotFoundError(errno.ENOENT, "root moved")
+        (terminal,) = watches.events(0)
+        assert (terminal.key, terminal.kind) == (first.key, WatchKind.ROOT_LOST)
+        observed.native.drop.assert_called_once_with(first.key)
+        observed.notify(first.key, 0)
+        observed.notify(second.key, 0)
+        (active,) = watches.events(0)
+        assert (active.key, active.kind) == (second.key, WatchKind.CHANGED)
 
 
-def test_unsafe_and_duplicate_roots_refuse(tmp_path):
-    root = _root(tmp_path)
-    with pytest.raises(WatchError):
-        WatchSet((root, _root(tmp_path, "another")))
-    actual = tmp_path / "actual"
-    actual.mkdir()
-    alias = tmp_path / "alias"
-    alias.symlink_to(actual, target_is_directory=True)
-    with pytest.raises(WatchError):
-        WatchSet((WatchRoot(root.key, alias, _root(actual).identity),))
+def test_unsafe_and_duplicate_roots_refuse(monkeypatch):
+    path = Path("/fixture/watch")
+    alias = path.with_name("alias")
+    root = WatchRoot(SourceRef(f"hmac-sha256:{'a' * 64}:{'b' * 64}"), path, (1, 2))
+    duplicate = WatchRoot(
+        SourceRef(f"hmac-sha256:{'a' * 64}:{'c' * 64}"), path, root.identity
+    )
+
+    def observed_directory(selected):
+        if selected == alias:
+            raise OSError(errno.ELOOP, "observed no-follow rejection for the alias")
+        assert selected == path
+        return nullcontext((90, ((1, 1, 0), (*root.identity, 0)), ()))
+
+    directory = Mock(side_effect=observed_directory)
+    platform = Mock(side_effect=AssertionError("Unsafe roots reached a watch backend"))
+    monkeypatch.setattr(host_watch, "_directory", directory)
+    monkeypatch.setattr(host_watch, "platform", SimpleNamespace(system=platform))
+
+    with pytest.raises(WatchError, match="Duplicate or invalid authorized watch root"):
+        WatchSet((root, duplicate))
+    directory.assert_called_once_with(path)
+    directory.reset_mock()
+    with pytest.raises(WatchError, match="Authorized watch root is unavailable"):
+        WatchSet((WatchRoot(root.key, alias, root.identity),))
+    directory.assert_called_once_with(alias)
+    platform.assert_not_called()
 
 
-def test_close_wakes_blocked_consumer(tmp_path):
-    root = _root(tmp_path)
-    with WatchSet((root,)) as watches:
-        _startup(watches, root)
-        active = Event()
-        results = []
+def _assert_close_wakes_consumer(watches, monkeypatch):
+    active = Event()
+    if watches._linux is not None:
+        parent, operation = watches, "_linux_wait"
+    else:
+        parent, operation = watches._condition, "wait"
+    actual_wait = getattr(parent, operation)
 
-        def consume():
-            active.set()
-            results.append(watches.events(20.0))
+    def wait(timeout):
+        active.set()
+        return actual_wait(timeout)
 
+    results = []
+
+    def consume():
+        results.append(watches.events(20.0))
+
+    with monkeypatch.context() as observe:
+        observe.setattr(parent, operation, wait)
         reader = Thread(target=consume, daemon=True)
         reader.start()
         assert active.wait(1)
@@ -129,6 +255,15 @@ def test_close_wakes_blocked_consumer(tmp_path):
         reader.join(1)
         assert not reader.is_alive()
         assert results == [()]
+
+
+def test_close_wakes_blocked_consumer(monkeypatch):
+    observed = _observed_watch(monkeypatch, "root")
+    (root,) = observed.roots
+    with observed.watches as watches:
+        _startup(watches, root)
+        _assert_close_wakes_consumer(watches, monkeypatch)
+        observed.native.close.assert_called_once_with()
 
 
 def test_native_watch_opens_directories_and_no_payloads(tmp_path):
@@ -245,12 +380,109 @@ if platform.system() == "Linux":
                 == root.key
             )
 
-    def test_linux_registration_bound_falls_back_for_one_root(tmp_path):
-        crowded, quiet = (tmp_path / name for name in ("crowded", "quiet"))
-        crowded.mkdir()
-        quiet.mkdir()
-        (crowded / "nested").mkdir()
-        first, second = _root(crowded, "first"), _root(quiet, "second")
+    @pytest.fixture
+    def linux_watch_descriptors(monkeypatch):
+        crowded, quiet = Path("/fixture/crowded"), Path("/fixture/quiet")
+        nested = crowded / "nested"
+        directories = {
+            crowded: (20, ((1, 1, 0), (1, 20, 0))),
+            nested: (21, ((1, 1, 0), (1, 20, 0), (1, 21, 0))),
+            quiet: (22, ((1, 1, 0), (1, 22, 0))),
+        }
+        roots = tuple(
+            WatchRoot(
+                SourceRef(
+                    f"hmac-sha256:{'a' * 64}:{sha256(path.name.encode()).hexdigest()}"
+                ),
+                path,
+                directories[path][1][-1][:2],
+            )
+            for path in (crowded, quiet)
+        )
+        clock = Mock(return_value=0.0)
+        pending = []
+        api = SimpleNamespace(refuse_nested=False, roots=roots, clock=clock, removed=[])
+        event_fd, wake_read, wake_write = 30, 31, 32
+
+        def directory(path):
+            fd, chain = directories[path]
+            return nullcontext((fd, chain, ()))
+
+        def scandir(fd):
+            children = (
+                (SimpleNamespace(name=nested.name, is_dir=Mock(return_value=True)),)
+                if fd == directories[crowded][0]
+                else ()
+            )
+            return nullcontext(children)
+
+        def add(fd, path, mask):
+            assert fd == event_fd and mask == host_watch._LINUX_MASK
+            descriptor = int(path.removeprefix(b"/proc/self/fd/"))
+            assert descriptor in {value[0] for value in directories.values()}
+            if descriptor == directories[nested][0] and api.refuse_nested:
+                return -1
+            return descriptor
+
+        def remove(fd, watch):
+            assert fd == event_fd
+            api.removed.append(watch)
+            return 0
+
+        def read(fd, count):
+            assert fd == event_fd and count >= host_watch._LINUX_STRUCT.size
+            return pending.pop(0)
+
+        def poll():
+            reader = Mock()
+            reader.poll.return_value = ((event_fd, 1),) if pending else ()
+            return reader
+
+        def change_quiet():
+            pending.append(
+                host_watch._LINUX_STRUCT.pack(directories[quiet][0], 0x02, 0, 0)
+            )
+
+        api.change_quiet = change_quiet
+        native = {
+            "inotify_init1": Mock(return_value=event_fd),
+            "inotify_add_watch": add,
+            "inotify_rm_watch": remove,
+        }
+        monkeypatch.setattr(host_watch, "_bind", lambda _, name, *__: native[name])
+        monkeypatch.setattr(host_watch, "_directory", directory)
+        monkeypatch.setattr(host_watch, "monotonic", clock)
+        monkeypatch.setattr(host_watch, "select", SimpleNamespace(poll=poll, POLLIN=1))
+        monkeypatch.setattr(
+            host_watch,
+            "ct",
+            SimpleNamespace(
+                CDLL=Mock(),
+                c_int=host_watch.ct.c_int,
+                c_char_p=host_watch.ct.c_char_p,
+                c_uint32=host_watch.ct.c_uint32,
+                get_errno=lambda: errno.ENOSPC,
+            ),
+        )
+        monkeypatch.setattr(
+            host_watch,
+            "os",
+            SimpleNamespace(
+                O_NONBLOCK=os.O_NONBLOCK,
+                O_CLOEXEC=os.O_CLOEXEC,
+                pipe2=Mock(return_value=(wake_read, wake_write)),
+                fsencode=os.fsencode,
+                scandir=scandir,
+                read=read,
+                write=Mock(),
+                close=Mock(),
+            ),
+        )
+        return api
+
+    def test_linux_registration_bound_falls_back_for_one_root(linux_watch_descriptors):
+        native = linux_watch_descriptors
+        first, second = native.roots
         with WatchSet(
             (first, second), max_directories_per_root=1, fallback_interval=0.05
         ) as watches:
@@ -259,13 +491,14 @@ if platform.system() == "Linux":
                 first.key,
                 second.key,
             }
-            assert (
-                _next(watches, lambda item: item.reason == "fallback").key == first.key
+            assert watches.events(0) == ()
+            native.clock.return_value = 0.05
+            assert watches.events(0) == (
+                host_watch.WatchEvent(first.key, WatchKind.RECONCILE, "fallback"),
             )
-            (quiet / "file.jsonl").touch()
-            assert (
-                _next(watches, lambda item: item.kind is WatchKind.CHANGED).key
-                == second.key
+            native.change_quiet()
+            assert watches.events(0) == (
+                host_watch.WatchEvent(second.key, WatchKind.CHANGED),
             )
 
     def test_linux_overlapping_roots_share_descriptor_without_weakening_mask(
@@ -312,41 +545,22 @@ if platform.system() == "Linux":
                 os.fstat(fd)
             assert retired.value.errno == errno.EBADF
 
-    def test_linux_kernel_capacity_retires_partial_root_only(tmp_path, monkeypatch):
-        limited, healthy = (tmp_path / name for name in ("limited", "healthy"))
-        limited.mkdir()
-        healthy.mkdir()
-        refused = limited / "nested"
-        refused.mkdir()
-        first, second = _root(limited, "first"), _root(healthy, "second")
-        denied = refused.stat()
-        bind = host_watch._bind
-
-        def inject_limit(library, name, result, *arguments):
-            native = bind(library, name, result, *arguments)
-            if name != "inotify_add_watch":
-                return native
-
-            def add(fd, path, mask):
-                if os.path.samestat(denied, os.stat(path)):
-                    host_watch.ct.set_errno(errno.ENOSPC)
-                    return -1
-                return native(fd, path, mask)
-
-            return add
-
-        monkeypatch.setattr(host_watch, "_bind", inject_limit)
+    def test_linux_kernel_capacity_retires_partial_root_only(linux_watch_descriptors):
+        native = linux_watch_descriptors
+        native.refuse_nested = True
+        first, second = native.roots
         with WatchSet((first, second), fallback_interval=0.02) as watches:
             initial = watches.events(0)
             assert {item.key for item in initial} == {first.key, second.key}
             backend = watches._linux
             assert backend is not None
             assert all(first.key not in members for members in backend.watches.values())
-            assert (
-                _next(watches, lambda item: item.reason == "fallback").key == first.key
+            assert native.removed == [first.identity[1]]
+            native.clock.return_value = 0.02
+            assert watches.events(0) == (
+                host_watch.WatchEvent(first.key, WatchKind.RECONCILE, "fallback"),
             )
-            (healthy / "available.jsonl").touch()
-            assert (
-                _next(watches, lambda item: item.kind is WatchKind.CHANGED).key
-                == second.key
+            native.change_quiet()
+            assert watches.events(0) == (
+                host_watch.WatchEvent(second.key, WatchKind.CHANGED),
             )

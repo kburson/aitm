@@ -1337,18 +1337,23 @@ def _checkout_anchor(
         if not anchor.is_absolute() or not cwd.is_relative_to(anchor):
             continue
         try:
-            if (
-                anchor.resolve(strict=True) == anchor
-                and cwd.is_dir()
-                and cwd.resolve(strict=True).is_relative_to(anchor)
-            ):
-                info = anchor.stat(follow_symlinks=False)
-                if stat.S_ISDIR(info.st_mode):
-                    return checkout_anchor_reference(source._ledger, anchor), _file_id(
-                        info
-                    )
+            identity = _confined_checkout_identity(cwd, anchor)
+            if identity is not None:
+                return checkout_anchor_reference(source._ledger, anchor), identity
         except (OSError, RuntimeError, ValueError):
             continue
+    return None
+
+
+def _confined_checkout_identity(cwd: Path, anchor: Path) -> _FileID | None:
+    if (
+        anchor.resolve(strict=True) == anchor
+        and cwd.is_dir()
+        and cwd.resolve(strict=True).is_relative_to(anchor)
+    ):
+        info = anchor.stat(follow_symlinks=False)
+        if stat.S_ISDIR(info.st_mode):
+            return _file_id(info)
     return None
 
 

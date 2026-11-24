@@ -10,9 +10,19 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from delivery_policy_cases import (
+    DeliveryJournalRows,
+    DestinationRows,
+    delivery_destination,
+)
+from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
+from test_ledger import _memory_ledger
 from test_monitor_grok_capture import isolated_grok_capture as isolated_grok_capture
+from test_monitor_journal import LIVE
+from test_monitor_journal import journal_transcript_policy as journal_transcript_policy
 
-from aitm_usage import backup, install, service
+from aitm_usage import backup, install, monitor_journal, service
+from aitm_usage import ledger as ledger_module
 from aitm_usage._monitor_journal_store import _DATABASE, _STORE
 from aitm_usage.ledger import Ledger, LedgerError, _connection
 from aitm_usage.monitor_control import ControlInbox
@@ -32,8 +42,9 @@ from aitm_usage.monitor_registry import (
     CaptureChange,
     ControlCommand,
     ControlStatus,
-    ProjectRegistrationRequest,
+    RegisteredProject,
     Registry,
+    _PhysicalDirectory,
     _project,
 )
 from aitm_usage.monitor_scope import HandoffStatus, Mark, Scope, ScopeState
@@ -106,6 +117,23 @@ def _stored_progress(journal, prepared):
         return journal._cursor(conn, prepared._read.stream)
 
 
+@pytest.fixture
+def grok_delivery_policy(grok_capture_policy, monkeypatch):
+    from test_grok import PROMPT_A, SESSION
+    from test_monitor_journal import _ClaimJournalRows
+
+    capture = grok_capture_policy
+    capture.receipt = capture.refs[SESSION, PROMPT_A, "synthetic-event-1"]
+    rows = _ClaimJournalRows(capture.writer.source_evidence())
+
+    def open_rows(writer):
+        assert writer is capture.writer
+        return rows
+
+    monkeypatch.setattr(monitor_journal, "JournalStore", open_rows)
+    return capture
+
+
 def test_legacy_claim_and_revision_bytes_match_protected_trunk():
     def ref(n):
         return SourceRef(f"hmac-sha256:{'a' * 64}:{str(n) * 64}")
@@ -154,9 +182,11 @@ def test_legacy_claim_and_revision_bytes_match_protected_trunk():
 
 
 def test_verified_grok_marked_and_hookless_rows_write_once_through_real_ack(
-    isolated_grok_capture,
+    grok_delivery_policy, monkeypatch
 ):
-    f = isolated_grok_capture
+    f = grok_delivery_policy
+    journal_rows = DeliveryJournalRows(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: journal_rows)
     marked_scope = _load_turns(f)
     journal = RoutingJournal(f.writer, f.state)
     current = journal.prepare(f.source_id, f.locator())
@@ -182,10 +212,13 @@ def test_verified_grok_marked_and_hookless_rows_write_once_through_real_ack(
     with pytest.raises(LedgerError, match="no verified native session"):
         journal.cursor_for(f.source_id, f.locator())
 
-    _enable_delivery(f, journal)
+    journal_rows.delivery_enabled = True
     tickets = [journal.reserve_delivery(row.key, 1) for row in outcomes]
     assert [ticket.claim.scope for ticket in tickets] == [marked_scope, None]
-    with _ledger(f).writer() as writer:
+    ledger = _ledger(f)
+    destination_rows = DestinationRows()
+    with monkeypatch.context() as patch:
+        writer, _ = delivery_destination(patch, journal, ledger, rows=destination_rows)
         deliver = ProjectDelivery.attach(journal, writer)
         receipts = [deliver.commit(ticket) for ticket in tickets]
         rows = writer.monitor_as_of(receipts[-1].sequence).revisions
@@ -193,7 +226,7 @@ def test_verified_grok_marked_and_hookless_rows_write_once_through_real_ack(
         assert {row.observation for row in rows} == {
             ticket.claim.usage for ticket in tickets
         }
-    # Reopen guarded destination after a lost ACK, without reopening live authority.
+    # Recreate the readers over committed rows after a lost ACK.
     reloaded = RoutingJournal(
         f.writer,
         ScopeState(f.writer, grok_reader=GrokAdapter(f.find_origin, f.verifier)),
@@ -202,7 +235,10 @@ def test_verified_grok_marked_and_hookless_rows_write_once_through_real_ack(
         assert (
             reloaded.reserve_delivery(ticket.claim.key, ticket.claim.revision) == ticket
         )
-        with _ledger(f).writer() as writer:
+        with monkeypatch.context() as patch:
+            writer, _ = delivery_destination(
+                patch, reloaded, ledger, rows=destination_rows
+            )
             deliver = ProjectDelivery.attach(reloaded, writer)
             assert deliver.commit(ticket) == receipt
             ack = reloaded.ack(deliver, ticket, receipt)
@@ -214,8 +250,8 @@ def test_verified_grok_marked_and_hookless_rows_write_once_through_real_ack(
     assert len(reloaded.as_of().claims) == 2
 
 
-def test_grok_unsettled_mark_cannot_claim_or_advance(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_unsettled_mark_cannot_claim_or_advance(grok_delivery_policy):
+    f = grok_delivery_policy
     _load_turns(f, mark=False, second=False)
     journal = RoutingJournal(f.writer, f.state)
     before = journal.as_of()
@@ -227,16 +263,16 @@ def test_grok_unsettled_mark_cannot_claim_or_advance(isolated_grok_capture):
 
 
 def test_grok_revocation_between_prepare_and_reserve_cannot_claim(
-    isolated_grok_capture,
+    grok_delivery_policy,
 ):
     from aitm_usage._monitor_qualification import _LiveSourceUnavailable
 
-    f = isolated_grok_capture
+    f = grok_delivery_policy
     _load_turns(f)
     journal = RoutingJournal(f.writer, f.state)
     prepared = journal.prepare(f.source_id, f.locator())
     before = journal.as_of()
-    f.revise("revoke", 2)
+    f.writer._live_profile = replace(f.writer._live_profile, current=lambda _: False)
     with pytest.raises(_LiveSourceUnavailable):
         journal.reserve_batch(prepared)
     assert _stored_progress(journal, prepared) is None
@@ -244,10 +280,10 @@ def test_grok_revocation_between_prepare_and_reserve_cannot_claim(
 
 
 def test_grok_append_reuses_sealed_earlier_cursor_and_holds_on_prefix_change(
-    isolated_grok_capture,
+    grok_delivery_policy,
     monkeypatch,
 ):
-    f = isolated_grok_capture
+    f = grok_delivery_policy
     _load_turns(f, second=False)
     journal = RoutingJournal(f.writer, f.state)
     first = journal.prepare(f.source_id, f.locator())
@@ -282,29 +318,28 @@ def test_grok_append_reuses_sealed_earlier_cursor_and_holds_on_prefix_change(
     assert resume.as_of() == before
 
 
-def test_grok_progress_seal_binds_the_current_locator(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_progress_seal_binds_the_current_locator(grok_delivery_policy):
+    f = grok_delivery_policy
     _load_turns(f)
     journal = RoutingJournal(f.writer, f.state)
     prepared = journal.prepare(f.source_id, f.locator())
     journal.reserve_batch(prepared)
     stream = prepared._read.stream
     evidence = f.writer.source_evidence()
-    with journal._store.transaction(write=True) as conn:
-        (wire,) = conn.execute("SELECT cursor FROM progress").fetchone()
-        saved = _decode(wire, _GrokProgress)
-        other = evidence.pseudonymize("fixture-alternate-locator", "different")
-        changed = _encode(replace(saved, locator=other), _GrokProgress).encode()
-        conn.execute("UPDATE progress SET cursor = ?", (changed,))
+    saved = _decode(journal._store.progress[stream], _GrokProgress)
+    assert _stored_progress(journal, prepared) == prepared.progress
+    other = evidence.pseudonymize("fixture-alternate-locator", "different")
+    changed = _encode(replace(saved, locator=other), _GrokProgress).encode()
+    journal._store.progress[stream] = changed
     assert stream[3] == saved.locator.value
     with pytest.raises(LedgerError, match="progress seal changed"):
         journal.prepare(f.source_id, f.locator())
 
 
 def test_unverified_grok_mark_does_not_advance_another_streams_cursor(
-    isolated_grok_capture,
+    grok_delivery_policy,
 ):
-    f = isolated_grok_capture
+    f = grok_delivery_policy
     other, write_other = f.add_stream()
     f.submit(203, True)
     assert f.evaluate()
@@ -323,30 +358,34 @@ def test_unverified_grok_mark_does_not_advance_another_streams_cursor(
 
 
 def test_grok_original_claim_remains_after_revoke_and_refuses_other_destination(
-    isolated_grok_capture,
-    tmp_path,
+    grok_delivery_policy,
+    monkeypatch,
 ):
-    f = isolated_grok_capture
+    f = grok_delivery_policy
     scope = _load_turns(f, second=False)
+    rows = DeliveryJournalRows(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: rows)
     journal = RoutingJournal(f.writer, f.state)
     prepared = journal.prepare(f.source_id, f.locator())
     (reserved,) = journal.reserve_batch(prepared)
     assert reserved.status is ClaimStatus.PENDING
-    _enable_delivery(f, journal)
+    rows.delivery_enabled = True
     ticket = journal.reserve_delivery(reserved.key, 1)
     rival = UUID(int=19)
-    root = tmp_path / "rival"
-    Ledger.initialize(root, rival)
-    f.writer.register_project(ProjectRegistrationRequest(rival, str(root), "Rival"))
-    for upgrade in (Ledger.upgrade_monitor_schema, Ledger.upgrade_delivery_schema):
-        ledger = Ledger.open(root, rival)
-        upgrade(ledger, ledger.as_of().sequence)
-    with Ledger.open(root, rival).writer() as writer:
-        delivery = ProjectDelivery.attach(journal, writer)
-        with pytest.raises(LedgerError):
-            delivery.commit(ticket)
-        assert writer.as_of().sequence == 0
-    f.revise("revoke", 2)
+    root = f.writer.root.with_name("rival")
+    observed = _PhysicalDirectory(str(root), (1, 19))
+    registered = RegisteredProject(rival, observed, "Rival", None, (), None)
+    state = f.writer.view()
+    f.writer._save(replace(state, projects=(*state.projects, registered)))
+    ledger = replace(_memory_ledger(ledger_module, rival, b"r" * 32), root=root)
+    writer, destination = delivery_destination(monkeypatch, journal, ledger)
+    delivery = ProjectDelivery.attach(journal, writer)
+    with pytest.raises(_DeliveryRefused, match="belongs to another project"):
+        delivery.commit(ticket)
+    assert writer.as_of().sequence == 0
+    assert not destination.revisions and not destination.receipts
+
+    f.writer._live_profile = replace(f.writer._live_profile, current=lambda _: False)
     reopened = RoutingJournal(
         f.writer,
         ScopeState(f.writer, grok_reader=GrokAdapter(f.find_origin, f.verifier)),
@@ -451,14 +490,10 @@ def _restore_test_journal_snapshot(registry, source):
 
 @pytest.mark.usefixtures("legacy_monitor_qualification")
 def test_retained_legacy_journal_snapshot_restores_for_both_readers(
-    tmp_path,
-    monkeypatch,
+    journal_transcript_policy,
 ):
-    from test_monitor_journal import LIVE, NativeJournalFixture
-
-    native = NativeJournalFixture(tmp_path, monkeypatch)
+    native = journal_transcript_policy
     native.append(LIVE, native.turn(3))
-    backup_path = tmp_path / "prior-journal.sqlite3"
     with native.registry.writer() as registry:
         journal = RoutingJournal(registry, ScopeState(registry))
         locator = native.locator(LIVE)
@@ -466,27 +501,29 @@ def test_retained_legacy_journal_snapshot_restores_for_both_readers(
         earlier = journal.as_of()
         prior = journal.cursor_for(LIVE, locator)
         assert earlier.claims and prior is not None
-        _save_test_journal_snapshot(journal, backup_path)
+        store = journal._store
+        claims, progress, commits = (
+            store.claims.copy(),
+            store.progress.copy(),
+            store.commits.copy(),
+        )
         assert (
             _decode(_encode(earlier.claims[0], PendingClaim), _LegacyPendingClaim).usage
             == earlier.claims[0].usage
         )
 
-        with closing(sqlite3.connect(backup_path)) as snapshot:
-            stored = {
-                key: _decode(payload, _LegacyClaim).material.usage
-                for key, payload in snapshot.execute("SELECT key,payload FROM claims")
-            }
-            (progress,) = snapshot.execute(
-                "SELECT cursor FROM progress ORDER BY sequence DESC LIMIT 1"
-            ).fetchone()
-            assert stored == {claim.key.value: claim.usage for claim in earlier.claims}
-            assert _decode(progress, StreamCursor) == prior
+        stored = {
+            key: _decode(payload, _LegacyClaim).material.usage
+            for key, (_, _, payload, _) in claims.items()
+        }
+        (cursor_bytes,) = progress.values()
+        assert stored == {claim.key.value: claim.usage for claim in earlier.claims}
+        assert _decode(cursor_bytes, StreamCursor) == prior
 
         native.append(LIVE, native.turn(4))
         journal.reserve_batch(journal.prepare(LIVE, native.locator(LIVE)))
         assert journal.as_of().sequence > earlier.sequence
-        _restore_test_journal_snapshot(registry, backup_path)
+        store.claims, store.progress, store.commits = claims, progress, commits
         reopened = RoutingJournal(registry, ScopeState(registry))
         assert reopened.as_of() == earlier
         assert reopened.cursor_for(LIVE, native.locator(LIVE)) == prior
@@ -562,11 +599,18 @@ def test_grok_journal_snapshot_restores_private_rows_and_new_writer_holds(
 
 
 def test_grok_existing_owner_survives_an_independently_eligible_rival_claim(
-    isolated_grok_capture,
-    tmp_path,
+    grok_capture_policy,
     monkeypatch,
 ):
-    f = isolated_grok_capture
+    from test_ledger import _memory_ledger
+
+    from aitm_usage import ledger as ledger_module
+    from aitm_usage import monitor_registry
+    from aitm_usage.monitor_registry import RegisteredProject, _PhysicalDirectory
+
+    f = grok_capture_policy
+    rows = DeliveryJournalRows(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: rows)
     f.submit(204, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     first_turn = f.rows[1:5]
@@ -576,21 +620,40 @@ def test_grok_existing_owner_survives_an_independently_eligible_rival_claim(
     assert original.status is ClaimStatus.PENDING
     f.submit(205, False)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
-    _enable_delivery(f, journal)
+    rows.delivery_enabled = True
     ticket = journal.reserve_delivery(original.key, 1)
-    with _ledger(f).writer() as writer:
+    with monkeypatch.context() as patch:
+        writer, _ = delivery_destination(patch, journal, _ledger(f))
         delivered = ProjectDelivery.attach(journal, writer)
         journal.ack(delivered, ticket, delivered.commit(ticket))
 
     rival = UUID(int=39)
     root, checkout = (
-        tmp_path / name for name in ("competing-project", "competing-checkout")
+        Path("/fixture") / name for name in ("competing-project", "competing-checkout")
     )
-    checkout.mkdir(mode=0o700)
-    Ledger.initialize(root, rival)
-    f.writer.register_project(
-        ProjectRegistrationRequest(rival, str(root), "Rival", anchors=(str(checkout),))
+    project = RegisteredProject(
+        rival,
+        _PhysicalDirectory(str(root), (2, 30)),
+        "Rival",
+        None,
+        (_PhysicalDirectory(str(checkout), (2, 31)),),
+        None,
     )
+    directory = monitor_registry._directory
+    rival_directories = {
+        boundary.path: boundary for boundary in (project.state, *project.anchors)
+    }
+
+    def discover_directory(path, **options):
+        if path in rival_directories:
+            return rival_directories[path]
+        return directory(path, **options)
+
+    monkeypatch.setattr(monitor_registry, "_directory", discover_directory)
+    initial = f.writer.view()
+    f.writer._save(replace(initial, projects=(*initial.projects, project)))
+    ledger = replace(_memory_ledger(ledger_module, rival, b"r" * 32), root=root)
+    rival_writer, _ = delivery_destination(monkeypatch, journal, ledger)
     evidence = f.writer.source_evidence()
     original_origin = f.find_origin(f.locator()._source.path)
     rival_origin = replace(
@@ -624,17 +687,19 @@ def test_grok_existing_owner_survives_an_independently_eligible_rival_claim(
         (original.key, f.project)
     ]
     assert [row.contender for row in view.disputes] == [rival]
-    assert Ledger.open(root, rival).as_of().sequence == 0
+    assert rival_writer.as_of().sequence == 0
 
 
 def test_preenrollment_and_stable_policy_exclusion_do_not_open_payload(
-    tmp_path,
-    monkeypatch,
+    grok_capture_policy, monkeypatch
 ):
+    from test_monitor_coverage import _CoveragePolicyStore
+
     from aitm_usage._monitor_qualification import _LiveSourceUnavailable
 
-    retained = isolated_grok_capture.__wrapped__(tmp_path, monkeypatch, request=None)
-    f = next(retained)
+    f = grok_capture_policy
+    store = _CoveragePolicyStore(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
     journal = RoutingJournal(f.writer, f.state)
     monkeypatch.setattr(
         GrokAdapter,
@@ -650,26 +715,24 @@ def test_preenrollment_and_stable_policy_exclusion_do_not_open_payload(
     f.writer._save(
         replace(view, permissions=(CaptureChange(f.project, f.source_id, True),))
     )
-    with pytest.raises(StopIteration):
-        next(retained)
-    with Registry(f.writer.root).writer() as writer:
-        scopes = ScopeState(writer, grok_reader=GrokAdapter(f.find_origin, f.verifier))
-        journal = RoutingJournal(writer, scopes)
-        with pytest.raises(_LiveSourceUnavailable):
-            journal.prepare(f.source_id, f.locator())
-        (exclusion,) = journal.coverage_changes(0)
-        assert exclusion.coverage.reason == "UNQUALIFIED_SOURCE"
-        assert exclusion.coverage.extent == "unknown"
-        assert journal.as_of().claims == ()
-        with journal._store.transaction() as conn:
-            assert conn.execute("SELECT count(*) FROM progress").fetchone() == (0,)
+    f.writer._live_profile = None
+    scopes = ScopeState(f.writer, grok_reader=GrokAdapter(f.find_origin, f.verifier))
+    journal = RoutingJournal(f.writer, scopes)
+    with pytest.raises(_LiveSourceUnavailable):
+        journal.prepare(f.source_id, f.locator())
+    (exclusion,) = journal.coverage_changes(0)
+    assert exclusion.coverage.reason == "UNQUALIFIED_SOURCE"
+    assert exclusion.coverage.extent == "unknown"
+    assert store.committed.sequence == exclusion.sequence == 1
 
 
 def test_observational_cursor_and_mismatched_guarded_grok_claim_fail_closed(
-    isolated_grok_capture,
+    grok_delivery_policy, monkeypatch
 ):
-    f = isolated_grok_capture
+    f = grok_delivery_policy
     _load_turns(f, second=False)
+    rows = DeliveryJournalRows(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: rows)
     journal = RoutingJournal(f.writer, f.state)
     verified = journal.prepare(f.source_id, f.locator())
     observational = f.reader.read_delta(f.locator(), None).cursor
@@ -681,13 +744,14 @@ def test_observational_cursor_and_mismatched_guarded_grok_claim_fail_closed(
         _source_checkpoint(verified.progress)
     assert _stored_progress(journal, verified) is None
     (reserved,) = journal.reserve_batch(verified)
-    _enable_delivery(f, journal)
+    rows.delivery_enabled = True
     ticket = journal.reserve_delivery(reserved.key, 1)
     mismatched = replace(ticket, claim=replace(ticket.claim, revision=2))
-    with _ledger(f).writer() as writer:
-        delivery = ProjectDelivery.attach(journal, writer)
-        with pytest.raises(_DeliveryRefused, match="Grok usage proof changed"):
-            delivery._monitor_revision(mismatched)
-        with pytest.raises(_DeliveryRefused):
-            delivery.commit(mismatched)
-        assert writer.as_of().sequence == 0
+    writer, destination = delivery_destination(monkeypatch, journal, _ledger(f))
+    delivery = ProjectDelivery.attach(journal, writer)
+    with pytest.raises(_DeliveryRefused, match="Grok usage proof changed"):
+        delivery._monitor_revision(mismatched)
+    with pytest.raises(_DeliveryRefused):
+        delivery.commit(mismatched)
+    assert destination.commits == set()
+    assert destination.revisions == destination.receipts == {}
