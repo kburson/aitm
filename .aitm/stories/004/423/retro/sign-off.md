@@ -11,3 +11,5 @@ Both seeds failed with their expected signatures in the full oracles and were re
 The digest-verified #422 coverage artifact contained the same exact 1,549 product and CLI IDs as #423 clean. Its covered reference observed 14,790 of 16,265 statements and 4,302 of 5,404 branch arcs. The #423 timing comparison used matched uncovered lanes. [#422 reference artifact](https://github.com/kburson/aitm/actions/runs/45318611754/artifacts/14886537913).
 
 Draft #425 replaced #424 after #424 merged for #422. The replacement reads open, draft, and unmerged with auto-merge disabled. Its synthetic candidate objects were confined to the runner. The baseline CI workflow, path map, TIA policy and trunk rules match the verified remote. Issue closure is authorized by the user's pickup and delivery request. Estimate was L / 3.5 agent-hours. Actual engaged time is unknown.
+
+The last gate was the signed archival verification at 2026-11-24T13:41:18Z. GitHub closed #423 at 2026-11-24T13:41:49Z. Project #24 read back Done at 2026-11-24T13:41:53Z.

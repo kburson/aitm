@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 423
 title: "[Spike] Validate TIA selection against full-suite runs"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/423"
 parent: null
 children: []
 blocking: []
 blocked-by: [422]
 created: "2026-11-23T00:30:38Z"
-updated: "2026-11-24T13:38:49Z"
+updated: "2026-11-24T13:41:53Z"
 last-branch: "codex/423-tia-validation"
 estimate: {"agent-hours": 3.5, "size": "L"}
 priority: "P2"
 origin: null
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/refinement.md", "plan/experiment.md", "plan/reviews/grok-round-1.md", "plan/reviews/grok-round-2.md"], "attachments": ["attachments/results.md", "attachments/comparison.json", "attachments/results.sha256"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/refinement.md", "plan/experiment.md", "plan/reviews/grok-round-1.md", "plan/reviews/grok-round-2.md", "plan/reviews/grok-results.md"], "attachments": ["attachments/results.md", "attachments/comparison.json", "attachments/results.sha256"]}
 expansions: []
 trips: []
 ---
@@ -40,3 +40,7 @@ Use #422 as the timing and coverage baseline. Exercise the suite-level selector 
 Use the exact delivered #422 tree as the baseline. The original draft #424 was merged for #422. Leave the replacement experiment draft unmerged.
 
 Experiment workspace: [draft PR #425](https://github.com/kburson/aitm/pull/425).
+
+## Outcome
+
+[Results and receipts](attachments/results.md) · [Grok plan review](plan/reviews/grok-round-2.md) · [Grok results review](plan/reviews/grok-results.md) · [Sign-off](retro/sign-off.md).
