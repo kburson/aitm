@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 429
 title: "[Spike] Measure usage from an orchestrator-launched headless run"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/429"
 parent: 426
 children: []
 blocking: [430]
 blocked-by: [428, 432]
 created: "2026-11-24T15:08:25Z"
-updated: "2026-11-24T20:01:57Z"
+updated: "2026-11-24T20:02:06Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
