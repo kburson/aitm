@@ -6,11 +6,11 @@ kind: "epic"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/426"
 parent: null
-children: [427, 428, 429, 430, 431, 432, 433]
+children: [427, 428, 429, 430, 431, 432, 433, 434]
 blocking: []
 blocked-by: []
 created: "2026-11-24T15:08:19Z"
-updated: "2026-11-24T19:21:42Z"
+updated: "2026-11-24T20:29:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -51,11 +51,13 @@ Compare the tactics on existing-chat support, autonomous assignment, own-orchest
 5. #430 Qualify a callable result-and-usage turn for each XPR provider
 6. #431 Deliver a usage receipt with every headless XPR turn
 7. #433 Measure usage and time across epic trails
+8. #434 Qualify the Codex headless AIPR review-lock path
 
 ## Follow-up experiments and controls
 
 - After [#427](../427/story.md) and [#428](../428/story.md), use their findings to decide whether to open a run-scoped native telemetry spike. If interactive assignment or later lookup leaves a material gap, test whether each harness can enable native telemetry for one assigned session, compare it with the harness result by request identity, and end the receiver with the run. Start from the documented Claude control in [#282](../../002/282/story.md).
 - [#433](../433/story.md) owns the concurrent attribution control and extends it to sequential assignment boundaries, agent detach and handoff, and later attribution of previously unattached work.
+- [#434](../434/story.md) follows up on the Codex macOS review-lock gap from #430 and #431. It will test supported native routes with AIPR authority intact.
 - Where available, use a bounded API-backed billing comparison to check receipt totals and reporting lag. Record what can be verified for subscription-backed runs separately. Repeat the same small workload across a harness version change when practical and record any capability or coverage drift.
 
 ## Interim findings
