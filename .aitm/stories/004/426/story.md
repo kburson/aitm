@@ -6,16 +6,16 @@ kind: "epic"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/426"
 parent: null
-children: [427, 428, 429, 430, 431, 432]
+children: [427, 428, 429, 430, 431, 432, 433]
 blocking: []
 blocked-by: []
 created: "2026-11-24T15:08:19Z"
-updated: "2026-11-24T18:33:13Z"
+updated: "2026-11-24T19:21:42Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: null
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/native-harness-cost-findings.md"]}
 expansions: []
 trips: []
 ---
@@ -26,19 +26,21 @@ trips: []
 
 ## Research question
 
-Which tactics let AITM measure agent usage and cost for an assigned story run, including the orchestrator's own work and each headless XPR reviewer turn, without a persistent host monitor?
+Which tactics let AITM measure agent usage and cost for assigned story runs and multi-story epic trails, including the orchestrator’s own work, delegated workers, and each headless XPR reviewer turn, without a persistent host monitor?
 
-Related to [Epic #100](../../001/100/story.md). This is a separate top-level research epic. Its findings inform a later decision on #100.
+Related to [Epic #100](../../001/100/story.md). This is a separate top-level research epic. Complete these spikes and present the research decision before revisiting #100.
 
 ## Experiment rules
 
 Use disposable, bounded workloads on Codex, Claude Code, and Grok Build. Record exact harness, version, surface, authentication/billing mode, session and turn boundaries, supported fields, and evidence provenance. Use the actual XPR headless route for cross-provider probes. Keep raw traces private and retain sanitized receipts. Distinguish measured tokens or credits, provider-reported charges, API-equivalent estimates, and gaps. Record each tactic as demonstrated, unsupported, or inconclusive for each tested surface.
 
+Use each provider’s native harness for interactive and headless execution. Keep capture adapters small and session-scoped, using structured native results or exact-identity lookups. Research a portable receipt across providers.
+
 Run the spikes in order, one at a time. Close each with evidence and hand forward the limits and unanswered questions. A negative result still completes a spike when the tested boundary and evidence are clear. Use only the session in scope and disposable helpers that exit with the experiment.
 
 ## Research exit
 
-Compare the tactics on existing-chat support, autonomous assignment, own-orchestrator coverage, per-turn XPR fidelity, delayed recovery, billing comparability, permissions, and maintenance burden. Recommend the smallest evidence-supported strategy and quantify its gaps. Present the options and recommendation for a decision before changing the delivery plan in #100.
+Compare the tactics on existing-chat support, autonomous assignment, own-orchestrator coverage, per-turn XPR fidelity, delayed recovery, billing comparability, permissions, multi-story assignment and handoff fidelity, unattached-work attribution, and maintenance burden. Recommend the smallest evidence-supported strategy and quantify its gaps. Present the options and recommendation for a decision before changing the delivery plan in #100.
 
 ## Investigation ladder
 
@@ -48,9 +50,14 @@ Compare the tactics on existing-chat support, autonomous assignment, own-orchest
 4. #429 Measure usage from an orchestrator-launched headless run
 5. #430 Qualify a callable result-and-usage turn for each XPR provider
 6. #431 Deliver a usage receipt with every headless XPR turn
+7. #433 Measure usage and time across epic trails
 
 ## Follow-up experiments and controls
 
 - After [#427](../427/story.md) and [#428](../428/story.md), use their findings to decide whether to open a run-scoped native telemetry spike. If interactive assignment or later lookup leaves a material gap, test whether each harness can enable native telemetry for one assigned session, compare it with the harness result by request identity, and end the receiver with the run. Start from the documented Claude control in [#282](../../002/282/story.md).
-- After [#431](../431/story.md), run a concurrent attribution experiment before recommending a strategy for #100. Exercise two story runs and an unrelated chat under one account. Include nested delegation and headless XPR. Check that each evidenced request counts once, that unrelated usage stays outside both stories, and that late receipts retain their original run identity when the orchestrator switches stories.
+- [#433](../433/story.md) owns the concurrent attribution control and extends it to sequential assignment boundaries, agent detach and handoff, and later attribution of previously unattached work.
 - Where available, use a bounded API-backed billing comparison to check receipt totals and reporting lag. Record what can be verified for subscription-backed runs separately. Repeat the same small workload across a harness version change when practical and record any capability or coverage drift.
+
+## Interim findings
+
+[Research comparison and candidate receipt boundary](attachments/native-harness-cost-findings.md) records the evidence from #427, #428, and #432 and techniques from Paperclip, OpenCode Swarm, Cursor, and Claude Code. Exact-turn capture and one-shot recovery worked on the tested local surfaces. Repo-local receipts supported fresh-agent handoff. Prefer native completion or exact lookup where supported and keep agent self-report as a fallback. The remaining spikes will establish headless XPR, multi-story coverage, and cost provenance.

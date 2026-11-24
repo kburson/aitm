@@ -10,7 +10,7 @@ children: []
 blocking: [431]
 blocked-by: [429]
 created: "2026-11-24T15:08:28Z"
-updated: "2026-11-24T15:10:05Z"
+updated: "2026-11-24T19:21:34Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -37,3 +37,9 @@ For each cross-provider headless XPR harness, can an orchestrator request exactl
 Probe the route used or usable by XPR for Codex, Claude Code, and Grok Build. Send two requests to a persistent review session and correlate each outcome with provider evidence using verified session and turn identities. Test reused sessions, cumulative deltas, terminal usage after result text, model or cache-specific fields, and a failed or interrupted turn. Record whether the usage arrives in the same response, a terminal event, or a separately correlated lookup. Evaluate alternate API-key routes separately when their accounting or entitlements differ from the actual headless harness.
 
 Deliver the smallest callable contract and a pass, unsupported, or inconclusive result per provider and route. Preserve the original provider units and evidence basis.
+
+## Additional controls from #426
+
+- Exercise the actual native headless XPR route and record version, surface, authentication and billing mode. Use a small route adapter and treat an API-key alternative as a separate evidence row.
+- For two turns sharing one reviewer session, verify the native identity of each result and its usage. Test a result that appears before usage, then correlate a terminal event or exact lookup without requesting another model turn. Reconcile cumulative counters where applicable and disclose any aggregation that cannot be split safely.
+- Preserve native units, cache categories, and whether the usage includes nested work. Distinguish measured usage, provider-reported cost indicators or verified charges, API-equivalent estimates, and pending or unavailable evidence. Record the smallest per-route capture contract and its coverage boundaries.
