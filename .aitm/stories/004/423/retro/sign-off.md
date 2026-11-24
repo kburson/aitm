@@ -13,3 +13,5 @@ The digest-verified #422 coverage artifact contained the same exact 1,549 produc
 Draft #425 replaced #424 after #424 merged for #422. The replacement reads open, draft, and unmerged with auto-merge disabled. Its synthetic candidate objects were confined to the runner. The baseline CI workflow, path map, TIA policy and trunk rules match the verified remote. Issue closure is authorized by the user's pickup and delivery request. Estimate was L / 3.5 agent-hours. Actual engaged time is unknown.
 
 The last gate was the signed archival verification at 2026-11-24T13:41:18Z. GitHub closed #423 at 2026-11-24T13:41:49Z. Project #24 read back Done at 2026-11-24T13:41:53Z.
+
+The owner confirmed that #425 was a disposable verification harness. It closed unmerged at 2026-11-24T14:03:30Z. After the interrupted reopening, GitHub closed #423 again at 2026-11-24T14:03:31Z, and Project #24 read back Done. [Experiment closure explanation](https://github.com/kburson/aitm/pull/425#issuecomment-7133768811).
