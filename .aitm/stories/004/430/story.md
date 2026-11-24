@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 430
 title: "[Spike] Qualify a callable result-and-usage turn for each XPR provider"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/430"
 parent: 426
 children: []
 blocking: [431]
 blocked-by: [429]
 created: "2026-11-24T15:08:28Z"
-updated: "2026-11-24T20:18:39Z"
+updated: "2026-11-24T20:18:48Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
