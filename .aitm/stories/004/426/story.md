@@ -10,7 +10,7 @@ children: [427, 428, 429, 430, 431]
 blocking: []
 blocked-by: []
 created: "2026-11-24T15:08:19Z"
-updated: "2026-11-24T15:08:34Z"
+updated: "2026-11-24T15:27:21Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -47,3 +47,9 @@ Compare the tactics on existing-chat support, autonomous assignment, own-orchest
 3. #429 Measure usage from an orchestrator-launched headless run
 4. #430 Qualify a callable result-and-usage turn for each XPR provider
 5. #431 Deliver a usage receipt with every headless XPR turn
+
+## Follow-up experiments and controls
+
+- After [#427](../427/story.md) and [#428](../428/story.md), use their findings to decide whether to open a run-scoped native telemetry spike. If interactive assignment or later lookup leaves a material gap, test whether each harness can enable native telemetry for one assigned session, compare it with the harness result by request identity, and end the receiver with the run. Start from the documented Claude control in [#282](../../002/282/story.md).
+- After [#431](../431/story.md), run a concurrent attribution experiment before recommending a strategy for #100. Exercise two story runs and an unrelated chat under one account. Include nested delegation and headless XPR. Check that each evidenced request counts once, that unrelated usage stays outside both stories, and that late receipts retain their original run identity when the orchestrator switches stories.
+- Where available, use a bounded API-backed billing comparison to check receipt totals and reporting lag. Record what can be verified for subscription-backed runs separately. Repeat the same small workload across a harness version change when practical and record any capability or coverage drift.
