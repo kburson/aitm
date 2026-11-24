@@ -300,6 +300,12 @@ def test_strict_grok_attempt_holds_at_start_and_can_retry(grok_policy, receipt_c
 
 @pytest.fixture
 def isolated_grok_capture(tmp_path, monkeypatch, request):
+    yield from _isolated_grok_capture(
+        tmp_path, monkeypatch, getattr(request, "param", None)
+    )
+
+
+def _isolated_grok_capture(tmp_path, monkeypatch, binary):
     import subprocess
     from dataclasses import replace
     from datetime import UTC, datetime, timedelta
@@ -321,7 +327,6 @@ def isolated_grok_capture(tmp_path, monkeypatch, request):
     expected = _LiveSourceTuple(
         "grok", "grok-build-macos", "Darwin", "arm64", "1.0.77", 1
     )
-    binary = getattr(request, "param", None)
     if binary is None:
         binary = tmp_path / "candidate"
         binary.write_bytes(b"isolated Grok image for exact owner signature tests")

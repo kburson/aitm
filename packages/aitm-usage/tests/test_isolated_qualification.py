@@ -276,12 +276,9 @@ def _durable(journal, native):
 @pytest.mark.parametrize("admitted", (True, False))
 @pytest.mark.parametrize("retry", (True, False))
 def test_admission_drives_private_denial_without_a_journal_change(
-    request, monkeypatch, admitted, retry
+    installed_policy, monkeypatch, admitted, retry
 ):
-    installed = request.getfixturevalue(
-        "installed" if admitted and retry else "installed_policy"
-    )
-    native, writer, _, activate, revoke, _ = installed
+    native, writer, _, activate, revoke, _ = installed_policy
     activate()
     scopes = ScopeState(writer)
     journal = RoutingJournal(writer, scopes)

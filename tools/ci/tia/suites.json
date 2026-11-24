@@ -335,6 +335,26 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_export.py::test_exact_replay_resyncs_parent_after_interrupted_publication",
+      "suite": "unit",
+      "isolation_group": "export-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change",
+      "suite": "unit",
+      "isolation_group": "isolated_qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_inherited_macos_grant_refused_before_private_creation",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_installed_console_entry_uses_package_and_project_prefix",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_install.py::test_backup_copies_only_authority_in_its_pinned_snapshot",
       "suite": "unit",
       "isolation_group": "install-policy"

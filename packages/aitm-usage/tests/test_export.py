@@ -1041,37 +1041,113 @@ def test_receiver_rejects_non_string_datetime_and_draft_uuid(
 
 
 def test_exact_replay_resyncs_parent_after_interrupted_publication(
-    project, tmp_path, monkeypatch
+    monkeypatch, reference_rates
 ):
-    export_as_of = _export()
-    from aitm_usage.export import ExportError
+    from aitm_usage import export
 
-    view = project.as_of()
-    card = load_rate_card()
-    destination = tmp_path / "destination"
-    parent = tmp_path.stat()
-    real_fsync = os.fsync
-    parent_syncs = []
+    destination = Path("/fixture/destination")
+    ancestry = ((1, 1), (1, 2))
+    container = SimpleNamespace(fd=15, identities=(*ancestry, (1, 3)))
+    staged = SimpleNamespace(fd=16, identities=(*container.identities, (1, 4)))
+    existing = SimpleNamespace(identities=(*ancestry, (1, 4)), check=Mock())
+    private_stages = []
+    staged_files = {}
+    published_files = {}
 
-    def fsync(fd):
-        if os.path.samestat(os.fstat(fd), parent):
-            parent_syncs.append(fd)
-            if len(parent_syncs) <= 2:
-                raise OSError(5, "simulated parent sync failure")
-        real_fsync(fd)
+    @contextmanager
+    def new_private_child(parent_fd, path, identities):
+        if parent_fd == 9:
+            assert path.parent == destination.parent and path.name.startswith(
+                ".export-"
+            )
+            assert identities == ancestry
+            container.path = path
+            pin = container
+        else:
+            assert parent_fd == container.fd and path == container.path / "snapshot"
+            assert identities == container.identities
+            pin = staged
+        private_stages.append(path)
+        try:
+            yield pin
+        finally:
+            assert private_stages.pop() == path
 
-    monkeypatch.setattr(os, "fsync", fsync)
-    with pytest.raises(ExportError):
-        export_as_of(view, card, destination)
-    complete = _snapshot(destination)
-    # An exact retry must repeat the failed durability step before success.
-    with pytest.raises(ExportError):
-        export_as_of(view, card, destination)
-    receipt = export_as_of(view, card, destination)
-    assert len(parent_syncs) == 3
-    assert _snapshot(destination) == complete
-    assert receipt.sha256 == sha256(complete[1]).hexdigest()
-    assert not list(tmp_path.glob(".export-*"))
+    def write_snapshot(pin, files):
+        assert pin is staged
+        staged_files.update(files)
+
+    def publish(source_fd, source, target_fd, target):
+        assert (source_fd, source, target_fd, target) == (
+            container.fd,
+            "snapshot",
+            9,
+            destination.name,
+        )
+        assert staged_files.keys() == {"manifest.json", "usage.jsonl"}
+        published_files.update(staged_files)
+        staged_files.clear()
+        return True
+
+    def stat_destination(name, *, dir_fd, follow_symlinks):
+        assert (name, dir_fd, follow_symlinks) == (destination.name, 9, False)
+        if not published_files:
+            raise FileNotFoundError(name)
+        return SimpleNamespace(st_dev=1, st_ino=4)
+
+    def check_snapshot(pin, expected):
+        assert pin is existing
+        assert published_files == expected
+
+    sync = Mock(
+        side_effect=[None, OSError("initial sync"), OSError("retry sync"), None]
+    )
+    parent_open = Mock(return_value=9)
+    parent_close = Mock()
+    verify = Mock(side_effect=check_snapshot)
+    publish_once = Mock(side_effect=publish)
+    monkeypatch.setattr(export, "_validated_path", Mock(return_value=ancestry))
+    monkeypatch.setattr(export, "_new_private_child", new_private_child)
+    monkeypatch.setattr(export, "_write_snapshot", write_snapshot)
+    monkeypatch.setattr(export, "publish_noreplace", publish_once)
+    monkeypatch.setattr(
+        export, "_pin_directory", Mock(return_value=nullcontext(existing))
+    )
+    monkeypatch.setattr(export, "_check_snapshot", verify)
+    monkeypatch.setattr(
+        export,
+        "os",
+        SimpleNamespace(
+            O_RDONLY=os.O_RDONLY,
+            O_DIRECTORY=os.O_DIRECTORY,
+            O_NOFOLLOW=os.O_NOFOLLOW,
+            open=parent_open,
+            close=parent_close,
+            fstat=lambda _: SimpleNamespace(st_dev=1, st_ino=2),
+            stat=stat_destination,
+            fsync=sync,
+        ),
+    )
+    view = LedgerView(PROJECT, 0, (), ())
+    with pytest.raises(
+        export.ExportError, match="Invalid export snapshot or destination"
+    ):
+        export.export_as_of(view, reference_rates, destination)
+    complete = published_files.copy()
+    assert not private_stages and not staged_files
+    with pytest.raises(
+        export.ExportError, match="Invalid export snapshot or destination"
+    ):
+        export.export_as_of(view, reference_rates, destination)
+    receipt = export.export_as_of(view, reference_rates, destination)
+
+    assert sync.call_args_list == [call(container.fd), call(9), call(9), call(9)]
+    assert verify.call_args_list == [call(existing, complete), call(existing, complete)]
+    existing.check.assert_called_once_with()
+    publish_once.assert_called_once()
+    assert parent_close.call_args_list == [call(9)] * 3
+    assert published_files == complete
+    assert receipt.sha256 == sha256(complete["usage.jsonl"]).hexdigest()
 
 
 @pytest.mark.parametrize(

@@ -307,7 +307,7 @@ packages/aitm-usage/tests/test_codex.py::test_verified_child_epoch_authenticates
 packages/aitm-usage/tests/test_codex.py::test_warm_scanner_frontier_keeps_provisional_first_request_output	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_competing_destination_keeps_complete_atomic_visibility[False]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_competing_destination_keeps_complete_atomic_visibility[True]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_export.py::test_exact_replay_resyncs_parent_after_interrupted_publication	systems-integration	yes	yes
+packages/aitm-usage/tests/test_export.py::test_exact_replay_resyncs_parent_after_interrupted_publication	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_export_allowlists_refs_and_gap_only_coverage	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_export_cli_reads_existing_project_without_writer_lease	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_receiver_checks_reconciled_observation_after_reopen	fast-unit	yes	yes
@@ -384,7 +384,7 @@ packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_n
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_hook_refuses_executable_change_during_final_ancestry_check[new-path]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_hook_refuses_executable_change_during_final_ancestry_check[same-path]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_and_hook_recheck_external_process_incarnation[live-/bin/sh]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_and_hook_recheck_external_process_incarnation[stale-/bin/sh]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_and_hook_recheck_external_process_incarnation[stale-/bin/sh]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_module_accepts_exact_native_input_and_prints_nothing	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner	fast-unit	yes	yes
@@ -488,15 +488,15 @@ packages/aitm-usage/tests/test_install.py::test_runtime_replaced_after_bootstrap
 packages/aitm-usage/tests/test_install.py::test_same_pid_with_different_start_cannot_certify_health	fast-unit	yes	yes
 packages/aitm-usage/tests/test_install.py::test_scope_launcher_forwards_only_exact_optional_thread_candidate[empty]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_install.py::test_scope_launcher_forwards_only_exact_optional_thread_candidate[hostile]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_install.py::test_scope_launcher_forwards_only_exact_optional_thread_candidate[matching]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_install.py::test_scope_launcher_forwards_only_exact_optional_thread_candidate[matching]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_install.py::test_scope_launcher_forwards_only_exact_optional_thread_candidate[unset]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_install.py::test_scope_launcher_forwards_only_exact_optional_thread_candidate[wrong]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_install.py::test_scope_launcher_forwards_only_exact_optional_thread_candidate[wrong]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_install.py::test_unapproved_runtime_hook_never_executes	systems-integration	yes	yes
 packages/aitm-usage/tests/test_install.py::test_upgrade_refuses_witness_incapable_running_prior	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[False-False]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[False-True]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[True-False]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[True-True]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[True-True]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_closed_resolver_cannot_copy_the_unpatched_codex_fixture	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_currentness_preserves_cancellation	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_late_recheck_refusal_is_private_and_rolls_back[prepare]	fast-unit	yes	yes
@@ -531,8 +531,8 @@ packages/aitm-usage/tests/test_ledger.py::test_held_writer_refuses_changed_state
 packages/aitm-usage/tests/test_ledger.py::test_held_writer_refuses_changed_state_paths_before_write[lock]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_held_writer_refuses_changed_state_paths_before_write[root]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_inherited_macos_grant_refused_before_private_creation[guard]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_ledger.py::test_inherited_macos_grant_refused_before_private_creation[project]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_ledger.py::test_installed_console_entry_uses_package_and_project_prefix	systems-integration	yes	yes
+packages/aitm-usage/tests/test_ledger.py::test_inherited_macos_grant_refused_before_private_creation[project]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_ledger.py::test_installed_console_entry_uses_package_and_project_prefix	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_invalid_identity_refuses_before_durable_writes[key]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_invalid_identity_refuses_before_durable_writes[project]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_invalid_identity_refuses_before_durable_writes[schema]	fast-unit	yes	yes

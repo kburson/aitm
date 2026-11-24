@@ -15,7 +15,10 @@ from uuid import UUID
 import pytest
 from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 from test_grok import PROMPT_A, PROMPT_B, SESSION
-from test_monitor_grok_capture import isolated_grok_capture  # noqa: F401, F811
+from test_monitor_grok_capture import (
+    _isolated_grok_capture,
+    isolated_grok_capture,  # noqa: F401, F811
+)
 
 from aitm_usage import process_identity, scope_admission
 from aitm_usage.ledger import ConflictError, LedgerError
@@ -746,20 +749,101 @@ def test_platform_native_process_custody_has_no_provider_request(
     assert not (f.writer.root / scope_admission._GROK_RECEIPTS).exists()
 
 
-@pytest.mark.skipif(
-    sys.platform != "linux", reason="Requires the Linux proc filesystem"
-)
-@pytest.mark.parametrize("isolated_grok_capture", ["/bin/sh"], indirect=True)
-@pytest.mark.parametrize("stale_incarnation", [False, True], ids=["live", "stale"])
-def test_linux_scope_staging_and_hook_recheck_external_process_incarnation(
-    isolated_grok_capture,  # noqa: F811
-    tmp_path,
-    monkeypatch,
-    stale_incarnation,
+def _assert_stale_process_incarnation_is_refused(
+    staged_scope_policy, monkeypatch, capsys
 ):
-    f = isolated_grok_capture
-    _, request = _scope_proposal(f)
-    checkout = tmp_path / "checkout"
+    from functools import partial
+    from io import BytesIO, TextIOWrapper
+
+    from aitm_usage.sources import grok_scope_hook
+
+    f, _, request, checkout, process = staged_scope_policy
+    f.submit(33505, True)
+    assert f.evaluate()
+    previous = replace(process, started=process.started - timedelta(seconds=1))
+    with monkeypatch.context() as stage:
+        stage.setattr(
+            process_identity,
+            "read_process_identity",
+            lambda pid: previous if pid == previous.pid else None,
+        )
+        selector = _stage(f, request, checkout, previous)
+
+    caller = process.pid + 1
+    hops = {
+        caller: (process.pid, process.started + timedelta(seconds=1)),
+        process.pid: (1, process.started),
+    }
+    hook_os = SimpleNamespace(
+        getpid=lambda: caller, getppid=lambda: process.pid, environ=os.environ
+    )
+    monkeypatch.setattr(grok_scope_hook, "os", hook_os)
+    verify = partial(grok_scope_hook._has_process_ancestor, read_hop=hops.get)
+    evidence = f.writer.source_evidence()
+    image = scope_admission._grok_image_ref(evidence, process.executable)
+    actual = scope_admission._grok_process_ref(evidence, process.pid, process.started)
+    stale = scope_admission._grok_process_ref(evidence, previous.pid, previous.started)
+    assert verify(evidence, actual, image)
+    assert not verify(evidence, stale, image)
+    ancestry = Mock(wraps=verify)
+    monkeypatch.setattr(grok_scope_hook, "_has_process_ancestor", ancestry)
+
+    event = {
+        "hookEventName": "user_prompt_submit",
+        "sessionId": SESSION,
+        "promptId": PROMPT_A,
+        "workspaceRoot": str(checkout),
+    }
+    monkeypatch.setattr(grok_scope_hook, "default_monitor_root", lambda: f.writer.root)
+    monkeypatch.setattr(sys, "argv", ["grok_scope_hook", selector.value])
+    monkeypatch.setattr(
+        sys, "stdin", TextIOWrapper(BytesIO(json.dumps(event).encode()))
+    )
+    monkeypatch.setenv("GROK_HOOK_EVENT", event["hookEventName"])
+    monkeypatch.setenv("GROK_SESSION_ID", SESSION)
+
+    receipt_dir = f.writer.root / scope_admission._GROK_RECEIPTS
+    before = f.scope_files.files[receipt_dir].copy()
+    assert grok_scope_hook.main() == 0
+    assert capsys.readouterr() == ("", "")
+    ancestry.assert_called_once_with(evidence, stale, image)
+    assert f.scope_files.files[receipt_dir] == before
+    lookup = scope_admission.grok_receipt_lookup(f.writer, f.source_id, checkout)
+    assert lookup(SESSION, PROMPT_A, "native") is None
+
+
+@pytest.fixture
+def live_grok_process_capture(tmp_path, monkeypatch):
+    yield from _isolated_grok_capture(tmp_path, monkeypatch, "/bin/sh")
+
+
+@pytest.mark.parametrize(
+    "stale_incarnation",
+    [
+        pytest.param(
+            False,
+            id="live-/bin/sh",
+            marks=pytest.mark.skipif(
+                sys.platform != "linux", reason="Requires the Linux proc filesystem"
+            ),
+        ),
+        pytest.param(True, id="stale-/bin/sh"),
+    ],
+)
+def test_linux_scope_staging_and_hook_recheck_external_process_incarnation(
+    request, stale_incarnation
+):
+    if stale_incarnation:
+        _assert_stale_process_incarnation_is_refused(
+            request.getfixturevalue("staged_scope_policy"),
+            request.getfixturevalue("monkeypatch"),
+            request.getfixturevalue("capsys"),
+        )
+        return
+
+    f = request.getfixturevalue("live_grok_process_capture")
+    _, mark = _scope_proposal(f)
+    checkout = request.getfixturevalue("tmp_path") / "checkout"
     f.submit(33505, True)
     assert f.evaluate()
     event = {
@@ -794,24 +878,9 @@ def test_linux_scope_staging_and_hook_recheck_external_process_incarnation(
         },
     ) as external:
         try:
-            with monkeypatch.context() as stage:
-                if stale_incarnation:
-                    process_ref = scope_admission._grok_process_ref
-                    stage.setattr(
-                        scope_admission,
-                        "_grok_process_ref",
-                        lambda evidence, pid, started: process_ref(
-                            evidence, pid, started - timedelta(seconds=1)
-                        ),
-                    )
-                selector = scope_admission.stage_grok_attempt(
-                    f.writer,
-                    f.source_id,
-                    request.command_id,
-                    SESSION,
-                    checkout,
-                    external.pid,
-                )
+            selector = scope_admission.stage_grok_attempt(
+                f.writer, f.source_id, mark.command_id, SESSION, checkout, external.pid
+            )
             stdout, stderr = external.communicate(
                 f"{selector.value}\n{json.dumps(event)}\n".encode(), timeout=15
             )
@@ -821,12 +890,8 @@ def test_linux_scope_staging_and_hook_recheck_external_process_incarnation(
                 external.kill()
                 external.communicate()
     lookup = scope_admission.grok_receipt_lookup(f.writer, f.source_id, checkout)
-    expected = (
-        None
-        if stale_incarnation
-        else scope_admission.scope_receipt_ref(
-            f.writer.source_evidence(), request.command_id
-        )
+    expected = scope_admission.scope_receipt_ref(
+        f.writer.source_evidence(), mark.command_id
     )
     assert lookup(SESSION, PROMPT_A, "native") == expected
 

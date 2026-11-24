@@ -37,8 +37,6 @@ def _uses_path_metadata(request):
         return request.node.callspec.id != "ancestor"
     if name == "test_uuid_guard_refuses_second_process_after_state_path_drift":
         return request.node.callspec.id != "lock"
-    if name == "test_inherited_macos_grant_refused_before_private_creation":
-        return request.node.callspec.id == "guard"
     return "ledger_path_metadata" in request.fixturenames
 
 
@@ -981,18 +979,19 @@ def test_marker_wire_allowlist_rejects_extra_or_raw_source_fields(memory_state):
     writer.assert_not_called()
 
 
-def test_installed_console_entry_uses_package_and_project_prefix(tmp_path):
-    executable = Path(sys.executable).with_name("aitm-usage")
-    assert executable.is_file(), "The standalone aitm-usage console script is absent"
-    result = subprocess.run(
-        [str(executable), "--project", str(tmp_path / "test-project"), "--version"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    assert result.stdout.startswith("aitm-usage ")
+def test_installed_console_entry_uses_package_and_project_prefix(monkeypatch, capsys):
     cli = importlib.import_module("aitm_usage.cli")
-    assert cli.default_project_root(PROJECT) == Path.home() / ROOT_PREFIX / str(PROJECT)
+    home = Path("/fixture/home")
+    monkeypatch.setattr(Path, "home", lambda: home)
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    monkeypatch.setattr(
+        sys, "argv", ["aitm-usage", "--project", "/fixture/test-project", "--version"]
+    )
+    with pytest.raises(SystemExit) as exit_:
+        cli.main()
+    assert exit_.value.code == 0
+    assert capsys.readouterr().out == "aitm-usage 0.1.0\n"
+    assert cli.default_project_root(PROJECT) == home / ROOT_PREFIX / str(PROJECT)
 
 
 def test_stale_expected_checkpoint_cannot_append_new_revision(ledger_rows):
@@ -1218,50 +1217,37 @@ def test_existing_state_refuses_missing_control_guard(ledger_path_metadata, modu
 
 @pytest.mark.parametrize("destination", ["project", "guard"])
 def test_inherited_macos_grant_refused_before_private_creation(
-    request, modules, destination, monkeypatch, path_metadata
+    modules, destination, monkeypatch, ledger_path_metadata, mac_acl_text
 ):
+    from aitm_usage import host_fs
+
     ledger_module, _ = modules
-    if path_metadata is not None:
-        from aitm_usage import host_fs
+    paths = ledger_path_metadata
+    root = paths.base / "grant" / "project"
+    parent = root.parent if destination == "project" else paths.control.parent.parent
+    paths.add_directory(parent)
+    monkeypatch.setattr(ledger_module, "check_private_acl", host_fs.check_private_acl)
+    if sys.platform == "linux":
 
-        parent = path_metadata.control.parent.parent
-        path_metadata.add_directory(parent)
-        root = path_metadata.base / "project"
-        monkeypatch.setattr(
-            ledger_module, "check_private_acl", host_fs.check_private_acl
+        def getxattr(path, name, *, follow_symlinks):
+            assert not follow_symlinks
+            if path == parent and name == "system.posix_acl_default":
+                return b"test inherited ACL"
+            raise OSError(errno.ENODATA, "No test ACL")
+
+        monkeypatch.setattr(host_fs, "os", SimpleNamespace(getxattr=getxattr))
+    else:
+        mac_acl_text(
+            parent,
+            b"!#acl 1\ngroup:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12:allow:read\n",
         )
-        if sys.platform == "linux":
 
-            def getxattr(path, name, *, follow_symlinks):
-                assert not follow_symlinks
-                if path == parent and name == "system.posix_acl_default":
-                    return b"test inherited ACL"
-                raise OSError(errno.ENODATA, "No test ACL")
-
-            monkeypatch.setattr(host_fs, "os", SimpleNamespace(getxattr=getxattr))
-        else:
-            mac_acl_text = request.getfixturevalue("mac_acl_text")
-            mac_acl_text(
-                parent,
-                b"!#acl 1\ngroup:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12:allow:read\n",
-            )
-        before = dict(path_metadata.entries)
-        with pytest.raises(ledger_module.LedgerError, match="Unsafe private ACL"):
-            ledger_module.Ledger.initialize(root, PROJECT)
-        assert not root.exists()
-        assert path_metadata.entries == before
-        return
-
-    tmp_path = request.getfixturevalue("tmp_path")
-    grant_extra_acl = request.getfixturevalue("grant_extra_acl")
-    parent = tmp_path / "grant"
-    parent.mkdir(mode=0o700)
-    grant_extra_acl(parent, "system.posix_acl_default")
-    root = parent / "project"
-    with pytest.raises(ledger_module.LedgerError, match="ACL"):
+    before = paths.entries.copy()
+    with pytest.raises(ledger_module.LedgerError, match="Unsafe private ACL"):
         ledger_module.Ledger.initialize(root, PROJECT)
     assert not root.exists()
-    assert list(parent.iterdir()) == []
+    assert not (paths.control / f"{PROJECT}.lock").exists()
+    assert paths.entries == before
 
 
 def test_real_mac_default_ancestry_allows_standard_deny_delete(

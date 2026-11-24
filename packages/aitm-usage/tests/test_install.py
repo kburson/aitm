@@ -1689,16 +1689,92 @@ def test_prune_preserves_nested_recovery_material(
     remove.assert_not_called()
 
 
+def _assert_scope_thread_admission(ledger, monkeypatch, capsys, *, matches):
+    from aitm_usage.types import BoundaryKind, ScopeMarker, WorkPhase, encode_marker
+
+    thread = str(UUID(int=1201))
+    marker_id = UUID(int=1204)
+    marker = ScopeMarker(
+        marker_id,
+        Provider.CODEX,
+        scopes.session_reference(ledger, Provider.CODEX, thread),
+        1,
+        BoundaryKind.REQUEST,
+        ledger.pseudonymize("fixture", "native-boundary"),
+        datetime.fromisoformat(CUTOFF) + timedelta(seconds=1),
+        ItemKey(ItemKind.ISSUE, 194),
+        WorkPhase.PLANNING,
+        ledger.pseudonymize("fixture", "participant"),
+        PROJECT,
+        receipt_ref=ledger.pseudonymize("scope-receipt", str(marker_id)),
+    )
+    path = Path("/fixture/marker.json")
+    payload = encode_marker(marker)
+
+    def read_marker(path_to_open, mode):
+        assert (path_to_open, mode) == (path, "rb")
+        return BytesIO(payload)
+
+    open_ledger = Mock(return_value=ledger)
+    enqueue = Mock(return_value=None)
+    monkeypatch.setattr(Path, "open", read_marker)
+    monkeypatch.setattr(Ledger, "open", open_ledger)
+    monkeypatch.setattr(cli, "enqueue_command", enqueue)
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    monkeypatch.setenv("CODEX_THREAD_ID", thread if matches else str(UUID(int=1202)))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "aitm-usage",
+            "--project",
+            str(ledger.root),
+            "scope",
+            "mark",
+            "--marker",
+            str(path),
+            "--json",
+        ],
+    )
+
+    result = cli.main()
+    output = capsys.readouterr()
+    open_ledger.assert_called_once_with(ledger.root, PROJECT)
+    if matches:
+        assert result == 0
+        assert json.loads(output.out) == {
+            "command_id": str(marker_id),
+            "status": "queued",
+        }
+        assert output.err == ""
+        enqueue.assert_called_once_with(
+            ledger.root, InboxCommand(marker_id, PROJECT, marker), claude_session=None
+        )
+    else:
+        assert result == 1
+        assert output.out == ""
+        assert output.err == "aitm-usage: invalid private inbox command or project\n"
+        enqueue.assert_not_called()
+
+
 @pytest.mark.parametrize("case", ["matching", "wrong", "unset", "empty", "hostile"])
-def test_scope_launcher_forwards_only_exact_optional_thread_candidate(tmp_path, case):
+def test_scope_launcher_forwards_only_exact_optional_thread_candidate(
+    request, monkeypatch, capsys, case
+):
+    if case in {"matching", "wrong"}:
+        ledger = request.getfixturevalue("install_policy_ledger")
+        _assert_scope_thread_admission(
+            ledger, monkeypatch, capsys, matches=case == "matching"
+        )
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     side_effect = tmp_path / "unexpected-shell-execution"
     hostile = (
         f'- spaces "quoted" and \'single\' $(touch "{side_effect}") '
         f'`touch "{side_effect}"`\nsecond line'
     )
     candidate = {
-        "matching": str(UUID(int=1201)),
-        "wrong": str(UUID(int=1202)),
         "unset": None,
         "empty": "",
         "hostile": hostile,

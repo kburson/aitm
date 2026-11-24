@@ -57,7 +57,7 @@ _UNIT = {
 }
 _FIXED_EXPORT = (
     _PRODUCT
-    + "test_export.py::test_exact_replay_resyncs_parent_after_interrupted_publication"
+    + "test_export.py::test_replacing_outer_stage_during_rename_cannot_publish_substitute"
 )
 _PRODUCT_IDS = sorted(_REQUIRED | _UNIT | {_FIXED_EXPORT, _OPTIONAL})
 _LOCAL = {
