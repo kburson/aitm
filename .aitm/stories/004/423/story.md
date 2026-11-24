@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 423
 title: "[Spike] Validate TIA selection against full-suite runs"
 kind: "spike"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/423"
 parent: null
 children: []
 blocking: []
 blocked-by: [422]
 created: "2026-11-23T00:30:38Z"
-updated: "2026-11-24T13:19:32Z"
+updated: "2026-11-24T13:31:10Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "L"}
 priority: "P2"
 origin: null
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/refinement.md", "plan/experiment.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/refinement.md", "plan/experiment.md", "plan/reviews/grok-round-1.md", "plan/reviews/grok-round-2.md"], "attachments": []}
 expansions: []
 trips: []
 ---
