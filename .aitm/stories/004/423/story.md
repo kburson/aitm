@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 423
 title: "[Spike] Validate TIA selection against full-suite runs"
 kind: "spike"
-state: "done"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/423"
 parent: null
 children: []
 blocking: []
 blocked-by: [422]
 created: "2026-11-23T00:30:38Z"
-updated: "2026-11-24T13:41:53Z"
-last-branch: "codex/423-tia-validation"
+updated: "2026-11-24T14:00:49Z"
+last-branch: "codex/423-tia-delivery"
 estimate: {"agent-hours": 3.5, "size": "L"}
 priority: "P2"
 origin: null
