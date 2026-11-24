@@ -1,0 +1,215 @@
+{
+  "codex": {
+    "platform": "macOS",
+    "agent_initiated_self_query": true,
+    "story_work_turns": {
+      "2": 42743,
+      "3": 43216,
+      "4": 43723
+    },
+    "without_reporting_turn": 129682,
+    "reporting_turn_settled_value": 44867,
+    "with_reporting_turn": 174549,
+    "independent_reconciliation": {
+      "1": {
+        "value": 21174,
+        "native_total": 21174,
+        "tools": 0
+      },
+      "2": {
+        "value": 42743,
+        "native_total": 63917,
+        "tools": 1
+      },
+      "3": {
+        "value": 43216,
+        "native_total": 107133,
+        "tools": 1
+      },
+      "4": {
+        "value": 43723,
+        "native_total": 150856,
+        "tools": 1
+      },
+      "5": {
+        "value": 44867,
+        "native_total": 195723,
+        "tools": 1
+      }
+    },
+    "controls": {
+      "baseline_excluded": true,
+      "replay_rows": 4,
+      "unique_story_work_turns": 3,
+      "unavailable_turn_requested": 99,
+      "resume_context_exact": true,
+      "post_compaction_context_exact": true,
+      "actual_compaction": true,
+      "no_tools_in_recall": true,
+      "fresh_repo_handoff_exact": true,
+      "unavailable_turn_is_gap_and_creates_no_entry": true,
+      "final_settlement_arithmetic_verified": true
+    },
+    "settlement": {
+      "closeout_same_harness_callback": {
+        "turn": 5,
+        "value": 44867,
+        "expected_reply_ordinal": 5,
+        "captured_at": "2026-11-24T18:42:20.624603+00:00",
+        "provider_completion_hook": true
+      }
+    },
+    "memory": {
+      "status": "not demonstrated",
+      "isolated_native_profile": "not authenticated",
+      "documented_scope": "local profile with deferred generated summaries"
+    },
+    "harness_version": "0.171.0-alpha.13",
+    "model_selection": "GPT-6.2-Sol",
+    "authentication": "ChatGPT sign-in"
+  },
+  "claude": {
+    "platform": "macOS",
+    "agent_initiated_self_query": true,
+    "story_work_turns": {
+      "2": 75749,
+      "3": 76333,
+      "4": 76914
+    },
+    "without_reporting_turn": 228996,
+    "reporting_turn_settled_value": 78699,
+    "with_reporting_turn": 307695,
+    "independent_reconciliation": {
+      "1": {
+        "value": 37601,
+        "requests": 1,
+        "tools": 0
+      },
+      "2": {
+        "value": 75749,
+        "requests": 2,
+        "tools": 1
+      },
+      "3": {
+        "value": 76333,
+        "requests": 2,
+        "tools": 1
+      },
+      "4": {
+        "value": 76914,
+        "requests": 2,
+        "tools": 1
+      },
+      "5": {
+        "value": 78699,
+        "requests": 2,
+        "tools": 1
+      }
+    },
+    "controls": {
+      "baseline_excluded": true,
+      "replay_rows": 4,
+      "unique_story_work_turns": 3,
+      "unavailable_turn_requested": 99,
+      "resume_context_exact": true,
+      "post_compaction_context_exact": true,
+      "actual_compaction": true,
+      "no_tools_in_recall": true,
+      "fresh_repo_handoff_exact": true,
+      "unavailable_turn_is_gap_and_creates_no_entry": true,
+      "final_settlement_arithmetic_verified": true
+    },
+    "settlement": {
+      "initial_closeout_callback_bad_boundary": true,
+      "original_closeout_reconciled_by_exact_ancestry": true,
+      "corrected_callback_separate_control": {
+        "turn": 9,
+        "value": 41765,
+        "expected_reply_ordinal": 11,
+        "captured_at": "2026-11-24T18:42:24.162478+00:00",
+        "provider_completion_hook": true
+      }
+    },
+    "memory": {
+      "native_autoMemoryDirectory": "isolated private project-memory directory",
+      "stored_by_active_agent": true,
+      "fresh_same_story_exact_no_tools": true,
+      "different_story_semantic_control_empty": true,
+      "different_memory_directory_control_gap": true,
+      "origin_session_explicit_memory_read_exact": true
+    },
+    "harness_version": "2.1.331",
+    "model_selection": "Claude Sonnet",
+    "authentication": "Claude Pro"
+  },
+  "grok": {
+    "platform": "macOS",
+    "agent_initiated_self_query": true,
+    "story_work_turns": {
+      "2": 38280,
+      "3": 38822,
+      "4": 39338
+    },
+    "without_reporting_turn": 116440,
+    "reporting_turn_settled_value": 40733,
+    "with_reporting_turn": 157173,
+    "independent_reconciliation": {
+      "1": {
+        "value": 18746,
+        "native_usd_ticks": 235470400,
+        "model_calls": 1,
+        "ended_at": "2026-11-24T18:38:31.626053+00:00"
+      },
+      "2": {
+        "value": 38280,
+        "native_usd_ticks": 340054400,
+        "model_calls": 2,
+        "ended_at": "2026-11-24T18:38:41.279037+00:00"
+      },
+      "3": {
+        "value": 38822,
+        "native_usd_ticks": 140406400,
+        "model_calls": 2,
+        "ended_at": "2026-11-24T18:38:47.754445+00:00"
+      },
+      "4": {
+        "value": 39338,
+        "native_usd_ticks": 142609600,
+        "model_calls": 2,
+        "ended_at": "2026-11-24T18:38:57.979915+00:00"
+      },
+      "5": {
+        "value": 40733,
+        "native_usd_ticks": 341645600,
+        "model_calls": 2,
+        "ended_at": "2026-11-24T18:39:09.298845+00:00"
+      }
+    },
+    "controls": {
+      "baseline_excluded": true,
+      "replay_rows": 4,
+      "unique_story_work_turns": 3,
+      "unavailable_turn_requested": 99,
+      "resume_context_exact": true,
+      "post_compaction_context_exact": true,
+      "actual_compaction": true,
+      "no_tools_in_recall": true,
+      "fresh_repo_handoff_exact": true,
+      "unavailable_turn_is_gap_and_creates_no_entry": true,
+      "final_settlement_arithmetic_verified": true
+    },
+    "settlement": {
+      "native_read_by_turn": true,
+      "provider_completion_hook_tested": false
+    },
+    "memory": {
+      "status": "not demonstrated",
+      "isolated_native_profile": "not authenticated",
+      "documented_scope": "workspace and global stores",
+      "global_store_accessed_for_trial": false
+    },
+    "harness_version": "1.0.92",
+    "model_selection": "Grok 4.7 Fast",
+    "authentication": "grok.com sign-in"
+  }
+}
