@@ -6,11 +6,11 @@ kind: "epic"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/426"
 parent: null
-children: [427, 428, 429, 430, 431]
+children: [427, 428, 429, 430, 431, 432]
 blocking: []
 blocked-by: []
 created: "2026-11-24T15:08:19Z"
-updated: "2026-11-24T15:27:21Z"
+updated: "2026-11-24T18:33:13Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -44,9 +44,10 @@ Compare the tactics on existing-chat support, autonomous assignment, own-orchest
 
 1. #427 Measure the orchestrator from its existing interactive chat
 2. #428 Retrieve cost later for an explicitly named session
-3. #429 Measure usage from an orchestrator-launched headless run
-4. #430 Qualify a callable result-and-usage turn for each XPR provider
-5. #431 Deliver a usage receipt with every headless XPR turn
+3. #432 Self-report per-turn agent usage and retain a story cost log
+4. #429 Measure usage from an orchestrator-launched headless run
+5. #430 Qualify a callable result-and-usage turn for each XPR provider
+6. #431 Deliver a usage receipt with every headless XPR turn
 
 ## Follow-up experiments and controls
 

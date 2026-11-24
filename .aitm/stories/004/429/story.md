@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/429"
 parent: 426
 children: []
 blocking: [430]
-blocked-by: [428]
+blocked-by: [428, 432]
 created: "2026-11-24T15:08:25Z"
-updated: "2026-11-24T15:10:03Z"
+updated: "2026-11-24T18:33:15Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -26,7 +26,7 @@ trips: []
 
 Research parent: #426.
 
-Start after #428 has recorded its findings.
+Start after #428 and #432 have recorded their findings.
 
 ## Question
 

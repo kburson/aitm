@@ -1,0 +1,32 @@
+{
+  "surface": "active Codex Desktop chat",
+  "self_query": "active agent invoked local tool against its exact retained session",
+  "session_identity_verified": true,
+  "completed_turn_boundaries_verified": true,
+  "in_flight_turn_excluded": true,
+  "usage_categories": [
+    "cache_write_input_tokens",
+    "cached_input_tokens",
+    "input_tokens",
+    "output_tokens",
+    "reasoning_output_tokens",
+    "total_tokens"
+  ],
+  "positive_numeric_counter_delta_verified": true,
+  "file_control": {
+    "repo": "disposable local Git workspace",
+    "rows": 2,
+    "unique_entries": 1,
+    "read_back_in_separate_process": true,
+    "aggregate_matches_measured_turn": true
+  },
+  "untested": [
+    "agent memory",
+    "session context across resume or compaction",
+    "fresh-agent handoff",
+    "settled self-closeout turn",
+    "Claude Code",
+    "Grok Build",
+    "billed charges"
+  ]
+}
