@@ -1,0 +1,19 @@
+# Grok independent results review
+
+Grok Build · grok-4.7-build-fast · 2026-11-24 · off-platform read-only review of the exact report and digest-bound evidence projection.
+
+**PASS.** No material blocking findings on the supplied report bytes, the compact projection, or the nine-receipt manifest binding.
+
+Report `results.md` `20a1da96cffed1a4722b839afb466e3c1aadfc6cbcdffbd2922a357c4c14aaa2`. Manifest `f3a441be4019e4383219935aa22f9795732bea5b214db18bfd8a3f1956442cc0`. Projection source `comparison.json` `254f6f7446346c06d296f671ca560ed3b4a57cb0a274765896482029e084db84`. Planning commit `ed5e746a22d0d2ad979921e99df7f48fc0244256`. This review did not download, hash, or rerun anything.
+
+Counts and arithmetic match the projection. Every case is run `45404317943` attempt `1`, base and tool `45db935ac73911b95320a3e38d19f177cedd4fd2`, workflow `ecfe5d9adfc6e763aeea592126269849f22a56e6`, Python 3.13.9, coverage disabled, three product workers and serial helpers. Full inventories are 1,549 product + 251 helpers = 1,800, except add 1,801 and delete 1,799. Selected totals are 7, 20, then full inventory on the other seven. Profile walls sum to the reported pytest walls. Net seconds equal full − selected − probe, and the published percents round correctly. The seven full-inventory edited lanes cost 3.130–9.122 s. Leaf is 20/1,800 and +88.340 s (+78.0%). Clean is 7/1,800 and +87.041 s (+78.1%).
+
+Oracle failures are eight leaf plus two transitive. Missed failures and outcome mismatches are zero on all nine rows, so the ten case-specific failures are the full failure set. Leaf’s `item.reason == "startup"` witness and transitive’s `WatchError: Authorized watch root is unavailable` witness are in those failure lists, reproduced on both lanes, and recorded as passing on clean. Inventory deltas are one added (add), one added and one removed (rename), and one removed (delete). Removed IDs are absent from the run counts.
+
+Fallback readings match the projection. Clean is the disclosed prediction correction: predicted full, ran the seven controls, wrong-tree refusal true. Leaf stayed selected with empty reasons. Add is the prediction change to full on `dynamic-import`. Rename and delete ran predicted full with `obligations-removed` plus `dynamic-import`. Transitive and shared ran predicted full on `dynamic-import` and `shared-conftest`. Dynamic ran predicted full on `dynamic-import`, with 1,780 IDs above the 20-ID leaf set and `extra_safety` 0. Docs ran predicted full on `unclassified-change` while the independent map is `checks`, and 1,793 equals 1,800 minus the seven controls. Excess scores for add, rename, and delete are 1,788, leaving allowances of 13, 12, and 11.
+
+The matrix bounds hold: pinned Linux advisory workload, nine synthetic cases, mandatory controls, and no repository-wide false-negative rate, macOS-native claim, or narrow result for unresolved or shared dependencies. Transitive’s image `ubuntu24:20261116.376.1` differs from `ubuntu24:20261116.133.1` on the other eight, and both of its lanes share that image, so its pair is internally timed and its cross-case level is not.
+
+Closure rows are present for all nine cases: identities, job conclusions `success`, ZIP digests, modes, reasons, map class, oracle failures, seeds, inventory deltas, and scores. The manifest names the nine structured receipts. Remaining closure actions — remote read-back, sign-off, closing #423, and Project Done — are outside this results check.
+
+Limitations: expectation seals, excess ID lists, and the 44/43 module counts are not in the compact projection, so those lists were not re-counted here. `recompute.py` `ee679bf307e517a915963e5bb9a7d0647f293610ecf3a24a5ea8bcf166b1331c` is identified, not executed. Times are single-shot. The small negative nets sit in the noise band the report already states.
