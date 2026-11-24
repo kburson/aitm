@@ -1,0 +1,355 @@
+{
+  "schema": "aitm.research.xpr-turn-usage/v1",
+  "story": 430,
+  "date": "2026-11-24",
+  "platform": "macOS",
+  "aipr_version": "0.4.1",
+  "mode": "broker-owned manual XPR, no-commit test mode",
+  "claude": {
+    "version": "2.1.331",
+    "auth": "Claude Pro sign-in",
+    "rounds": [
+      {
+        "native_session_ref": "43b4976709bdb115737c0d42",
+        "aipr_participant_fingerprint_verified": true,
+        "registered_identity_source": "runtime",
+        "aipr_round": 1,
+        "aipr_decision": "reviewer-revisions-requested",
+        "sealed_response_digest_verified": true,
+        "model": "claude-sonnet-5-5",
+        "native_prompt_ref": "c0d743ed48902904b4dfcfec",
+        "request_count": 7,
+        "terminal_reason": "completed",
+        "aipr_launcher_status": "submitted",
+        "sealed_decision_observed": true,
+        "native_per_result_tokens": {
+          "input_tokens": 14,
+          "cache_read_input_tokens": 225111,
+          "cache_creation_input_tokens": 28164,
+          "output_tokens": 1896
+        },
+        "retained_request_token_sum": {
+          "input_tokens": 14,
+          "cache_read_input_tokens": 225111,
+          "cache_creation_input_tokens": 28164,
+          "output_tokens": 1896
+        },
+        "native_list_cost_usd": "0.1541551",
+        "price_basis": "list",
+        "native_cumulative_usd": "0.1541551",
+        "native_cache_write_5m_tokens": 0,
+        "native_cache_write_1h_tokens": 28164,
+        "result_before_terminal_usage": true,
+        "public_launcher_has_usage_fields": false
+      },
+      {
+        "native_session_ref": "43b4976709bdb115737c0d42",
+        "aipr_participant_fingerprint_verified": true,
+        "registered_identity_source": "runtime",
+        "aipr_round": 2,
+        "aipr_decision": "reviewer-accepted",
+        "sealed_response_digest_verified": true,
+        "model": "claude-sonnet-5-5",
+        "native_prompt_ref": "c6e932f36160c760d28514f4",
+        "request_count": 5,
+        "terminal_reason": "completed",
+        "aipr_launcher_status": "submitted",
+        "sealed_decision_observed": true,
+        "native_per_result_tokens": {
+          "input_tokens": 10,
+          "cache_read_input_tokens": 206675,
+          "cache_creation_input_tokens": 5120,
+          "output_tokens": 1464
+        },
+        "retained_request_token_sum": {
+          "input_tokens": 10,
+          "cache_read_input_tokens": 206675,
+          "cache_creation_input_tokens": 5120,
+          "output_tokens": 1464
+        },
+        "native_list_cost_usd": "0.0558075",
+        "price_basis": "list",
+        "native_cumulative_usd": "0.2099626",
+        "native_cache_write_5m_tokens": 0,
+        "native_cache_write_1h_tokens": 5120,
+        "result_before_terminal_usage": true,
+        "public_launcher_has_usage_fields": false
+      }
+    ],
+    "interruption": {
+      "native_session_ref": "d99530ff170f7aace31a033a",
+      "aipr_participant_fingerprint_verified": true,
+      "registered_identity_source": "runtime",
+      "model": "claude-sonnet-5-5",
+      "native_prompt_ref": "992317187c8ef627e7f33f20",
+      "request_count": 3,
+      "terminal_reason": "aborted_streaming",
+      "aipr_launcher_status": "failed",
+      "sealed_decision_observed": false,
+      "native_per_result_tokens": {
+        "input_tokens": 6,
+        "cache_read_input_tokens": 77200,
+        "cache_creation_input_tokens": 24899,
+        "output_tokens": 682
+      },
+      "retained_request_token_sum": {
+        "input_tokens": 6,
+        "cache_read_input_tokens": 77200,
+        "cache_creation_input_tokens": 24899,
+        "output_tokens": 682
+      },
+      "native_list_cost_usd": "0.1141480",
+      "price_basis": "list",
+      "native_cumulative_usd": "0.1141480",
+      "native_cache_write_5m_tokens": 0,
+      "native_cache_write_1h_tokens": 24899,
+      "result_before_terminal_usage": null,
+      "public_launcher_has_usage_fields": false
+    }
+  },
+  "grok": {
+    "version": "1.0.92",
+    "auth": "existing Grok account sign-in",
+    "rounds": [
+      {
+        "native_session_ref": "6949bd2924eaf3db71307d4b",
+        "aipr_participant_fingerprint_verified": true,
+        "registered_identity_source": "declared",
+        "aipr_round": 1,
+        "aipr_decision": "reviewer-revisions-requested",
+        "sealed_response_digest_verified": true,
+        "native_persisted_turn_ordinal": 1,
+        "native_final_usage": {
+          "input_tokens": 43796,
+          "cache_read_input_tokens": 183936,
+          "cache_creation_input_tokens": 0,
+          "output_tokens": 2143,
+          "reasoning_tokens": 942,
+          "total_tokens": 229875
+        },
+        "retained_exact_turn": {
+          "turnNumber": 1,
+          "totalTokens": 229875,
+          "inputTokens": 227732,
+          "cachedReadTokens": 183936,
+          "cacheCreationTokens": 0,
+          "outputTokens": 2143,
+          "reasoningTokens": 942,
+          "costUsdTicks": 1308442400,
+          "modelCalls": 9
+        },
+        "native_cost_usd_ticks": 1308442400,
+        "model": "grok-4.7-build-fast",
+        "result_before_terminal_usage": true,
+        "native_request_ref": "010b67b5bc82fa807a65b3f0",
+        "terminal_reason": "end_turn",
+        "signature_keyed_usage_frames": 9,
+        "native_usage_frame_sum": {
+          "input_tokens": 43796,
+          "cache_read_input_tokens": 183936,
+          "cache_creation_input_tokens": 0,
+          "output_tokens": 2143,
+          "reasoning_tokens": 942
+        },
+        "sealed_decision_observed": true
+      },
+      {
+        "native_session_ref": "6949bd2924eaf3db71307d4b",
+        "aipr_participant_fingerprint_verified": true,
+        "registered_identity_source": "declared",
+        "aipr_round": 2,
+        "aipr_decision": "reviewer-accepted",
+        "sealed_response_digest_verified": true,
+        "native_persisted_turn_ordinal": 2,
+        "native_final_usage": {
+          "input_tokens": 4546,
+          "cache_read_input_tokens": 184448,
+          "cache_creation_input_tokens": 0,
+          "output_tokens": 1177,
+          "reasoning_tokens": 253,
+          "total_tokens": 190171
+        },
+        "retained_exact_turn": {
+          "turnNumber": 2,
+          "totalTokens": 190171,
+          "inputTokens": 188994,
+          "cachedReadTokens": 184448,
+          "cacheCreationTokens": 0,
+          "outputTokens": 1177,
+          "reasoningTokens": 253,
+          "costUsdTicks": 736970400,
+          "modelCalls": 6
+        },
+        "native_cost_usd_ticks": 736970400,
+        "model": "grok-4.7-build-fast",
+        "result_before_terminal_usage": true,
+        "native_request_ref": "a8566d1a6195b9dc53e176ae",
+        "terminal_reason": "end_turn",
+        "signature_keyed_usage_frames": 6,
+        "native_usage_frame_sum": {
+          "input_tokens": 4546,
+          "cache_read_input_tokens": 184448,
+          "cache_creation_input_tokens": 0,
+          "output_tokens": 1177,
+          "reasoning_tokens": 253
+        },
+        "sealed_decision_observed": true
+      }
+    ],
+    "interruption": {
+      "native_session_ref": "18fdc7aa2eea1c5ab87a9386",
+      "aipr_participant_fingerprint_verified": true,
+      "registered_identity_source": "declared",
+      "native_final_usage": null,
+      "native_cost_usd_ticks": null,
+      "result_before_terminal_usage": null,
+      "retained_usage_disposition": "no numeric turn found",
+      "native_incomplete_flag": true,
+      "native_request_ref": "7db4559068a2bf3744a5e02c",
+      "terminal_reason": "cancelled",
+      "signature_keyed_usage_frames": 4,
+      "native_usage_frame_sum": {
+        "input_tokens": 45446,
+        "cache_read_input_tokens": 40704,
+        "cache_creation_input_tokens": 0,
+        "output_tokens": 708,
+        "reasoning_tokens": 367
+      },
+      "sealed_decision_observed": false
+    }
+  },
+  "codex": {
+    "version": "0.171.0-alpha.13",
+    "auth": "ChatGPT sign-in",
+    "aipr_attempts": [
+      {
+        "native_session_ref": "5a4522862db549c194d487bc",
+        "native_turn_ref": "ff819d957b564aae31a9a6e5",
+        "retained_end": "task_complete",
+        "stdout_cumulative": {
+          "input_tokens": 91428,
+          "cached_input_tokens": 74752,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 516,
+          "reasoning_output_tokens": 7
+        },
+        "retained_cumulative": {
+          "input_tokens": 91428,
+          "cached_input_tokens": 74752,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 516,
+          "reasoning_output_tokens": 7,
+          "total_tokens": 91944
+        },
+        "native_turn_delta": {
+          "input_tokens": 91428,
+          "cached_input_tokens": 74752,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 516,
+          "reasoning_output_tokens": 7,
+          "total_tokens": 91944
+        },
+        "aipr_join_refusal": "APR_INTERNAL / uv_uptime EPERM"
+      },
+      {
+        "native_session_ref": "5a4522862db549c194d487bc",
+        "native_turn_ref": "b24a74a70ef8d03eb149e360",
+        "retained_end": "task_complete",
+        "stdout_cumulative": {
+          "input_tokens": 141553,
+          "cached_input_tokens": 123904,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 751,
+          "reasoning_output_tokens": 7
+        },
+        "retained_cumulative": {
+          "input_tokens": 141553,
+          "cached_input_tokens": 123904,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 751,
+          "reasoning_output_tokens": 7,
+          "total_tokens": 142304
+        },
+        "native_turn_delta": {
+          "input_tokens": 50125,
+          "cached_input_tokens": 49152,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 235,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 50360
+        },
+        "aipr_join_refusal": "APR_INTERNAL / uv_uptime EPERM"
+      },
+      {
+        "native_session_ref": "5a4522862db549c194d487bc",
+        "native_turn_ref": "830ff04acd5e66a63e92b3af",
+        "retained_end": "turn_aborted",
+        "native_turn_delta": null
+      }
+    ],
+    "aipr_join_or_seal_observed": false,
+    "lightweight_native_comparison": [
+      {
+        "native_session_ref": "1345e1c71c7ca459bfe63244",
+        "native_turn_ref": "d253a1f4f10dd77c70abf80f",
+        "retained_end": "task_complete",
+        "stdout_cumulative": {
+          "input_tokens": 19656,
+          "cached_input_tokens": 13952,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 104,
+          "reasoning_output_tokens": 0
+        },
+        "retained_cumulative": {
+          "input_tokens": 19656,
+          "cached_input_tokens": 13952,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 104,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 19760
+        },
+        "native_turn_delta": {
+          "input_tokens": 19656,
+          "cached_input_tokens": 13952,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 104,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 19760
+        },
+        "assignment_digest_echo_verified": true,
+        "decision": "revisions-requested"
+      },
+      {
+        "native_session_ref": "1345e1c71c7ca459bfe63244",
+        "native_turn_ref": "feb60d2bf0490282c4cb0a3a",
+        "retained_end": "task_complete",
+        "stdout_cumulative": {
+          "input_tokens": 39664,
+          "cached_input_tokens": 33536,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 203,
+          "reasoning_output_tokens": 0
+        },
+        "retained_cumulative": {
+          "input_tokens": 39664,
+          "cached_input_tokens": 33536,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 203,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 39867
+        },
+        "native_turn_delta": {
+          "input_tokens": 20008,
+          "cached_input_tokens": 19584,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 99,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 20107
+        },
+        "assignment_digest_echo_verified": true,
+        "decision": "accepted"
+      }
+    ]
+  },
+  "verified_billed_spend": null
+}
