@@ -11,7 +11,7 @@ blocking: []
 blocked-by: [422]
 created: "2026-11-23T00:30:38Z"
 updated: "2026-11-24T13:31:10Z"
-last-branch: "planning"
+last-branch: "codex/423-tia-validation"
 estimate: {"agent-hours": 3.5, "size": "L"}
 priority: "P2"
 origin: null
@@ -37,6 +37,6 @@ Use #422 as the timing and coverage baseline. Exercise the suite-level selector 
 - Report missed failing node IDs, outcome mismatches on overlapping tests, excess suites and node IDs relative to the predeclared oracle, safe fallbacks, selection and execution wall time, and the fraction of the full inventory executed. Record source, host, commands, run IDs and artifacts. An ambiguous or flaky oracle is inconclusive.
 - State the selectors, scenarios and runtime behavior covered by the evidence. Keep policy and the required PR gate outside the experiment.
 
-Use the disposable draft from #422 and leave it unmerged.
+Use the exact delivered #422 tree as the baseline. The original draft #424 was merged for #422. Leave the replacement experiment draft unmerged.
 
-Experiment workspace: [draft PR #424](https://github.com/kburson/aitm/pull/424).
+Experiment workspace: [draft PR #425](https://github.com/kburson/aitm/pull/425).
