@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 433
 title: "[Spike] Measure usage and time across epic trails"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/433"
 parent: 426
 children: []
 blocking: []
 blocked-by: [431]
 created: "2026-11-24T19:20:11Z"
-updated: "2026-11-24T21:55:45Z"
+updated: "2026-11-24T21:55:51Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
