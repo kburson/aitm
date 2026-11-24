@@ -1,0 +1,58 @@
+name: 423 hosted TIA advisory comparison
+
+on:
+  push:
+    branches: [codex/423-tia-validation]
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: shadow / ${{ matrix.case }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [clean, leaf, transitive, shared, docs, add, rename, delete, dynamic]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          version: '0.10.6'
+          enable-cache: false
+      - name: Install pinned Python and GitHub CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools_dir=$(mktemp -d /var/tmp/aitm-423-tools.XXXXXXXX)
+          export UV_PYTHON_INSTALL_DIR="$tools_dir/python"
+          uv python install 3.13.9
+          python_bin=$(uv python find --managed-python 3.13.9)
+          gh_asset=gh_2.97.0_linux_amd64.tar.gz
+          cd "$tools_dir"
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/cli/cli/releases/download/v2.97.0/$gh_asset" -o "$gh_asset"
+          printf '%s  %s\n' a2c9b8497e1f85b1ad0dfcb78b5a622e098801b8e461e459e88e1ee12f018112 "$gh_asset" | sha256sum -c -
+          tar -xzf "$gh_asset"
+          printf '%s\n' "$(dirname "$python_bin")" "$tools_dir/gh_2.97.0_linux_amd64/bin" >> "$GITHUB_PATH"
+      - name: Compare sealed candidate with complete oracle
+        shell: bash
+        env:
+          EXPERIMENT_CASE: ${{ matrix.case }}
+        run: |
+          work=$(mktemp -d /var/tmp/aitm-423-run.XXXXXXXX)
+          printf 'TMPDIR=%s\n' "$work" >> "$GITHUB_ENV"
+          TMPDIR="$work" python3.13 -B shadow-423/compare.py "$EXPERIMENT_CASE" "$RUNNER_TEMP/shadow-423"
+      - name: Retain comparison evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: shadow-423-${{ matrix.case }}-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/shadow-423
+          if-no-files-found: error
+          retention-days: 30
