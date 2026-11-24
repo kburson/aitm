@@ -1,0 +1,909 @@
+{
+  "schema": "aitm.research.headless-usage/v1",
+  "story": 429,
+  "date": "2026-11-24",
+  "platform": "macOS",
+  "providers": {
+    "codex": {
+      "version": "0.171.0-alpha.13",
+      "authentication": "ChatGPT sign-in",
+      "primary_and_control_sessions_verified_distinct": true,
+      "fresh_resume_interrupt_recovery": {
+        "session": "same verified native identity through retry",
+        "session_ref": "8012f747bb11cdb765d383f4",
+        "attempts": [
+          {
+            "attempt": "fresh",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "turn.completed",
+            "terminal_reason": null,
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 19472,
+              "cached_input_tokens": 13952,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 9,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 19481
+            },
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 4046,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": [
+              "agent_message"
+            ],
+            "tool_events_observed": 0,
+            "observation": "native-turn-1",
+            "model": "gpt-6.2-sol",
+            "retained_event": "task_complete",
+            "stdout_completion_usage": {
+              "input_tokens": 19472,
+              "cached_input_tokens": 13952,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 9,
+              "reasoning_output_tokens": 0
+            },
+            "retained_cumulative_usage": {
+              "input_tokens": 19472,
+              "cached_input_tokens": 13952,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 9,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 19481
+            },
+            "retained_last_usage": {
+              "input_tokens": 19472,
+              "cached_input_tokens": 13952,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 9,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 19481
+            },
+            "usage_coverage": "direct"
+          },
+          {
+            "attempt": "resume",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "turn.completed",
+            "terminal_reason": null,
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 19502,
+              "cached_input_tokens": 19328,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 10,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 19512
+            },
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 3132,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": [
+              "agent_message"
+            ],
+            "tool_events_observed": 0,
+            "observation": "native-turn-2",
+            "model": "gpt-6.2-sol",
+            "retained_event": "task_complete",
+            "stdout_completion_usage": {
+              "input_tokens": 38974,
+              "cached_input_tokens": 33280,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 19,
+              "reasoning_output_tokens": 0
+            },
+            "retained_cumulative_usage": {
+              "input_tokens": 38974,
+              "cached_input_tokens": 33280,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 19,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 38993
+            },
+            "retained_last_usage": {
+              "input_tokens": 19502,
+              "cached_input_tokens": 19328,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 10,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 19512
+            },
+            "usage_coverage": "direct"
+          },
+          {
+            "attempt": "interrupt",
+            "process_exit": 1,
+            "interrupted": true,
+            "terminal_event": null,
+            "terminal_reason": null,
+            "expected_response_verified": false,
+            "usage": null,
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 2138,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": [],
+            "tool_events_observed": 0,
+            "observation": "native-turn-3",
+            "model": "gpt-6.2-sol",
+            "retained_event": "turn_aborted"
+          },
+          {
+            "attempt": "retry",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "turn.completed",
+            "terminal_reason": null,
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 19615,
+              "cached_input_tokens": 19328,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 10,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 19625
+            },
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 4280,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": [
+              "agent_message"
+            ],
+            "tool_events_observed": 0,
+            "observation": "native-turn-4",
+            "model": "gpt-6.2-sol",
+            "retained_event": "task_complete",
+            "stdout_completion_usage": {
+              "input_tokens": 58589,
+              "cached_input_tokens": 52608,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 29,
+              "reasoning_output_tokens": 0
+            },
+            "retained_cumulative_usage": {
+              "input_tokens": 58589,
+              "cached_input_tokens": 52608,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 29,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 58618
+            },
+            "retained_last_usage": {
+              "input_tokens": 19615,
+              "cached_input_tokens": 19328,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 10,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 19625
+            },
+            "usage_coverage": "direct"
+          }
+        ],
+        "same_prompt_retry": false,
+        "retained_session_summary": null,
+        "replay_control": {
+          "replayed_attempt": "retry",
+          "deliveries": 4,
+          "unique_observations": 3,
+          "totals": {
+            "input_tokens": 58589,
+            "cached_input_tokens": 52608,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 29,
+            "reasoning_output_tokens": 0,
+            "total_tokens": 58618
+          },
+          "native_list_cost_usd": null,
+          "native_cost_usd_ticks": null
+        },
+        "billing": {
+          "verified_billed_usd": null,
+          "subscription_credit_delta": null
+        }
+      },
+      "same_prompt_interrupt_retry": {
+        "session": "same verified native identity through retry",
+        "session_ref": "9709235b7849277d434f6245",
+        "attempts": [
+          {
+            "attempt": "interrupt",
+            "process_exit": 1,
+            "interrupted": true,
+            "terminal_event": null,
+            "terminal_reason": null,
+            "expected_response_verified": false,
+            "usage": null,
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 1369,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": [],
+            "tool_events_observed": 0,
+            "observation": "native-turn-1",
+            "model": null,
+            "retained_event": "turn_aborted"
+          },
+          {
+            "attempt": "retry",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "turn.completed",
+            "terminal_reason": null,
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 17850,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 603,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 18453
+            },
+            "expected_line_count_verified": 300,
+            "run_elapsed_ms": 15228,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": [
+              "agent_message"
+            ],
+            "tool_events_observed": 0,
+            "observation": "native-turn-2",
+            "model": "gpt-6.2-sol",
+            "retained_event": "task_complete",
+            "stdout_completion_usage": {
+              "input_tokens": 17850,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 603,
+              "reasoning_output_tokens": 0
+            },
+            "retained_cumulative_usage": {
+              "input_tokens": 17850,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 603,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 18453
+            },
+            "retained_last_usage": {
+              "input_tokens": 17850,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 603,
+              "reasoning_output_tokens": 0,
+              "total_tokens": 18453
+            },
+            "usage_coverage": "direct"
+          }
+        ],
+        "same_prompt_retry": true,
+        "retained_session_summary": null,
+        "replay_control": {
+          "replayed_attempt": "retry",
+          "deliveries": 2,
+          "unique_observations": 1,
+          "totals": {
+            "input_tokens": 17850,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 603,
+            "reasoning_output_tokens": 0,
+            "total_tokens": 18453
+          },
+          "native_list_cost_usd": null,
+          "native_cost_usd_ticks": null
+        },
+        "billing": {
+          "verified_billed_usd": null,
+          "subscription_credit_delta": null
+        }
+      }
+    },
+    "claude": {
+      "version": "2.1.331",
+      "authentication": "Claude Pro / claude.ai",
+      "primary_and_control_sessions_verified_distinct": true,
+      "fresh_resume_interrupt_recovery": {
+        "session": "same verified native identity through retry",
+        "session_ref": "d6e8e4817ed1c9723b8098f7",
+        "attempts": [
+          {
+            "attempt": "fresh",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "result",
+            "terminal_reason": "completed",
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 2050,
+              "cache_read_input_tokens": 658,
+              "output_tokens": 11
+            },
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 2036,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "observation": "native-request-1",
+            "model": "claude-sonnet-5-5",
+            "usage_coverage": "direct",
+            "thinking_tokens": 0,
+            "cache_creation_5m_tokens": 0,
+            "cache_creation_1h_tokens": 2050,
+            "terminal_summary_cost_usd": "0.0083798",
+            "native_list_cost_usd": "0.0083798",
+            "cost_basis": "list",
+            "terminal_model_usage_since_last_result": {
+              "normalized_tokens": {
+                "input_tokens": 2,
+                "cache_creation_input_tokens": 2050,
+                "cache_read_input_tokens": 658,
+                "output_tokens": 11
+              },
+              "native_model": "claude-sonnet-5-5",
+              "cost_basis": "list",
+              "cost_usd": "0.0083798"
+            },
+            "terminal_top_level_usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 2050,
+              "cache_read_input_tokens": 658,
+              "output_tokens": 11
+            },
+            "retained_request_usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 2050,
+              "cache_read_input_tokens": 658,
+              "output_tokens": 11
+            },
+            "stream_request_id_matches_retained": true
+          },
+          {
+            "attempt": "resume",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "result",
+            "terminal_reason": "completed",
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 934,
+              "cache_read_input_tokens": 1849,
+              "output_tokens": 11
+            },
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 1155,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "observation": "native-request-2",
+            "model": "claude-sonnet-5-5",
+            "usage_coverage": "direct",
+            "thinking_tokens": 0,
+            "cache_creation_5m_tokens": 0,
+            "cache_creation_1h_tokens": 934,
+            "terminal_summary_cost_usd": "0.0124147",
+            "native_list_cost_usd": "0.0040349",
+            "cost_basis": "list",
+            "terminal_model_usage_since_last_result": {
+              "normalized_tokens": {
+                "input_tokens": 2,
+                "cache_creation_input_tokens": 934,
+                "cache_read_input_tokens": 1849,
+                "output_tokens": 11
+              },
+              "native_model": "claude-sonnet-5-5",
+              "cost_basis": "list",
+              "cost_usd": "0.0040349"
+            },
+            "terminal_top_level_usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 934,
+              "cache_read_input_tokens": 1849,
+              "output_tokens": 11
+            },
+            "retained_request_usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 934,
+              "cache_read_input_tokens": 1849,
+              "output_tokens": 11
+            },
+            "stream_request_id_matches_retained": true
+          },
+          {
+            "attempt": "interrupt",
+            "process_exit": 0,
+            "interrupted": true,
+            "terminal_event": "result",
+            "terminal_reason": "aborted_streaming",
+            "expected_response_verified": false,
+            "usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 131,
+              "cache_read_input_tokens": 2743,
+              "output_tokens": 8
+            },
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 1014,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "observation": "native-request-3",
+            "model": "claude-sonnet-5-5",
+            "usage_coverage": "observed-partial",
+            "thinking_tokens": 0,
+            "cache_creation_5m_tokens": 0,
+            "cache_creation_1h_tokens": 131,
+            "terminal_summary_cost_usd": "0.0132970",
+            "native_list_cost_usd": "0.0008823",
+            "cost_basis": "list",
+            "terminal_model_usage_since_last_result": {
+              "normalized_tokens": {
+                "input_tokens": 2,
+                "cache_creation_input_tokens": 131,
+                "cache_read_input_tokens": 2743,
+                "output_tokens": 8
+              },
+              "native_model": "claude-sonnet-5-5",
+              "cost_basis": "list",
+              "cost_usd": "0.0008823"
+            },
+            "terminal_top_level_usage": {
+              "input_tokens": 0,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 0
+            },
+            "retained_request_usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 131,
+              "cache_read_input_tokens": 2743,
+              "output_tokens": 8
+            },
+            "stream_request_id_matches_retained": true
+          },
+          {
+            "attempt": "retry",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "result",
+            "terminal_reason": "completed",
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 133,
+              "cache_read_input_tokens": 2834,
+              "output_tokens": 11
+            },
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 1002,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "observation": "native-request-4",
+            "model": "claude-sonnet-5-5",
+            "usage_coverage": "direct",
+            "thinking_tokens": 0,
+            "cache_creation_5m_tokens": 0,
+            "cache_creation_1h_tokens": 133,
+            "terminal_summary_cost_usd": "0.0133441",
+            "native_list_cost_usd": "0.0009294",
+            "cost_basis": "list",
+            "terminal_model_usage_since_last_result": {
+              "normalized_tokens": {
+                "input_tokens": 2,
+                "cache_creation_input_tokens": 133,
+                "cache_read_input_tokens": 2834,
+                "output_tokens": 11
+              },
+              "native_model": "claude-sonnet-5-5",
+              "cost_basis": "list",
+              "cost_usd": "0.0009294"
+            },
+            "terminal_top_level_usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 133,
+              "cache_read_input_tokens": 2834,
+              "output_tokens": 11
+            },
+            "retained_request_usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 133,
+              "cache_read_input_tokens": 2834,
+              "output_tokens": 11
+            },
+            "stream_request_id_matches_retained": true
+          }
+        ],
+        "same_prompt_retry": false,
+        "retained_session_summary": null,
+        "replay_control": {
+          "replayed_attempt": "retry",
+          "deliveries": 5,
+          "unique_observations": 4,
+          "totals": {
+            "input_tokens": 8,
+            "cache_creation_input_tokens": 3248,
+            "cache_read_input_tokens": 8084,
+            "output_tokens": 41
+          },
+          "native_list_cost_usd": "0.0142264",
+          "native_cost_usd_ticks": null
+        },
+        "billing": {
+          "verified_billed_usd": null,
+          "subscription_credit_delta": null
+        }
+      },
+      "same_prompt_interrupt_retry": {
+        "session": "same verified native identity through retry",
+        "session_ref": "fc4df2c5eb7eeba70b188176",
+        "attempts": [
+          {
+            "attempt": "interrupt",
+            "process_exit": 0,
+            "interrupted": true,
+            "terminal_event": "result",
+            "terminal_reason": "aborted_streaming",
+            "expected_response_verified": false,
+            "usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 1079,
+              "cache_read_input_tokens": 1644,
+              "output_tokens": 8
+            },
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 1251,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "observation": "native-request-1",
+            "model": "claude-sonnet-5-5",
+            "usage_coverage": "observed-partial",
+            "thinking_tokens": 0,
+            "cache_creation_5m_tokens": 0,
+            "cache_creation_1h_tokens": 1079,
+            "terminal_summary_cost_usd": "0.0045644",
+            "native_list_cost_usd": "0.0045644",
+            "cost_basis": "list",
+            "terminal_model_usage_since_last_result": {
+              "normalized_tokens": {
+                "input_tokens": 2,
+                "cache_creation_input_tokens": 1079,
+                "cache_read_input_tokens": 1644,
+                "output_tokens": 8
+              },
+              "native_model": "claude-sonnet-5-5",
+              "cost_basis": "list",
+              "cost_usd": "0.0045644"
+            },
+            "terminal_top_level_usage": {
+              "input_tokens": 0,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "output_tokens": 0
+            },
+            "retained_request_usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 1079,
+              "cache_read_input_tokens": 1644,
+              "output_tokens": 8
+            },
+            "stream_request_id_matches_retained": true
+          },
+          {
+            "attempt": "retry",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "result",
+            "terminal_reason": "completed",
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 966,
+              "cache_read_input_tokens": 1859,
+              "output_tokens": 601
+            },
+            "expected_line_count_verified": 300,
+            "run_elapsed_ms": 3673,
+            "visible_text_or_thought_records": null,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "observation": "native-request-2",
+            "model": "claude-sonnet-5-5",
+            "usage_coverage": "direct",
+            "thinking_tokens": 0,
+            "cache_creation_5m_tokens": 0,
+            "cache_creation_1h_tokens": 966,
+            "terminal_summary_cost_usd": "0.0100639",
+            "native_list_cost_usd": "0.0100639",
+            "cost_basis": "list",
+            "terminal_model_usage_since_last_result": {
+              "normalized_tokens": {
+                "input_tokens": 2,
+                "cache_creation_input_tokens": 966,
+                "cache_read_input_tokens": 1859,
+                "output_tokens": 601
+              },
+              "native_model": "claude-sonnet-5-5",
+              "cost_basis": "list",
+              "cost_usd": "0.0100639"
+            },
+            "terminal_top_level_usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 966,
+              "cache_read_input_tokens": 1859,
+              "output_tokens": 601
+            },
+            "retained_request_usage": {
+              "input_tokens": 2,
+              "cache_creation_input_tokens": 966,
+              "cache_read_input_tokens": 1859,
+              "output_tokens": 601
+            },
+            "stream_request_id_matches_retained": true
+          }
+        ],
+        "same_prompt_retry": true,
+        "retained_session_summary": null,
+        "replay_control": {
+          "replayed_attempt": "retry",
+          "deliveries": 3,
+          "unique_observations": 2,
+          "totals": {
+            "input_tokens": 4,
+            "cache_creation_input_tokens": 2045,
+            "cache_read_input_tokens": 3503,
+            "output_tokens": 609
+          },
+          "native_list_cost_usd": "0.0146283",
+          "native_cost_usd_ticks": null
+        },
+        "billing": {
+          "verified_billed_usd": null,
+          "subscription_credit_delta": null
+        }
+      }
+    },
+    "grok": {
+      "version": "1.0.92 (b06756fd6256)",
+      "authentication": "existing Grok sign-in",
+      "primary_and_control_sessions_verified_distinct": true,
+      "fresh_resume_interrupt_recovery": {
+        "session": "same verified native identity through retry",
+        "session_ref": "5ad04a080167b94eb045382c",
+        "attempts": [
+          {
+            "attempt": "fresh",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "end",
+            "terminal_reason": "end_turn",
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 9807,
+              "cache_read_input_tokens": 8832,
+              "cache_creation_input_tokens": 0,
+              "output_tokens": 175,
+              "reasoning_tokens": 168,
+              "total_tokens": 18814
+            },
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 6421,
+            "visible_text_or_thought_records": 9,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "observation": "native-turn-1",
+            "model": "grok-4.7-build-fast",
+            "usage_coverage": "direct",
+            "native_cost_usd_ticks": 170544000,
+            "native_cost_usd": "0.0170544",
+            "retained_exact_turn": {
+              "turnNumber": 1,
+              "inputTokens": 18639,
+              "cachedReadTokens": 8832,
+              "cacheCreationTokens": 0,
+              "outputTokens": 175,
+              "reasoningTokens": 168,
+              "totalTokens": 18814,
+              "costUsdTicks": 170544000
+            }
+          },
+          {
+            "attempt": "resume",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "end",
+            "terminal_reason": "end_turn",
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 289,
+              "cache_read_input_tokens": 18560,
+              "cache_creation_input_tokens": 0,
+              "output_tokens": 28,
+              "reasoning_tokens": 22,
+              "total_tokens": 18877
+            },
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 8960,
+            "visible_text_or_thought_records": 6,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "observation": "native-turn-2",
+            "model": "grok-4.7-build-fast",
+            "usage_coverage": "direct",
+            "native_cost_usd_ticks": 68176800,
+            "native_cost_usd": "0.00681768",
+            "retained_exact_turn": {
+              "turnNumber": 2,
+              "inputTokens": 18849,
+              "cachedReadTokens": 18560,
+              "cacheCreationTokens": 0,
+              "outputTokens": 28,
+              "reasoningTokens": 22,
+              "totalTokens": 18877,
+              "costUsdTicks": 68176800
+            }
+          },
+          {
+            "attempt": "interrupt",
+            "process_exit": 130,
+            "interrupted": true,
+            "terminal_event": "end",
+            "terminal_reason": "cancelled",
+            "expected_response_verified": false,
+            "usage": null,
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 4276,
+            "visible_text_or_thought_records": 277,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "usage_is_incomplete": true
+          },
+          {
+            "attempt": "retry",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "end",
+            "terminal_reason": "end_turn",
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 167,
+              "cache_read_input_tokens": 18816,
+              "cache_creation_input_tokens": 0,
+              "output_tokens": 25,
+              "reasoning_tokens": 19,
+              "total_tokens": 19008
+            },
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 3966,
+            "visible_text_or_thought_records": 6,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "observation": "native-turn-3",
+            "model": "grok-4.7-build-fast",
+            "usage_coverage": "direct",
+            "native_cost_usd_ticks": 67265600,
+            "native_cost_usd": "0.00672656",
+            "retained_exact_turn": {
+              "turnNumber": 3,
+              "inputTokens": 18983,
+              "cachedReadTokens": 18816,
+              "cacheCreationTokens": 0,
+              "outputTokens": 25,
+              "reasoningTokens": 19,
+              "totalTokens": 19008,
+              "costUsdTicks": 67265600
+            }
+          }
+        ],
+        "same_prompt_retry": false,
+        "retained_session_summary": {
+          "turnCount": 3,
+          "totalTokens": 56699,
+          "costUsdTicks": 305986400
+        },
+        "replay_control": {
+          "replayed_attempt": "retry",
+          "deliveries": 4,
+          "unique_observations": 3,
+          "totals": {
+            "input_tokens": 10263,
+            "cache_read_input_tokens": 46208,
+            "cache_creation_input_tokens": 0,
+            "output_tokens": 228,
+            "reasoning_tokens": 209,
+            "total_tokens": 56699
+          },
+          "native_list_cost_usd": null,
+          "native_cost_usd_ticks": 305986400
+        },
+        "billing": {
+          "verified_billed_usd": null,
+          "subscription_credit_delta": null
+        }
+      },
+      "same_prompt_interrupt_retry": {
+        "session": "same verified native identity through retry",
+        "session_ref": "d2aa5f270cbd1b3f6a4d1320",
+        "attempts": [
+          {
+            "attempt": "interrupt",
+            "process_exit": 130,
+            "interrupted": true,
+            "terminal_event": "end",
+            "terminal_reason": "cancelled",
+            "expected_response_verified": false,
+            "usage": null,
+            "expected_line_count_verified": null,
+            "run_elapsed_ms": 3580,
+            "visible_text_or_thought_records": 4,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "usage_is_incomplete": true
+          },
+          {
+            "attempt": "retry",
+            "process_exit": 0,
+            "interrupted": false,
+            "terminal_event": "end",
+            "terminal_reason": "end_turn",
+            "expected_response_verified": true,
+            "usage": {
+              "input_tokens": 9888,
+              "cache_read_input_tokens": 8832,
+              "cache_creation_input_tokens": 0,
+              "output_tokens": 638,
+              "reasoning_tokens": 39,
+              "total_tokens": 19358
+            },
+            "expected_line_count_verified": 300,
+            "run_elapsed_ms": 6072,
+            "visible_text_or_thought_records": 599,
+            "stream_item_types": null,
+            "tool_events_observed": 0,
+            "observation": "native-turn-4",
+            "model": "grok-4.7-build-fast",
+            "usage_coverage": "direct",
+            "native_cost_usd_ticks": 190536000,
+            "native_cost_usd": "0.0190536",
+            "retained_exact_turn": {
+              "turnNumber": 4,
+              "inputTokens": 18720,
+              "cachedReadTokens": 8832,
+              "cacheCreationTokens": 0,
+              "outputTokens": 638,
+              "reasoningTokens": 39,
+              "totalTokens": 19358,
+              "costUsdTicks": 190536000
+            }
+          }
+        ],
+        "same_prompt_retry": true,
+        "retained_session_summary": {
+          "turnCount": 1,
+          "totalTokens": 19358,
+          "costUsdTicks": 190536000
+        },
+        "replay_control": {
+          "replayed_attempt": "retry",
+          "deliveries": 2,
+          "unique_observations": 1,
+          "totals": {
+            "input_tokens": 9888,
+            "cache_read_input_tokens": 8832,
+            "cache_creation_input_tokens": 0,
+            "output_tokens": 638,
+            "reasoning_tokens": 39,
+            "total_tokens": 19358
+          },
+          "native_list_cost_usd": null,
+          "native_cost_usd_ticks": 190536000
+        },
+        "billing": {
+          "verified_billed_usd": null,
+          "subscription_credit_delta": null
+        }
+      }
+    }
+  }
+}
