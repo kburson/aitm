@@ -75,6 +75,28 @@ def test_product_shard_receipt_preserves_phases_and_child_proofs():
         )
 
 
+def test_product_shard_coverage_keeps_originals_and_excludes_other_shards(
+    tmp_path, monkeypatch
+):
+    from coverage import CoverageData
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("COVERAGE_RCFILE", raising=False)
+    source = tmp_path / "example_module.py"
+    source.write_text("if __name__:\n    a = 1\nelse:\n    a = 2\n", encoding="utf-8")
+    first, other = tmp_path / ".product.first", tmp_path / ".product.other"
+    for path, line in ((first, 2), (other, 4)):
+        data = CoverageData(basename=str(path))
+        data.add_arcs({str(source): {(-1, 1), (1, line), (line, -1)}})
+        data.write()
+
+    report = tmp_path / "unit.json"
+    counts = product_shards.write_shard_coverage([first], tmp_path / ".unit", report)
+    assert counts == {"covered_lines": 2, "covered_branches": 1}
+    assert sweep.read(report)["files"]["example_module.py"]["executed_lines"] == [1, 2]
+    assert first.is_file() and other.is_file()
+
+
 @pytest.mark.parametrize("host", ["linux", "darwin"])
 def test_workspace_uses_private_platform_roots(tmp_path, monkeypatch, host):
     monkeypatch.setattr(sweep, "sys", SimpleNamespace(platform=host))

@@ -360,7 +360,8 @@ jobs:
               done < <(jq -er '.tests[]' "$out/evidence/selection.json")
             fi
             uv run --locked python -m tools.ci.product_shards --root "$root" --output "$out" \
-              --fixtures "$fixtures/pytest" --workers "$workers" --coverage --label "$mode" "${product_args[@]}"
+              --fixtures "$fixtures/pytest" --workers "$workers" --coverage --shard-coverage \
+              --label "$mode" "${product_args[@]}"
             uv run --locked python - "$out" <<'PY'
           import json
           import sys

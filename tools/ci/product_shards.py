@@ -49,7 +49,25 @@ def merge_receipts(collected, lanes, receipts):
     return result
 
 
-def run(output, root, fixtures, targets, workers, *, coverage, label):
+def write_shard_coverage(raw_files, data_file, report):
+    """Report only this shard while keeping raw evidence for the union and children."""
+    env = dict(os.environ, COVERAGE_FILE=str(data_file))
+    coverage = [sys.executable, "-m", "coverage"]
+    subprocess.run(
+        [*coverage, "combine", "--quiet", "--keep", *map(str, raw_files)],
+        env=env,
+        check=True,
+    )
+    subprocess.run(
+        [*coverage, "json", "--quiet", "-o", str(report)], env=env, check=True
+    )
+    totals = sweep.read(report)["totals"]
+    return {key: totals[key] for key in ("covered_lines", "covered_branches")}
+
+
+def run(
+    output, root, fixtures, targets, workers, *, coverage, label, shard_coverage=False
+):
     started_run = monotonic()
     root = root.resolve()
     selectors = tuple(Path(target).resolve().relative_to(root) for target in targets)
@@ -96,6 +114,11 @@ def run(output, root, fixtures, targets, workers, *, coverage, label):
     lanes = partition(collected, catalog)
     receipts = {}
     timings = []
+    raw_by_shard = {}
+    if shard_coverage:
+        prefix = Path(os.environ.get("COVERAGE_FILE", ".coverage")).resolve()
+        raw_glob = f"{prefix.name}.*"
+        previous_raw = set(prefix.parent.glob(raw_glob))
     junit = ElementTree.Element("testsuites")
     invocation = (
         [sys.executable, "-m", "coverage", "run"] if coverage else [sys.executable]
@@ -130,6 +153,12 @@ def run(output, root, fixtures, targets, workers, *, coverage, label):
             check=True,
         )
         seconds = round(monotonic() - started, 3)
+        if shard_coverage:
+            current_raw = set(prefix.parent.glob(raw_glob))
+            raw_by_shard[lane] = sorted(current_raw - previous_raw)
+            if not raw_by_shard[lane]:
+                raise sweep.Refusal(f"missing raw product coverage for {lane}")
+            previous_raw = current_raw
         receipt = reconcile_workers(receipt_path, workers)
         receipts[lane] = receipt
         calls = Counter(
@@ -169,6 +198,23 @@ def run(output, root, fixtures, targets, workers, *, coverage, label):
         "collection_seconds": collection_seconds,
         "total_seconds": round(monotonic() - started_run, 3),
     }
+    for timing in timings:
+        lane = timing["category"]
+        if shard_coverage:
+            coverage_counts = write_shard_coverage(
+                raw_by_shard[lane],
+                observer / f".coverage-{lane}",
+                evidence / f"product-coverage-{lane}.json",
+            )
+            timing.update(coverage_counts)
+            print(
+                "product-shard-coverage",
+                json.dumps(
+                    {"category": lane, "selection": label, **coverage_counts},
+                    sort_keys=True,
+                ),
+                flush=True,
+            )
     (evidence / "product-shards.json").write_bytes(
         sweep.encoded({**report, "shards": timings})
     )
@@ -182,11 +228,14 @@ def main():
     parser.add_argument("--fixtures", type=Path, required=True)
     parser.add_argument("--workers", type=int, default=3)
     parser.add_argument("--coverage", action="store_true")
+    parser.add_argument("--shard-coverage", action="store_true")
     parser.add_argument("--label", required=True)
     parser.add_argument("targets", nargs="+")
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be positive")
+    if args.shard_coverage and not args.coverage:
+        parser.error("--shard-coverage requires --coverage")
     run(
         args.output,
         args.root,
@@ -195,6 +244,7 @@ def main():
         args.workers,
         coverage=args.coverage,
         label=args.label,
+        shard_coverage=args.shard_coverage,
     )
 
 
