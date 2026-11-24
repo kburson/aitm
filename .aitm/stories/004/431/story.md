@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 431
 title: "[Spike] Deliver a usage receipt with every headless XPR turn"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/431"
 parent: 426
 children: []
 blocking: [433, 434]
 blocked-by: [430]
 created: "2026-11-24T15:08:31Z"
-updated: "2026-11-24T20:35:54Z"
+updated: "2026-11-24T20:36:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
