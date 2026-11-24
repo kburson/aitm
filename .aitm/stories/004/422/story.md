@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 422
 title: "[Spike] Measure test automation timing, coverage, and sharding"
 kind: "spike"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/422"
 parent: null
 children: []
 blocking: [423]
 blocked-by: []
 created: "2026-11-23T00:30:26Z"
-updated: "2026-11-23T00:32:15Z"
+updated: "2026-11-24T13:13:38Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: null
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/2026-11-24-422-trusted-pr-424.json"]}
 expansions: []
 trips: []
 ---
@@ -39,3 +39,9 @@ Where does test automation spend its time, what parallelism does it actually ach
 Use an isolated worktree and a disposable draft PR for experiments. Leave the draft unmerged.
 
 Experiment workspace: [draft PR #424](https://github.com/kburson/aitm/pull/424).
+
+## Delivery
+
+The owner approved delivery and closure after the experiment. [PR #424](https://github.com/kburson/aitm/pull/424)
+merged to `trunk` at `45db935ac73911b95320a3e38d19f177cedd4fd2`. GitHub closed this spike and
+Project 24 shows Done. [Delivery sign-off](retro/2026-11-24-422-sign-off.md)
