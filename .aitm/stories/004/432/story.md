@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 432
 title: "[Spike] Self-report per-turn agent usage and retain a story cost log"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/432"
 parent: 426
 children: []
 blocking: [429]
 blocked-by: [428]
 created: "2026-11-24T18:31:30Z"
-updated: "2026-11-24T18:46:40Z"
+updated: "2026-11-24T18:47:25Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -52,4 +52,4 @@ The active Codex Desktop agent invoked a local tool against its own exact sessio
 
 ## Results
 
-[Findings](attachments/self-report-results.md) · [Sanitized receipt](attachments/self-report-receipt.json) · [Independent evidence review](attachments/independent-evidence-review.md).
+[Findings](attachments/self-report-results.md) · [Sanitized receipt](attachments/self-report-receipt.json) · [Independent evidence review](attachments/independent-evidence-review.md) · [Sign-off](retro/sign-off.md).
