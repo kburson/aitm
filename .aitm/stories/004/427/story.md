@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 427
 title: "[Spike] Measure the orchestrator from its existing interactive chat"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/427"
 parent: 426
 children: []
 blocking: [428]
 blocked-by: []
 created: "2026-11-24T15:08:20Z"
-updated: "2026-11-24T15:40:02Z"
+updated: "2026-11-24T15:40:50Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -38,4 +38,4 @@ Deliver a surface matrix and sanitized evidence showing assignment boundary, own
 
 ## Results
 
-[Findings](attachments/interactive-results.md) · [Sanitized receipt](attachments/interactive-receipt.json) · [Independent evidence review](attachments/independent-evidence-review.md).
+[Findings](attachments/interactive-results.md) · [Sanitized receipt](attachments/interactive-receipt.json) · [Independent evidence review](attachments/independent-evidence-review.md). · [Sign-off](retro/sign-off.md).

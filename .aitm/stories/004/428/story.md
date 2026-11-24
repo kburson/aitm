@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 428
 title: "[Spike] Retrieve cost later for an explicitly named session"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/428"
 parent: 426
 children: []
 blocking: [429]
 blocked-by: [427]
 created: "2026-11-24T15:08:22Z"
-updated: "2026-11-24T15:40:02Z"
+updated: "2026-11-24T15:41:04Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -40,4 +40,4 @@ Deliver replayable evidence and a matrix of what survives, how long it was obser
 
 ## Results
 
-[Findings](attachments/retrospective-results.md) · [Sanitized receipt](attachments/retrospective-receipt.json) · [Independent evidence review](attachments/independent-evidence-review.md).
+[Findings](attachments/retrospective-results.md) · [Sanitized receipt](attachments/retrospective-receipt.json) · [Independent evidence review](attachments/independent-evidence-review.md). · [Sign-off](retro/sign-off.md).
