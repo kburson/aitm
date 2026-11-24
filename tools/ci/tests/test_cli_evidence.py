@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 
-def test_usage_console_help(pytestconfig):
+def test_usage_console_help(pytestconfig, tmp_path):
     console = Path(sys.executable).with_name("aitm-usage")
     with subprocess.Popen(
         [str(console), "--help"],
@@ -30,3 +30,25 @@ def test_usage_console_help(pytestconfig):
         assert "usage: aitm-usage" in output
         assert "--help" in output
         assert "collect-once" in output
+
+    missing = tmp_path / "missing-project"
+    refused = subprocess.run(
+        [
+            str(console),
+            "--project",
+            str(missing),
+            "item",
+            "alias",
+            "--draft",
+            "00000000-0000-0000-0000-000000000054",
+            "--issue",
+            "85",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert refused.returncode == 1
+    assert refused.stdout == ""
+    assert refused.stderr == "aitm-usage: invalid private inbox command or project\n"
+    assert not missing.exists()

@@ -29,9 +29,9 @@ _HELPERS = [
 _CLI = "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
 _ACL = _PRODUCT + "test_install.py::test_backup_and_restore_reject_inherited_acl"
 _OPTIONAL = (
-    _PRODUCT + "test_ledger.py::test_distinct_apfs_alias_cannot_admit_a_second_writer"
+    _PRODUCT + "test_ledger.py::test_extended_grant_on_private_key_refused_before_read"
 )
-_SKIP_REASON = "The host does not expose the matching APFS firmlink path"
+_SKIP_REASON = "The host does not expose the required ACL API"
 _ONE_SHOT = (
     _PRODUCT + "test_service.py::test_one_shot_status_uses_collecting_subprocess_pid"
 )
@@ -444,7 +444,7 @@ def test_hosted_and_advisory_preserve_distinct_provenance():
         _PRODUCT
         + "test_scope_admission.py::test_project_substitution_during_preparation_cannot_publish",
         _PRODUCT
-        + "test_scope_legacy.py::test_adoption_wins_between_legacy_selection_and_publication[mark]",
+        + "test_monitor_legacy.py::test_pre_adoption_legacy_anchor_enqueues_while_collector_holds_writer",
     ],
 )
 def test_refreshed_scope_modules_share_native_process_isolation(nodeid):

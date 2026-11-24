@@ -628,13 +628,18 @@ def test_item_cli_refuses_untrusted_state(monkeypatch, capsys, defect):
         assert command.payload.draft == DRAFT and command.payload.issue == CHILD
 
 
-def test_installed_item_cli_refuses_missing_project(item_cli, tmp_path):
-    root = tmp_path / "missing"
-    result = item_cli(root, "alias", "--draft", str(DRAFT.identifier), "--issue", "85")
+def test_installed_item_cli_refuses_missing_project(monkeypatch, capsys):
+    root = Path("/fixture/missing-project")
+    pin = Mock(side_effect=FileNotFoundError(root))
+    enqueue = Mock()
+    monkeypatch.setattr(cli, "_pin_directory", pin)
+    monkeypatch.setattr(cli, "enqueue_command", enqueue)
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
 
-    assert result.returncode == 1
-    _assert_item_refusal(result.stdout, result.stderr)
-    assert not root.exists()
+    assert _invoke_item_alias(monkeypatch, root) == 1
+    _assert_item_refusal(*capsys.readouterr())
+    pin.assert_called_once_with(root)
+    enqueue.assert_not_called()
 
 
 @pytest.mark.parametrize(

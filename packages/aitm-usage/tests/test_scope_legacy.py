@@ -411,31 +411,26 @@ def test_adopted_legacy_invocations_preserve_command_and_receipt(
 
 @pytest.mark.parametrize("action", ["mark", "alias"])
 def test_adoption_wins_between_legacy_selection_and_publication(
-    request, monkeypatch, action
+    memory_legacy, monkeypatch, action
 ):
-    memory = request.getfixturevalue("memory_legacy") if action == "alias" else None
-    if memory is None:
-        ledger, _, run = request.getfixturevalue("legacy")
-    else:
-        ledger, run = memory.ledger, memory.run
-    args, payload, session = invocation(ledger, action, provider=Provider.CLAUDE)
-    captured = install_adopted_capture(
-        monkeypatch, ledger, physical_lock=memory is None
+    ledger, run = memory_legacy.ledger, memory_legacy.run
+    args, payload, session = invocation(
+        ledger,
+        action,
+        provider=Provider.CLAUDE,
+        write_input=memory_legacy.inputs.__setitem__,
     )
+    captured = install_adopted_capture(monkeypatch, ledger, physical_lock=False)
     original_publication = scopes._publication
     committed = False
 
     @contextmanager
     def publication_after_adoption(inbox):
         nonlocal committed
-        if memory is None and not committed:
-            committed = True
-            commit_adoption(ledger, ADOPTION)
         with original_publication(inbox):
-            if memory is not None:
-                assert not committed
-                committed = True
-                memory.publish_adoption()
+            assert not committed
+            committed = True
+            memory_legacy.publish_adoption()
             yield
             assert not captured
 
@@ -452,11 +447,7 @@ def test_adoption_wins_between_legacy_selection_and_publication(
     assert captured == [
         (encode_command(InboxCommand(reported_id, PROJECT, payload)), session)
     ]
-    if memory is None:
-        assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
-        assert list((ledger.root / "inbox").iterdir()) == []
-    else:
-        assert not memory.inbox
+    assert not memory_legacy.inbox
 
 
 def provision_legacy_reader(writer, inbox, ledger):

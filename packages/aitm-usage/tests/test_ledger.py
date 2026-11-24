@@ -619,6 +619,18 @@ with ledger.writer():
                     src.execute("DELETE FROM revisions")
                 src.backup(dest)
                 assert dest.execute("SELECT count(*) FROM revisions").fetchone() == (1,)
+            other = type(ledger).initialize(
+                ledger.root.with_name("other"), OTHER_PROJECT
+            )
+            assert other.identity.key_id != ledger.identity.key_id
+            original = ledger.root.stat()
+            alias = ledger.root.rename(ledger.root.with_name("alias"))
+            try:
+                assert os.path.samestat(original, alias.stat())
+                assert type(ledger).open(alias, PROJECT).identity == ledger.identity
+                assert try_writer_in_other_process(alias) == "writer-active"
+            finally:
+                alias.rename(ledger.root)
         finally:
             process.kill()
             process.wait(timeout=10)
@@ -1582,32 +1594,66 @@ def test_apfs_firmlink_overlap_refused_before_private_creation(
 
 
 def test_distinct_apfs_alias_cannot_admit_a_second_writer(
-    tmp_path, modules, alias_directory_identity
+    modules, ledger_rows, ledger_path_metadata, observe_ledger_rows, monkeypatch
 ):
     ledger_module, _ = modules
-    root = tmp_path / "project"
-    ledger = ledger_module.Ledger.initialize(root, PROJECT)
-    identity = root.stat()
-    with ledger.writer():
-        other = ledger_module.Ledger.initialize(tmp_path / "other", OTHER_PROJECT)
-        assert other.identity.key_id != ledger.identity.key_id
-        alias = root.rename(tmp_path / "alias")
-        try:
-            assert os.path.samestat(alias.stat(), identity)
-            assert ledger_module.Ledger.open(alias, PROJECT).identity == ledger.identity
-            assert try_writer_in_other_process(alias) == "writer-active"
-        finally:
-            alias.rename(root)
+    ledger, _, _ = ledger_rows
+    metadata = ledger_path_metadata
+    alias = ledger.root.with_name("alias")
+    observe_ledger_rows(alias, PROJECT, b"a" * 32)
+    for name, identity in metadata.entries.copy().items():
+        location = Path(name)
+        if location.is_relative_to(ledger.root):
+            metadata.entries[str(alias / location.relative_to(ledger.root))] = identity
+    other_root = ledger.root.with_name("other")
+    observe_ledger_rows(other_root, OTHER_PROJECT, b"b" * 32)
 
-    control = control_directory()
-    overlap_alias = tmp_path / "overlap-alias"
-    alias_directory_identity(overlap_alias, Path.home())
-    overlapping = overlap_alias / control.parent.relative_to(Path.home())
-    overlapping.mkdir(mode=0o700, parents=True)
-    before = sorted(control.iterdir())
+    held = {}
+    attempts = []
+
+    def flock(descriptor, operation):
+        assert operation == ledger_module.fcntl.LOCK_EX | ledger_module.fcntl.LOCK_NB
+        identity = ledger_module._path_id(descriptor.status)
+        attempts.append(descriptor.path)
+        if identity in held:
+            raise BlockingIOError(errno.EAGAIN, "Writer lease already held")
+        held[identity] = descriptor
+
+    def close(descriptor):
+        identity = ledger_module._path_id(descriptor.status)
+        if held.get(identity) is descriptor:
+            del held[identity]
+
+    monkeypatch.setattr(ledger_module.fcntl, "flock", flock)
+    monkeypatch.setattr(ledger_module.os, "close", close)
+    with ledger.writer():
+        other = ledger_module.Ledger.open(other_root, OTHER_PROJECT)
+        assert other.identity.key_id != ledger.identity.key_id
+        with other.writer() as independent:
+            assert independent.identity.project_id == OTHER_PROJECT
+        assert os.path.samestat(alias.stat(), ledger.root.stat())
+        contender = ledger_module.Ledger.open(alias, PROJECT)
+        assert contender.identity == ledger.identity
+        with pytest.raises(ledger_module.WriterActive, match="writer-active"):
+            with contender.writer():
+                pytest.fail("A physical alias obtained a second writer")
+    assert not held
+    first_guard = metadata.control / f"{PROJECT}.lock"
+    assert attempts == [
+        first_guard,
+        ledger.lock_path,
+        metadata.control / f"{OTHER_PROJECT}.lock",
+        other.lock_path,
+        first_guard,
+    ]
+
+    overlap_alias = metadata.base / "overlap-alias"
+    metadata.alias_directory(overlap_alias, metadata.home)
+    overlapping = overlap_alias / metadata.control.parent.relative_to(metadata.home)
+    metadata.add_directory(overlapping)
+    before = metadata.entries.copy()
     with pytest.raises(
         ledger_module.LedgerError, match="Writer guard must be outside project state"
     ):
         ledger_module.Ledger.initialize(overlapping, OTHER_PROJECT)
-    assert not list(overlapping.iterdir())
-    assert sorted(control.iterdir()) == before
+    assert metadata.entries == before

@@ -359,6 +359,8 @@ def test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed(
 
 
 def test_valid_owner_signature_is_bound_to_revision_and_lease(installed):
+    from concurrent.futures import ThreadPoolExecutor
+
     from aitm_usage import _isolated_qualification as pilot
 
     native, writer, issuer, activate, _, sign = installed
@@ -368,7 +370,9 @@ def test_valid_owner_signature_is_bound_to_revision_and_lease(installed):
     with pytest.raises(LedgerError):
         pilot._install_isolated_profile(issuer, bogus, sign(proposal))
     assert writer._live_profile is None
-    activate()
+    proof = activate()
+    with ThreadPoolExecutor(max_workers=1) as task:
+        assert task.submit(writer._live_profile.current, proof).result() is False
     with pytest.raises(LedgerError):
         pilot._install_isolated_profile(issuer, proposal, sign(proposal))
     assert RoutingJournal(writer, ScopeState(writer)).prepare(SOURCE, native.locator())
@@ -619,16 +623,20 @@ def test_currentness_preserves_cancellation(installed_policy, monkeypatch):
     assert _durable(journal, native) == before
 
 
-def test_revocation_is_terminal_and_writer_thread_is_private(installed):
-    from concurrent.futures import ThreadPoolExecutor
-
+def test_revocation_is_terminal_and_writer_thread_is_private(
+    installed_policy, monkeypatch
+):
     from aitm_usage import _isolated_qualification as pilot
 
-    native, writer, issuer, activate, revoke, sign = installed
+    native, writer, issuer, activate, revoke, sign = installed_policy
     proof = activate()
     assert type(proof) is pilot._InstallationProof
-    with ThreadPoolExecutor(max_workers=1) as task:
-        assert task.submit(writer._live_profile.current, proof).result() is False
+    current = writer._live_profile.current
+    assert current(proof)
+    other = pilot.get_ident() + 1
+    with monkeypatch.context() as observer:
+        observer.setattr(pilot, "get_ident", lambda: other)
+        assert current(proof) is False
     revoke()
     next_proposal = issuer.proposal(
         "replace", 3, datetime.now(UTC) + timedelta(minutes=2)

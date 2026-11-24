@@ -663,10 +663,25 @@ def test_restore_fences_publication_until_atomic_swap(project, tmp_path, monkeyp
     inbox_path = ledger.root / "inbox"
     original_publication = scopes._publication
 
-    def swap(*args):
+    def swap(project_pin, staged_pin):
+        live_directory = project_pin.path / recovery.STORE_NAME
+        staged_directory = staged_pin.path / recovery.STORE_NAME
+        live_before = live_directory.stat()
+        staged_before = staged_directory.stat()
+        synced = []
+
+        def fsync(fd):
+            assert os.path.samestat(staged_before, live_directory.stat())
+            assert os.path.samestat(live_before, staged_directory.stat())
+            os.fsync(fd)
+            synced.append(fd)
+
         staged.set()
         assert proceed.wait(5)
-        return original(*args)
+        with monkeypatch.context() as observed:
+            observed.setattr(recovery, "os", SimpleNamespace(fsync=fsync))
+            original(project_pin, staged_pin)
+        assert synced == [staged_pin.fd, project_pin.fd]
 
     def publication(inbox):
         assert inbox.path == inbox_path
@@ -806,11 +821,11 @@ def test_backup_and_restore_reject_inherited_acl(project, tmp_path, grant_extra_
         restore(blocked / "backup", ledger.root, ledger.identity)
 
 
-def _wheel(parent, suffix, *, incompatible=False):
+def _wheel(parent, suffix, *, incompatible=False, version="0.1.0"):
     directory = parent / suffix
     directory.mkdir()
-    distribution = "aitm_usage-0.1.0.dist-info"
-    filename = directory / "aitm_usage-0.1.0-py3-none-any.whl"
+    distribution = f"aitm_usage-{version}.dist-info"
+    filename = directory / f"aitm_usage-{version}-py3-none-any.whl"
     package = Path(aitm_usage.__file__).parent
     with ZipFile(filename, "w") as wheel:
         names = []
@@ -836,7 +851,7 @@ def _wheel(parent, suffix, *, incompatible=False):
             wheel.writestr(name, data)
             names.append(name)
         metadata = {
-            "METADATA": "Metadata-Version: 2.1\nName: aitm-usage\nVersion: 0.1.0\nRequires-Python: >=3.13\n",
+            "METADATA": f"Metadata-Version: 2.1\nName: aitm-usage\nVersion: {version}\nRequires-Python: >=3.13\n",
             "WHEEL": "Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n",
             "entry_points.txt": "[console_scripts]\naitm-usage = aitm_usage.cli:main\n\n",
         }
@@ -966,9 +981,23 @@ def launch_control(project, tmp_path, monkeypatch):
 
 
 def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_control):
-    _, ledger, command = project
+    from test_activation_receipt import (
+        _assert_running_qualification,
+        _collector_for_lifecycle,
+        _recovery_evidence,
+        _unbound_claude_source,
+    )
+    from test_export import _observation
+    from test_service import _fixtures
+
+    from aitm_usage import qualification
+    from aitm_usage.backup import BackupReceipt, backup
+
+    registration, ledger, command = project
+    _fixtures(registration.source_roots[0], registration.checkout_anchors[0])
+    _unbound_claude_source(registration, tmp_path / "other-checkout")
     first, first_digest = _wheel(tmp_path, "first")
-    second, second_digest = _wheel(tmp_path, "second")
+    second, second_digest = _wheel(tmp_path, "second", version="0.1.1")
     incompatible, incompatible_digest = _wheel(
         tmp_path, "incompatible", incompatible=True
     )
@@ -991,6 +1020,15 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
             expected=expected,
         )
 
+    def lifecycle(result):
+        result = result.copy()
+        if result["backup"] is not None:
+            record = result["backup"]
+            result["backup"] = BackupReceipt(
+                **{**record, "project_id": UUID(record["project_id"])}
+            )
+        return install.InstallReceipt(**result)
+
     assert (
         activate("install", first, first_digest, flags=("--dry-run",))["status"]
         == "planned"
@@ -1000,6 +1038,8 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
         activate("install", first, "0" * 64, expected=1)["status"] == "install-failed"
     )
     assert not list(launch.iterdir())
+    usage, _ = _observation(ledger, "first")
+    ledger.apply(LedgerBatch((usage,)))
     installed = activate("install", first, first_digest)
     assert installed["wheel_sha256"] == first_digest
     assert installed["poll_interval_seconds"] == 15
@@ -1011,6 +1051,8 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert installed["producer_mode"] == "service"
     assert installed["producer_pid"] == process.pid
     assert installed["producer_started"] == process.started.isoformat()
+    initial = lifecycle(installed)
+    _assert_running_qualification(registration, ledger, initial, control, tmp_path)
     assert (
         command(
             "service",
@@ -1047,15 +1089,33 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert path.read_bytes() == exact_plist and control.loaded == previous
     assert len(control.bootstraps) == 1
 
+    rates = load_rate_card()
+    bundle = tmp_path / "rehearsal-backup"
+    saved = backup(ledger, bundle)
+    backed_up_at = datetime.now(UTC)
+
+    def snapshot(stage):
+        target = tmp_path / stage
+        return str(target), export_as_of(ledger.as_of(saved.sequence), rates, target)
+
+    before, exported = snapshot("rehearsal-before")
+    stopped = install.stop_agent(ledger, control)
+    recovered = install.restore_for_agent(ledger, bundle, control)
+    restored_at = datetime.now(UTC)
+    assert usage in ledger.as_of(saved.sequence).current
+    after_restore, _ = snapshot("rehearsal-restored")
+    resumed = lifecycle(activate("install", first, first_digest))
+    previous = control.loaded
+
     control.startup = "stale"
     failed = activate("upgrade", second, second_digest, expected=1)
     assert failed["status"] == "activation-rolled-back"
     assert path.read_bytes() == exact_plist
     assert replace(control.loaded, pid=None) == replace(previous, pid=None)
     assert control.loaded.pid != previous.pid
-    assert len(control.bootstraps) == 3
+    assert len(control.bootstraps) == 4
     assert first_digest in control.bootstraps[0]
-    assert second_digest in control.bootstraps[1]
+    assert second_digest in control.bootstraps[-2]
     assert all(Path(item).exists() for item in control.bootstraps)
 
     control.startup = "no-heartbeat"
@@ -1071,7 +1131,7 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
             "service",
             "prune",
             "--version",
-            "0.1.0",
+            "0.1.1",
             "--wheel-sha256",
             second_digest,
             "--backup",
@@ -1101,6 +1161,7 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert (
         ledger.root / "service-backups" / success["backup_id"] / "manifest.json"
     ).is_file()
+    after_upgrade, _ = snapshot("rehearsal-upgraded")
     prune_bundle = tmp_path / "prune-backup"
     retained = command("backup", "--output", prune_bundle)
     pruned = command(
@@ -1117,6 +1178,30 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert pruned["backup"]["manifest_sha256"] == retained["manifest_sha256"]
     assert not previous.program.exists()
     assert (ledger.root / "wheels" / first_digest / first.name).is_file()
+
+    rollback = lifecycle(activate("upgrade", first, first_digest))
+    after_rollback, _ = snapshot("rehearsal-rolled-back")
+    proof = qualification._RecoveryProof(
+        str(ledger.root),
+        str(bundle),
+        initial,
+        stopped,
+        qualification._BackupProof("backed-up", **saved.as_dict()),
+        qualification._BackupProof("restored", **recovered.as_dict()),
+        resumed,
+        lifecycle(success),
+        rollback,
+        before,
+        after_restore,
+        after_upgrade,
+        after_rollback,
+    )
+    qualification._verify_recovery(
+        _recovery_evidence(proof, exported, backed_up_at, restored_at),
+        proof,
+        _collector_for_lifecycle(initial),
+        rates,
+    )
     original_key = ledger.key_path.read_bytes()
     assert (
         command("restore", "--backup", prune_bundle, expected=1)["status"]
@@ -1318,28 +1403,35 @@ def test_one_shot_from_other_pid_cannot_certify_install(activation_policy):
     assert not case.service_files and not case.records
 
 
-def test_unapproved_runtime_hook_never_executes(project, tmp_path, launch_control):
-    _, ledger, command = project
-    wheel, digest = _wheel(tmp_path, "hook")
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
-    (site,) = runtime.executable.parents[1].glob("lib/python*/site-packages")
-    marker = tmp_path / "unexpected-hook-ran"
-    (site / "sitecustomize.py").write_text(f"open({str(marker)!r}, 'w').close()\n")
-    result = command(
-        "service",
-        "install",
-        "--wheel",
-        wheel,
-        "--wheel-sha256",
-        digest,
-        "--interpreter",
-        interpreter,
-        expected=1,
-    )
-    assert result["status"] == "install-failed"
-    assert not marker.exists()
-    assert not launch_control.bootstraps
+def test_unapproved_runtime_hook_never_executes(request, monkeypatch):
+    probe = install._probe_runtime
+    case = request.getfixturevalue("runtime_receipt")
+    case.set_console(install._launcher(case.python, case.site))
+    environment = case.executable.parents[1]
+    minor = install._minor(case.python_version)
+    entries = {
+        environment: ["bin", "include", "lib", "pyvenv.cfg"],
+        environment / "bin": ["aitm-usage", "python"],
+        environment / "include": [f"python{minor}"],
+        environment / "include" / f"python{minor}": [],
+        environment / "lib": [case.site.parent.name],
+        case.site.parent: [case.site.name],
+        case.site: ["sitecustomize.py"],
+    }
+    list_directory = Mock(side_effect=entries.__getitem__)
+    invoke = Mock(side_effect=AssertionError("Unapproved runtime was probed"))
+    monkeypatch.setattr(install, "_probe_runtime", probe)
+    monkeypatch.setattr(install, "_open_parent", lambda path: nullcontext(path.parent))
+    monkeypatch.setattr(install, "os", SimpleNamespace(listdir=list_directory))
+    monkeypatch.setattr(install, "_run_python", invoke)
+
+    with pytest.raises(
+        install.InstallError, match="Unexpected installed runtime entry"
+    ):
+        install._read_runtime(case.ledger, case.directory)
+
+    list_directory.assert_any_call(case.site)
+    invoke.assert_not_called()
 
 
 def test_runtime_replaced_after_bootstrap_cannot_certify_readiness(
@@ -1371,9 +1463,9 @@ def test_runtime_replaced_after_bootstrap_cannot_certify_readiness(
 
 
 def test_installed_console_ignores_environment_and_working_directory_hooks(
-    project, tmp_path
+    project, tmp_path, launch_control
 ):
-    _, ledger, _ = project
+    _, ledger, command = project
     wheel, digest = _wheel(tmp_path, "isolated-launch")
     interpreter = Path(sys._base_executable).resolve(strict=True)
     runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
@@ -1403,6 +1495,25 @@ def test_installed_console_ignores_environment_and_working_directory_hooks(
     assert result.returncode == 0, result.stderr
     assert result.stdout == b"aitm-usage 0.1.0\n"
     assert not marker.exists()
+
+    (
+        install._site(runtime.executable.parents[1], runtime.interpreter_version)
+        / "sitecustomize.py"
+    ).write_text(hook)
+    refused = command(
+        "service",
+        "install",
+        "--wheel",
+        wheel,
+        "--wheel-sha256",
+        digest,
+        "--interpreter",
+        interpreter,
+        expected=1,
+    )
+    assert refused["status"] == "install-failed"
+    assert not marker.exists()
+    assert not launch_control.bootstraps
 
 
 def test_upgrade_refuses_witness_incapable_running_prior(

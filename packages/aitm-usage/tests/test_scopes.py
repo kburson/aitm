@@ -1,12 +1,12 @@
 import json
-import os
-import stat
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
+from io import BytesIO
+from pathlib import Path
 from threading import Barrier, Event
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -17,6 +17,9 @@ from scope_inbox_policy_cases import attach_scope_inbox_ledger
 from test_ledger import _memory_ledger
 
 from aitm_usage import (
+    cli as usage_cli,
+)
+from aitm_usage import (
     ledger as store,
 )
 from aitm_usage import (
@@ -26,7 +29,6 @@ from aitm_usage.ledger import (
     ConflictError,
     Ledger,
     LedgerError,
-    WriterActive,
     _pin_directory,
 )
 from aitm_usage.scopes import (
@@ -632,67 +634,80 @@ def test_binding_checks_anchor_session_and_monotonic_generation(scope_policy):
         )
 
 
-def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_path):
+def test_cli_publication_is_private_authenticated_and_lease_free(
+    scope_receipt_transport, monkeypatch, capsys
+):
+    from aitm_usage import service
 
+    project, transport = scope_receipt_transport
     f = Fixture(project)
     marker = f.marker(1, 1, CHILD, "cli")
     proof = f.boundary(marker, 8)
-    marker_file = tmp_path / "marker.json"
-    marker_file.write_bytes(encode_marker(marker))
-    env = dict(os.environ, CODEX_THREAD_ID=str(CODEX))
-    # Invoke the installed console script in a separate interpreter using
-    # the same isolated project guard.
-    entry = (
-        "import runpy, sys; from pathlib import Path; from aitm_usage import ledger;"
-        f"ledger._control_root = lambda: Path({str(tmp_path / 'control')!r});"
-        "runpy.run_path(str(Path(sys.executable).with_name('aitm-usage')), run_name='__main__')"
-    )
+    marker_file = Path("/fixture/marker.json")
+    inputs = {marker_file: encode_marker(marker)}
+    open_path = Path.open
+
+    def open_input(path, mode="r", *args, **options):
+        if path in inputs:
+            assert mode == "rb" and not args and not options
+            return BytesIO(inputs[path])
+        return open_path(path, mode, *args, **options)
+
+    monkeypatch.setattr(Path, "open", open_input)
+    monkeypatch.setattr(usage_cli, "version", lambda _: "0.1.0")
+    monkeypatch.setattr(service, "_pin_directory", scopes._pin_directory)
+    monkeypatch.setattr(service, "_read_private", scopes._read_private)
+    remember = Mock(wraps=service.remember_claude_session)
+    monkeypatch.setattr(service, "remember_claude_session", remember)
 
     def cli(group, command, option, input_file, *extra, **overrides):
-        return subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                entry,
-                "--project",
-                str(project.root),
-                group,
-                command,
-                option,
-                str(input_file),
-                "--json",
-                *extra,
-            ],
-            env=env | overrides,
-            capture_output=True,
-            text=True,
-            check=False,
+        with monkeypatch.context() as invocation:
+            for name, value in ({"CODEX_THREAD_ID": str(CODEX)} | overrides).items():
+                invocation.setenv(name, value)
+            invocation.setattr(
+                sys,
+                "argv",
+                [
+                    "aitm-usage",
+                    "--project",
+                    str(project.root),
+                    group,
+                    command,
+                    option,
+                    str(input_file),
+                    "--json",
+                    *extra,
+                ],
+            )
+            returncode = usage_cli.main()
+        output = capsys.readouterr()
+        return SimpleNamespace(
+            returncode=returncode, stdout=output.out, stderr=output.err
         )
 
     with project.writer() as writer:
-        with pytest.raises(WriterActive), project.writer():
-            pass
         wrong_session = cli(
             "scope", "mark", "--marker", marker_file, CODEX_THREAD_ID=str(CLAUDE)
         )
         assert wrong_session.returncode != 0
         assert str(CLAUDE) not in wrong_session.stderr
-        assert not (project.root / "inbox").exists()
+        assert transport.inbox.fd not in transport.states
         result = cli("scope", "mark", "--marker", marker_file)
         assert result.returncode == 0, result.stderr
         assert json.loads(result.stdout) == {
             "command_id": str(marker.marker_id),
             "status": "queued",
         }
-        inbox = project.root / "inbox"
-        assert stat.S_IMODE(inbox.stat().st_mode) == 0o700
-        command_file = inbox / f"{marker.marker_id}.json"
-        assert stat.S_IMODE(command_file.stat().st_mode) == 0o600
-        original_bytes = command_file.read_bytes()
-        changed = tmp_path / "changed.json"
-        changed.write_bytes(encode_marker(replace(marker, item=OTHER_CHILD)))
+        inbox = transport.states[transport.inbox.fd]
+        filename = f"{marker.marker_id}.json"
+        original_bytes = inbox[filename]
+        assert original_bytes == encode_command(
+            InboxCommand(marker.marker_id, PROJECT, marker)
+        )
+        changed = Path("/fixture/changed.json")
+        inputs[changed] = encode_marker(replace(marker, item=OTHER_CHILD))
         assert cli("scope", "mark", "--marker", changed).returncode != 0
-        assert command_file.read_bytes() == original_bytes
+        assert inbox[filename] == original_bytes
 
         assert (
             drain_inbox(writer, ()).receipts[0].disposition is MarkerDisposition.PENDING
@@ -709,10 +724,14 @@ def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_pa
             json.loads(cli("scope", "mark", "--marker", marker_file).stdout)["status"]
             == "accepted"
         )
-        assert not command_file.exists()
-        ack = inbox / "acks" / command_file.name
-        assert stat.S_IMODE(ack.stat().st_mode) == 0o600
-        assert json.loads(ack.read_text())["disposition"] == "accepted"
+        assert filename not in inbox
+        with scopes._private_child(
+            transport.inbox, scopes.ACKS_NAME, create=False
+        ) as acks:
+            assert (
+                json.loads(transport.states[acks.fd][filename])["disposition"]
+                == "accepted"
+            )
 
         owner = f.marker(
             2,
@@ -723,8 +742,8 @@ def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_pa
             attempt_ref=f.ref("attempt"),
         )
         anchor = f.ref("anchor")
-        binding = tmp_path / "binding.json"
-        binding.write_bytes(encode_binding(DevelopmentBinding(owner, anchor, 1)))
+        binding = Path("/fixture/binding.json")
+        inputs[binding] = encode_binding(DevelopmentBinding(owner, anchor, 1))
         result = cli("development", "bind", "--binding", binding)
         assert result.returncode == 0, result.stderr
         assert json.loads(result.stdout)["status"] == "queued"
@@ -735,15 +754,13 @@ def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_pa
             is MarkerDisposition.ACCEPTED
         )
 
-        correction = tmp_path / "correction.json"
-        correction.write_bytes(
-            encode_correction(
-                ScopeCorrection(
-                    UUID(int=90),
-                    PROJECT,
-                    replace(marker, item=OTHER_CHILD),
-                    f.ref("correction"),
-                )
+        correction = Path("/fixture/correction.json")
+        inputs[correction] = encode_correction(
+            ScopeCorrection(
+                UUID(int=90),
+                PROJECT,
+                replace(marker, item=OTHER_CHILD),
+                f.ref("correction"),
             )
         )
         result = cli("scope", "correct", "--correction", correction)
@@ -766,8 +783,8 @@ def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_pa
             participant_ref=f.ref("reviewer"),
             review_ref=f.ref("review"),
         )
-        review_file = tmp_path / "review.json"
-        review_file.write_bytes(encode_marker(review))
+        review_file = Path("/fixture/review.json")
+        inputs[review_file] = encode_marker(review)
         assert cli("scope", "mark", "--marker", review_file).returncode != 0
         assert (
             cli(
@@ -784,18 +801,24 @@ def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_pa
             is MarkerDisposition.ACCEPTED
         )
 
-        extras = tmp_path / "extra.json"
+        remember.assert_called_once_with(project, review.session_ref)
+        extras = Path("/fixture/extra.json")
         raw = json.loads(encode_marker(marker))
-        extras.write_text(json.dumps(raw | {"credential": "raw-tool-input-canary"}))
+        inputs[extras] = json.dumps(
+            raw | {"credential": "raw-tool-input-canary"}
+        ).encode()
         failure = cli("scope", "mark", "--marker", extras)
         assert failure.returncode != 0
         assert "raw-tool-input-canary" not in failure.stderr
-        for path in project.root.rglob("*"):
-            if path.is_file():
-                contents = path.read_bytes()
-                assert str(CODEX).encode() not in contents
-                assert str(CLAUDE).encode() not in contents
-                assert b"raw-tool-input-canary" not in contents
+        persisted = [
+            contents.decode()
+            for files in transport.states.values()
+            for contents in files.values()
+        ] + [str(value) for _, values in transport.rows.writes for value in values]
+        for contents in persisted:
+            assert str(CODEX) not in contents
+            assert str(CLAUDE) not in contents
+            assert "raw-tool-input-canary" not in contents
 
 
 def test_publication_and_consumption_reject_unsafe_or_untyped_inputs(

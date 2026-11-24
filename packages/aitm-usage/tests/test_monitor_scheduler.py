@@ -447,6 +447,7 @@ def test_real_socket_and_park_cli_retain_only_keyed_wake_bytes(
 ):
     scheduler, resolver, _, now = wake
     sender = HookSender(resolver.writer.root)
+    _check_real_endpoint_refusal(scheduler, resolver, sender)
     event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/raw-path-canary")
     monkeypatch.setattr(
         monitor_registry, "default_monitor_root", lambda: resolver.writer.root
@@ -536,10 +537,8 @@ def test_wake_publication_failure_creates_no_memory_only_due_work(
     assert len(scheduler.take_due(now[0], 1)) == 1
 
 
-def test_sender_unavailable_and_listener_refuses_an_unsafe_endpoint(wake):
-    scheduler, resolver, _, _ = wake
+def _check_real_endpoint_refusal(scheduler, resolver, sender):
     root = resolver.writer.root
-    sender = HookSender(root)
     event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/unavailable")
     assert sender.notify(event) is WakeDisposition.UNAVAILABLE
     endpoint = root / "wake.sock"
@@ -559,9 +558,120 @@ def test_sender_unavailable_and_listener_refuses_an_unsafe_endpoint(wake):
             pytest.fail("unverified pre-chmod endpoint was reclaimed")
     endpoint.chmod(0o600)
     assert sender.notify(event) is WakeDisposition.UNAVAILABLE
-    with WakeIngress(scheduler, resolver).listen() as listener:
+
+
+def test_sender_unavailable_and_listener_refuses_an_unsafe_endpoint(
+    listener_policy, monkeypatch
+):
+    scheduler, resolver, _, transport, deliver, uid = listener_policy
+    directory = transport.directory
+    root = directory.path
+    endpoint = root / "wake.sock"
+    event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/unavailable")
+    sender = HookSender(root)
+    mode, inode = None, 9
+
+    def observe():
+        if mode is None:
+            raise FileNotFoundError(endpoint)
+        return os.stat_result((mode, inode, 1, 1, uid, 0, 0, 0, 0, 0))
+
+    def stat_endpoint(name, *, dir_fd, follow_symlinks):
+        assert (name, dir_fd, follow_symlinks) == (endpoint.name, directory.fd, False)
+        return observe()
+
+    def lstat_endpoint(address):
+        assert address == str(endpoint)
+        return observe()
+
+    def unlink_endpoint(name, *, dir_fd):
+        nonlocal mode
+        assert (name, dir_fd) == (endpoint.name, directory.fd)
+        mode = None
+
+    def bind_endpoint(address):
+        nonlocal mode, inode
+        assert address == str(endpoint) and mode is None
+        mode, inode = stat.S_IFSOCK | 0o644, 10
+
+    def chmod_endpoint(name, permissions, *, dir_fd, follow_symlinks):
+        nonlocal mode
+        assert (name, dir_fd, follow_symlinks) == (endpoint.name, directory.fd, False)
+        assert inode == 10
+        mode = stat.S_IFSOCK | permissions
+
+    unlink = Mock(wraps=unlink_endpoint)
+    sync = Mock()
+    server = MagicMock(spec=socket.socket)
+    server.bind.side_effect = bind_endpoint
+    server.accept.side_effect = transport.server.accept
+    probe = MagicMock(spec=socket.socket)
+    probe.connect_ex.return_value = errno.ECONNREFUSED
+    client = MagicMock(spec=socket.socket)
+    client.connect_ex.side_effect = lambda _: (
+        0 if server.listen.called else errno.ECONNREFUSED
+    )
+
+    def send_bytes(data):
+        assert bytes(data) == hooks._frame(event)
+        deliver(event)
+        return len(data)
+
+    client.send.side_effect = send_bytes
+    opener = Mock(side_effect=map(nullcontext, (server, server, server, probe)))
+    for module, open_socket in (
+        (hooks, Mock(return_value=nullcontext(client))),
+        (monitor_control, opener),
+    ):
+        monkeypatch.setattr(module, "_pin_directory", lambda _: nullcontext(directory))
+        monkeypatch.setattr(
+            module,
+            "socket",
+            SimpleNamespace(
+                socket=open_socket,
+                AF_UNIX=socket.AF_UNIX,
+                SOCK_STREAM=socket.SOCK_STREAM,
+                SHUT_WR=socket.SHUT_WR,
+            ),
+        )
+    monkeypatch.setattr(hooks.os, "stat", stat_endpoint)
+    monkeypatch.setattr(hooks.os, "lstat", lstat_endpoint)
+    monkeypatch.setattr(monitor_control.os, "unlink", unlink, raising=False)
+    monkeypatch.setattr(monitor_control.os, "chmod", chmod_endpoint, raising=False)
+    monkeypatch.setattr(monitor_control.os, "fsync", sync, raising=False)
+    real_select = hooks.select.select
+    monkeypatch.setattr(
+        hooks.select,
+        "select",
+        lambda reads, writes, errors, remaining: (
+            ([], writes, [])
+            if writes
+            else real_select(reads, writes, errors, remaining)
+        ),
+    )
+
+    ingress = WakeIngress(scheduler, resolver)
+    assert sender.notify(event) is WakeDisposition.UNAVAILABLE
+    mode = stat.S_IFLNK | 0o777
+    with pytest.raises(LedgerError, match="socket identity is unavailable"):
+        with ingress.listen():
+            pytest.fail("unsafe socket accepted")
+    mode = stat.S_IFSOCK | 0o644
+    with pytest.raises(LedgerError, match="requires owner removal"):
+        with ingress.listen():
+            pytest.fail("unverified pre-chmod endpoint was reclaimed")
+    client.connect_ex.assert_not_called()
+    unlink.assert_not_called()
+    mode = stat.S_IFSOCK | 0o600
+    assert sender.notify(event) is WakeDisposition.UNAVAILABLE
+    with ingress.listen() as listener:
+        probe.connect_ex.assert_called_once_with(str(endpoint))
+        unlink.assert_called_once_with(endpoint.name, dir_fd=directory.fd)
+        sync.assert_called_once_with(directory.fd)
         assert sender.notify(event) is WakeDisposition.SENT
         assert listener.serve_once()
+    assert mode is None
+    assert resolver.calls == [event]
 
 
 @pytest.mark.parametrize("replace_root", [False, True], ids=["socket", "root"])

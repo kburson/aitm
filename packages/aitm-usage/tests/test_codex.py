@@ -1,8 +1,6 @@
 import importlib
 import json
 import shlex
-import subprocess
-import sys
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -1277,12 +1275,9 @@ def test_stored_unqualified_baseline_cannot_establish_a_delta(memory_replay):
     assert result.provider_checkpoint.baseline.total_tokens == 20
 
 
-def test_fresh_process_continuation_checks_only_current_verified_context(project):
-    codex = adapter()
-    ledger, registration, path, checkout, _ = project
+def _split_tool_turn(ledger, checkout):
     amount = usage(8, 2)
-    write(
-        path,
+    return (
         [
             startup(checkout),
             *begin(checkout),
@@ -1290,65 +1285,38 @@ def test_fresh_process_continuation_checks_only_current_verified_context(project
             response("before-process-exit", amount, amount),
             counter(amount, amount),
         ],
-    )
-    candidate = source(registration)
-    batch, result = read(codex, candidate, codex.CodexState(ledger))
-    commit(ledger, batch, result)
-    write(
-        path,
         [
             tool_output(),
             response("after-process-exit", usage(16, 4), amount),
             counter(usage(16, 4), amount),
             end(),
         ],
-        append=True,
     )
-    program = """
-import sys
-from datetime import datetime
-from pathlib import Path
-from uuid import UUID
-from aitm_usage import ledger as storage
-from aitm_usage.ledger import Ledger
-from aitm_usage.sources.codex import CodexState, read_codex
-from aitm_usage.sources.scan import checkout_anchor_reference, discover, scan
-from aitm_usage.types import Eligibility, LedgerBatch, Registration, SourceCheckpoint
 
-state_root, root, anchor = (Path(arg) for arg in sys.argv[1:4])
-project_id = UUID(sys.argv[4])
-cutoff = datetime.fromisoformat(sys.argv[5])
-storage._control_root = lambda: state_root.parent / "control"
-ledger = Ledger.open(state_root, project_id)
-reg = Registration(project_id, state_root, (root,), (anchor,), cutoff)
-source, = discover(reg)
-checkpoint, = ledger.as_of().checkpoints
-batch = scan(source, checkpoint, cutoff)
-result = read_codex(batch, CodexState(ledger), Eligibility.ELIGIBLE)
-assert result.revisions == ()
-assert all(boundary.receipt_ref is None for boundary in result.boundaries)
-assert result.provider_checkpoint.baseline.total_tokens == 20
-ledger.apply(LedgerBatch(
-    checkpoint=SourceCheckpoint(batch.cursor, result.provider_checkpoint),
-    prior_checkpoint=checkpoint,
-))
-"""
-    subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            program,
-            str(ledger.root),
-            str(registration.source_roots[0]),
-            str(checkout),
-            str(PROJECT),
-            CUTOFF.isoformat(),
-        ],
-        check=True,
+
+def test_fresh_process_continuation_checks_only_current_verified_context(memory_replay):
+    codex = adapter()
+    replay = memory_replay
+    before, after = _split_tool_turn(replay.ledger, replay.checkout)
+    replay.write(before)
+    batch, result = replay.read(
+        codex.read_codex, replay.candidate(), codex.CodexState(replay.ledger)
     )
-    (stored,) = Ledger.open(ledger.root, PROJECT).as_of().checkpoints
-    assert stored.provider.baseline.total_tokens == 20
-    assert stored.cursor.offset == path.stat().st_size
+    checkpoint = replay.commit(batch, result)
+    replay.write(after, append=True)
+
+    ledger = replay.reopen()
+    (stored,) = ledger.as_of().checkpoints
+    assert stored == checkpoint
+    batch, resumed = replay.read(
+        codex.read_codex, replay.candidate(), codex.CodexState(ledger), stored
+    )
+    assert resumed.revisions == ()
+    assert all(boundary.receipt_ref is None for boundary in resumed.boundaries)
+    assert resumed.provider_checkpoint.baseline.total_tokens == 20
+    updated = replay.commit(batch, resumed, prior=stored)
+    assert replay.reopen().as_of().checkpoints == (updated,)
+    assert updated.cursor.offset > stored.cursor.offset
 
 
 def test_owner_binding_uses_the_same_serial_cli_proof(memory_replay):

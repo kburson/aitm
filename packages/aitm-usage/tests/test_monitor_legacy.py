@@ -326,7 +326,8 @@ def test_pre_adoption_legacy_anchor_enqueues_while_collector_holds_writer(
     assert target.read_bytes() == b"alternate private adoption"
     record.unlink()
     _assert_native_receipt_at_local_cutover(project, run, monkeypatch)
-    # Start the independent monitor snapshot cutover below from the legacy state.
+    record.unlink()
+    _assert_native_fresh_mark_at_local_cutover(project, run, monkeypatch)
     record.unlink()
 
     with Ledger.open(root, PROJECT).writer():
@@ -418,6 +419,64 @@ def _assert_native_receipt_at_local_cutover(ledger, run, monkeypatch):
     assert scopes.enqueue_command(ledger.root, command) == accepted
     assert ledger.as_of() == before
     assert not monitor_registry.default_monitor_root().exists()
+
+
+def _assert_native_fresh_mark_at_local_cutover(ledger, run, monkeypatch):
+    from test_scope_legacy import (
+        ADOPTION,
+        commit_adoption,
+        install_adopted_capture,
+        invocation,
+    )
+
+    from aitm_usage.service import CLAUDE_SESSIONS_NAME
+    from aitm_usage.types import InboxCommand, Provider, encode_command, encode_marker
+
+    args, payload, session = invocation(ledger, "mark", provider=Provider.CLAUDE)
+    command_id = UUID(int=119)
+    payload = replace(
+        payload,
+        marker_id=command_id,
+        project_id=ledger.identity.project_id,
+        receipt_ref=ledger.pseudonymize("scope-receipt", str(command_id)),
+    )
+    Path(args[3]).write_bytes(encode_marker(payload))
+    command = InboxCommand(command_id, payload.project_id, payload)
+    assert ledger.command_receipt(command) is None
+    inbox = ledger.root / scopes.INBOX_NAME
+
+    def snapshot():
+        return {path: path.read_bytes() for path in inbox.rglob("*") if path.is_file()}
+
+    before = snapshot()
+    original_publication = scopes._publication
+    with monkeypatch.context() as cutover:
+        captured = install_adopted_capture(cutover, ledger)
+        committed = False
+
+        @contextmanager
+        def publication_after_adoption(directory):
+            nonlocal committed
+            if not committed:
+                committed = True
+                commit_adoption(ledger, ADOPTION)
+            with original_publication(directory):
+                yield
+                assert not captured
+
+        cutover.setattr(scopes, "_publication", publication_after_adoption)
+        code, output = run(*args, "--json")
+
+    assert committed
+    assert code == 0 and not output.err
+    assert json.loads(output.out) == {
+        "command_id": str(command_id),
+        "status": "queued",
+    }
+    assert captured == [(encode_command(command), session)]
+    assert snapshot() == before
+    assert ledger.command_receipt(command) is None
+    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
 
 
 def test_invalid_legacy_anchor_input_leaves_inbox_untouched(legacy_policy, monkeypatch):

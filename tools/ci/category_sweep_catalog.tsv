@@ -87,9 +87,9 @@ packages/aitm-usage/tests/test_activation_receipt.py::test_receipt_rejects_unapp
 packages/aitm-usage/tests/test_activation_receipt.py::test_receipt_rejects_unapproved_fields_and_values[path5-True]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_receipt_rejects_unapproved_fields_and_values[path6-2026-11-09T12:00:00-01:00]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_receipt_rejects_unapproved_fields_and_values[path7-3F32952E-83EA-4427-98F4-121BF30263E0]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_activation_receipt.py::test_recovery_proves_exact_retained_bundle_and_fixed_parity	systems-integration	yes	yes
+packages/aitm-usage/tests/test_activation_receipt.py::test_recovery_proves_exact_retained_bundle_and_fixed_parity	fast-unit	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_retry_and_nested_observations_cannot_be_claimed_without_evidence	fast-unit	yes	yes
-packages/aitm-usage/tests/test_activation_receipt.py::test_running_witness_rejects_same_pid_different_start_and_same_version_wrong_wheel	systems-integration	yes	yes
+packages/aitm-usage/tests/test_activation_receipt.py::test_running_witness_rejects_same_pid_different_start_and_same_version_wrong_wheel	fast-unit	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_selected_source_gap_refuses_missing_live_file_without_penalizing_unrelated_hold	fast-unit	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_watermarks_bind_historical_authenticated_offsets_and_current_progress	fast-unit	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_workflow_is_bound_to_shared_session_overlap_and_graduation[controlled]	fast-unit	yes	yes
@@ -215,7 +215,7 @@ packages/aitm-usage/tests/test_codex.py::test_decline_inside_excluded_segment_ca
 packages/aitm-usage/tests/test_codex.py::test_delayed_display_increment_without_eligible_response_is_not_allocated	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_excluded_work_cannot_spill_through_fresh_sqlite_restart[False]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_excluded_work_cannot_spill_through_fresh_sqlite_restart[True]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_codex.py::test_fresh_process_continuation_checks_only_current_verified_context	systems-integration	yes	yes
+packages/aitm-usage/tests/test_codex.py::test_fresh_process_continuation_checks_only_current_verified_context	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_inconsistent_positive_counter_cannot_separate_excluded_activity	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_inline_quota_does_not_leak_from_unadmitted_source[False]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_inline_quota_does_not_leak_from_unadmitted_source[True]	fast-unit	yes	yes
@@ -407,7 +407,7 @@ packages/aitm-usage/tests/test_grok_scope_receipts.py::test_read_only_native_loo
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_rotation_between_bind_validation_and_publication_refuses_commit	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_source_approval_profile_and_command_witness_do_not_transfer	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope	fast-unit	yes	yes
-packages/aitm-usage/tests/test_host_fs_publication.py::test_directory_exchange_and_durability	systems-integration	yes	yes
+packages/aitm-usage/tests/test_host_fs_publication.py::test_directory_exchange_and_durability	fast-unit	yes	yes
 packages/aitm-usage/tests/test_host_fs_publication.py::test_existing_destination_survives_noreplace[directory]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_host_fs_publication.py::test_existing_destination_survives_noreplace[file]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_host_fs_publication.py::test_publication_failure_preserves_caller_errors_and_cleans_stage	fast-unit	yes	yes
@@ -444,18 +444,18 @@ packages/aitm-usage/tests/test_host_fs_security.py::test_private_acl_rejects_lin
 packages/aitm-usage/tests/test_host_fs_security.py::test_uid_guard_ignores_home_override[darwin-Library/Application Support/aitm-usage-control]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_host_fs_security.py::test_uid_guard_ignores_home_override[linux-.local/state/aitm-usage-control]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_host_fs_security.py::test_unsupported_platform_refuses_acl_admission	fast-unit	yes	yes
-packages/aitm-usage/tests/test_host_watch.py::test_close_wakes_blocked_consumer	systems-integration	yes	yes
+packages/aitm-usage/tests/test_host_watch.py::test_close_wakes_blocked_consumer	fast-unit	yes	yes
 packages/aitm-usage/tests/test_host_watch.py::test_linux_kernel_capacity_retires_partial_root_only	fast-unit	no	yes
 packages/aitm-usage/tests/test_host_watch.py::test_linux_new_and_moved_directories_reconcile	systems-integration	no	yes
 packages/aitm-usage/tests/test_host_watch.py::test_linux_overlapping_roots_share_descriptor_without_weakening_mask	systems-integration	no	yes
 packages/aitm-usage/tests/test_host_watch.py::test_linux_registration_bound_falls_back_for_one_root	fast-unit	no	yes
 packages/aitm-usage/tests/test_host_watch.py::test_linux_reports_real_queue_overflow_and_rebuilds	systems-integration	no	yes
-packages/aitm-usage/tests/test_host_watch.py::test_losing_one_root_preserves_other_watch_events	systems-integration	yes	yes
+packages/aitm-usage/tests/test_host_watch.py::test_losing_one_root_preserves_other_watch_events	fast-unit	yes	yes
 packages/aitm-usage/tests/test_host_watch.py::test_native_watch_opens_directories_and_no_payloads	systems-integration	yes	yes
 packages/aitm-usage/tests/test_host_watch.py::test_native_watch_reports_change_and_retires_resources	systems-integration	yes	yes
 packages/aitm-usage/tests/test_host_watch.py::test_root_loss_and_replacement_are_terminal[None]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_host_watch.py::test_root_loss_and_replacement_are_terminal[directory]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_host_watch.py::test_root_loss_and_replacement_are_terminal[symlink]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_host_watch.py::test_root_loss_and_replacement_are_terminal[symlink]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_host_watch.py::test_unsafe_and_duplicate_roots_refuse	fast-unit	yes	yes
 packages/aitm-usage/tests/test_install.py::test_backup_and_restore_reject_inherited_acl	systems-integration	yes	yes
 packages/aitm-usage/tests/test_install.py::test_backup_copies_only_authority_in_its_pinned_snapshot	fast-unit	yes	yes
@@ -491,7 +491,7 @@ packages/aitm-usage/tests/test_install.py::test_scope_launcher_forwards_only_exa
 packages/aitm-usage/tests/test_install.py::test_scope_launcher_forwards_only_exact_optional_thread_candidate[matching]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_install.py::test_scope_launcher_forwards_only_exact_optional_thread_candidate[unset]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_install.py::test_scope_launcher_forwards_only_exact_optional_thread_candidate[wrong]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_install.py::test_unapproved_runtime_hook_never_executes	systems-integration	yes	yes
+packages/aitm-usage/tests/test_install.py::test_unapproved_runtime_hook_never_executes	fast-unit	yes	yes
 packages/aitm-usage/tests/test_install.py::test_upgrade_refuses_witness_incapable_running_prior	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[False-False]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[False-True]	fast-unit	yes	yes
@@ -504,7 +504,7 @@ packages/aitm-usage/tests/test_isolated_qualification.py::test_late_recheck_refu
 packages/aitm-usage/tests/test_isolated_qualification.py::test_product_issuer_and_exclusion_consumers_have_fixed_entry_points	local-integration	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed[KeyError]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed[TypeError]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_isolated_qualification.py::test_revocation_is_terminal_and_writer_thread_is_private	systems-integration	yes	yes
+packages/aitm-usage/tests/test_isolated_qualification.py::test_revocation_is_terminal_and_writer_thread_is_private	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_signed_supersession_invalidates_the_prior_generation	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_valid_owner_signature_is_bound_to_revision_and_lease	systems-integration	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_apfs_firmlink_overlap_refused_before_private_creation[control-inside-state-existing]	fast-unit	yes	yes
@@ -521,7 +521,7 @@ packages/aitm-usage/tests/test_ledger.py::test_closed_batch_rejects_raw_fields_b
 packages/aitm-usage/tests/test_ledger.py::test_control_location_cannot_be_inside_project_state	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_control_location_rejects_case_alias_of_project_state	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_cursor_replay_never_rewinds_current_provider_state	fast-unit	yes	yes
-packages/aitm-usage/tests/test_ledger.py::test_distinct_apfs_alias_cannot_admit_a_second_writer	systems-integration	yes	yes
+packages/aitm-usage/tests/test_ledger.py::test_distinct_apfs_alias_cannot_admit_a_second_writer	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_distinct_project_can_write_while_first_uuid_guard_held	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_existing_state_refuses_missing_control_guard	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_extended_grant_on_private_key_refused_before_read	systems-integration	yes	yes
@@ -1143,7 +1143,7 @@ packages/aitm-usage/tests/test_monitor_scheduler.py::test_replaced_endpoint_is_r
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_replaced_endpoint_is_refused_and_preserved[socket]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_restart_recovers_pending_wake_without_its_old_lease	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_saturated_listener_is_preserved_and_sender_returns	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_scheduler.py::test_sender_unavailable_and_listener_refuses_an_unsafe_endpoint	systems-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_scheduler.py::test_sender_unavailable_and_listener_refuses_an_unsafe_endpoint	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_stale_stop_cannot_park_newer_turn	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_verified_stop_only_new_turn_gets_exactly_one_catchup	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_wake_publication_failure_creates_no_memory_only_due_work	fast-unit	yes	yes
@@ -1326,7 +1326,7 @@ packages/aitm-usage/tests/test_rollup.py::test_guarded_commit_requires_exact_rel
 packages/aitm-usage/tests/test_rollup.py::test_guarded_commit_requires_exact_relationship_decision[revision-key]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_guarded_commit_requires_exact_relationship_decision[revision-number]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_guarded_commit_requires_exact_relationship_decision[unexpected-boundary]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_rollup.py::test_installed_item_cli_refuses_missing_project	systems-integration	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_installed_item_cli_refuses_missing_project	fast-unit	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_invalid_relationship_order_halts_only_relationships[duplicate]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_invalid_relationship_order_halts_only_relationships[malformed]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_invalid_relationship_order_halts_only_relationships[missing]	fast-unit	yes	yes
@@ -1483,7 +1483,7 @@ packages/aitm-usage/tests/test_scope_legacy.py::test_adopted_replay_returns_the_
 packages/aitm-usage/tests/test_scope_legacy.py::test_adopted_replay_returns_the_exact_durable_legacy_outcome[conflict-mark-codex]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scope_legacy.py::test_adopted_replay_returns_the_exact_durable_legacy_outcome[conflict-parent-codex]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scope_legacy.py::test_adoption_wins_between_legacy_selection_and_publication[alias]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_scope_legacy.py::test_adoption_wins_between_legacy_selection_and_publication[mark]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_scope_legacy.py::test_adoption_wins_between_legacy_selection_and_publication[mark]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scope_legacy.py::test_committed_adoption_without_monitor_registration_fails_closed	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scope_legacy.py::test_invalid_local_adoption_refuses_without_any_legacy_or_monitor_write[identity]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scope_legacy.py::test_invalid_local_adoption_refuses_without_any_legacy_or_monitor_write[key]	fast-unit	yes	yes
@@ -1502,7 +1502,7 @@ packages/aitm-usage/tests/test_scope_legacy.py::test_replay_finds_receipt_commit
 packages/aitm-usage/tests/test_scope_legacy.py::test_replay_finds_receipt_committed_while_adoption_wins_the_legacy_lock[codex]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scopes.py::test_binding_checks_anchor_session_and_monotonic_generation	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scopes.py::test_bound_owner_cannot_claim_development_in_an_unproven_stream	fast-unit	yes	yes
-packages/aitm-usage/tests/test_scopes.py::test_cli_publication_is_private_authenticated_and_lease_free	systems-integration	yes	yes
+packages/aitm-usage/tests/test_scopes.py::test_cli_publication_is_private_authenticated_and_lease_free	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scopes.py::test_common_drain_applies_typed_effect_tuple_in_one_commit	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scopes.py::test_correction_can_recover_quarantined_scope_with_recorded_proof	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scopes.py::test_cross_stream_rebind_preserves_recorded_prefix_only[request-message]	fast-unit	yes	yes

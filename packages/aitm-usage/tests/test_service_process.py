@@ -3,6 +3,7 @@ import os
 import shlex
 import signal
 import socket
+import stat
 import subprocess
 import sys
 from collections import Counter
@@ -310,6 +311,79 @@ def _export(project, sequence, destination):
     )
 
 
+def _assert_native_codex_continuation_from_fresh_process(base, monkeypatch):
+    base = base / "cold-continuation"
+    source, checkout = base / "source", base / "checkout"
+    source.mkdir(parents=True, mode=0o700)
+    checkout.mkdir(mode=0o700)
+    with monkeypatch.context() as isolated:
+        isolated.setattr("aitm_usage.ledger._control_root", lambda: base / "control")
+        ledger = Ledger.initialize(base / "project", PROJECT)
+        registration = Registration(
+            PROJECT, ledger.root, (source,), (checkout,), codex.CUTOFF
+        )
+        path = source / "turn.jsonl"
+        before, after = codex._split_tool_turn(ledger, checkout)
+        codex.write(path, before)
+        reader = codex.adapter()
+        batch, result = codex.read(
+            reader, codex.source(registration), reader.CodexState(ledger)
+        )
+        checkpoint = codex.commit(ledger, batch, result)
+        assert checkpoint.cursor.offset == path.stat().st_size
+        codex.write(path, after, append=True)
+
+        program = """
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+from uuid import UUID
+from aitm_usage import ledger as storage
+from aitm_usage.ledger import Ledger
+from aitm_usage.sources.codex import CodexState, read_codex
+from aitm_usage.sources.scan import discover, scan
+from aitm_usage.types import Eligibility, LedgerBatch, Registration, SourceCheckpoint
+
+state_root, root, anchor = (Path(arg) for arg in sys.argv[1:4])
+project_id = UUID(sys.argv[4])
+cutoff = datetime.fromisoformat(sys.argv[5])
+assert os.getpid() != int(sys.argv[6])
+storage._control_root = lambda: state_root.parent / "control"
+ledger = Ledger.open(state_root, project_id)
+reg = Registration(project_id, state_root, (root,), (anchor,), cutoff)
+source, = discover(reg)
+checkpoint, = ledger.as_of().checkpoints
+batch = scan(source, checkpoint, cutoff)
+result = read_codex(batch, CodexState(ledger), Eligibility.ELIGIBLE)
+assert result.revisions == ()
+assert all(boundary.receipt_ref is None for boundary in result.boundaries)
+assert result.provider_checkpoint.baseline.total_tokens == 20
+ledger.apply(LedgerBatch(
+    checkpoint=SourceCheckpoint(batch.cursor, result.provider_checkpoint),
+    prior_checkpoint=checkpoint,
+))
+"""
+        subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                program,
+                str(ledger.root),
+                str(source),
+                str(checkout),
+                str(PROJECT),
+                codex.CUTOFF.isoformat(),
+                str(os.getpid()),
+            ],
+            check=True,
+            timeout=TIMEOUT,
+        )
+        (stored,) = Ledger.open(ledger.root, PROJECT).as_of().checkpoints
+        assert stored.provider.baseline.total_tokens == 20
+        assert stored.cursor.offset == path.stat().st_size
+
+
 def test_real_service_crash_enrollment_and_private_state(tmp_path, monkeypatch):
     base = tmp_path.resolve()
     project = _Project(base)
@@ -372,10 +446,8 @@ def test_real_service_crash_enrollment_and_private_state(tmp_path, monkeypatch):
     review_ack = inbox / ACKS_NAME / review_publication.name
     staged = base / "withheld-delivery.json"
     review_publication.rename(staged)
-    epic_stdout, child_stdout = (
-        project.command(*args) for args in (epic_args, child_args)
-    )
-    assert (epic_stdout, child_stdout) == (_queued(CX_EPIC), _queued(CX_CHILD))
+    child_stdout = project.command(*child_args)
+    assert child_stdout == _queued(CX_CHILD)
 
     # Malformed inputs originate outside the state to test the write
     # boundary. The torn temp contains only a prefix of a real wire command.
@@ -427,6 +499,16 @@ def test_real_service_crash_enrollment_and_private_state(tmp_path, monkeypatch):
     private_roots = (project.root, project.control, project.logs)
 
     with project.service("first") as first:
+        first.at("between-scans")
+        epic_stdout = project.command(*epic_args)
+        assert epic_stdout == _queued(CX_EPIC)
+        assert stat.S_IMODE(inbox.stat().st_mode) == 0o700
+        epic_publication = inbox / f"{CX_EPIC}.json"
+        assert stat.S_IMODE(epic_publication.stat().st_mode) == 0o600
+        assert epic_publication.read_bytes() == encode_command(
+            InboxCommand(CX_EPIC, PROJECT, epic)
+        )
+        first.resume()
         barrier = first.at("between-scans")
         [(review_boundary, review_ordinal)] = barrier["boundaries"]
         assert review_boundary == review.boundary_ref.value
@@ -522,6 +604,10 @@ def test_real_service_crash_enrollment_and_private_state(tmp_path, monkeypatch):
         relationship_id,
     }
     assert review_ack.read_bytes() == acknowledgment
+    epic_ack = inbox / ACKS_NAME / epic_publication.name
+    assert stat.S_IMODE(epic_ack.stat().st_mode) == 0o600
+    assert not epic_publication.exists()
+    assert json.loads(epic_ack.read_bytes())["disposition"] == "accepted"
     assert all(r.disposition is MarkerDisposition.ACCEPTED for r in receipts)
     assert sum(isinstance(r.record, ScopeEnrollment) for r in settled.current) == 3
     assert (
@@ -616,3 +702,4 @@ def test_real_service_crash_enrollment_and_private_state(tmp_path, monkeypatch):
     _privacy_scan(ledger, (*private_roots, export, replay), canaries)
     # Approved paths belong in the private configuration only.
     _privacy_scan(ledger, (project.logs, export, replay), (str(sources), str(approved)))
+    _assert_native_codex_continuation_from_fresh_process(base, monkeypatch)

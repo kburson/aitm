@@ -6,8 +6,11 @@ from unittest.mock import Mock
 
 import pytest
 from test_accounting import reference_rates as reference_rates
+from test_install import activation_policy as activation_policy
+from test_install import install_policy_ledger as install_policy_ledger
 from test_install import launch_control as launch_control
 from test_install import project as project
+from test_install import runtime_receipt as runtime_receipt
 from test_service import collector_policy as collector_policy
 
 from aitm_usage import cli, qualification
@@ -250,82 +253,106 @@ def _unbound_claude_source(
     return path
 
 
-def test_running_witness_rejects_same_pid_different_start_and_same_version_wrong_wheel(
-    project,
-    tmp_path,
-    launch_control,
-):
-    from dataclasses import replace
+def _collector_for_lifecycle(lifecycle):
     from datetime import timedelta
 
-    from test_install import _wheel
-    from test_service import _fixtures
-
-    from aitm_usage import install
-    from aitm_usage.pricing import load_rate_card
-    from aitm_usage.qualification import (
-        QualificationError,
-        _verify_running,
-        decode_activation_receipt,
-    )
-
-    registration, ledger, _ = project
-    _fixtures(registration.source_roots[0], registration.checkout_anchors[0])
-    _unbound_claude_source(registration, tmp_path / "other-checkout")
-    wheel, digest = _wheel(tmp_path, "qualification")
-    lifecycle = install.install_wheel(
-        ledger,
-        wheel,
-        Path(sys._base_executable).resolve(strict=True),
-        launch_control,
-        action="install",
-        expected_sha256=digest,
-    )
-    sample = decode_activation_receipt(FIXTURE.read_bytes()).collector
     start = datetime.fromisoformat(lifecycle.producer_started)
     heartbeat = datetime.fromisoformat(lifecycle.heartbeat)
-    collector = replace(
-        sample,
+    return qualification._CollectorEvidence(
         version=lifecycle.version,
-        wheel_sha256=digest,
         interpreter_version=lifecycle.interpreter_version,
+        wheel_sha256=lifecycle.wheel_sha256,
+        previous_started=start - timedelta(minutes=2),
+        previous_heartbeat=start - timedelta(minutes=1),
         producer_started=start,
         activation_heartbeat=heartbeat,
         heartbeat=heartbeat,
+        poll_interval_seconds=lifecycle.poll_interval_seconds,
+        owned_unattended=True,
+        same_process=True,
+        private_state=True,
     )
-    verified = _verify_running(ledger, collector, lifecycle, launch_control)
+
+
+def _assert_running_qualification(registration, ledger, lifecycle, control, tmp_path):
+    from aitm_usage.pricing import load_rate_card
+
+    verified = qualification._verify_running(
+        ledger, _collector_for_lifecycle(lifecycle), lifecycle, control
+    )
     assert verified["producer_mode"] == "service"
     assert verified["held_sources"] == 1
     assert sum(row["observed_through"] is not None for row in verified["sources"]) == 2
-
-    reused_start = start - timedelta(seconds=1)
-    with pytest.raises(QualificationError, match="process-incarnation"):
-        _verify_running(
-            ledger,
-            replace(collector, producer_started=reused_start),
-            replace(lifecycle, producer_started=reused_start.isoformat()),
-            launch_control,
-        )
-
-    other_wheel, other_digest = _wheel(tmp_path, "same-version-other-wheel")
-    assert other_wheel.name == wheel.name and other_digest != digest
-    with pytest.raises(QualificationError, match="wheel-mismatch"):
-        _verify_running(
-            ledger,
-            replace(collector, wheel_sha256=other_digest),
-            replace(lifecycle, wheel_sha256=other_digest),
-            launch_control,
-        )
-    assert len(launch_control.bootstraps) == 1
 
     selected = _selected_source_evidence(verified)
     view = ledger.as_of()
     rates = load_rate_card()
     qualification._verify_selected_sources(ledger, view, selected, rates)
     source = registration.source_roots[0] / "claude.jsonl"
-    source.rename(tmp_path / "no-longer-approved.jsonl")
-    with pytest.raises(QualificationError, match="selected-source-gap"):
-        qualification._verify_selected_sources(ledger, view, selected, rates)
+    relocated = source.rename(tmp_path / "no-longer-approved.jsonl")
+    try:
+        with pytest.raises(
+            qualification.QualificationError, match="selected-source-gap"
+        ):
+            qualification._verify_selected_sources(ledger, view, selected, rates)
+    finally:
+        relocated.rename(source)
+
+
+def test_running_witness_rejects_same_pid_different_start_and_same_version_wrong_wheel(
+    activation_policy,
+    monkeypatch,
+):
+    from dataclasses import replace
+    from datetime import timedelta
+
+    from aitm_usage.install import InstallReceipt
+    from aitm_usage.qualification import (
+        QualificationError,
+        _verify_running,
+    )
+
+    case = activation_policy
+    wheel = case.runtime_files.wheel
+    lifecycle = InstallReceipt(
+        **case.command(
+            "service",
+            "install",
+            "--wheel",
+            Path("/fixture/candidate.whl"),
+            "--wheel-sha256",
+            wheel.digest,
+            "--interpreter",
+            case.runtime_files.interpreter,
+        )
+    )
+    collector = _collector_for_lifecycle(lifecycle)
+    monkeypatch.setattr(
+        qualification, "_now", lambda: collector.heartbeat + timedelta(seconds=1)
+    )
+    monkeypatch.setattr(qualification, "_path_exists", Mock(return_value=False))
+    verified = _verify_running(case.ledger, collector, lifecycle, case.control)
+    assert verified["producer_mode"] == "service"
+    assert verified["producer_pid"] == case.process.pid
+
+    reused_start = collector.producer_started - timedelta(seconds=1)
+    with pytest.raises(QualificationError, match="process-incarnation"):
+        _verify_running(
+            case.ledger,
+            replace(collector, producer_started=reused_start),
+            replace(lifecycle, producer_started=reused_start.isoformat()),
+            case.control,
+        )
+
+    other_digest = "b" * 64
+    with pytest.raises(QualificationError, match="wheel-mismatch"):
+        _verify_running(
+            case.ledger,
+            replace(collector, wheel_sha256=other_digest),
+            replace(lifecycle, wheel_sha256=other_digest),
+            case.control,
+        )
+    assert len(case.control.bootstraps) == 1
 
 
 def _write_private(path, data):
@@ -791,42 +818,20 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
         _verify_order(entry, proof, load_rate_card())
 
 
-def test_fixed_export_uses_actual_ledger_and_replay_bytes(reference_rates, monkeypatch):
+def _observe_export_snapshots(snapshots, monkeypatch):
     import os
     import stat
     from contextlib import nullcontext
-    from dataclasses import replace
     from io import BytesIO
     from types import SimpleNamespace
 
-    from test_export import _observation
-    from test_install import PROJECT
-    from test_ledger import _LedgerRows, _memory_ledger
-
     from aitm_usage import export
-    from aitm_usage import ledger as store
-    from aitm_usage.ledger import Ledger
-    from aitm_usage.qualification import QualificationError, _verify_exports
-    from aitm_usage.types import LedgerBatch
 
-    ledger = replace(_memory_ledger(store, PROJECT, b"q" * 32), _writer=object())
-    rows = _LedgerRows(ledger.identity, store.APPLICATION_ID, ())
-    monkeypatch.setattr(Ledger, "require_writer", lambda _: None)
-    monkeypatch.setattr(Ledger, "reader", lambda _: rows.connect(write=False))
-    monkeypatch.setattr(
-        Ledger, "_write_transaction", lambda _: rows.connect(write=True)
-    )
-    usage, _ = _observation(ledger, "first")
-    ledger.apply(LedgerBatch((usage,)))
-    view = ledger.as_of()
-    card = reference_rates
-    receipt, serialized = export._render(view, card)
-    snapshots = {ledger.root / name: dict(serialized) for name in ("before", "after")}
     folders = dict(enumerate(snapshots, 1))
     entries = {
         (parent, name): (index, snapshots[folder][name])
         for parent, folder in folders.items()
-        for index, name in enumerate(serialized, 10 * parent)
+        for index, name in enumerate(snapshots[folder], 10 * parent)
     }
     by_descriptor = {fd: data for fd, data in entries.values()}
 
@@ -867,6 +872,36 @@ def test_fixed_export_uses_actual_ledger_and_replay_bytes(reference_rates, monke
             path=os.path,
         ),
     )
+    return pins
+
+
+def test_fixed_export_uses_actual_ledger_and_replay_bytes(reference_rates, monkeypatch):
+    from dataclasses import replace
+
+    from test_export import _observation
+    from test_install import PROJECT
+    from test_ledger import _LedgerRows, _memory_ledger
+
+    from aitm_usage import export
+    from aitm_usage import ledger as store
+    from aitm_usage.ledger import Ledger
+    from aitm_usage.qualification import QualificationError, _verify_exports
+    from aitm_usage.types import LedgerBatch
+
+    ledger = replace(_memory_ledger(store, PROJECT, b"q" * 32), _writer=object())
+    rows = _LedgerRows(ledger.identity, store.APPLICATION_ID, ())
+    monkeypatch.setattr(Ledger, "require_writer", lambda _: None)
+    monkeypatch.setattr(Ledger, "reader", lambda _: rows.connect(write=False))
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda _: rows.connect(write=True)
+    )
+    usage, _ = _observation(ledger, "first")
+    ledger.apply(LedgerBatch((usage,)))
+    view = ledger.as_of()
+    card = reference_rates
+    receipt, serialized = export._render(view, card)
+    snapshots = {ledger.root / name: dict(serialized) for name in ("before", "after")}
+    pins = _observe_export_snapshots(snapshots, monkeypatch)
     before, after = map(str, snapshots)
     _verify_exports(view, card, receipt.sha256, 1, (before, after))
     assert all(pin.check.call_count == 1 for pin in pins.values())
@@ -1198,131 +1233,178 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
             _verify_relationship_continuity(after, ledger.as_of())
 
 
+def _recovery_evidence(proof, export, backed_up_at, restored_at):
+    from uuid import UUID
+
+    return qualification._RecoveryEvidence(
+        UUID(proof.backup.project_id),
+        proof.backup.sequence,
+        export.row_count,
+        proof.backup.manifest_sha256,
+        export.sha256,
+        export.sha256,
+        export.sha256,
+        export.sha256,
+        proof.upgrade.version,
+        proof.upgrade.wheel_sha256,
+        datetime.fromisoformat(proof.initial.producer_started),
+        backed_up_at,
+        restored_at,
+        datetime.fromisoformat(proof.upgrade.heartbeat),
+        datetime.fromisoformat(proof.rollback.heartbeat),
+    )
+
+
 def test_recovery_proves_exact_retained_bundle_and_fixed_parity(
-    project,
-    tmp_path,
-    launch_control,
+    install_policy_ledger, reference_rates, monkeypatch
 ):
     from dataclasses import replace
     from datetime import timedelta
     from hashlib import sha256
-    from zipfile import ZipFile
+    from types import SimpleNamespace
+    from uuid import UUID
 
     from test_export import _observation
-    from test_install import _wheel
 
-    from aitm_usage import install
-    from aitm_usage.backup import backup
-    from aitm_usage.export import export_as_of
-    from aitm_usage.pricing import load_rate_card
-    from aitm_usage.qualification import (
-        QualificationError,
-        _BackupProof,
-        _RecoveryEvidence,
-        _RecoveryProof,
-        _verify_recovery,
-        decode_activation_receipt,
+    from aitm_usage import export, install
+    from aitm_usage.backup import BackupReceipt
+    from aitm_usage.ledger import Ledger
+    from aitm_usage.service import REGISTRATION_NAME
+    from aitm_usage.types import LedgerView
+
+    ledger = install_policy_ledger
+    identity = ledger.identity
+    project_id = str(identity.project_id)
+    label = f"org.aitm.usage.{project_id}"
+    usage, _ = _observation(ledger, "first")
+    view = LedgerView(identity.project_id, 2, (usage,), ())
+    result, files = export._render(view, reference_rates)
+    snapshots = tuple(
+        ledger.root / stage
+        for stage in ("before", "restored", "upgraded", "rolled-back")
     )
-    from aitm_usage.types import LedgerBatch
+    _observe_export_snapshots(dict.fromkeys(snapshots, files), monkeypatch)
 
-    _, ledger, _ = project
-    sample = decode_activation_receipt(FIXTURE.read_bytes()).collector
-    wheel, digest = _wheel(tmp_path, "primary")
-    sibling = tmp_path / "aitm_usage-0.1.1-py3-none-any.whl"
-    with ZipFile(wheel) as old, ZipFile(sibling, "w") as new:
-        for name in old.namelist():
-            content = old.read(name)
-            if name.endswith(("METADATA", "RECORD")):
-                content = content.replace(b"0.1.0", b"0.1.1")
-            new.writestr(
-                name.replace(
-                    "aitm_usage-0.1.0.dist-info", "aitm_usage-0.1.1.dist-info"
-                ),
-                content,
-            )
-    sibling_digest = sha256(sibling.read_bytes()).hexdigest()
-    interpreter = Path(sys._base_executable).resolve(strict=True)
+    bundle = Path("/fixture/backup")
+    upgrade_id, rollback_id = str(UUID(int=471)), str(UUID(int=472))
+    observed = {}
 
-    def activate(path, expected, action):
-        return install.install_wheel(
-            ledger,
-            path,
-            interpreter,
-            launch_control,
-            action=action,
-            expected_sha256=expected,
+    def observe_backup(path, database):
+        contents = {
+            qualification._KEY: b"owned key",
+            qualification._DATABASE: database,
+            REGISTRATION_NAME: b"owned registration",
+        }
+        manifest = {
+            "format": "aitm-usage.backup/v1",
+            "project_id": project_id,
+            "key_id": identity.key_id,
+            "schema_version": identity.schema_version,
+            "sequence": view.sequence,
+            "files": {
+                name: sha256(data).hexdigest() for name, data in contents.items()
+            },
+        }
+        proof = ledger.pseudonymize(
+            "collector-backup-manifest", qualification._json(manifest).decode()
+        )
+        raw = qualification._json({**manifest, "proof": proof.value})
+        observed.update({path / name: data for name, data in contents.items()})
+        observed[path / "manifest.json"] = raw
+        return BackupReceipt(
+            identity.project_id,
+            identity.key_id,
+            identity.schema_version,
+            view.sequence,
+            sha256(raw).hexdigest(),
         )
 
-    def snapshot(label):
-        path = tmp_path / label
-        return str(path), export_as_of(ledger.as_of(saved.sequence), card, path)
+    saved = observe_backup(bundle, b"snapshot sqlite bytes")
+    upgrade_backup = observe_backup(
+        ledger.root / "service-backups" / upgrade_id, b"upgrade sqlite bytes"
+    )
+    rollback_backup = observe_backup(
+        ledger.root / "service-backups" / rollback_id, b"rollback sqlite bytes"
+    )
 
-    card = load_rate_card()
-    usage, _ = _observation(ledger, "first")
-    ledger.apply(LedgerBatch((usage,)))
-    initial = activate(wheel, digest, "install")
-    bundle = tmp_path / "bundle"
-    saved = backup(ledger, bundle)
-    backup_at = datetime.now(UTC)
-    before, export = snapshot("before")
-    stop = install.stop_agent(ledger, launch_control)
-    restored = install.restore_for_agent(ledger, bundle, launch_control)
-    restore_at = datetime.now(UTC)
-    restored_path, _ = snapshot("restored")
-    resumed = activate(wheel, digest, "install")
-    upgraded = activate(sibling, sibling_digest, "upgrade")
-    upgraded_path, _ = snapshot("upgraded")
-    rollback = activate(wheel, digest, "upgrade")
-    rollback_path, _ = snapshot("rolled-back")
-    collector = replace(
-        sample,
-        version=initial.version,
-        wheel_sha256=digest,
-        interpreter_version=initial.interpreter_version,
-    )
-    evidence = _RecoveryEvidence(
-        ledger.identity.project_id,
-        saved.sequence,
-        1,
-        saved.manifest_sha256,
-        export.sha256,
-        export.sha256,
-        export.sha256,
-        export.sha256,
-        upgraded.version,
-        sibling_digest,
-        datetime.fromisoformat(initial.producer_started),
-        backup_at,
-        restore_at,
-        datetime.fromisoformat(upgraded.heartbeat),
-        datetime.fromisoformat(rollback.heartbeat),
-    )
-    proof = _RecoveryProof(
+    def lifecycle(status, seconds, *, sibling=False, backup=None, backup_id=None):
+        started = CHECKED + timedelta(seconds=seconds)
+        return install.InstallReceipt(
+            project_id,
+            label,
+            status,
+            "0.1.1" if sibling else "0.1.0",
+            ("b" if sibling else "a") * 64,
+            "3.13.9",
+            heartbeat=(started + timedelta(seconds=1)).isoformat(),
+            producer_mode="service",
+            producer_pid=321,
+            producer_started=started.isoformat(),
+            backup=backup,
+            backup_id=backup_id,
+        )
+
+    proof = qualification._RecoveryProof(
         str(ledger.root),
         str(bundle),
-        initial,
-        stop,
-        _BackupProof("backed-up", **saved.as_dict()),
-        _BackupProof("restored", **restored.as_dict()),
-        resumed,
-        upgraded,
-        rollback,
-        before,
-        restored_path,
-        upgraded_path,
-        rollback_path,
+        lifecycle("installed", 0),
+        install.InstallReceipt(project_id, label, "stopped"),
+        qualification._BackupProof("backed-up", **saved.as_dict()),
+        qualification._BackupProof("restored", **saved.as_dict()),
+        lifecycle("installed", 4),
+        lifecycle(
+            "upgraded", 6, sibling=True, backup=upgrade_backup, backup_id=upgrade_id
+        ),
+        lifecycle("upgraded", 8, backup=rollback_backup, backup_id=rollback_id),
+        *map(str, snapshots),
     )
-    _verify_recovery(evidence, proof, collector, card)
-    with pytest.raises(QualificationError, match="recovery-evidence"):
-        _verify_recovery(
-            replace(evidence, restored_at=restore_at - timedelta(days=1)),
+    backed_up_at = CHECKED + timedelta(seconds=2)
+    restored_at = CHECKED + timedelta(seconds=3)
+    evidence = _recovery_evidence(proof, result, backed_up_at, restored_at)
+    collector = _collector_for_lifecycle(proof.initial)
+    wheels = {
+        install._wheel_path(ledger, receipt.version, receipt.wheel_sha256): receipt
+        for receipt in (proof.initial, proof.upgrade)
+    }
+
+    def read_wheel(path, digest, *, private):
+        assert private and digest == wheels[path].wheel_sha256
+        return SimpleNamespace(
+            files={
+                Path("aitm_usage/cli.py"): b"identical installed source",
+                Path(
+                    f"aitm_usage-{wheels[path].version}.dist-info/METADATA"
+                ): b"distinct versions",
+            }
+        )
+
+    open_ledger = Mock(return_value=ledger)
+    registration = Mock()
+    monkeypatch.setattr(Ledger, "open", open_ledger)
+
+    def read_fixed_view(actual, cutoff):
+        assert actual is ledger and cutoff == view.sequence
+        return view
+
+    monkeypatch.setattr(Ledger, "as_of", read_fixed_view)
+    monkeypatch.setattr(qualification, "load_registration", registration)
+    monkeypatch.setattr(qualification, "_wheel", read_wheel)
+    monkeypatch.setattr(qualification, "_read_proof", lambda path, *_: observed[path])
+
+    verify = qualification._verify_recovery
+    verify(evidence, proof, collector, reference_rates)
+    open_ledger.assert_called_once_with(ledger.root, identity.project_id)
+    registration.assert_called_once_with(ledger)
+    with pytest.raises(qualification.QualificationError, match="recovery-evidence"):
+        verify(
+            replace(evidence, restored_at=restored_at - timedelta(days=1)),
             proof,
             collector,
-            card,
+            reference_rates,
         )
-    (bundle / "manifest.json").write_bytes(b"{}")
-    with pytest.raises(QualificationError, match="recovery-parity"):
-        _verify_recovery(evidence, proof, collector, card)
+    observed[bundle / "manifest.json"] = b"{}"
+    with pytest.raises(qualification.QualificationError, match="recovery-parity"):
+        verify(evidence, proof, collector, reference_rates)
 
 
 def test_cli_cannot_use_receipt_from_another_registered_project(

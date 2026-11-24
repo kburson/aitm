@@ -46,14 +46,22 @@ def _startup(watches, root):
     )
 
 
-def test_native_watch_reports_change_and_retires_resources(tmp_path):
-    watched = tmp_path / "watched"
-    watched.mkdir()
-    root = _root(watched)
+def test_native_watch_reports_change_and_retires_resources(tmp_path, monkeypatch):
+    watched, lost, healthy, linked = (
+        tmp_path / name for name in ("watched", "lost", "healthy", "linked")
+    )
+    for path in (watched, lost, healthy, linked):
+        path.mkdir()
+    root, lost_root, healthy_root, linked_root = (
+        _root(path, path.name) for path in (watched, lost, healthy, linked)
+    )
     payload = root.path / "transcript.jsonl"
     payload.write_text("initial")
-    with WatchSet((root,)) as watches:
-        _startup(watches, root)
+    roots = (root, lost_root, healthy_root, linked_root)
+    with WatchSet(roots) as watches:
+        assert {item.key for item in watches.events(0) if item.reason == "startup"} == {
+            item.key for item in roots
+        }
         payload.write_text("same length, changed content")
         event = _next(watches, lambda event: event.kind is WatchKind.CHANGED)
         assert event.key == root.key
@@ -61,94 +69,134 @@ def test_native_watch_reports_change_and_retires_resources(tmp_path):
         watched.mkdir()
         terminal = _next(watches, lambda event: event.kind is WatchKind.ROOT_REPLACED)
         assert terminal.key == root.key
+
+        lost.rename(tmp_path / "moved")
+        assert (
+            _next(watches, lambda event: event.kind is WatchKind.ROOT_LOST).key
+            == lost_root.key
+        )
+        (healthy / "active.jsonl").touch()
+        assert (
+            _next(
+                watches,
+                lambda event: (
+                    event.kind is WatchKind.CHANGED and event.key == healthy_root.key
+                ),
+            ).key
+            == healthy_root.key
+        )
+
+        previous = linked.rename(tmp_path / "previous")
+        linked.symlink_to(previous, target_is_directory=True)
+        assert (
+            _next(watches, lambda event: event.kind is WatchKind.ROOT_REPLACED).key
+            == linked_root.key
+        )
         (retired / "late.jsonl").touch()
+        (previous / "late.jsonl").touch()
+        assert not {root.key, linked_root.key}.intersection(
+            event.key for event in watches.events(0.10)
+        )
+
+        healthy.rename(tmp_path / "last-retired")
+        assert (
+            _next(watches, lambda event: event.kind is WatchKind.ROOT_LOST).key
+            == healthy_root.key
+        )
+        if watches._darwin is not None:
+            watches._darwin._thread.join(1)
+            assert not watches._darwin.alive()
         assert watches.events(0) == ()
     watches.close()
     assert watches.events(0) == ()
+
+    # A fresh, quiet root guarantees the reader reaches its actual native wait.
+    quiet = tmp_path / "quiet"
+    quiet.mkdir()
+    quiet_root = _root(quiet)
+    with WatchSet((quiet_root,)) as waiting:
+        _startup(waiting, quiet_root)
+        _assert_close_wakes_consumer(waiting, monkeypatch)
 
 
 @pytest.mark.parametrize(
     "replacement",
     [None, "directory", "symlink"],
 )
-def test_root_loss_and_replacement_are_terminal(request, monkeypatch, replacement):
-    if replacement != "symlink":
-        _assert_watch_retires_unavailable_root(monkeypatch, replacement)
-        return
-
-    tmp_path = request.getfixturevalue("tmp_path")
-    watched = tmp_path / "watched"
-    watched.mkdir()
-    root = _root(watched)
-    other = tmp_path / "previous"
-    with WatchSet((root,)) as watches:
+def test_root_loss_and_replacement_are_terminal(monkeypatch, replacement):
+    observed = _observed_watch(monkeypatch, "root")
+    (root,) = observed.roots
+    with observed.watches as watches:
         _startup(watches, root)
-        watched.rename(other)
-        watched.symlink_to(other, target_is_directory=True)
-        item = _next(watches, lambda event: event.kind is WatchKind.ROOT_REPLACED)
-        assert item.key == root.key
-        (other / "late.jsonl").touch()
-        assert watches.events(0.10) == ()
+        observed.notify(root.key, 0)
+        if replacement == "directory":
+            chain = observed.directories[root.path]
+            observed.directories[root.path] = (*chain[:-1], (1, 100, 0))
+        else:
+            error = errno.ELOOP if replacement == "symlink" else errno.ENOENT
+            observed.directories[root.path] = OSError(
+                error, "observed unavailable root"
+            )
+        expected = (
+            WatchKind.ROOT_LOST if replacement is None else WatchKind.ROOT_REPLACED
+        )
+
+        (terminal,) = watches.events(0)
+        assert (terminal.key, terminal.kind) == (root.key, expected)
+        observed.native.drop.assert_called_once_with(root.key)
+        observed.notify(root.key, 0)
+        assert watches.events(0) == ()
+    observed.native.close.assert_called_once_with()
 
 
-def _assert_watch_retires_unavailable_root(monkeypatch, replacement):
-    path = Path("/fixture/watch")
-    key = SourceRef(f"hmac-sha256:{'a' * 64}:{'b' * 64}")
-    root = WatchRoot(key, path, (1, 2))
-    chain = ((1, 1, 0), (1, 2, 0))
-    missing = False
+def _observed_watch(monkeypatch, *names):
+    roots = tuple(
+        WatchRoot(
+            SourceRef(f"hmac-sha256:{'a' * 64}:{sha256(name.encode()).hexdigest()}"),
+            Path("/fixture") / name,
+            (1, index),
+        )
+        for index, name in enumerate(names, start=2)
+    )
+    directories = {root.path: ((1, 1, 0), (*root.identity, 0)) for root in roots}
     native = Mock()
     native.alive.return_value = True
     backend = Mock(return_value=native)
 
     def directory(selected):
-        assert selected == path
-        if missing:
-            raise FileNotFoundError(errno.ENOENT, "observed missing directory")
-        return nullcontext((90, chain, ()))
+        observation = directories[selected]
+        if isinstance(observation, OSError):
+            raise observation
+        return nullcontext((90, observation, ()))
 
     monkeypatch.setattr(host_watch, "_directory", directory)
     monkeypatch.setattr(host_watch, "_Darwin", backend)
     monkeypatch.setattr(
         host_watch, "platform", SimpleNamespace(system=lambda: "Darwin")
     )
-    with WatchSet((root,)) as watches:
-        _startup(watches, root)
-        changed = backend.call_args.args[1]
-        changed(key, 0)
-        if replacement == "directory":
-            chain = (*chain[:-1], (1, 3, 0))
-            expected = WatchKind.ROOT_REPLACED
-        else:
-            missing = True
-            expected = WatchKind.ROOT_LOST
-
-        (terminal,) = watches.events(0)
-        assert (terminal.key, terminal.kind) == (key, expected)
-        native.drop.assert_called_once_with(key)
-        changed(key, 0)
-        assert watches.events(0) == ()
-
-    native.close.assert_called_once()
+    watches = WatchSet(roots)
+    return SimpleNamespace(
+        roots=roots,
+        directories=directories,
+        native=native,
+        watches=watches,
+        notify=backend.call_args.args[1],
+    )
 
 
-def test_losing_one_root_preserves_other_watch_events(tmp_path):
-    lost, healthy = (tmp_path / name for name in ("lost", "healthy"))
-    lost.mkdir()
-    healthy.mkdir()
-    first, second = _root(lost, "lost"), _root(healthy, "healthy")
-    with WatchSet((first, second)) as watches:
+def test_losing_one_root_preserves_other_watch_events(monkeypatch):
+    observed = _observed_watch(monkeypatch, "lost", "healthy")
+    first, second = observed.roots
+    with observed.watches as watches:
         assert {event.key for event in watches.events(0)} == {first.key, second.key}
-        lost.rename(tmp_path / "moved")
-        assert (
-            _next(watches, lambda event: event.kind is WatchKind.ROOT_LOST).key
-            == first.key
-        )
-        (healthy / "active.jsonl").touch()
-        assert (
-            _next(watches, lambda event: event.kind is WatchKind.CHANGED).key
-            == second.key
-        )
+        observed.directories[first.path] = FileNotFoundError(errno.ENOENT, "root moved")
+        (terminal,) = watches.events(0)
+        assert (terminal.key, terminal.kind) == (first.key, WatchKind.ROOT_LOST)
+        observed.native.drop.assert_called_once_with(first.key)
+        observed.notify(first.key, 0)
+        observed.notify(second.key, 0)
+        (active,) = watches.events(0)
+        assert (active.key, active.kind) == (second.key, WatchKind.CHANGED)
 
 
 def test_unsafe_and_duplicate_roots_refuse(monkeypatch):
@@ -180,17 +228,25 @@ def test_unsafe_and_duplicate_roots_refuse(monkeypatch):
     platform.assert_not_called()
 
 
-def test_close_wakes_blocked_consumer(tmp_path):
-    root = _root(tmp_path)
-    with WatchSet((root,)) as watches:
-        _startup(watches, root)
-        active = Event()
-        results = []
+def _assert_close_wakes_consumer(watches, monkeypatch):
+    active = Event()
+    if watches._linux is not None:
+        parent, operation = watches, "_linux_wait"
+    else:
+        parent, operation = watches._condition, "wait"
+    actual_wait = getattr(parent, operation)
 
-        def consume():
-            active.set()
-            results.append(watches.events(20.0))
+    def wait(timeout):
+        active.set()
+        return actual_wait(timeout)
 
+    results = []
+
+    def consume():
+        results.append(watches.events(20.0))
+
+    with monkeypatch.context() as observe:
+        observe.setattr(parent, operation, wait)
         reader = Thread(target=consume, daemon=True)
         reader.start()
         assert active.wait(1)
@@ -199,6 +255,15 @@ def test_close_wakes_blocked_consumer(tmp_path):
         reader.join(1)
         assert not reader.is_alive()
         assert results == [()]
+
+
+def test_close_wakes_blocked_consumer(monkeypatch):
+    observed = _observed_watch(monkeypatch, "root")
+    (root,) = observed.roots
+    with observed.watches as watches:
+        _startup(watches, root)
+        _assert_close_wakes_consumer(watches, monkeypatch)
+        observed.native.close.assert_called_once_with()
 
 
 def test_native_watch_opens_directories_and_no_payloads(tmp_path):

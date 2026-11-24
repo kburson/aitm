@@ -51,35 +51,39 @@ def test_existing_destination_survives_noreplace(request, monkeypatch, directory
     assert destination.read_bytes() == b"destination"
 
 
-def _restore_parents(tmp_path):
-    project = tmp_path / "project"
-    staged = tmp_path / "staged"
-    for parent in (project, staged):
-        parent.mkdir(mode=0o700)
-        (parent / "state").mkdir(mode=0o700)
-        (parent / "state" / "sentinel").write_text(parent.name)
-    return project, staged
+def test_directory_exchange_and_durability(monkeypatch):
+    project = SimpleNamespace(fd=11)
+    staged = SimpleNamespace(fd=12)
+    live_entry = (project.fd, b"state")
+    candidate_entry = (staged.fd, b"state")
+    directories = {live_entry: "live directory", candidate_entry: "candidate directory"}
 
+    def rename(source_fd, source, destination_fd, destination, flags):
+        assert (source_fd, source) == candidate_entry
+        assert (destination_fd, destination) == live_entry
+        assert flags == 0x2
+        directories[live_entry], directories[candidate_entry] = (
+            directories[candidate_entry],
+            directories[live_entry],
+        )
+        return 0
 
-def test_directory_exchange_and_durability(tmp_path, monkeypatch):
-    project, staged = _restore_parents(tmp_path)
-    live_before = (project / "state").stat()
-    staged_before = (staged / "state").stat()
-    real_fsync = os.fsync
-    synced = []
+    def sync(_fd):
+        assert directories == {
+            live_entry: "candidate directory",
+            candidate_entry: "live directory",
+        }
 
-    def sync(fd):
-        assert os.path.samestat(staged_before, (project / "state").stat())
-        assert os.path.samestat(live_before, (staged / "state").stat())
-        real_fsync(fd)
-        synced.append(os.fstat(fd).st_ino)
+    resolve_rename = Mock(return_value=rename)
+    fsync = Mock(side_effect=sync)
+    monkeypatch.setattr(host_fs, "_native_rename", resolve_rename)
+    monkeypatch.setattr(backup, "os", SimpleNamespace(fsync=fsync))
 
-    monkeypatch.setattr(os, "fsync", sync)
-    with _pin_directory(project) as live, _pin_directory(staged) as candidate:
-        backup._swap_store(live, candidate)
-    assert synced == [staged.stat().st_ino, project.stat().st_ino]
-    assert (project / "state" / "sentinel").read_text() == "staged"
-    assert (staged / "state" / "sentinel").read_text() == "project"
+    backup._swap_store(project, staged)
+
+    symbol = "renameatx_np" if sys.platform == "darwin" else "renameat2"
+    resolve_rename.assert_called_once_with(symbol)
+    assert fsync.call_args_list == [call(staged.fd), call(project.fd)]
 
 
 @pytest.mark.parametrize(

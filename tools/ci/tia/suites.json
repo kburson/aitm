@@ -335,6 +335,76 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_activation_receipt.py::test_recovery_proves_exact_retained_bundle_and_fixed_parity",
+      "suite": "unit",
+      "isolation_group": "activation_receipt-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_activation_receipt.py::test_running_witness_rejects_same_pid_different_start_and_same_version_wrong_wheel",
+      "suite": "unit",
+      "isolation_group": "activation_receipt-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_fresh_process_continuation_checks_only_current_verified_context",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_cli_publication_is_private_authenticated_and_lease_free",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_fs_publication.py::test_directory_exchange_and_durability",
+      "suite": "unit",
+      "isolation_group": "host_fs_publication-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_watch.py::test_close_wakes_blocked_consumer",
+      "suite": "unit",
+      "isolation_group": "host_watch-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_watch.py::test_losing_one_root_preserves_other_watch_events",
+      "suite": "unit",
+      "isolation_group": "host_watch-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_watch.py::test_root_loss_and_replacement_are_terminal",
+      "suite": "unit",
+      "isolation_group": "host_watch-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_distinct_apfs_alias_cannot_admit_a_second_writer",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_unapproved_runtime_hook_never_executes",
+      "suite": "unit",
+      "isolation_group": "install-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_isolated_qualification.py::test_revocation_is_terminal_and_writer_thread_is_private",
+      "suite": "unit",
+      "isolation_group": "isolated_qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_sender_unavailable_and_listener_refuses_an_unsafe_endpoint",
+      "suite": "unit",
+      "isolation_group": "monitor_scheduler-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_installed_item_cli_refuses_missing_project",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_adoption_wins_between_legacy_selection_and_publication",
+      "suite": "unit",
+      "isolation_group": "scope_legacy-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_export.py::test_exact_replay_resyncs_parent_after_interrupted_publication",
       "suite": "unit",
       "isolation_group": "export-policy"
