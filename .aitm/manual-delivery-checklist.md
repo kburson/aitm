@@ -46,6 +46,10 @@ Use the owner's delivery instruction for actions within the reviewed scope, incl
 
 For an operational or other non-source deliverable, the accepted plan must name its own verifiable target and applicable gates. Record the immutable deliverable, real validation, independent review of that version and verified result. Any source changes in that story follow the PR gates above.
 
+### Agent activity and cost tables
+
+When appending an agent activity and cost table to a completed story, show **Cached input tokens**, **New input tokens**, and **Output tokens** per turn and in the known subtotals. Use provider-reported cache reads for cached input. New input is total input minus cache reads, including input used to create a cache entry. Count reasoning under output where the provider includes it there. Use the same attribution and cutoff as the cost evidence. Mark missing splits **Unknown** and keep any provider-reported total with the coverage note. Token counts describe model usage. Keep provider-reported costs, API estimates, and verified billed amounts distinct.
+
 ## Missing evidence
 
 Keep a required gate open for missing, pending, skipped, stale, failed or unavailable evidence. Record which gate is affected, the exact candidate, what GitHub actually shows, the cause if verified, and what will satisfy it. For example, when a repository has no matching workflow, record **CI unavailable** and the absence of checks on that head. An exact local run can be retained with its command, environment, inputs, head and outcome as local verification. Treat hosted CI and native approval as separate evidence when the accepted story or GitHub branch settings require them. An explicitly authorized exception under the applicable policy must identify the authority, exact scope, omitted gate, substitute evidence and resulting disposition. Preserve the actual missing status in both records.

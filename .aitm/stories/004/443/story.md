@@ -60,12 +60,14 @@ GitHub closed #443 as completed and Project 24 read back Done.
 
 ## Agent activity and cost
 
-| Agent turn | Observed engagement | Observed tokens | Codex standard API estimate | Grok reported USD |
-| --- | ---: | ---: | ---: | ---: |
-| Codex delivery | 18m 6.109s | 11,356,020 | $1.826166 | — |
-| Codex independent review 1 | 3m 7.690s | 1,419,818 | $0.340710 | — |
-| Codex independent review 2 | 0m 39.118s | 417,328 | $0.073406 | — |
-| **Delivery subtotal (known amounts)** | **21m 52.917s** | **13,193,166** | **$2.240282** | — |
+| Agent turn | Observed engagement | Cached input tokens | New input tokens | Output tokens | Codex standard API estimate | Grok reported USD |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Codex delivery | 18m 6.109s | 11,160,064 | 156,175 | 39,781 | $1.826166 | — |
+| Codex independent review 1 | 3m 7.690s | 1,346,176 | 66,291 | 7,351 | $0.340710 | — |
+| Codex independent review 2 | 0m 39.118s | 407,424 | 8,297 | 1,607 | $0.073406 | — |
+| **Delivery subtotal (known amounts)** | **21m 52.917s** | **12,913,664** | **230,763** | **48,739** | **$2.240282** | — |
+
+Cached input counts provider-reported cache reads. New input counts input without a cache hit, including cache creation where reported. Output tokens include reasoning where the provider includes it in output. These are model usage counts.
 
 **Observed delivery engagement 0.3647 agent-hours.** The subtotal includes concurrent independent agent activity and excludes explicitly timed passive CI waits. The delivery turn is measured through retained activity at 2026-11-25T14:04:41.908Z. **Verified billed story cost is unknown.**
 
