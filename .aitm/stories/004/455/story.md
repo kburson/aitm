@@ -5,12 +5,12 @@ title: "[Spike] Investigate session-owned agent activity and cost reporting"
 kind: "spike"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/455"
-parent: 100
+parent: null
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-25T15:05:37Z"
-updated: "2026-11-25T15:06:42.092Z"
+updated: "2026-11-25T15:11:52.556Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub #455](https://github.com/kburson/aitm/issues/455)
 
-Parent #100. Use the delivered work from #422–#435 and the earlier monitor work as research inputs.
+Use the delivered work from #422 onward and the earlier work in [Epic #100](https://github.com/kburson/aitm/issues/100) as research inputs.
 
 ## Question
 
@@ -40,4 +40,4 @@ What is the smallest reliable way for the agent in a live chat to record its own
 
 ## Deliverable
 
-Publish a reuse matrix, a small end-to-end feasibility receipt, and a recommendation for the session-owned capture and reporting path. Map the remaining #100 children to reuse, reshape, or retire, and identify implications for Core #2 and #230. The spike concerns live chat sessions and their supervised work, using per-story evidence on `planning`. Global project discovery, an always-on host service, and a new platform integration are outside its scope.
+Publish a reuse matrix, a small end-to-end feasibility receipt, and a recommendation for the session-owned capture and reporting path. Evaluate each open #100 child against the session-owned pilot. Identify the concrete capability it would add, who benefits, what the delivered work already covers, and the expected implementation and maintenance effort. Recommend closing a child as **Not delivered** when the newer approach covers its useful outcome or the residual benefit does not justify the work. Where a child offers significant additional value, outline the smallest design and verification path that delivers that value using what we learned from #422 onward. Identify the impact of each recommendation on Core #2 and #230, including any dependency that would need a replacement. The spike concerns live chat sessions and their supervised work, using per-story evidence on `planning`. Global project discovery, an always-on host service, and a new platform integration are outside its scope.

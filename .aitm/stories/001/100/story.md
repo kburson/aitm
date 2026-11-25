@@ -6,11 +6,11 @@ kind: "epic"
 state: "planning"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300, 303, 304, 310, 320, 325, 326, 329, 330, 331, 335, 455]
+children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300, 303, 304, 310, 320, 325, 326, 329, 330, 331, 335]
 blocking: [2]
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-25T15:06:42.092Z"
+updated: "2026-11-25T15:11:52.556Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -30,7 +30,7 @@ Extend the delivered [#83 collector](../../000/83/story.md) to concurrent regist
 
 The agent in the live chat owns activity and cost measurement for its own turns and the turns it supervises, including spawned headless agents, subagents, and SPR/XPR reviewers. Record each measured turn against the story active in the owning session when the turn starts or is dispatched. Publish sanitized evidence to that story on `planning`, with exact recovery, replay, and coverage gaps visible. The delivery target is a lightweight session-owned reporter. Global project monitoring and an always-on host service are outside the current direction.
 
-Use #100's existing work as a learning foundation alongside #422–#435. The earlier monitor plan remains a historical record. Evaluate the ten open monitor children for reuse, reshaping, or retirement based on their fit with this direction. [Spike #455](https://github.com/kburson/aitm/issues/455) owns that assessment, the feasibility probe, and the recommendation for Core #2 and #230.
+Use #100's existing work as a learning foundation alongside #422–#435. The earlier monitor plan remains a historical record. The standalone [Spike #455](https://github.com/kburson/aitm/issues/455) will compare the session-owned approach with the ten open monitor children. For each child, it will assess whether to recommend closure as **Not delivered** or whether the remaining capability offers significant value. For work worth retaining, it will outline a lightweight delivery path based on what we learned from #422 onward and trace the implications for Core #2 and #230.
 
 ## Evidence and review order
 
