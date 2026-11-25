@@ -7,6 +7,7 @@ dependencies = []
 
 [project.scripts]
 aitm-usage = "aitm_usage.cli:main"
+aitm-effort = "aitm_usage.effort.cli:main"
 
 [build-system]
 requires = ["uv_build==0.10.6"]

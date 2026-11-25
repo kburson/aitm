@@ -387,6 +387,11 @@ packages/aitm-usage/tests/test_effort_grok.py::test_matching_aggregates_do_not_h
 packages/aitm-usage/tests/test_effort_grok.py::test_matching_aggregates_do_not_hide_conflicting_per_model_usage[swapped]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_grok.py::test_reopening_store_preserves_native_ticks_and_refuses_changed_settled_ticks	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_grok.py::test_resume_uses_the_only_new_opaque_ordinal_even_with_identical_usage	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_report.py::test_legacy_export_preserves_identity_and_blocks_combined_total	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_report.py::test_missing_store_is_not_created	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_report.py::test_read_only_store_accepts_an_existing_pre_trail_database	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_report.py::test_report_preserves_grok_native_zero_without_claiming_billing	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_report.py::test_report_scopes_attempts_and_exports_deterministically	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_conflicting_incomplete_chain_records_gap_without_replacing_prior_usage	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_cross_project_and_cross_attempt_turn_reuse_are_isolated	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_different_agent_can_continue_same_story_with_fresh_session	local-integration	yes	yes
@@ -423,6 +428,7 @@ packages/aitm-usage/tests/test_export.py::test_competing_destination_keeps_compl
 packages/aitm-usage/tests/test_export.py::test_exact_replay_resyncs_parent_after_interrupted_publication	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_export_allowlists_refs_and_gap_only_coverage	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_export_cli_reads_existing_project_without_writer_lease	fast-unit	yes	yes
+packages/aitm-usage/tests/test_export.py::test_portable_report_reads_fixed_export_bytes	local-integration	yes	yes
 packages/aitm-usage/tests/test_export.py::test_receiver_checks_reconciled_observation_after_reopen	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_receiver_refuses_duplicate_source_and_authenticated_tag	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_receiver_refuses_invalid_manifest_before_writing[cutoff-True]	fast-unit	yes	yes

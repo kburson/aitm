@@ -1386,3 +1386,92 @@ def test_receiver_checks_reconciled_observation_after_reopen(
     assert reopened.accepted == accepted
     assert reopened.reconciliation == {_public(first.key): 1}
     assert reopened.import_snapshot(repriced) == "imported"
+
+
+def test_portable_report_reads_fixed_export_bytes(
+    export_evidence, reference_rates, tmp_path
+):
+    from aitm_usage import export
+    from aitm_usage.effort import (
+        EffortError,
+        EffortStore,
+        Enrollment,
+        NativeTurn,
+        Outcome,
+        Role,
+        RollupTarget,
+        UsageReceipt,
+        UsageScope,
+    )
+    from aitm_usage.effort.export import read_legacy
+    from aitm_usage.effort.report import build_report
+
+    view, first, _, marker = _projected_view(export_evidence, reference_rates)
+    # Both formats represent this same approved native request. The legacy
+    # producer publishes its observation key, not the request/session refs.
+    native = replace(
+        first.record, tokens=replace(first.record.tokens, total_tokens=700)
+    )
+    view = replace(
+        view,
+        revisions=tuple(
+            replace(revision, record=native) if revision.key == first.key else revision
+            for revision in view.revisions
+        ),
+    )
+    _, files = export._render(view, reference_rates)
+    manifest, usage = files["manifest.json"], files["usage.jsonl"]
+    (tmp_path / "manifest.json").write_bytes(manifest)
+    (tmp_path / "usage.jsonl").write_bytes(usage)
+    project_id = UUID(json.loads(manifest)["project_id"])
+    snapshot = read_legacy(tmp_path, project_id)
+    assert snapshot.cutoff == view.sequence
+    assert [row.source for row in snapshot.rows] == [
+        json.loads(line)["source"] for line in usage.splitlines()
+    ]
+
+    effort = EffortStore(tmp_path / "effort.db", project_id)
+    enrollment = Enrollment(project_id, UUID(int=1), UUID(int=2), Role.WORKER, story=91)
+    turn = NativeTurn(
+        native.boundary.provider.value,
+        "0.167.0-alpha.3.2",
+        "fixture",
+        _ref(export_evidence, "account"),
+        native.boundary.session_ref,
+        native.boundary.boundary_ref,
+    )
+    receipt = UsageReceipt(
+        project_id,
+        enrollment.attempt_id,
+        turn,
+        sha256(native.request_ref.value.encode()).hexdigest(),
+        native.observed_at,
+        first.revision,
+        native.availability,
+        Outcome.COMPLETED,
+        native.tokens,
+        UsageScope.BOUNDED,
+    )
+    effort.enroll(enrollment)
+    effort.ingest(receipt)
+    report = build_report(
+        effort.snapshot(), RollupTarget(project_id, story=91), legacy=snapshot
+    )
+    legacy = next(
+        row for row in report["legacy"]["rows"] if row["source"] == _public(first.key)
+    )
+    assert marker.item.identifier == report["attempts"][0]["story"] == 91
+    assert legacy["observed_tokens"] == report["total"]["observed_tokens"] == 700
+    assert legacy["observation_revision"] == first.revision
+    assert legacy["estimated_usd"] is not None
+    assert legacy["rate_basis"] == reference_rates.basis.identifier
+    assert report["attempts"][0]["observation_id"] == turn.identity
+    assert report["combined_coverage"] == "unresolved-overlap"
+    assert (tmp_path / "manifest.json").read_bytes() == manifest
+    assert (tmp_path / "usage.jsonl").read_bytes() == usage
+
+    with pytest.raises(EffortError):
+        read_legacy(tmp_path, UUID(int=0))
+    (tmp_path / "usage.jsonl").write_bytes(usage + b"\n")
+    with pytest.raises(EffortError):
+        read_legacy(tmp_path, project_id)
