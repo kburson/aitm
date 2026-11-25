@@ -48,10 +48,13 @@ def build_report(
         if target.selects(enrollment.story, enrollment.epic)
     }
     rows = {}
+    unattached = target.story is None and target.epic is None
     for row in snapshot.attributed:
         attempt = row.enrollment.attempt_id
         if target.contains(row):
             selected[attempt] = row.enrollment
+        elif unattached and row.attribution is not None:
+            selected.pop(attempt, None)
         if attempt in selected:
             rows[attempt] = row
     pending = Counter(receipt.attempt_id for receipt in snapshot.pending)
@@ -138,14 +141,23 @@ def render_text(report: dict) -> str:
     else:
         label = "Unattached work"
     total = report["total"]
+    grok = report["by_provider"].get("grok")
+    indicator = _provider_usd(total["provider_reported_grok_usd_ticks"])
+    if grok is not None and grok["price_gaps"]:
+        coverage = f"price gaps: {grok['price_gaps']}"
+        indicator += (
+            f" (known subtotal, {coverage})"
+            if indicator != "unknown"
+            else f" ({coverage})"
+        )
     lines = [
         f"{label} | project {report['project_id']} | generation {report['generation']}",
         f"Observed tokens: {_display(total['observed_tokens'])} ({total['usage_gaps']} usage gaps)",
         f"Agent engagement: {_duration(total['engaged_us'])}",
         f"Working wall time: {_duration(total['working_wall_us'])}",
         f"Workflow elapsed: {_duration(total['workflow_elapsed_us'])}",
-        f"Clock gaps: {total['clock_gaps']} | boundary gaps: {total['boundary_gaps']}",
-        f"Provider-reported Grok USD: {_provider_usd(total['provider_reported_grok_usd_ticks'])}",
+        f"Clock domains: {total['clock_domains']} | clock gaps: {total['clock_gaps']} | boundary gaps: {total['boundary_gaps']}",
+        f"Provider-reported Grok USD: {indicator}",
         f"API-equivalent estimated USD: {_display(total['estimated_usd'])}",
         f"Verified billed USD: {_display(total['verified_billed_usd'])}",
         f"Unassigned observations: {report['unassigned_observations']}",
@@ -160,9 +172,17 @@ def render_text(report: dict) -> str:
             )
     for attempt in report["attempts"]:
         provider = _display(attempt["provider"])
+        excluded = (
+            " (outside selected totals)"
+            if (
+                attempt["observation_id"] is not None
+                and not attempt["included_in_view"]
+            )
+            else ""
+        )
         lines.append(
             f"Attempt {attempt['attempt_id']} ({attempt['role']}, {provider}): "
-            f"{attempt['outcome']} outcome, {attempt['coverage']} coverage"
+            f"{attempt['outcome']} outcome, {attempt['coverage']} coverage{excluded}"
         )
     legacy = report["legacy"]
     if legacy is not None:

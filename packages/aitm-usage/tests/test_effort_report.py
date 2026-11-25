@@ -2,9 +2,9 @@ import json
 from dataclasses import replace
 from hashlib import sha256
 
-from test_effort_trail import PROJECT, evidence
+from test_effort_trail import PROJECT, evidence, ref
 
-from aitm_usage.effort import EffortStore, Role
+from aitm_usage.effort import Attribution, Disposition, EffortStore, Role
 
 
 def test_report_scopes_attempts_and_exports_deterministically(tmp_path, capsys):
@@ -65,6 +65,24 @@ def test_report_scopes_attempts_and_exports_deterministically(tmp_path, capsys):
     assert json.loads(export)["schema"] == "aitm.effort.report/v1"
     assert "Verified billed USD: unknown" in run("report", "--story", "443", options=())
     assert database.read_bytes() == original
+
+    assert (
+        store.attribute(
+            Attribution(
+                PROJECT, third.observation_id, 435, 443, ref("late-authorization")
+            )
+        )
+        is Disposition.INSERTED
+    )
+    attached = json.loads(run("report", "--story", "443"))
+    assert attached["total"]["observed_tokens"] == 20
+    assert any(
+        row["attempt_id"] == str(orphan.attempt_id) for row in attached["attempts"]
+    )
+    unattached = json.loads(run("report", "--unattached"))
+    assert unattached["total"]["observed_tokens"] is None
+    assert unattached["attempts"] == []
+    assert str(orphan.attempt_id) not in run("report", "--unattached", options=())
 
 
 def test_missing_store_is_not_created(tmp_path, capsys):
@@ -181,3 +199,18 @@ def test_report_preserves_grok_native_zero_without_claiming_billing(tmp_path):
     assert report["by_provider"]["grok"]["provider_reported_grok_usd_ticks"] == 0
     assert report["total"]["verified_billed_usd"] is None
     assert "Provider-reported Grok USD: 0.0000000000" in render_text(report)
+
+    missing_enrollment, missing = evidence(
+        "native-price-missing", story=443, session="other"
+    )
+    missing = replace(missing, turn=replace(missing.turn, provider="grok"))
+    store.enroll(missing_enrollment)
+    store.ingest(missing)
+    report = build_report(store.snapshot(), RollupTarget(PROJECT, story=443))
+    assert report["by_provider"]["grok"]["price_gaps"] == 1
+    text = render_text(report)
+    assert (
+        "Provider-reported Grok USD: 0.0000000000 (known subtotal, price gaps: 1)"
+        in text
+    )
+    assert "Clock domains: 2" in text
