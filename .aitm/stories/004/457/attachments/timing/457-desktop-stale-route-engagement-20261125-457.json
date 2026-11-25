@@ -1,0 +1,72 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 457,
+  "batch": "457-desktop-stale-route-engagement-20261125",
+  "recorded_at_utc": "2026-11-25T23:52:46.838Z",
+  "source": {
+    "ref": "manual:native-457-desktop-stale-route"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.engagement.7f59001bd9823fbee1fdb2c7.close",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.7f59001bd9823fbee1fdb2c7",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T23:48:29.811Z",
+      "end_utc": "2026-11-25T23:49:01.207Z",
+      "source": {
+        "sha256": "399066aad3b6df74bb65a33ad4a5cdcda3903c64e59524e132ffbfe51be95999"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.cdacbc0ad711a3e316c92e4a",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.cdacbc0ad711a3e316c92e4a",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-through-observed-frame",
+      "start_utc": "2026-11-25T23:50:59.734Z",
+      "end_utc": "2026-11-25T23:52:46.461Z",
+      "source": {
+        "sha256": "c012284d90efde1ee4c34fe0786a274ef5a1e78e389cd3fc316c2d49cbd62f4c"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.050f8ad2cbae1afdf2908c15",
+      "actor": "codex.actor.545b7ebb6a720f8e304cc7a9",
+      "turn": "codex.turn.050f8ad2cbae1afdf2908c15",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T23:51:10.636Z",
+      "end_utc": "2026-11-25T23:52:33.631Z",
+      "source": {
+        "sha256": "69a938e7c314ca28962b76d1cd2ffb3125520f25e30385791376df906b6ff7ab"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.a93e756a038a1efeca002ee2",
+      "actor": "codex.actor.64ccb25fa08ae5e3426ba2d1",
+      "turn": "codex.turn.a93e756a038a1efeca002ee2",
+      "phase": null,
+      "role": "worker",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T23:51:14.877Z",
+      "end_utc": "2026-11-25T23:51:17.633Z",
+      "source": {
+        "sha256": "62c78ef64c696c258f731f08c8b9208331d0c73069353b6dbf1de519d8b29c01"
+      }
+    }
+  ]
+}
