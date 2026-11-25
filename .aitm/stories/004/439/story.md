@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 439
 title: "Capture provider-reported Codex usage"
 kind: "story"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/439"
 parent: 435
 children: []
 blocking: [445]
 blocked-by: [438]
 created: "2026-11-25T03:17:26Z"
-updated: "2026-11-25T04:39:25Z"
+updated: "2026-11-25T04:51:35Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -33,3 +33,7 @@ Normalize explicit headless completion and exact rollout lookup, verified resume
 ## Dependencies
 
 - #438
+
+## Implementation
+
+[PR #448](https://github.com/kburson/aitm/pull/448) contains the portable Codex adapter. Exact native qualification and the full product-suite gate remain part of review.
