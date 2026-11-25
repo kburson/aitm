@@ -67,6 +67,7 @@ class EffortTotals:
     engaged: timedelta | None
     working_wall: timedelta | None
     workflow_elapsed: timedelta | None
+    workflow_clock_gap: bool
     clock_gaps: int
     clock_domains: int
     boundary_gaps: int
@@ -76,6 +77,8 @@ class EffortTotals:
 
 @dataclass(frozen=True, slots=True)
 class EffortRollup:
+    """Effective totals and gaps associated with the original target enrollment."""
+
     total: EffortTotals
     by_role: Mapping[Role, EffortTotals]
     by_provider: Mapping[str, EffortTotals]
@@ -96,6 +99,7 @@ def _union(intervals: list[Interval]) -> timedelta:
 def _totals(
     rows: list[StoryObservation],
     invalid_boundaries: set[str],
+    unaligned_boundaries: set[str],
     clocks: Mapping[str, SourceRef],
     workflow: WorkflowWindow | None = None,
 ) -> EffortTotals:
@@ -109,7 +113,9 @@ def _totals(
         receipt = row.receipt
         is_inclusive = receipt.scope == UsageScope.INCLUSIVE
         boundary_invalid = receipt.observation_id in invalid_boundaries
-        boundary_gaps += boundary_invalid
+        boundary_gaps += (
+            boundary_invalid or receipt.observation_id in unaligned_boundaries
+        )
         bounded = receipt.scope == UsageScope.BOUNDED and not boundary_invalid
         token_count = receipt.tokens.total_tokens if bounded else None
         price = receipt.grok_cost_usd_ticks if bounded else None
@@ -144,9 +150,9 @@ def _totals(
         )
     working_wall = _union(sorted(next(iter(wall.values())))) if len(wall) == 1 else None
     workflow_elapsed = None
+    workflow_clock_gap = False
     if workflow is not None:
-        if any(domain != workflow.clock for domain in wall):
-            raise EffortError("Workflow and engagement clocks are incomparable")
+        workflow_clock_gap = any(domain != workflow.clock for domain in wall)
         if any(
             start < workflow.started_at or end > workflow.ended_at
             for start, end in wall.get(workflow.clock, ())
@@ -154,7 +160,8 @@ def _totals(
             raise EffortError(
                 "Workflow boundaries do not contain the engagement intervals"
             )
-        workflow_elapsed = workflow.ended_at - workflow.started_at
+        if not workflow_clock_gap:
+            workflow_elapsed = workflow.ended_at - workflow.started_at
 
     return EffortTotals(
         len(rows),
@@ -164,6 +171,7 @@ def _totals(
         engaged,
         working_wall,
         workflow_elapsed,
+        workflow_clock_gap,
         clock_gaps,
         len(wall),
         boundary_gaps,
@@ -172,27 +180,30 @@ def _totals(
     )
 
 
-def _invalid_boundaries(
+def _boundary_gaps(
     snapshot: Snapshot, clocks: Mapping[str, SourceRef]
-) -> set[str]:
+) -> tuple[set[str], set[str]]:
     starts: dict[str, ScopeMarker] = {}
     ends: dict[str, ScopeMarker] = {}
     for marker in snapshot.markers:
         markers = starts if marker.kind == MarkerKind.START else ends
         markers[marker.turn.identity] = marker
     invalid = set(starts) - set(ends)
+    unaligned = set()
     for row in snapshot.attributed:
         receipt = row.receipt
         observation = receipt.observation_id
         start, end = starts.get(observation), ends.get(observation)
-        if start is None or end is None or clocks.get(observation) != start.clock:
+        if start is None or end is None:
             continue
-        if any(
+        if clocks.get(observation) != start.clock:
+            unaligned.add(observation)
+        elif any(
             timestamp is not None and not start.at <= timestamp <= end.at
             for timestamp in (receipt.started_at, receipt.ended_at)
         ):
             invalid.add(observation)
-    return invalid
+    return invalid, unaligned
 
 
 def rollup(
@@ -207,11 +218,13 @@ def rollup(
     A caller can attest that exact observation IDs share a clock domain.
     Each unlisted observation is comparable only with itself. Missing or
     incomparable intervals and partial usage leave gaps beside known amounts.
+    Exact native markers establish receipt ownership. Comparable timestamps
+    can disprove containment, while unaligned clocks leave a boundary gap.
     """
     if target.project_id != snapshot.project_id:
         raise EffortError("Rollup target belongs to another project")
     clock_domains = clocks if clocks is not None else {}
-    invalid = _invalid_boundaries(snapshot, clock_domains)
+    invalid, unaligned = _boundary_gaps(snapshot, clock_domains)
 
     rows = [row for row in snapshot.attributed if target.contains(row)]
     roles: dict[Role, list[StoryObservation]] = defaultdict(list)
@@ -234,10 +247,13 @@ def rollup(
         or row.receipt.observation_id in invalid
     )
     return EffortRollup(
-        _totals(rows, invalid, clock_domains, workflow),
-        {role: _totals(roles[role], invalid, clock_domains) for role in sorted(roles)},
+        _totals(rows, invalid, unaligned, clock_domains, workflow),
         {
-            provider: _totals(providers[provider], invalid, clock_domains)
+            role: _totals(roles[role], invalid, unaligned, clock_domains)
+            for role in sorted(roles)
+        },
+        {
+            provider: _totals(providers[provider], invalid, unaligned, clock_domains)
             for provider in sorted(providers)
         },
         unassigned,

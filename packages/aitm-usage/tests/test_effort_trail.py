@@ -307,6 +307,39 @@ def test_published_epic_trail_fixture(tmp_path):
             fixture["epic_workflow_markers"]["last_child_close_ms"],
         ),
     )
+    epic = rollup(snapshot, target(), clocks=clocks)
+    assert epic.total.boundary_gaps == 0
+    assert epic.total.clock_gaps == 0
+    assert epic.unassigned_observations == 0
+    groups = {
+        Role.ORCHESTRATOR: ("orchestrator",),
+        Role.WORKER: ("worker", "nested-worker"),
+        Role.REVIEWER: ("reviewer",),
+        Role.RESEARCHER: ("late-attributed-research",),
+    }
+    for role, labels in groups.items():
+        totals = epic.by_role[role]
+        assert totals.observations == sum(
+            expected["roles"][label]["observations"] for label in labels
+        )
+        assert totals.observed_tokens == sum(
+            expected["roles"][label]["observed_tokens"] for label in labels
+        )
+        assert totals.engaged == timedelta(
+            milliseconds=sum(expected["roles"][label]["engaged_ms"] for label in labels)
+        )
+        assert totals.working_wall == timedelta(
+            milliseconds=expected["roles"][labels[0]]["working_wall_ms"]
+        )
+    for provider, totals in epic.by_provider.items():
+        assigned = [
+            row
+            for row in expected["observations"]
+            if row["provider"] == provider and row["effective_scope"]
+        ]
+        assert totals.observations == len(assigned)
+        assert totals.observed_tokens == sum(row["observed_tokens"] for row in assigned)
+    assert set(epic.by_provider) == {"codex", "claude", "grok"}
     for scope, values in expected["children"].items():
         compare(
             snapshot,
@@ -337,6 +370,11 @@ def test_clock_domains_require_explicit_alignment():
     assert totals.engaged is None
     assert totals.working_wall is None
     assert totals.clock_domains == 2
+    workflow = WorkflowWindow(ref("clock"), instant(500), instant(5000))
+    totals = rollup(snapshot, target(), workflow=workflow).total
+    assert totals.observed_tokens == 20
+    assert totals.workflow_elapsed is None
+    assert totals.workflow_clock_gap
     clocks = {receipt.observation_id: ref("clock") for receipt in (first, second)}
     totals = rollup(snapshot, target(), clocks=clocks).total
     assert totals.engaged == timedelta(seconds=3)
@@ -415,6 +453,10 @@ def test_receipt_crossing_comparable_markers_leaves_a_boundary_gap(
     assert totals.working_wall is None
     assert totals.boundary_gaps == 1
     assert totals.usage_gaps == 1
+
+    unaligned = rollup(snapshot, target()).total
+    assert unaligned.observed_tokens == 10
+    assert unaligned.boundary_gaps == 1
 
 
 def test_handoff_rejects_wrong_project_time_and_conflicting_relink(tmp_path):

@@ -50,7 +50,11 @@ class ScopeMarker:
 
 @dataclass(frozen=True, slots=True)
 class Handoff:
-    """A verified detach at the predecessor end and attach at the successor start."""
+    """Audit evidence linking the predecessor end to the successor start.
+
+    Each turn keeps its own enrolled assignment. The handoff records continuity
+    between two independently scoped attempts.
+    """
 
     project_id: UUID
     predecessor: NativeTurn
