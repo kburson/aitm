@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 445
 title: "Qualify the portable agent effort release"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/445"
 parent: 435
 children: []
 blocking: []
 blocked-by: [439, 440, 441, 443, 444]
 created: "2026-11-25T03:17:38Z"
-updated: "2026-11-25T14:28:18.929Z"
+updated: "2026-11-25T14:33:07.532Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "L"}
 priority: null
@@ -45,3 +45,5 @@ Run Linux/macOS qualification and early Windows fixture/import checks. Pilot one
 ## Qualification
 
 [Release qualification plan](plan/2026-11-25-portable-release-qualification.md).
+
+[PR #454](https://github.com/kburson/aitm/pull/454) opened at `990582b8960ed2cab1ce9cb98853da68267f302a`. An installed pure wheel passed all 122 local macOS fixtures. Qualification includes [ordinary CI](https://github.com/kburson/aitm/actions/runs/45634555848) and the [hosted portability matrix](https://github.com/kburson/aitm/actions/runs/45634556081).
