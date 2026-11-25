@@ -1,0 +1,35 @@
+---
+schema: "aitm.story/v0"
+id: 443
+title: "Report agent effort and usage with compatible snapshot exports"
+kind: "story"
+state: "backlog"
+issue: "https://github.com/kburson/aitm/issues/443"
+parent: 435
+children: []
+blocking: [445]
+blocked-by: [442]
+created: "2026-11-25T03:17:34Z"
+updated: "2026-11-25T03:22:27Z"
+last-branch: "planning"
+estimate: {"agent-hours": null, "size": null}
+priority: null
+origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+expansions: []
+trips: []
+---
+
+# Report agent effort and usage with compatible snapshot exports
+
+[GitHub #443](https://github.com/kburson/aitm/issues/443) · [Source plan](https://github.com/kburson/aitm/blob/65951b8f/.aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md)
+
+Parent #435. Follow the [#426 implementation plan](https://github.com/kburson/aitm/blob/65951b8f/.aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md).
+
+## Acceptance
+
+Add portable CLI and deterministic views by story, epic, role, provider and unattached work. Separate usage, estimate, indicator, and verified billing. Verify read-only legacy snapshot compatibility without changing published export bytes.
+
+## Dependencies
+
+- #442

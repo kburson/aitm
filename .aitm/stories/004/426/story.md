@@ -62,6 +62,8 @@ Compare the tactics on existing-chat support, autonomous assignment, own-orchest
 
 ## Research results and delivery recommendation
 
+[Delivery epic #435](../435/story.md) tracks the portable implementation.
+
 The [agent effort and cost management implementation plan](plan/2026-11-24-agent-effort-cost-implementation-plan.md) reconciles #100’s completed and open work with #426’s findings. It proposes a portable first release and records which #100 scope and dependency decisions remain open.
 
 [Cost management master plan](plan/cost-management-master-plan.md) tracks the results of all eight spikes, open capabilities, the proposed delivery sequence, and lessons for later AIPR design. [Public examples and early evidence](attachments/native-harness-cost-findings.md) retain the original research comparison.

@@ -1,0 +1,36 @@
+---
+schema: "aitm.story/v0"
+id: 438
+title: "Session-scoped capture and exact-recovery interface"
+kind: "story"
+state: "backlog"
+issue: "https://github.com/kburson/aitm/issues/438"
+parent: 435
+children: []
+blocking: [439, 440, 441]
+blocked-by: [436, 437]
+created: "2026-11-25T03:17:24Z"
+updated: "2026-11-25T03:22:27Z"
+last-branch: "planning"
+estimate: {"agent-hours": null, "size": null}
+priority: null
+origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+expansions: []
+trips: []
+---
+
+# Session-scoped capture and exact-recovery interface
+
+[GitHub #438](https://github.com/kburson/aitm/issues/438) · [Source plan](https://github.com/kburson/aitm/blob/65951b8f/.aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md)
+
+Parent #435. Follow the [#426 implementation plan](https://github.com/kburson/aitm/blob/65951b8f/.aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md).
+
+## Acceptance
+
+Expose a bounded Python interface around already-installed provider harnesses and exact recovery. Capture terminal outcomes independently from exit status. Keep sandbox defaults and sign-in intact.
+
+## Dependencies
+
+- #436
+- #437
