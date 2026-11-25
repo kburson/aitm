@@ -329,10 +329,21 @@ def test_review_companion_keeps_sealed_decision_independent(session_api, tmp_pat
 def test_late_scope_proof_redacts_historical_usage_without_losing_lineage(
     session_api, tmp_path
 ):
+    from datetime import timedelta
     from hashlib import sha256
+
+    from aitm_usage.effort.assignments import MarkerKind, ScopeMarker
+    from aitm_usage.effort.receipts import TimeBasis
 
     store, launch, turn = layout(session_api, tmp_path / "effort.db")
     store.bind(SESSION, CHILD, launch, turn)
+    marker = ScopeMarker(
+        PROJECT, CHILD, turn, MarkerKind.START, launch, STAMP, turn.account
+    )
+    store.mark_scope(marker)
+    store.mark_scope(
+        replace(marker, kind=MarkerKind.END, at=STAMP + timedelta(seconds=2))
+    )
     first = UsageReceipt(
         PROJECT,
         CHILD,
@@ -343,9 +354,16 @@ def test_late_scope_proof_redacts_historical_usage_without_losing_lineage(
         Availability.PARTIAL,
         Outcome.COMPLETED,
         TokenCounts(input_tokens=12),
+        started_at=STAMP - timedelta(seconds=1),
+        ended_at=STAMP,
+        time_basis=TimeBasis.NATIVE,
     )
     future = replace(
-        first, revision=2, previous_digest=first.digest, scope=UsageScope.BOUNDED
+        first,
+        revision=2,
+        previous_digest=first.digest,
+        scope=UsageScope.BOUNDED,
+        started_at=STAMP,
     )
     assert store.accept(SESSION, future) is Disposition.PENDING
     assert store.public_receipts(SESSION) == ()

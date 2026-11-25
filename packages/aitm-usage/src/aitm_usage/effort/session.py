@@ -187,6 +187,18 @@ def validate_public_receipt(data: bytes) -> dict:
     return json.loads(data)
 
 
+def _outside_markers(
+    receipt: UsageReceipt, start: ScopeMarker | None, end: ScopeMarker | None
+) -> bool:
+    return start is not None and (
+        end is None
+        or any(
+            point is not None and not start.at <= point <= end.at
+            for point in (receipt.started_at, receipt.ended_at)
+        )
+    )
+
+
 class SessionStore(EffortStore):
     """One private effort database and planning remote per project."""
 
@@ -571,21 +583,16 @@ class SessionStore(EffortStore):
                 )
                 scope = markers.get(native.observation_id, {})
                 start, end = scope.get("start"), scope.get("end")
-                outside = start is not None and (
-                    end is None
-                    or any(
-                        point is not None and not start.at <= point <= end.at
-                        for point in (native.started_at, native.ended_at)
-                    )
-                )
+                effective = UsageReceipt.from_json(effective_payload)
                 if (
                     assignment.story is None
-                    or UsageReceipt.from_json(effective_payload).scope
-                    not in story_scopes
-                    or outside
+                    or effective.scope not in story_scopes
+                    or _outside_markers(effective, start, end)
                 ):
                     continue
-                coverage_only = native.scope not in story_scopes
+                coverage_only = native.scope not in story_scopes or _outside_markers(
+                    native, start, end
+                )
                 if coverage_only:
                     rate = None
                 if rate is not None and rate.model not in _MODELS[native.turn.provider]:
@@ -608,7 +615,7 @@ class SessionStore(EffortStore):
                     TimeBasis.UNKNOWN if coverage_only else native.time_basis,
                     Availability.UNKNOWN if coverage_only else native.coverage,
                     native.outcome,
-                    native.scope,
+                    UsageScope.UNKNOWN if coverage_only else native.scope,
                     TokenCounts() if coverage_only else native.tokens,
                     native.source_sha256,
                     previous.get(identity),
