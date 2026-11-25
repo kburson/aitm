@@ -1,0 +1,9 @@
+# Disposable Desktop post-restart qualification for #457
+
+After the owner restarted Codex Desktop, readback still showed all five scratch hooks trusted. One tool-forwarded prompt ran in the same disposable chat. This time the live trace recorded a successful `SubagentStart`, then repeated `SubagentStop` callbacks returning process exit 2. The owner `Stop` hook also ran and returned exit 2. The observed trace contained no `UserPromptSubmit`. [Sanitized callback counts](457-disposable-desktop-post-restart.json).
+
+The live store enrolled the child and retained its terminal callback. On a private copy of that store, the pinned wheel resolved the child’s exact native parent turn. Attaching to that parent reproduced “Attempt is not enrolled in this session”. The owner enrollment path requires `UserPromptSubmit`, which was absent on this run. The live store had zero settled receipts at the recorded cutoff. The reason prompt dispatch omitted the owner start callback remains unverified.
+
+The stop-hook failures kept both turns retrying. Temporarily suppressing those two stop callbacks for the exact disposable thread let the run reach idle. The approved wrapper was then restored byte for byte. Both post-restart turns yielded complete receipts from exact retained replay in a separate store. After switching to #458 and reopening in a fresh process, the two receipts remained byte-identical and attributed to #457. Live receipt replay remains blocked. [Replay readback](457-disposable-desktop-post-restart.json).
+
+The failing callbacks ran against the approved scratch config, wrapper and wheel with their original hash pins. The primary chat’s hooks were left unapproved. Qualification remains open. Before another test, the scratch stop hooks need to return a nonblocking result on capture errors, and the direct Desktop composer needs a separate check for the owner prompt callback.

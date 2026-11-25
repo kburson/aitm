@@ -1,0 +1,100 @@
+{
+  "schema": "aitm.disposable-desktop-post-restart/v1",
+  "story": 457,
+  "observed_at_utc": "2026-11-25T22:04:44.135+00:00",
+  "route": "Desktop chat tool forwarded prompt after owner-reported app restart",
+  "scratch_hooks_trusted": 5,
+  "events": {
+    "SubagentStart": {
+      "count": 1,
+      "exit_status_counts": {
+        "0": 1
+      }
+    },
+    "SubagentStop": {
+      "count": 74,
+      "exit_status_counts": {
+        "2": 74
+      }
+    },
+    "Stop": {
+      "count": 18,
+      "exit_status_counts": {
+        "2": 18
+      }
+    }
+  },
+  "trace_sha256": "fdc3331dc61c2d4432192264de31939128e2cccd492afbee0d3beaa44010156a",
+  "last_observed_callback_utc": "2026-11-25T22:04:08.180710+00:00",
+  "scratch_counts": {
+    "session_expectations": 1,
+    "session_codex_callbacks": 1,
+    "revisions": 0
+  },
+  "native_child_parent_turn_resolved": true,
+  "child_enrollment_observed": true,
+  "parent_attachment_error": "Attempt is not enrolled in this session",
+  "verified_against_scratch_copy": true,
+  "live_receipt_replay": "blocked",
+  "retained_replay": {
+    "schema": "aitm.disposable-desktop-retained-readback/v1",
+    "story": 457,
+    "live_callback_trace_present": true,
+    "live_scratch_counts": {
+      "session_expectations": 1,
+      "session_codex_callbacks": 1,
+      "revisions": 0
+    },
+    "source": "manual exact retained replay, separate scratch database",
+    "retained_turns": [
+      {
+        "role": "orchestrator",
+        "surface": "desktop",
+        "outcome": "completed",
+        "coverage": "complete",
+        "started_utc": "2026-11-25T22:01:11.872000+00:00",
+        "ended_utc": "2026-11-25T22:04:15.141000+00:00",
+        "tokens": {
+          "input_tokens": 961421,
+          "cached_input_tokens": 940928,
+          "cache_write_5m_tokens": null,
+          "cache_write_1h_tokens": null,
+          "output_tokens": 1552,
+          "reasoning_output_tokens": 809,
+          "total_tokens": 962973
+        },
+        "source_sha256": "b46f68b8128d4a0c1fe9d524a5d9ce95a8345f16cf976e1d2549768ed5e45d08",
+        "recover_bind_settle_ms": 6.889
+      },
+      {
+        "role": "worker",
+        "surface": "desktop-subagent",
+        "outcome": "completed",
+        "coverage": "complete",
+        "started_utc": "2026-11-25T22:01:16.701000+00:00",
+        "ended_utc": "2026-11-25T22:04:10.211000+00:00",
+        "tokens": {
+          "input_tokens": 3155167,
+          "cached_input_tokens": 3106560,
+          "cache_write_5m_tokens": null,
+          "cache_write_1h_tokens": null,
+          "output_tokens": 2188,
+          "reasoning_output_tokens": 376,
+          "total_tokens": 3157355
+        },
+        "source_sha256": "1e8f7d1630c26fc9e1760ecdb03917e3371619fedde0b3992630c208a14c5f01",
+        "recover_bind_settle_ms": 10.618
+      }
+    ],
+    "verified_native_parent_link": true,
+    "story_switch_to": 458,
+    "reopened_in_fresh_process": true,
+    "receipt_bytes_identical": true,
+    "receipt_digests": [
+      "7e289b8f5b14366549a263fb0e9ec9d5aed52c4ba32631a41d584eaf4e0b1984",
+      "33b53fd239ded2b099b6087ddff7092063b2cdcbdac6222feaa82e330f715ec7"
+    ],
+    "candidate_wheel_sha256": "77ef65b805bc3174a8cb5b5da8e1496d6c301bfe54b2260feafed9787604dd17"
+  },
+  "stop_retry_containment": "Temporarily suppressed Stop and SubagentStop for the exact disposable thread, allowed it to reach idle, and restored the approved wrapper byte for byte"
+}
