@@ -319,6 +319,15 @@ packages/aitm-usage/tests/test_effort_capture.py::test_stream_limit_preserves_pr
 packages/aitm-usage/tests/test_effort_capture.py::test_terminal_outcome_and_usage_survive_process_exit[failed-9-12]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_effort_capture.py::test_terminal_outcome_and_usage_survive_process_exit[interrupted-0-8]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_effort_capture.py::test_timeout_is_independent_of_unobserved_terminal_outcome	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_claude.py::test_armed_adapter_refuses_another_attempt_in_the_same_project	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_claude.py::test_cancelled_result_with_no_retained_request_keeps_only_live_numbers	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_claude.py::test_configured_stop_binds_exact_prompt_and_matches_delayed_recovery	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_claude.py::test_exact_recovery_refuses_an_unrelated_prompt	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_claude.py::test_headless_cancelled_result_retains_partial_usage	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_claude.py::test_headless_per_result_and_exact_recovery_are_identical	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_claude.py::test_headless_result_rejects_disagreement_with_final_retained_request	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_claude.py::test_headless_unfinished_earlier_request_cannot_make_a_complete_receipt	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_claude.py::test_stop_for_an_earlier_prompt_cannot_claim_the_armed_prompt	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_codex.py::test_armed_tui_notification_and_exact_recovery_agree	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_codex.py::test_bad_or_unbound_stdout_cannot_claim_an_exact_turn	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_codex.py::test_bounded_capture_and_exact_file_recovery_agree	systems-integration	yes	yes
