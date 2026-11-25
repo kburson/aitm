@@ -1,0 +1,42 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 457,
+  "batch": "457-grok-desktop-callback-advisory-engagement-20261125",
+  "recorded_at_utc": "2026-11-25T22:16:55.597Z",
+  "source": {
+    "ref": "manual:native-457-grok-desktop-callback-advisory"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.engagement.ecb0a79e6932cdfa3a83979b.close",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.ecb0a79e6932cdfa3a83979b",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T22:04:43.925Z",
+      "end_utc": "2026-11-25T22:05:23.799Z",
+      "source": {
+        "sha256": "114057c41820f2b1c44a56d713f7cfc34ba696349f912d11c1f55f85bb1ea5d1"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.5eb3950ebb7b71bae9f3c6bf",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.5eb3950ebb7b71bae9f3c6bf",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-through-observed-frame",
+      "start_utc": "2026-11-25T22:15:24.090Z",
+      "end_utc": "2026-11-25T22:16:55.369Z",
+      "source": {
+        "sha256": "c6b3b58a3dcf27a951600f9e931a1a7167264ca08a9a9d5fe102c3cc0a508877"
+      }
+    }
+  ]
+}
