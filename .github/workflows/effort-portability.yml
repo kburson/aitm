@@ -1,0 +1,77 @@
+name: Effort portability
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/effort-portability.yml'
+      - 'packages/aitm-usage/**'
+  push:
+    branches: [trunk]
+    paths:
+      - '.github/workflows/effort-portability.yml'
+      - 'packages/aitm-usage/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  fixtures:
+    name: Effort fixtures (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, macos-15, windows-2025]
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/aitm-usage
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.10.6'
+          python-version: '3.13.9'
+          enable-cache: false
+      - name: Build and install the portable wheel
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          uv sync --locked --only-group dev
+          uv build --wheel --out-dir effort-wheel
+          uv pip install --no-deps effort-wheel/*.whl
+      - name: Verify installed imports and console
+        run: |
+          uv run --no-sync python -I - <<'PY'
+          import sys
+          from importlib.metadata import distribution
+          from pathlib import Path
+
+          from aitm_usage.effort import cli, review_receipts
+
+          assert Path(cli.__file__).is_relative_to(Path(sys.prefix))
+          assert Path(review_receipts.__file__).is_relative_to(Path(sys.prefix))
+          assert not distribution("aitm-usage").requires
+          assert not {
+              "aitm_usage.cli", "aitm_usage.export", "aitm_usage.ledger",
+              "aitm_usage.scopes", "aitm_usage.host_fs",
+          } & sys.modules.keys()
+          PY
+          uv run --no-sync aitm-effort --help
+      - name: Run portable effort fixtures
+        run: |
+          mkdir -p effort-evidence
+          git show -s --format='%H %P %T' HEAD > effort-evidence/source.txt
+          uv run --no-sync python -m pytest -q tests/test_effort*.py --junitxml=effort-evidence/tests.xml
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: effort-portability-${{ matrix.runner }}-a${{ github.run_attempt }}
+          path: packages/aitm-usage/effort-evidence/
+          if-no-files-found: ignore
