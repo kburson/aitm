@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 443
 title: "Report agent effort and usage with compatible snapshot exports"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/443"
 parent: 435
 children: []
 blocking: [445]
 blocked-by: [442]
 created: "2026-11-25T03:17:34Z"
-updated: "2026-11-25T13:46:05.167Z"
+updated: "2026-11-25T13:50:13.197Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: null
@@ -41,3 +41,5 @@ Add portable CLI and deterministic views by story, epic, role, provider and unat
 ## Implementation
 
 [Effort reporting plan](plan/2026-11-25-effort-report.md).
+
+[PR #452](https://github.com/kburson/aitm/pull/452) opened against `trunk` at head `133342fc127b6547dcfde48812185859de4683c1`. The focused local effort and legacy export suite passed 145 tests. [Hosted CI](https://github.com/kburson/aitm/actions/runs/45627558227).
