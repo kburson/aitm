@@ -10,12 +10,12 @@ children: []
 blocking: [458]
 blocked-by: []
 created: "2026-11-25T16:06:16Z"
-updated: "2026-11-25T19:42:37.459Z"
+updated: "2026-11-25T19:55:32.964Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/455/attachments/455-findings.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md", "attachments/timing/457-delivery-refresh-engagement-20261125-457.json", "attachments/timing/457-delivery-refresh-usage-20261125.json", "attachments/qualification/457-aipr-qualification.json", "attachments/qualification/457-grok-desktop-plan-review.md", "attachments/timing/457-grok-plan-review-usage-20261125.json", "attachments/timing/457-grok-plan-review-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-setup.md", "attachments/timing/457-desktop-scratch-setup-usage-20261125.json", "attachments/timing/457-desktop-scratch-setup-engagement-20261125-457.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md", "attachments/timing/457-delivery-refresh-engagement-20261125-457.json", "attachments/timing/457-delivery-refresh-usage-20261125.json", "attachments/qualification/457-aipr-qualification.json", "attachments/qualification/457-grok-desktop-plan-review.md", "attachments/timing/457-grok-plan-review-usage-20261125.json", "attachments/timing/457-grok-plan-review-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-setup.md", "attachments/timing/457-desktop-scratch-setup-usage-20261125.json", "attachments/timing/457-desktop-scratch-setup-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-readback.md", "attachments/timing/457-desktop-scratch-readback-usage-20261125.json", "attachments/timing/457-desktop-scratch-readback-engagement-20261125-457.json"]}
 expansions: []
 trips: []
 ---
@@ -47,9 +47,11 @@ Grok recommends qualifying first in an isolated Desktop chat and scratch reposit
 
 The disposable Desktop chat and standalone repository are staged for the live check. [Scratch setup evidence](attachments/qualification/457-disposable-desktop-setup.md).
 
+The owner reported running the disposable test. Desktop and scratch readback did not expose the test turn or callbacks. [Readback checkpoint](attachments/qualification/457-disposable-desktop-readback.md).
+
 ## Actual agent engagement
 
-**62m 16.132s observed (1.0378 agent-hours), partial coverage.** The scratch setup turn is measured through 2026-11-25T19:42:37.228Z. The disposable Desktop bootstrap is included. Live hook qualification has yet to run. Independent engagement is summed including overlap. [Timing receipt](attachments/timing/457-desktop-scratch-setup-engagement-20261125-457.json).
+**63m 56.303s observed (1.0656 agent-hours), partial coverage.** The readback turn is measured through 2026-11-25T19:55:32.719Z. Usage for the user-reported scratch test is unavailable because the test turn was absent from the accessible history. Independent engagement is summed including overlap. [Timing receipt](attachments/timing/457-desktop-scratch-readback-engagement-20261125-457.json).
 
 ## Agent activity and cost
 
@@ -74,8 +76,9 @@ The disposable Desktop chat and standalone repository are staged for the live ch
 | Claude AIPR review 2 (sealed) | 0m 38.676s | 262,677 | 43,393 | 4,543 | — | — | $0.245242 |
 | Codex coordination of Grok second opinion | 3m 30.362s | 5,640,832 | 18,011 | 7,652 | $1.314990 | — | — |
 | Grok Desktop qualification plan review | Unknown | 8,832 | 10,571 | 5,350 | — | $0.039207 | — |
-| Codex scratch Desktop setup | 2m 47.064s | 4,165,120 | 16,920 | 6,407 | $0.996809 | — | — |
+| Codex scratch Desktop setup | 3m 25.547s | 5,591,552 | 21,378 | 7,785 | $1.320597 | — | — |
 | Codex disposable Desktop chat bootstrap | 0m 12.641s | 69,248 | 14,528 | 329 | $0.039271 | — | — |
-| **Observed subtotal** | **62m 16.132s** | 73,780,010 | 723,635 | 156,774 | $13.315906 | $0.055636 | $0.613878 |
+| Codex scratch Desktop evidence readback | 1m 01.688s | 2,161,664 | 5,890 | 2,289 | $0.490228 | — | — |
+| **Observed subtotal** | **63m 56.303s** | 77,368,106 | 733,983 | 160,441 | $14.129922 | $0.055636 | $0.613878 |
 
-**Combined cost reference for the observed work $13.985420.** Codex uses GPT-6.2 Sol Standard API rates. Grok values are provider-reported. Claude qualification values are provider list equivalents and Claude review values use Standard API list rates. New input includes cache writes where reported. **Verified billed cost is unknown.** [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Claude model rates](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Sanitized usage evidence](attachments/timing/457-desktop-scratch-setup-usage-20261125.json).
+**Combined cost reference for the observed work $14.799437.** Codex uses GPT-6.2 Sol Standard API rates. Grok values are provider-reported. Claude qualification values are provider list equivalents and Claude review values use Standard API list rates. New input includes cache writes where reported. **Verified billed cost is unknown.** [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Claude model rates](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Sanitized usage evidence](attachments/timing/457-desktop-scratch-readback-usage-20261125.json).
