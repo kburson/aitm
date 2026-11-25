@@ -10,12 +10,12 @@ children: []
 blocking: [445]
 blocked-by: [442]
 created: "2026-11-25T03:17:34Z"
-updated: "2026-11-25T14:02:36.312Z"
+updated: "2026-11-25T14:03:53.985Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-effort-report.md"], "attachments": ["attachments/pr-452-source-review.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-effort-report.md"], "attachments": ["attachments/pr-452-source-review.md", "attachments/trusted-pr-452.json", "attachments/pr-452-test-mix.json"]}
 expansions: []
 trips: []
 ---
@@ -51,3 +51,7 @@ The first hosted candidate failed shard collection because six IDs were absent f
 The revised candidate at `069b8d6b8b8514010d6eae7d166288247667120b` addresses all three findings and passes 157 focused local tests. [Revised hosted run](https://github.com/kburson/aitm/actions/runs/45628903336).
 
 All six hosted checks passed on the revised candidate. The independent re-review passed the same tree.
+
+## Delivery
+
+[PR #452](https://github.com/kburson/aitm/pull/452) merged to `trunk` at `953a051f4954a14a8aeb8c310a561cafbede6185`. The merge tree matches the reviewed and tested tree. [Delivery sign-off](retro/2026-11-25-delivery-sign-off.md) · [Trusted verifier](attachments/trusted-pr-452.json).
