@@ -1,0 +1,132 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 445,
+  "batch": "445-delivery-native-engagement-20261125",
+  "recorded_at_utc": "2026-11-25T14:38:13.314Z",
+  "source": {
+    "ref": "manual:native-445-delivery-boundaries"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.engagement.6e1d5e1e94787e7a321ff1ac",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.dfcb3faf2926aef23bfd498d",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:26:54.941Z",
+      "end_utc": "2026-11-25T14:38:13.160Z",
+      "source": {
+        "sha256": "24e1d2c19999709ac9d5eac83c2359fb7ac69f0cd239244119e9bb38d96adc27"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.019ee8d8f48b18e8a2f87a68",
+      "actor": "codex.actor.af2a2c6e1da5432eb85a1318",
+      "turn": "codex.turn.60db18fee5e2aa67f282f569",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-review-turn-boundaries",
+      "start_utc": "2026-11-25T14:33:30.321Z",
+      "end_utc": "2026-11-25T14:35:31.891Z",
+      "source": {
+        "sha256": "beb4653c0b3f5d9ce24f9cdd982d1918b801d56bed94a9ab0675f6f1f3635fe9"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.3809b4432a6106a0ba2684e3",
+      "actor": "codex.actor.3809b4432a6106a0ba2684e3",
+      "turn": "codex.turn.3809b4432a6106a0ba2684e3",
+      "phase": null,
+      "role": "worker",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "native-turn-boundaries",
+      "start_utc": "2026-11-25T14:31:17.744Z",
+      "end_utc": "2026-11-25T14:31:21.285Z",
+      "source": {
+        "sha256": "49eca04d8838e5af5924e85be3c8aa3972652ebd98d02cf7fcca07b43d9cad1f"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.8e0efb2293a98e431a78955b",
+      "actor": "codex.actor.8e0efb2293a98e431a78955b",
+      "turn": "codex.turn.8e0efb2293a98e431a78955b",
+      "phase": null,
+      "role": "worker",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "native-turn-boundaries",
+      "start_utc": "2026-11-25T14:31:23.630Z",
+      "end_utc": "2026-11-25T14:31:26.362Z",
+      "source": {
+        "sha256": "edb1a658c05d78de4b1768b8ed51020786ba1fafc42b36402445d71699b54ede"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.e4414c97273bada87a71eb95",
+      "actor": "codex.actor.e4414c97273bada87a71eb95",
+      "turn": "codex.turn.e4414c97273bada87a71eb95",
+      "phase": null,
+      "role": "worker",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "native-turn-boundaries",
+      "start_utc": "2026-11-25T14:32:37.001Z",
+      "end_utc": "2026-11-25T14:32:40.276Z",
+      "source": {
+        "sha256": "271649c5ff7b4d08d4977e1afdc35b56d15cd053264abdc50809a06e1ad62d8d"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.4d134014580a2a92b03a7378",
+      "actor": "codex.actor.4d134014580a2a92b03a7378",
+      "turn": "codex.turn.4d134014580a2a92b03a7378",
+      "phase": null,
+      "role": "worker",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "native-turn-boundaries",
+      "start_utc": "2026-11-25T14:32:47.141Z",
+      "end_utc": "2026-11-25T14:32:49.860Z",
+      "source": {
+        "sha256": "a32dd1b153e0e1666a3a96fd502d056edba82b2e606799a368e3003d530cd759"
+      }
+    },
+    {
+      "observation_id": "claude.engagement.bce811ae612d3d4a5e5d8a9f",
+      "actor": "claude.actor.bce811ae612d3d4a5e5d8a9f",
+      "turn": "claude.turn.bce811ae612d3d4a5e5d8a9f",
+      "phase": null,
+      "role": "worker",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "claude-pilot-launch-to-capture-return",
+      "start_utc": "2026-11-25T14:32:51.138Z",
+      "end_utc": "2026-11-25T14:32:54.844Z",
+      "source": {
+        "sha256": "27762646df8c6d5e1e539458ae19218eb03c5d20441e9aed8ed1bb251e5bad54"
+      }
+    },
+    {
+      "observation_id": "grok.engagement.e941f6e2967f39088127405c",
+      "actor": "grok.actor.e941f6e2967f39088127405c",
+      "turn": "grok.turn.e941f6e2967f39088127405c",
+      "phase": null,
+      "role": "worker",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "grok-pilot-launch-to-capture-return",
+      "start_utc": "2026-11-25T14:32:54.854Z",
+      "end_utc": "2026-11-25T14:32:59.682Z",
+      "source": {
+        "sha256": "76636032447c555c64ebabbdac8150b14e4d4a10c994c81e73e8e5da89986657"
+      }
+    }
+  ]
+}

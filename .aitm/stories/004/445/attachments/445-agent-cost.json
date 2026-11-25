@@ -1,0 +1,153 @@
+{
+  "story": 445,
+  "measurement_cutoff_utc": "2026-11-25T14:38:13.314Z",
+  "verified_billed_usd": null,
+  "turns": [
+    {
+      "label": "Codex delivery",
+      "milliseconds": 678219,
+      "source_through_utc": "2026-11-25T14:38:13.160Z",
+      "tokens": 10807001,
+      "model": "gpt-6.2-sol",
+      "requests": 36,
+      "usage_by_tier": {
+        "short": {
+          "input_tokens": 799063,
+          "cached_input_tokens": 791424,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1059,
+          "reasoning_output_tokens": 107,
+          "total_tokens": 800122
+        },
+        "long": {
+          "input_tokens": 9980512,
+          "cached_input_tokens": 9921920,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 26367,
+          "reasoning_output_tokens": 8346,
+          "total_tokens": 10006879
+        }
+      },
+      "coverage": "partial",
+      "cached_input_tokens": 10713344,
+      "new_input_tokens": 66231,
+      "output_tokens": 27426,
+      "standard_api_estimate_usd": "2.7192674"
+    },
+    {
+      "label": "Codex independent review",
+      "milliseconds": 121570,
+      "source_through_utc": "2026-11-25T14:35:31.891Z",
+      "tokens": 508166,
+      "model": "gpt-6.2-sol",
+      "requests": 12,
+      "usage_by_tier": {
+        "short": {
+          "input_tokens": 503889,
+          "cached_input_tokens": 465664,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 4277,
+          "reasoning_output_tokens": 214,
+          "total_tokens": 508166
+        },
+        "long": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        }
+      },
+      "coverage": "complete",
+      "cached_input_tokens": 465664,
+      "new_input_tokens": 38225,
+      "output_tokens": 4277,
+      "standard_api_estimate_usd": "0.1657864"
+    },
+    {
+      "label": "Codex initial pilot turn 1",
+      "provider": "codex",
+      "milliseconds": 3541,
+      "source_through_utc": "2026-11-25T14:31:21.285Z",
+      "tokens": 25382,
+      "claude_list_usd": null,
+      "grok_ticks": null,
+      "cached_input_tokens": 15232,
+      "new_input_tokens": 10142,
+      "output_tokens": 8,
+      "coverage": "complete",
+      "standard_api_estimate_usd": "0.0218872"
+    },
+    {
+      "label": "Codex initial pilot turn 2",
+      "provider": "codex",
+      "milliseconds": 2732,
+      "source_through_utc": "2026-11-25T14:31:26.362Z",
+      "tokens": 25392,
+      "claude_list_usd": null,
+      "grok_ticks": null,
+      "cached_input_tokens": 15232,
+      "new_input_tokens": 10152,
+      "output_tokens": 8,
+      "coverage": "complete",
+      "standard_api_estimate_usd": "0.0219072"
+    },
+    {
+      "label": "Codex accepted pilot turn 1",
+      "provider": "codex",
+      "milliseconds": 3275,
+      "source_through_utc": "2026-11-25T14:32:40.276Z",
+      "tokens": 25382,
+      "claude_list_usd": null,
+      "grok_ticks": null,
+      "cached_input_tokens": 15232,
+      "new_input_tokens": 10142,
+      "output_tokens": 8,
+      "coverage": "complete",
+      "standard_api_estimate_usd": "0.0218872"
+    },
+    {
+      "label": "Codex accepted pilot turn 2",
+      "provider": "codex",
+      "milliseconds": 2719,
+      "source_through_utc": "2026-11-25T14:32:49.860Z",
+      "tokens": 25392,
+      "claude_list_usd": null,
+      "grok_ticks": null,
+      "cached_input_tokens": 15232,
+      "new_input_tokens": 10152,
+      "output_tokens": 8,
+      "coverage": "complete",
+      "standard_api_estimate_usd": "0.0219072"
+    },
+    {
+      "label": "Claude accepted pilot",
+      "provider": "claude",
+      "milliseconds": 3706,
+      "source_through_utc": "2026-11-25T14:32:54.844Z",
+      "tokens": 24469,
+      "claude_list_usd": 0.097944,
+      "grok_ticks": null,
+      "cached_input_tokens": 0,
+      "new_input_tokens": 24457,
+      "output_tokens": 12,
+      "coverage": "complete",
+      "standard_api_estimate_usd": null
+    },
+    {
+      "label": "Grok accepted pilot",
+      "provider": "grok",
+      "milliseconds": 4828,
+      "source_through_utc": "2026-11-25T14:32:59.682Z",
+      "tokens": 18710,
+      "claude_list_usd": null,
+      "grok_ticks": 166001600,
+      "cached_input_tokens": 8832,
+      "new_input_tokens": 9818,
+      "output_tokens": 60,
+      "coverage": "complete",
+      "standard_api_estimate_usd": null
+    }
+  ]
+}
