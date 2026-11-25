@@ -1,0 +1,361 @@
+{
+  "schema": "aitm.457-supervised-native-qualification/v1",
+  "host": {
+    "os": "26.6.2",
+    "architecture": "arm64"
+  },
+  "qualifies": "caller-owned supervised provider execution and retained recovery",
+  "provider_results": [
+    {
+      "provider": "claude",
+      "private_native_source": true,
+      "native_invocations": 1,
+      "measurement_model_turns": 0,
+      "original_story": 457,
+      "active_story_after_dispatch": 458,
+      "wrapper_elapsed_ms": 2713.544,
+      "wrapper_started_utc": "2026-11-25T18:16:49.551515+00:00",
+      "wrapper_ended_utc": "2026-11-25T18:16:52.265382+00:00",
+      "process_state": "exited",
+      "returncode": 0,
+      "outcome": "unknown",
+      "gap": "unexpected-harness",
+      "sanitized_trace": {
+        "observe_ms_including_exact_lookup": 0.138,
+        "stdout_bytes": 24036,
+        "stderr_bytes": 0,
+        "truncated_streams": [],
+        "model": "claude-sonnet-5-5",
+        "terminal": {
+          "duration_api_ms": 449,
+          "total_cost_usd": 0.09704,
+          "usage": {
+            "input_tokens": 2,
+            "cache_creation_input_tokens": 24249,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 4,
+            "output_tokens_details": {
+              "thinking_tokens": 0
+            },
+            "server_tool_use": {
+              "web_search_requests": 0,
+              "web_fetch_requests": 0
+            },
+            "service_tier": "standard",
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 24249,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "inference_geo": "global",
+            "iterations": [
+              {
+                "input_tokens": 2,
+                "output_tokens": 4,
+                "cache_read_input_tokens": 0,
+                "cache_creation_input_tokens": 24249,
+                "cache_creation": {
+                  "ephemeral_5m_input_tokens": 0,
+                  "ephemeral_1h_input_tokens": 24249
+                },
+                "type": "message"
+              }
+            ],
+            "speed": "standard",
+            "fallback_credit": null
+          },
+          "is_error": false,
+          "num_turns": 1,
+          "subtype": "success",
+          "type": "result",
+          "duration_ms": 554
+        },
+        "usage_models": [
+          "claude-sonnet-5-5"
+        ]
+      },
+      "retained_read_ms": []
+    },
+    {
+      "provider": "grok",
+      "private_native_source": true,
+      "native_invocations": 1,
+      "measurement_model_turns": 0,
+      "original_story": 457,
+      "active_story_after_dispatch": 458,
+      "wrapper_elapsed_ms": 4031.297,
+      "wrapper_started_utc": "2026-11-25T18:16:52.272333+00:00",
+      "wrapper_ended_utc": "2026-11-25T18:16:56.303615+00:00",
+      "process_state": "exited",
+      "returncode": 0,
+      "outcome": "completed",
+      "gap": null,
+      "sanitized_trace": {
+        "observe_ms_including_exact_lookup": 185.612,
+        "stdout_bytes": 5922,
+        "stderr_bytes": 0,
+        "truncated_streams": [],
+        "terminal": {
+          "type": "end",
+          "stopReason": "end_turn",
+          "usage": {
+            "input_tokens": 9803,
+            "cache_read_input_tokens": 8832,
+            "cache_creation_input_tokens": 0,
+            "output_tokens": 23,
+            "reasoning_tokens": 22,
+            "total_tokens": 18658
+          },
+          "num_turns": 1,
+          "total_cost_usd": 0.0164288,
+          "total_cost_usd_ticks": 164288000
+        },
+        "usage_models": [
+          "grok-4.7-build-fast"
+        ]
+      },
+      "retained_read_ms": [
+        184.797,
+        195.33
+      ],
+      "harness_version": "1.0.92",
+      "surface": "usage",
+      "coverage": "complete",
+      "source_sha256": "3a2bf56418e522a1ec80c710314c72a3866f2d50e59e7a44d751524d5f1c3cdb",
+      "tokens": {
+        "input_tokens": 18635,
+        "cached_input_tokens": 8832,
+        "cache_write_5m_tokens": null,
+        "cache_write_1h_tokens": null,
+        "output_tokens": 23,
+        "reasoning_output_tokens": 22,
+        "total_tokens": 18658
+      },
+      "grok_reported_usd_ticks": 164288000,
+      "grok_cache_creation_tokens": 0,
+      "exact_delayed_recovery": true,
+      "recovery_ms": 1.897,
+      "stable_receipts_on_recovery": true,
+      "native_started_utc": null,
+      "native_ended_utc": "2026-11-25T18:16:55.002029+00:00",
+      "verified_billed_usd": null,
+      "publication_inputs_stay_on_original_story": true,
+      "automatic_settlement_passed": true
+    },
+    {
+      "provider": "claude",
+      "private_native_source": true,
+      "native_invocations": 1,
+      "measurement_model_turns": 0,
+      "original_story": 457,
+      "active_story_after_dispatch": 458,
+      "wrapper_elapsed_ms": 1512.197,
+      "wrapper_started_utc": "2026-11-25T18:17:23.650078+00:00",
+      "wrapper_ended_utc": "2026-11-25T18:17:25.162477+00:00",
+      "process_state": "exited",
+      "returncode": 0,
+      "outcome": "completed",
+      "gap": "missing",
+      "sanitized_trace": {
+        "observe_ms_including_exact_lookup": 0.334,
+        "stdout_bytes": 6636,
+        "stderr_bytes": 0,
+        "truncated_streams": [],
+        "event_types": [
+          [
+            "system",
+            "init",
+            "2.1.331",
+            null
+          ],
+          [
+            "assistant",
+            null,
+            null,
+            null
+          ],
+          [
+            "rate_limit_event",
+            null,
+            null,
+            null
+          ],
+          [
+            "result",
+            "success",
+            null,
+            "completed"
+          ]
+        ],
+        "model": "claude-sonnet-5-5",
+        "terminal": {
+          "duration_api_ms": 610,
+          "total_cost_usd": 0.0090969,
+          "usage": {
+            "input_tokens": 2,
+            "cache_creation_input_tokens": 2247,
+            "cache_read_input_tokens": 649,
+            "output_tokens": 4,
+            "output_tokens_details": {
+              "thinking_tokens": 0
+            },
+            "server_tool_use": {
+              "web_search_requests": 0,
+              "web_fetch_requests": 0
+            },
+            "service_tier": "standard",
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 2247,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "inference_geo": "global",
+            "iterations": [
+              {
+                "input_tokens": 2,
+                "output_tokens": 4,
+                "cache_read_input_tokens": 649,
+                "cache_creation_input_tokens": 2247,
+                "cache_creation": {
+                  "ephemeral_5m_input_tokens": 0,
+                  "ephemeral_1h_input_tokens": 2247
+                },
+                "type": "message"
+              }
+            ],
+            "speed": "standard",
+            "fallback_credit": null
+          },
+          "is_error": false,
+          "num_turns": 1,
+          "subtype": "success",
+          "type": "result",
+          "duration_ms": 712
+        },
+        "usage_models": [
+          "claude-sonnet-5-5"
+        ]
+      },
+      "retained_read_ms": []
+    },
+    {
+      "provider": "claude",
+      "private_native_source": true,
+      "native_invocations": 1,
+      "measurement_model_turns": 0,
+      "original_story": 457,
+      "active_story_after_dispatch": 458,
+      "wrapper_elapsed_ms": 1388.047,
+      "wrapper_started_utc": "2026-11-25T18:17:43.569282+00:00",
+      "wrapper_ended_utc": "2026-11-25T18:17:44.957567+00:00",
+      "process_state": "exited",
+      "returncode": 0,
+      "outcome": "completed",
+      "gap": null,
+      "sanitized_trace": {
+        "observe_ms_including_exact_lookup": 2.406,
+        "stdout_bytes": 6657,
+        "stderr_bytes": 0,
+        "truncated_streams": [],
+        "event_types": [
+          [
+            "system",
+            "init",
+            "2.1.331",
+            null
+          ],
+          [
+            "assistant",
+            null,
+            null,
+            null
+          ],
+          [
+            "rate_limit_event",
+            null,
+            null,
+            null
+          ],
+          [
+            "result",
+            "success",
+            null,
+            "completed"
+          ]
+        ],
+        "model": "claude-sonnet-5-5",
+        "terminal": {
+          "duration_api_ms": 478,
+          "total_cost_usd": 0.009080900000000001,
+          "usage": {
+            "input_tokens": 2,
+            "cache_creation_input_tokens": 2243,
+            "cache_read_input_tokens": 649,
+            "output_tokens": 4,
+            "output_tokens_details": {
+              "thinking_tokens": 0
+            },
+            "server_tool_use": {
+              "web_search_requests": 0,
+              "web_fetch_requests": 0
+            },
+            "service_tier": "standard",
+            "cache_creation": {
+              "ephemeral_1h_input_tokens": 2243,
+              "ephemeral_5m_input_tokens": 0
+            },
+            "inference_geo": "global",
+            "iterations": [
+              {
+                "input_tokens": 2,
+                "output_tokens": 4,
+                "cache_read_input_tokens": 649,
+                "cache_creation_input_tokens": 2243,
+                "cache_creation": {
+                  "ephemeral_5m_input_tokens": 0,
+                  "ephemeral_1h_input_tokens": 2243
+                },
+                "type": "message"
+              }
+            ],
+            "speed": "standard",
+            "fallback_credit": null
+          },
+          "is_error": false,
+          "num_turns": 1,
+          "subtype": "success",
+          "type": "result",
+          "duration_ms": 635
+        },
+        "usage_models": [
+          "claude-sonnet-5-5"
+        ]
+      },
+      "retained_read_ms": [
+        0.51,
+        0.146
+      ],
+      "harness_version": "2.1.331",
+      "surface": "print",
+      "coverage": "complete",
+      "source_sha256": "8a21733b27c75bfe1c7f66213123152e579a4ef33b43d72b56af1eea5dbd55d3",
+      "tokens": {
+        "input_tokens": 651,
+        "cached_input_tokens": 649,
+        "cache_write_5m_tokens": 0,
+        "cache_write_1h_tokens": 2243,
+        "output_tokens": 4,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 2898
+      },
+      "grok_reported_usd_ticks": null,
+      "grok_cache_creation_tokens": null,
+      "exact_delayed_recovery": true,
+      "recovery_ms": 3.624,
+      "stable_receipts_on_recovery": true,
+      "native_started_utc": "2026-11-25T18:17:43.807000+00:00",
+      "native_ended_utc": "2026-11-25T18:17:44.361000+00:00",
+      "verified_billed_usd": null,
+      "publication_inputs_stay_on_original_story": true,
+      "automatic_settlement_passed": true
+    }
+  ]
+}

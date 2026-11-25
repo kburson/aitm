@@ -1,0 +1,132 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 457,
+  "batch": "457-delivery-native-engagement-20261125",
+  "recorded_at_utc": "2026-11-25T18:24:13.177Z",
+  "source": {
+    "ref": "manual:native-457-delivery-boundaries"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.engagement.4a2c177adf62250dac605876",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.4a2c177adf62250dac605876",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-through-observed-frame",
+      "start_utc": "2026-11-25T18:09:38.607Z",
+      "end_utc": "2026-11-25T18:24:13.002Z",
+      "source": {
+        "sha256": "28129039c5b46532ea0792179f4211ce6feb4e828d73187c8f835fab1c1212fa"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.bb845c92ed61bc285047cfdc",
+      "actor": "codex.actor.06bfb158e78b45a66ab24dc2",
+      "turn": "codex.turn.bb845c92ed61bc285047cfdc",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T18:10:02.788Z",
+      "end_utc": "2026-11-25T18:18:22.100Z",
+      "source": {
+        "sha256": "61304ca6ebbc88ac2d581f08a7b8b3b40ba72bd1a6c2638f9b8c118cac2a2aa1"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.677e8bd1fb925a6bb4ad0fbe",
+      "actor": "codex.actor.f4f8ca6611e14e8767e56571",
+      "turn": "codex.turn.677e8bd1fb925a6bb4ad0fbe",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T18:10:17.398Z",
+      "end_utc": "2026-11-25T18:15:59.918Z",
+      "source": {
+        "sha256": "586fb16eaec2a3c12553a586a5c4d5d81ab792f10b5f1030e9532bc66fac8a2b"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.09e215e4fb67eb1408b00dd6",
+      "actor": "codex.actor.3f07219cefa8a7254fbbba82",
+      "turn": "codex.turn.09e215e4fb67eb1408b00dd6",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T18:15:49.760Z",
+      "end_utc": "2026-11-25T18:15:52.563Z",
+      "source": {
+        "sha256": "7e88f206c5867f8cc8a9de1a1afd49f395015b4a70112170a0cd6975020b46d3"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.05cc544e367872b8f980d84b",
+      "actor": "codex.actor.7c275c93fe496623f26df6ad",
+      "turn": "codex.turn.05cc544e367872b8f980d84b",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T18:17:05.069Z",
+      "end_utc": "2026-11-25T18:17:07.787Z",
+      "source": {
+        "sha256": "8cf9cd2fd964065cb6ebbcc367ab298fa2d96d24a58b7440186c1f2893623ddf"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.cc819ff8604b8b677a2fddd6",
+      "actor": "codex.actor.4bb547ade47a48e6f30ab208",
+      "turn": "codex.turn.cc819ff8604b8b677a2fddd6",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T18:20:20.832Z",
+      "end_utc": "2026-11-25T18:22:58.490Z",
+      "source": {
+        "sha256": "5fa35cba7d1c4c8fdf6c11405449716295738e01c985f903e3e29ea7fe8a8c71"
+      }
+    },
+    {
+      "observation_id": "claude.engagement.031fa639d06904e3d88d0c06",
+      "actor": "claude.actor.e9cb4433d3efc8f9e5ed0e28",
+      "turn": "claude.turn.031fa639d06904e3d88d0c06",
+      "phase": null,
+      "role": "worker",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "claude-native-turn",
+      "start_utc": "2026-11-25T18:17:43.807000+00:00",
+      "end_utc": "2026-11-25T18:17:44.361000+00:00",
+      "source": {
+        "sha256": "b8a0f3936567f5f5950c4cd6ee8fbc3c52da1901796ca2446ea50600bcfc41ba"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.e7eceb2e2a6ac38169aeb24a.tail",
+      "actor": "codex.actor.3ffe97c62689f7c458772246",
+      "turn": "codex.turn.c0a1d77ab4084522b6e00d4b",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-kickoff-continuation",
+      "start_utc": "2026-11-25T18:03:24.882Z",
+      "end_utc": "2026-11-25T18:04:21.560Z",
+      "source": {
+        "sha256": "df18fafb1e8e455eb790360acc287d998f3d720f997d416d58c3ed2a7f7e967b"
+      }
+    }
+  ]
+}
