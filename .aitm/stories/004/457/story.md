@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 457
 title: "Capture and publish session-owned agent turn receipts"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/457"
 parent: 456
 children: []
 blocking: [458]
 blocked-by: []
 created: "2026-11-25T16:06:16Z"
-updated: "2026-11-25T18:03:41.017Z"
+updated: "2026-11-25T18:11:06.703Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/455/attachments/455-findings.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": [], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json"]}
 expansions: []
 trips: []
 ---
@@ -37,7 +37,7 @@ Carry the useful narrow checks from #127, #128 and #129 forward. #137 supplies L
 
 ## Kickoff
 
-Drafted the [session capture design](design/2026-11-25-session-owned-turn-capture.md). An independent builder check identified three requirements to make explicit: minimum live route coverage, exact native launch binding, and remote writer fallback. The draft includes each. Design acceptance is pending.
+Drafted the [session capture design](design/2026-11-25-session-owned-turn-capture.md). An independent builder check identified three requirements to make explicit: minimum live route coverage, exact native launch binding, and remote writer fallback. The draft includes each. The owner accepted the design. [Implementation plan](plan/2026-11-25-session-owned-turn-capture-plan.md).
 
 ## Actual agent engagement
 

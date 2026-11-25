@@ -1,6 +1,6 @@
 # Session-owned agent turn capture
 
-Status: proposed for #457. The owner approved the delivery direction in #455. This document specifies the first story’s capture and publication boundaries.
+Status: accepted by the owner for #457. This document specifies the first story’s capture and publication boundaries.
 
 ## Session and attribution
 
