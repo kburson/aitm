@@ -1,0 +1,38 @@
+{
+  "story": 435,
+  "measurement_cutoff_utc": "2026-11-25T14:41:10.520Z",
+  "verified_billed_usd": null,
+  "turns": [
+    {
+      "label": "Codex epic closeout",
+      "milliseconds": 177249,
+      "source_through_utc": "2026-11-25T14:41:10.409Z",
+      "tokens": 3293890,
+      "model": "gpt-6.2-sol",
+      "requests": 10,
+      "usage_by_tier": {
+        "short": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        },
+        "long": {
+          "input_tokens": 3285783,
+          "cached_input_tokens": 3274752,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 8107,
+          "reasoning_output_tokens": 2227,
+          "total_tokens": 3293890
+        }
+      },
+      "coverage": "partial",
+      "cached_input_tokens": 3274752,
+      "new_input_tokens": 11031,
+      "output_tokens": 8107,
+      "standard_api_estimate_usd": "0.8206794"
+    }
+  ]
+}

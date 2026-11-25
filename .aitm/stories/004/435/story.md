@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 435
 title: "[Epic] Portable agent effort and cost management"
 kind: "epic"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/435"
 parent: null
 children: [436, 437, 438, 439, 440, 441, 442, 443, 444, 445]
 blocking: []
 blocked-by: []
 created: "2026-11-25T03:15:49Z"
-updated: "2026-11-25T14:40:22.296Z"
+updated: "2026-11-25T14:41:10.672Z"
 last-branch: "planning"
 estimate: {"agent-hours": 27.5, "size": "Feature"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-refinement-and-engagement-backfill.md"], "attachments": ["attachments/2026-11-25-release-delivery.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-refinement-and-engagement-backfill.md"], "attachments": ["attachments/2026-11-25-release-delivery.json", "attachments/timing/435-delivery-native-engagement-20261125-435.json", "attachments/435-agent-cost.json"]}
 expansions: []
 trips: []
 ---
@@ -62,3 +62,18 @@ The foundation and three provider adapters were delivered through [PR #446](http
 ## Release
 
 All ten child stories are Done. The final release is on `trunk` at `1956fecf716e06236a9741afc0a3e49643835e1e`. [Epic release sign-off](retro/2026-11-25-epic-release-sign-off.md) · [Qualification matrix](../445/attachments/qualification-matrix.md).
+
+GitHub closed #435 as completed and Project 24 read back Done with all nine delivery PRs linked.
+
+The epic recorded **1.9116 observed agent-hours**, including **1.8623 child agent-hours** and the direct closeout below. Coverage is partial.
+
+## Agent activity and cost
+
+| Agent turn | Observed engagement | Cached input tokens | New input tokens | Output tokens | Codex standard API estimate | Claude reported list equivalent | Grok reported USD |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Codex epic closeout | 2m 57.249s | 3,274,752 | 11,031 | 8,107 | $0.820679 | — | — |
+| **Direct epic closeout subtotal** | **2m 57.249s** | **3,274,752** | **11,031** | **8,107** | **$0.820679** | **—** | **—** |
+
+**Observed direct epic closeout 0.0492 agent-hours**, with partial coverage through 2026-11-25T14:41:10.409Z. Verified billed cost is unknown.
+
+Cached input counts cache reads. New input includes cache creation. Output includes reasoning where counted by the provider. Codex estimates use GPT-6.2 Sol standard rates. Claude and Grok amounts retain their respective native bases. [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [xAI tick conversion](https://docs.x.ai/developers/cost-tracking#how-it-works) · [Engagement evidence](attachments/timing/435-delivery-native-engagement-20261125-435.json) · [Cost calculation inputs](attachments/435-agent-cost.json)

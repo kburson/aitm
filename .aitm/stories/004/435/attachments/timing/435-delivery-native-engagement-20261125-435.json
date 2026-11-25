@@ -1,0 +1,27 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 435,
+  "batch": "435-delivery-native-engagement-20261125",
+  "recorded_at_utc": "2026-11-25T14:41:10.520Z",
+  "source": {
+    "ref": "manual:native-435-delivery-boundaries"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.engagement.6aa0ea1727f5add934cc9190",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.dfcb3faf2926aef23bfd498d",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:38:13.160Z",
+      "end_utc": "2026-11-25T14:41:10.409Z",
+      "source": {
+        "sha256": "1427850a046d14c8eae8671d25dcee30b940e8614a45173ae0b9060a30ccaa95"
+      }
+    }
+  ]
+}
