@@ -10,7 +10,7 @@ children: [436, 437, 438, 439, 440, 441, 442, 443, 444, 445]
 blocking: []
 blocked-by: []
 created: "2026-11-25T03:15:49Z"
-updated: "2026-11-25T03:22:27Z"
+updated: "2026-11-25T03:26:40Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: null
@@ -44,3 +44,9 @@ This epic is separate from #100. The existing monitor, cutover, and accepted dep
 - [#443 Report agent effort and usage with compatible snapshot exports](../443/story.md)
 - [#444 Reconcile AIPR companion usage receipts](../444/story.md)
 - [#445 Qualify the portable agent effort release](../445/story.md)
+
+## Draft implementation
+
+[PR #446](https://github.com/kburson/aitm/pull/446) covers #436 and #437. The initial Python API passed 20 focused tests on macOS and Linux. The PR is open as a draft.
+
+Provider capture and recovery start with #438 after the receipt and attribution foundation.

@@ -10,7 +10,7 @@ children: []
 blocking: [437, 438]
 blocked-by: []
 created: "2026-11-25T03:17:19Z"
-updated: "2026-11-25T03:22:27Z"
+updated: "2026-11-25T03:26:40Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2, "size": "M"}
 priority: null
@@ -33,3 +33,7 @@ Version strict portable receipt and enrollment types. Persist immutable attempts
 ## Initial implementation
 
 The initial work is scoped to the portable Python API and local project state. Provider capture, user-facing commands, and release qualification are follow-on stories.
+
+## Draft implementation
+
+[PR #446](https://github.com/kburson/aitm/pull/446) covers #436 and #437. The initial Python API passed 20 focused tests on macOS and Linux. The PR is open as a draft.
