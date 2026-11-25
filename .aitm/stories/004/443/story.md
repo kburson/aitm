@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 443
 title: "Report agent effort and usage with compatible snapshot exports"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/443"
 parent: 435
 children: []
 blocking: [445]
 blocked-by: [442]
 created: "2026-11-25T03:17:34Z"
-updated: "2026-11-25T13:58:25.538Z"
+updated: "2026-11-25T14:02:36.312Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: null
@@ -49,3 +49,5 @@ The first hosted candidate failed shard collection because six IDs were absent f
 [Independent source review](attachments/pr-452-source-review.md) held the first passing hosted candidate for three findings.
 
 The revised candidate at `069b8d6b8b8514010d6eae7d166288247667120b` addresses all three findings and passes 157 focused local tests. [Revised hosted run](https://github.com/kburson/aitm/actions/runs/45628903336).
+
+All six hosted checks passed on the revised candidate. The independent re-review passed the same tree.
