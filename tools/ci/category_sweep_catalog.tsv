@@ -305,6 +305,16 @@ packages/aitm-usage/tests/test_codex.py::test_unreconciled_first_snapshot_is_a_b
 packages/aitm-usage/tests/test_codex.py::test_usage_remains_measured_when_model_context_is_missing	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_verified_child_epoch_authenticates_response_after_restart	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_warm_scanner_frontier_keeps_provisional_first_request_output	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_capture.py::test_configured_launch_inherits_only_selected_environment	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_capture.py::test_exact_recovery_replays_live_observation	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_capture.py::test_recovery_reads_only_up_to_evidence_limit	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_capture.py::test_recovery_rejects_evidence_for_another_native_turn[account]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_capture.py::test_recovery_rejects_evidence_for_another_native_turn[session]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_capture.py::test_recovery_rejects_evidence_for_another_native_turn[turn]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_capture.py::test_stream_limit_preserves_prior_terminal_receipt	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_capture.py::test_terminal_outcome_and_usage_survive_process_exit[failed-9-12]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_capture.py::test_terminal_outcome_and_usage_survive_process_exit[interrupted-0-8]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_capture.py::test_timeout_is_independent_of_unobserved_terminal_outcome	systems-integration	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_conflicting_incomplete_chain_records_gap_without_replacing_prior_usage	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_cross_project_and_cross_attempt_turn_reuse_are_isolated	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_different_agent_can_continue_same_story_with_fresh_session	local-integration	yes	yes
