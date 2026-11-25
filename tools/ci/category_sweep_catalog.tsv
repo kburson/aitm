@@ -415,7 +415,9 @@ packages/aitm-usage/tests/test_effort_trail.py::test_missing_time_unknown_counts
 packages/aitm-usage/tests/test_effort_trail.py::test_nested_disjoint_usage_and_overlapping_sessions	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_trail.py::test_open_and_mixed_turns_are_unassigned	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_trail.py::test_published_epic_trail_fixture	local-integration	yes	yes
-packages/aitm-usage/tests/test_effort_trail.py::test_receipt_crossing_comparable_markers_leaves_a_boundary_gap	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_trail.py::test_receipt_crossing_comparable_markers_leaves_a_boundary_gap[crossing]	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_trail.py::test_receipt_crossing_comparable_markers_leaves_a_boundary_gap[partial-after]	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_trail.py::test_receipt_crossing_comparable_markers_leaves_a_boundary_gap[partial-before]	local-integration	yes	yes
 packages/aitm-usage/tests/test_export.py::test_competing_destination_keeps_complete_atomic_visibility[False]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_competing_destination_keeps_complete_atomic_visibility[True]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_export.py::test_exact_replay_resyncs_parent_after_interrupted_publication	fast-unit	yes	yes

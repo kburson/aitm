@@ -187,11 +187,9 @@ def _invalid_boundaries(
         start, end = starts.get(observation), ends.get(observation)
         if start is None or end is None or clocks.get(observation) != start.clock:
             continue
-        if (
-            receipt.started_at is not None
-            and receipt.started_at < start.at
-            or receipt.ended_at is not None
-            and receipt.ended_at > end.at
+        if any(
+            timestamp is not None and not start.at <= timestamp <= end.at
+            for timestamp in (receipt.started_at, receipt.ended_at)
         ):
             invalid.add(observation)
     return invalid

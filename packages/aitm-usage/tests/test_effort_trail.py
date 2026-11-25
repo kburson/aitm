@@ -388,9 +388,21 @@ def test_inclusive_grok_receipt_round_trips_without_duplicating_price():
     assert totals.inclusive_observations == 1
 
 
-def test_receipt_crossing_comparable_markers_leaves_a_boundary_gap(tmp_path):
+@pytest.mark.parametrize(
+    ("started", "ended"),
+    [(1000, 4000), (None, 900), (3000, None)],
+    ids=["crossing", "partial-before", "partial-after"],
+)
+def test_receipt_crossing_comparable_markers_leaves_a_boundary_gap(
+    tmp_path, started, ended
+):
     store = EffortStore(tmp_path / "effort.db", PROJECT)
-    enrolled, receipt = evidence("crossing", 1000, 4000)
+    enrolled, receipt = evidence("crossing")
+    receipt = replace(
+        receipt,
+        started_at=None if started is None else instant(started),
+        ended_at=None if ended is None else instant(ended),
+    )
     store.enroll(enrolled)
     store.mark_scope(marker(receipt, MarkerKind.START, 1000))
     store.mark_scope(marker(receipt, MarkerKind.END, 1500))
