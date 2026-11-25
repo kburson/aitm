@@ -1,0 +1,118 @@
+{
+  "epic": 435,
+  "recorded_at_utc": "2026-11-25T14:40:22.296Z",
+  "trunk_merge": "1956fecf716e06236a9741afc0a3e49643835e1e",
+  "verified_tree": "5f75b556cb3cf508a9e38308a0155a174acd3efc",
+  "children": [
+    {
+      "story": 436,
+      "state": "Done",
+      "github_state": "closed",
+      "closure_reason": "COMPLETED"
+    },
+    {
+      "story": 437,
+      "state": "Done",
+      "github_state": "closed",
+      "closure_reason": "COMPLETED"
+    },
+    {
+      "story": 438,
+      "state": "Done",
+      "github_state": "closed",
+      "closure_reason": "COMPLETED"
+    },
+    {
+      "story": 439,
+      "state": "Done",
+      "github_state": "closed",
+      "closure_reason": "COMPLETED"
+    },
+    {
+      "story": 440,
+      "state": "Done",
+      "github_state": "closed",
+      "closure_reason": "COMPLETED"
+    },
+    {
+      "story": 441,
+      "state": "Done",
+      "github_state": "closed",
+      "closure_reason": "COMPLETED"
+    },
+    {
+      "story": 442,
+      "state": "Done",
+      "github_state": "closed",
+      "closure_reason": "COMPLETED"
+    },
+    {
+      "story": 443,
+      "state": "Done",
+      "github_state": "closed",
+      "closure_reason": "COMPLETED"
+    },
+    {
+      "story": 444,
+      "state": "Done",
+      "github_state": "closed",
+      "closure_reason": "COMPLETED"
+    },
+    {
+      "story": 445,
+      "state": "Done",
+      "github_state": "closed",
+      "closure_reason": "COMPLETED"
+    }
+  ],
+  "delivery_prs": [
+    {
+      "number": 446,
+      "trunk_merge": "2b257a4775551f2989613c39a5347fdd40f681ee"
+    },
+    {
+      "number": 447,
+      "trunk_merge": "f66fcac5f77684ad92c5599a1d4094b03bf741ee"
+    },
+    {
+      "number": 448,
+      "trunk_merge": "6a87bd438ca4e26cbf2a6b6ea0f7eae43a3fb630"
+    },
+    {
+      "number": 449,
+      "trunk_merge": "6226f9605b10509e6e0e9896d8826678fc7c6a2c"
+    },
+    {
+      "number": 450,
+      "trunk_merge": "cd55d5114b270b88485d8a1a6d307a7b616ed8f7"
+    },
+    {
+      "number": 451,
+      "trunk_merge": "1b74f36fb1f2381802754a685c5153e2826ac12f"
+    },
+    {
+      "number": 452,
+      "trunk_merge": "953a051f4954a14a8aeb8c310a561cafbede6185"
+    },
+    {
+      "number": 453,
+      "trunk_merge": "e4c41649f6ccdba33396cf9af46d5cf98102c842"
+    },
+    {
+      "number": 454,
+      "trunk_merge": "1956fecf716e06236a9741afc0a3e49643835e1e"
+    }
+  ],
+  "release_story": 445,
+  "qualification_pr": 454,
+  "portable_fixture_passes": {
+    "Linux": 122,
+    "macOS": 122,
+    "Windows": 122
+  },
+  "live_pilot_tokens": 93953,
+  "live_pilot_unique_observations": 4,
+  "live_pilot_duplicates": 0,
+  "observed_child_engagement_ms": 6704424,
+  "engagement_coverage": "partial"
+}

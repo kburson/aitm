@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 435
 title: "[Epic] Portable agent effort and cost management"
 kind: "epic"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/435"
 parent: null
 children: [436, 437, 438, 439, 440, 441, 442, 443, 444, 445]
 blocking: []
 blocked-by: []
 created: "2026-11-25T03:15:49Z"
-updated: "2026-11-25T14:22:50.857Z"
+updated: "2026-11-25T14:40:22.296Z"
 last-branch: "planning"
 estimate: {"agent-hours": 27.5, "size": "Feature"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-refinement-and-engagement-backfill.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-refinement-and-engagement-backfill.md"], "attachments": ["attachments/2026-11-25-release-delivery.json"]}
 expansions: []
 trips: []
 ---
@@ -53,6 +53,12 @@ The foundation and three provider adapters were delivered through [PR #446](http
 
 [#444](../444/story.md) delivered AIPR companion receipt reconciliation in [PR #453](https://github.com/kburson/aitm/pull/453).
 
+[#445](../445/story.md) qualified the portable release on three hosts and verified the live pilot in [PR #454](https://github.com/kburson/aitm/pull/454).
+
 ## Refinement
 
 **Size Feature. Estimate 27.5 agent-hours.** [Sizing basis and evidence](<plan/2026-11-25-refinement-and-engagement-backfill.md>).
+
+## Release
+
+All ten child stories are Done. The final release is on `trunk` at `1956fecf716e06236a9741afc0a3e49643835e1e`. [Epic release sign-off](retro/2026-11-25-epic-release-sign-off.md) · [Qualification matrix](../445/attachments/qualification-matrix.md).
