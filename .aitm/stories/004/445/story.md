@@ -10,12 +10,12 @@ children: []
 blocking: []
 blocked-by: [439, 440, 441, 443, 444]
 created: "2026-11-25T03:17:38Z"
-updated: "2026-11-25T14:33:07.532Z"
+updated: "2026-11-25T14:34:37.647Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "L"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-portable-release-qualification.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-portable-release-qualification.md"], "attachments": ["attachments/pilot-results.md", "attachments/445-live-portable-effort-pilot.json"]}
 expansions: []
 trips: []
 ---
@@ -47,3 +47,5 @@ Run Linux/macOS qualification and early Windows fixture/import checks. Pilot one
 [Release qualification plan](plan/2026-11-25-portable-release-qualification.md).
 
 [PR #454](https://github.com/kburson/aitm/pull/454) opened at `990582b8960ed2cab1ce9cb98853da68267f302a`. An installed pure wheel passed all 122 local macOS fixtures. Qualification includes [ordinary CI](https://github.com/kburson/aitm/actions/runs/45634555848) and the [hosted portability matrix](https://github.com/kburson/aitm/actions/runs/45634556081).
+
+The [live pilot](attachments/pilot-results.md) matched 93,953 native tokens across four unique observations and verified byte-identical restart settlement and replay.

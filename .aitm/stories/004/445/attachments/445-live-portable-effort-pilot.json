@@ -1,0 +1,170 @@
+{
+  "schema": "aitm.effort-release-pilot/v1",
+  "native_invocations": 4,
+  "additional_model_turns_for_measurement": 0,
+  "native_launch_retries_in_accepted_corpus": 0,
+  "prior_pilot_abandoned_after_claude_launcher_error": true,
+  "fixture_story": 44501,
+  "fixture_epic": 44500,
+  "native_observation_count": 4,
+  "duplicate_observations": 0,
+  "pending_receipts_across_restart": 1,
+  "replay_attempts": 5,
+  "replay_left_database_and_export_identical": true,
+  "native_tokens_by_story": {
+    "44501": 50774,
+    "44502": 24469,
+    "44503": 18710
+  },
+  "native_tokens_by_provider": {
+    "codex": 50774,
+    "claude": 24469,
+    "grok": 18710
+  },
+  "epic_observed_tokens": 93953,
+  "engagement_clock_gaps": 1,
+  "verified_billing_usd": null,
+  "frozen_report_sha256": "934705c4e04824e53cbeaa72309baa47bbba19453aa6abff340957cac87ba2b6",
+  "local_phases_ms": {
+    "enrolled_usage_and_pending_write_ms": 7.252,
+    "restart_and_readback_ms": 1.047,
+    "settlement_ms": 1.905,
+    "story_and_epic_render_ms": 1.08,
+    "five_replays_and_frozen_export_check_ms": 3.051
+  },
+  "turns": [
+    {
+      "turn": "codex-1",
+      "provider": "codex",
+      "harness_version": "0.171.0-alpha.13",
+      "story": 44501,
+      "handoff_from": null,
+      "tokens": {
+        "input_tokens": 25374,
+        "cached_input_tokens": 15232,
+        "cache_write_5m_tokens": null,
+        "cache_write_1h_tokens": null,
+        "output_tokens": 8,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 25382
+      },
+      "native_total_tokens": 25382,
+      "claude_list_equivalent_usd": null,
+      "provider_grok_usd_ticks": null,
+      "coverage": "complete",
+      "source_sha256": "fb50c81f290c4b8464447128226deec8524a5d2d74f89d683d5757401b69aee0",
+      "observation_id": "3cc395f6a980bcfa3884763471051bf39418398e44b5e0a8b72b84a194d65860",
+      "counters_matched": true,
+      "exact_recovery": true,
+      "capture_ms": 9800.106,
+      "adapter_observe_including_exact_lookup_ms": 10.205,
+      "native_read_or_query_ms": [
+        8.466,
+        6.633
+      ],
+      "in_memory_recovery_ms": 0.979,
+      "started_at": "2026-11-25T14:32:31.520+00:00",
+      "ended_at": "2026-11-25T14:32:41.322+00:00"
+    },
+    {
+      "turn": "codex-2",
+      "provider": "codex",
+      "harness_version": "0.171.0-alpha.13",
+      "story": 44501,
+      "handoff_from": "codex-1",
+      "tokens": {
+        "input_tokens": 25384,
+        "cached_input_tokens": 15232,
+        "cache_write_5m_tokens": null,
+        "cache_write_1h_tokens": null,
+        "output_tokens": 8,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 25392
+      },
+      "native_total_tokens": 25392,
+      "claude_list_equivalent_usd": null,
+      "provider_grok_usd_ticks": null,
+      "coverage": "complete",
+      "source_sha256": "4e2f54c3859514f13623ea90f0349b7e11689dfe2b612d970e57b1e928e2f155",
+      "observation_id": "9fbac29f8be033fe739d441e0f998a2675e2c1fbbc08a6b2008aad8ddb298c20",
+      "counters_matched": true,
+      "exact_recovery": true,
+      "capture_ms": 9798.918,
+      "adapter_observe_including_exact_lookup_ms": 9.471,
+      "native_read_or_query_ms": [
+        8.081,
+        6.499
+      ],
+      "in_memory_recovery_ms": 1.701,
+      "started_at": "2026-11-25T14:32:41.329+00:00",
+      "ended_at": "2026-11-25T14:32:51.130+00:00"
+    },
+    {
+      "turn": "claude-1",
+      "provider": "claude",
+      "harness_version": "2.1.331",
+      "story": 44502,
+      "handoff_from": "codex-2",
+      "tokens": {
+        "input_tokens": 2,
+        "cached_input_tokens": 0,
+        "cache_write_5m_tokens": 0,
+        "cache_write_1h_tokens": 24455,
+        "output_tokens": 12,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 24469
+      },
+      "native_total_tokens": 24469,
+      "claude_list_equivalent_usd": 0.097944,
+      "provider_grok_usd_ticks": null,
+      "coverage": "complete",
+      "source_sha256": "27762646df8c6d5e1e539458ae19218eb03c5d20441e9aed8ed1bb251e5bad54",
+      "observation_id": "6186c46878627b759a5a84964da9a84b80c319a6ca9e02996ba23004bf9375d4",
+      "counters_matched": true,
+      "exact_recovery": true,
+      "capture_ms": 3704.104,
+      "adapter_observe_including_exact_lookup_ms": 13.5,
+      "native_read_or_query_ms": [
+        11.638,
+        8.382
+      ],
+      "in_memory_recovery_ms": 1.211,
+      "started_at": "2026-11-25T14:32:51.138+00:00",
+      "ended_at": "2026-11-25T14:32:54.844+00:00"
+    },
+    {
+      "turn": "grok-1",
+      "provider": "grok",
+      "harness_version": "1.0.92",
+      "story": 44503,
+      "handoff_from": "claude-1",
+      "tokens": {
+        "input_tokens": 18650,
+        "cached_input_tokens": 8832,
+        "cache_write_5m_tokens": null,
+        "cache_write_1h_tokens": null,
+        "output_tokens": 60,
+        "reasoning_output_tokens": 55,
+        "total_tokens": 18710
+      },
+      "native_total_tokens": 18710,
+      "claude_list_equivalent_usd": null,
+      "provider_grok_usd_ticks": 166001600,
+      "coverage": "complete",
+      "source_sha256": "76636032447c555c64ebabbdac8150b14e4d4a10c994c81e73e8e5da89986657",
+      "observation_id": "d1c41b05b01a185d2bc880780a4eafc093a0a7fcfaa0e9b131fa709914983f90",
+      "counters_matched": true,
+      "exact_recovery": true,
+      "capture_ms": 4826.917,
+      "adapter_observe_including_exact_lookup_ms": 190.103,
+      "native_read_or_query_ms": [
+        189.41,
+        179.512
+      ],
+      "in_memory_recovery_ms": 0.431,
+      "started_at": "2026-11-25T14:32:54.854+00:00",
+      "ended_at": "2026-11-25T14:32:59.682+00:00"
+    }
+  ],
+  "raw_evidence_private": true
+}
