@@ -2,6 +2,20 @@
 
 The per-user AITM service captures supported local Codex Desktop and Claude Code records in a private SQLite ledger. It polls every 15 seconds while the host is awake. The fixed-sequence export preserves normalized usage, scoped pseudonyms, pricing basis and coverage. Keep the same production project UUID, state directory and pseudonym key through the life of AITM.
 
+## Portable agent effort reports
+
+Use the project UUID and its existing private effort SQLite database. Each command reads one committed generation and leaves the store intact.
+
+```sh
+aitm-effort --database "$EFFORT_DB" --project "$PROJECT_UUID" report --story 443
+aitm-effort --database "$EFFORT_DB" --project "$PROJECT_UUID" report --unattached --json
+aitm-effort --database "$EFFORT_DB" --project "$PROJECT_UUID" export --epic 435
+```
+
+The export writes canonical `aitm.effort.report/v1` JSON to stdout. Its totals include role and provider breakdowns, counted observations, outcomes, and coverage gaps. Durations use integer microseconds. JSON null and the text value `unknown` represent unavailable measurements. Grok's provider-reported cost uses 10 billion ticks per USD. API-equivalent estimates and verified billed amounts remain unknown for portable receipts, which currently carry neither a verified rate basis nor billing evidence. Python callers can supply verified clock domains and workflow bounds to `build_report` when available.
+
+Add `--legacy "$APPROVED_EXPORT_DIR"` after the subcommand to inspect an approved `aitm.usage.export/v1` snapshot. The report preserves its project-wide sequence, stable row identities, and API-equivalent estimates with the original rate basis. The published files stay byte-identical. The report keeps legacy rows separate and marks cross-source coverage unresolved when legacy rows are present.
+
 ## U11 qualification runbook
 
 Use the approved #83-only controlled workload on the project Mac. The planning and review tasks exercise actual requests against disposable draft identities within #83. Use a dedicated #83 qualification worktree for the development-owner action and a marked housekeeping action. Keep #2 untouched. Use short synthetic task inputs and privately retain the selected native source and collector evidence. Stop at the first unmet mandatory gate and retain the specific gap for review.

@@ -113,7 +113,9 @@ class EffortStore:
     aid, not authentication. Do not point this store at an untrusted directory.
     """
 
-    def __init__(self, database: Path, project_id: UUID) -> None:
+    def __init__(
+        self, database: Path, project_id: UUID, *, read_only: bool = False
+    ) -> None:
         if type(project_id) is not UUID:
             raise EffortError("Expected a project UUID")
         if (
@@ -124,6 +126,9 @@ class EffortStore:
             raise EffortError("Expected a database in an existing private directory")
         self.database = database.absolute()
         self.project_id = project_id
+        self._read_only = read_only
+        if read_only:
+            return
         with self._transaction(write=True, initialize=True) as connection:
             app_id = connection.execute("PRAGMA application_id").fetchone()[0]
             if app_id != _APPLICATION_ID:
@@ -151,7 +156,11 @@ class EffortStore:
     ) -> Iterator[sqlite3.Connection]:
         # Subsequent opens must not silently create a replacement store.
         target = self.database.absolute().as_uri()
-        if not initialize:
+        if self._read_only:
+            if write or initialize:
+                raise EffortError("Cannot write to a read-only effort store")
+            target += "?mode=ro"
+        elif not initialize:
             target += "?mode=rw"
         connection = sqlite3.connect(target, uri=True, isolation_level=None, timeout=10)
         try:
@@ -513,6 +522,39 @@ class EffortStore:
 
     def snapshot(self) -> Snapshot:
         with self._transaction() as db:
+            trail_tables = {
+                name
+                for (name,) in db.execute(
+                    "SELECT name FROM sqlite_schema WHERE type='table' "
+                    "AND name IN ('scope_markers', 'handoffs')"
+                )
+            }
+            if trail_tables and len(trail_tables) != 2:
+                raise EffortError("Incomplete effort trail schema")
+            markers = ()
+            handoffs = ()
+            if trail_tables:
+                markers = tuple(
+                    _decode(payload, ScopeMarker)
+                    for (payload,) in db.execute(
+                        "SELECT payload FROM scope_markers ORDER BY observation, kind DESC"
+                    )
+                )
+                handoffs = tuple(
+                    _decode(payload, Handoff)
+                    for (payload,) in db.execute(
+                        "SELECT payload FROM handoffs ORDER BY predecessor"
+                    )
+                )
+            open_scopes = {
+                marker.turn.identity
+                for marker in markers
+                if marker.kind == MarkerKind.START
+            } - {
+                marker.turn.identity
+                for marker in markers
+                if marker.kind == MarkerKind.END
+            }
             return Snapshot(
                 self.project_id,
                 self._generation(db),
@@ -523,15 +565,14 @@ class EffortStore:
                     )
                 ),
                 tuple(
-                    self._story_observation(receipt, enrollment, link, open_scope)
-                    for receipt, enrollment, link, open_scope in db.execute(
-                        """SELECT r.payload, a.payload, t.payload,
-                               s.kind IS NOT NULL AND f.kind IS NULL
+                    self._story_observation(
+                        receipt, enrollment, link, observation in open_scopes
+                    )
+                    for receipt, enrollment, link, observation in db.execute(
+                        """SELECT r.payload, a.payload, t.payload, e.observation
                            FROM effective e JOIN revisions r USING (observation, revision)
                            JOIN enrollments a ON a.attempt=e.attempt
                            LEFT JOIN attributions t ON t.observation=e.observation
-                           LEFT JOIN scope_markers s ON s.observation=e.observation AND s.kind='start'
-                           LEFT JOIN scope_markers f ON f.observation=e.observation AND f.kind='end'
                            ORDER BY e.observation"""
                     )
                 ),
@@ -547,18 +588,8 @@ class EffortStore:
                         "SELECT payload, reason FROM conflicts ORDER BY digest"
                     )
                 ),
-                tuple(
-                    _decode(payload, ScopeMarker)
-                    for (payload,) in db.execute(
-                        "SELECT payload FROM scope_markers ORDER BY observation, kind DESC"
-                    )
-                ),
-                tuple(
-                    _decode(payload, Handoff)
-                    for (payload,) in db.execute(
-                        "SELECT payload FROM handoffs ORDER BY predecessor"
-                    )
-                ),
+                markers,
+                handoffs,
             )
 
     @staticmethod

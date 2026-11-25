@@ -1386,3 +1386,28 @@ def test_receiver_checks_reconciled_observation_after_reopen(
     assert reopened.accepted == accepted
     assert reopened.reconciliation == {_public(first.key): 1}
     assert reopened.import_snapshot(repriced) == "imported"
+
+
+def test_portable_report_reads_fixed_export_bytes(rendered_snapshot, tmp_path):
+    from aitm_usage.effort.export import read_legacy
+    from aitm_usage.effort.store import EffortError
+
+    manifest, usage = (
+        rendered_snapshot["manifest.json"],
+        rendered_snapshot["usage.jsonl"],
+    )
+    (tmp_path / "manifest.json").write_bytes(manifest)
+    (tmp_path / "usage.jsonl").write_bytes(usage)
+    project_id = UUID(json.loads(manifest)["project_id"])
+    snapshot = read_legacy(tmp_path, project_id)
+    assert snapshot.cutoff == json.loads(manifest)["cutoff"]
+    assert [row.source for row in snapshot.rows] == [
+        json.loads(line)["source"] for line in usage.splitlines()
+    ]
+    assert (tmp_path / "manifest.json").read_bytes() == manifest
+    assert (tmp_path / "usage.jsonl").read_bytes() == usage
+    with pytest.raises(EffortError):
+        read_legacy(tmp_path, UUID(int=0))
+    (tmp_path / "usage.jsonl").write_bytes(usage + b"\n")
+    with pytest.raises(EffortError):
+        read_legacy(tmp_path, project_id)
