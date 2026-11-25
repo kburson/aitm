@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 436
 title: "Portable receipt schema and transactional store"
 kind: "story"
-state: "develop"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/436"
 parent: 435
 children: []
 blocking: [437, 438]
 blocked-by: []
 created: "2026-11-25T03:17:19Z"
-updated: "2026-11-25T03:26:40Z"
+updated: "2026-11-25T03:52:18Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2, "size": "M"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/trusted-pr-446.json", "attachments/pr-446-test-mix.json", "attachments/pr-446-source-review.md"]}
 expansions: []
 trips: []
 ---
@@ -37,3 +37,7 @@ The initial work is scoped to the portable Python API and local project state. P
 ## Draft implementation
 
 [PR #446](https://github.com/kburson/aitm/pull/446) covers #436 and #437. The initial Python API passed 20 focused tests on macOS and Linux. The PR is open as a draft.
+
+## Delivery
+
+[PR #446](https://github.com/kburson/aitm/pull/446) merged to `trunk`. GitHub closed this story and Project 24 read back Done. [Delivery sign-off](retro/2026-11-24-delivery-sign-off.md).

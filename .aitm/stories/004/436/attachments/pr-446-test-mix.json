@@ -1,0 +1,114 @@
+{
+  "schema": "aitm.effort-test-mix/v1",
+  "pr": 446,
+  "base": "45db935ac73911b95320a3e38d19f177cedd4fd2",
+  "head": "acbe2fba96f2a1d1d2acab9e8cb6668fd88829ee",
+  "tested_tree": "ee27f7591faf34b6737da1cb4a3b143d1ea5e983",
+  "run": 45539938525,
+  "attempt": 1,
+  "product_execution": {
+    "unit": 1461,
+    "total": 1569,
+    "percent": 93.1166,
+    "above_90_percent": true,
+    "categories": {
+      "fast-unit": 1461,
+      "systems-integration": 34,
+      "local-integration": 74
+    }
+  },
+  "hosts": {
+    "linux": {
+      "base_product": {
+        "unit": 1459,
+        "total": 1549,
+        "percent": 94.1898,
+        "above_90_percent": true,
+        "categories": {
+          "fast-unit": 1459,
+          "local-integration": 56,
+          "systems-integration": 34
+        }
+      },
+      "candidate_product": {
+        "unit": 1461,
+        "total": 1569,
+        "percent": 93.1166,
+        "above_90_percent": true,
+        "categories": {
+          "fast-unit": 1461,
+          "local-integration": 74,
+          "systems-integration": 34
+        }
+      },
+      "base_full_catalog": {
+        "unit": 1899,
+        "total": 2411,
+        "percent": 78.764,
+        "above_90_percent": false,
+        "categories": {
+          "systems-integration": 182,
+          "fast-unit": 1899,
+          "local-integration": 330
+        }
+      },
+      "candidate_full_catalog": {
+        "unit": 1901,
+        "total": 2431,
+        "percent": 78.1983,
+        "above_90_percent": false,
+        "categories": {
+          "systems-integration": 182,
+          "fast-unit": 1901,
+          "local-integration": 348
+        }
+      }
+    },
+    "darwin": {
+      "base_product": {
+        "unit": 1457,
+        "total": 1544,
+        "percent": 94.3653,
+        "above_90_percent": true,
+        "categories": {
+          "fast-unit": 1457,
+          "local-integration": 56,
+          "systems-integration": 31
+        }
+      },
+      "candidate_product": {
+        "unit": 1459,
+        "total": 1564,
+        "percent": 93.2864,
+        "above_90_percent": true,
+        "categories": {
+          "fast-unit": 1459,
+          "local-integration": 74,
+          "systems-integration": 31
+        }
+      },
+      "base_full_catalog": {
+        "unit": 1897,
+        "total": 2406,
+        "percent": 78.8446,
+        "above_90_percent": false,
+        "categories": {
+          "systems-integration": 179,
+          "fast-unit": 1897,
+          "local-integration": 330
+        }
+      },
+      "candidate_full_catalog": {
+        "unit": 1899,
+        "total": 2426,
+        "percent": 78.277,
+        "above_90_percent": false,
+        "categories": {
+          "systems-integration": 179,
+          "fast-unit": 1899,
+          "local-integration": 348
+        }
+      }
+    }
+  }
+}
