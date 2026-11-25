@@ -5,18 +5,17 @@ title: "Capture and publish session-owned agent turn receipts"
 kind: "story"
 state: "test"
 issue: "https://github.com/kburson/aitm/issues/457"
-pr: "https://github.com/kburson/aitm/pull/460"
 parent: 456
 children: []
 blocking: [458]
 blocked-by: []
 created: "2026-11-25T16:06:16Z"
-updated: "2026-11-25T18:24:13.177Z"
+updated: "2026-11-25T18:39:15.715Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/455/attachments/455-findings.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md", "attachments/timing/457-delivery-refresh-engagement-20261125-457.json", "attachments/timing/457-delivery-refresh-usage-20261125.json", "attachments/qualification/457-aipr-qualification.json"]}
 expansions: []
 trips: []
 ---
@@ -46,24 +45,29 @@ Drafted the [session capture design](design/2026-11-25-session-owned-turn-captur
 
 ## Actual agent engagement
 
-**35m 53.860s observed (0.5983 agent-hours), partial coverage.** The current turn is measured through 2026-11-25T18:24:13.002Z. Independent engagement is summed including overlap. Provider launches with no exact start are listed as Unknown. [Timing receipt](attachments/timing/457-delivery-native-engagement-20261125-457.json).
+**54m 33.235s observed (0.9092 agent-hours), partial coverage.** The current turn is measured through 2026-11-25T18:39:15.548Z. Independent engagement is summed including overlap. Provider launches with no exact start are listed as Unknown. [Timing receipt](attachments/timing/457-delivery-refresh-engagement-20261125-457.json).
 
 ## Agent activity and cost
 
-| Agent turn | Observed engagement | Cached input tokens | New input tokens | Output tokens | Codex standard API estimate | Grok reported USD | Claude list-equivalent USD |
+| Agent turn | Observed engagement | Cached input tokens | New input tokens | Output tokens | Codex standard API estimate | Grok reported USD | Claude cost reference USD |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Codex kickoff | 4m 10.569s | 2,786,176 | 45,583 | 10,240 | $0.472184 | — | — |
 | Codex kickoff builder check | 0m 23.331s | 494,336 | 4,151 | 797 | $0.065706 | — | — |
-| Codex implementation and qualification | 14m 34.395s | 13,652,096 | 112,482 | 35,434 | $1.944514 | — | — |
+| Codex implementation and qualification | 29m 36.941s | 39,700,992 | 203,309 | 68,043 | $7.054224 | — | — |
 | Codex provider adapter and live probes | 8m 19.312s | 10,718,976 | 119,127 | 19,730 | $1.507452 | — | — |
 | Codex publication and plan review | 5m 42.520s | 4,089,344 | 32,583 | 14,835 | $0.622450 | — | — |
 | Codex headless probe 1 | 0m 02.803s | 15,232 | 8,715 | 5 | $0.019003 | — | — |
 | Codex headless probe 2 | 0m 02.718s | 15,232 | 10,114 | 5 | $0.021801 | — | — |
 | Codex independent source review | 2m 37.658s | 999,296 | 74,003 | 6,602 | $0.313956 | — | — |
+| Codex independent source review 2 | 1m 10.436s | 870,784 | 18,557 | 2,783 | $0.152022 | — | — |
+| Codex independent source review 3 | 0m 49.212s | 766,592 | 10,371 | 1,918 | $0.116581 | — | — |
+| Codex independent source review 4 | 0m 21.344s | 342,144 | 3,030 | 807 | $0.048344 | — | — |
 | Claude Code qualification 1 | Unknown | 0 | 24,251 | 4 | — | — | $0.097040 |
 | Grok Build qualification | Unknown | 8,832 | 9,803 | 23 | — | $0.016429 | — |
 | Claude Code qualification 2 | Unknown | 649 | 2,249 | 4 | — | — | $0.009097 |
 | Claude Code qualification 3 | 0m 00.554s | 649 | 2,245 | 4 | — | — | $0.009081 |
-| **Observed subtotal** | **35m 53.860s** | 32,780,818 | 445,306 | 87,683 | $4.967065 | $0.016429 | $0.115218 |
+| Claude AIPR review 1 (no seal) | 0m 37.161s | 260,227 | 45,301 | 4,622 | — | — | $0.253419 |
+| Claude AIPR review 2 (sealed) | 0m 38.676s | 262,677 | 43,393 | 4,543 | — | — | $0.245242 |
+| **Observed subtotal** | **54m 33.235s** | 61,332,138 | 656,785 | 134,965 | $10.393723 | $0.016429 | $0.613878 |
 
-**Combined cost reference for the observed work $5.098711.** Codex values use GPT-6.2 Sol Standard API rates applied to native requests. Grok values are provider-reported and Claude values are provider list equivalents. New input includes cache writes where reported. **Verified billed cost is unknown.** [Model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Sanitized usage evidence](attachments/timing/457-delivery-native-usage-20261125.json).
+**Combined cost reference for the observed work $11.024030.** Codex values use GPT-6.2 Sol Standard API rates applied to native requests. Grok values are provider-reported. Claude qualification values are provider list equivalents, and Claude review values use Standard API list rates. New input includes cache writes where reported. **Verified billed cost is unknown.** [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Claude model rates](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Sanitized usage evidence](attachments/timing/457-delivery-refresh-usage-20261125.json).

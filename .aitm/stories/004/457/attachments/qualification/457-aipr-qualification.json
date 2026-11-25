@@ -1,0 +1,58 @@
+{
+  "schema": "aitm.review-companion-qualification/v1",
+  "story": 457,
+  "attempts": [
+    {
+      "provider": "claude",
+      "native_build": "2.1.331",
+      "model": "claude-sonnet-5-5",
+      "launch_status": "outcome-unknown",
+      "story": 457,
+      "native_start": "2026-11-25T18:32:24.652000+00:00",
+      "native_end": "2026-11-25T18:33:01.813000+00:00",
+      "tokens": {
+        "input_tokens": 260241,
+        "cached_input_tokens": 260227,
+        "cache_write_5m_tokens": 0,
+        "cache_write_1h_tokens": 45287,
+        "output_tokens": 4622,
+        "reasoning_output_tokens": 1184,
+        "total_tokens": 310150
+      },
+      "exact_usage": true,
+      "sealed_decision": null,
+      "response_digest": null,
+      "artifact_digest": "sha256:c05198f4a9bc3b91862d8736532f008aadf66f07c6f5f2c6dfde7d43b3bd66b9",
+      "verified_participant_binding": true,
+      "source_sha256": "92255ed8a7cc230d5769f410eeddc64aec8d8d4d89a73889058d2dfdfc6a800c",
+      "processing_ms": 4.024,
+      "extra_measurement_model_turns": 0
+    },
+    {
+      "provider": "claude",
+      "native_build": "2.1.331",
+      "model": "claude-sonnet-5-5",
+      "launch_status": "submitted",
+      "story": 457,
+      "native_start": "2026-11-25T18:34:38.518000+00:00",
+      "native_end": "2026-11-25T18:35:17.194000+00:00",
+      "tokens": {
+        "input_tokens": 262691,
+        "cached_input_tokens": 262677,
+        "cache_write_5m_tokens": 0,
+        "cache_write_1h_tokens": 43379,
+        "output_tokens": 4543,
+        "reasoning_output_tokens": 1604,
+        "total_tokens": 310613
+      },
+      "exact_usage": true,
+      "sealed_decision": "reviewer-revisions-requested",
+      "response_digest": "4c15280066d5e6d1f17db9022b3bad0e7edb938a54c298ce761a2a04703e6d61",
+      "artifact_digest": "sha256:c05198f4a9bc3b91862d8736532f008aadf66f07c6f5f2c6dfde7d43b3bd66b9",
+      "verified_participant_binding": true,
+      "source_sha256": "cc194c9126bef7af16c9a7a331ec78e2144d06656151877ec4bf9681ae0c391e",
+      "processing_ms": 4.257,
+      "extra_measurement_model_turns": 0
+    }
+  ]
+}
