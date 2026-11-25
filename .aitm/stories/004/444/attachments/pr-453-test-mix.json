@@ -1,0 +1,45 @@
+{
+  "schema": "aitm.effort-test-mix/v1",
+  "pr": 453,
+  "base": "953a051f4954a14a8aeb8c310a561cafbede6185",
+  "head": "8a460de58119d09a1d0b38a834a623e154b3ab45",
+  "tested_tree": "e19799308eac99b92126d903e8ceb744fec533ca",
+  "run": 45632218637,
+  "attempt": 1,
+  "hosted_execution": {
+    "categories": {
+      "fast-unit": 1535,
+      "local-integration": 94,
+      "systems-integration": 43
+    },
+    "unit": 1535,
+    "total": 1672,
+    "percent": 91.8062,
+    "above_90_percent": true
+  },
+  "product_execution": {
+    "categories": {
+      "fast-unit": 1535,
+      "local-integration": 94,
+      "systems-integration": 42
+    },
+    "unit": 1535,
+    "total": 1671,
+    "percent": 91.8612,
+    "above_90_percent": true
+  },
+  "base_product_execution": {
+    "categories": {
+      "fast-unit": 1535,
+      "local-integration": 90,
+      "systems-integration": 42
+    },
+    "unit": 1535,
+    "total": 1667,
+    "percent": 92.0816,
+    "above_90_percent": true
+  },
+  "new_product_tests": {
+    "local-integration": 4
+  }
+}
