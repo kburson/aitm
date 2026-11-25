@@ -10,7 +10,7 @@ children: []
 blocking: [445]
 blocked-by: [437, 440, 441]
 created: "2026-11-25T03:17:36Z"
-updated: "2026-11-25T14:21:52.387Z"
+updated: "2026-11-25T14:22:30.764Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: null
@@ -49,3 +49,7 @@ Validate sealed decisions separately from usage. Exercise two rounds, delayed an
 The [live pilot](attachments/444-live-aipr-companions.json) exercised two rounds on Claude and Grok and one interruption per provider. All six native receipts replayed byte-identically after reversed round delivery and SQLite reopen. Four sealed decisions were independently verified against the reviewer, artifact and response. All four disposable brokers read back offline.
 
 The [independent source review](attachments/pr-453-source-review.md), [trusted verifier](attachments/trusted-pr-453.json), and all six hosted jobs passed on the same candidate.
+
+## Delivery
+
+[PR #453](https://github.com/kburson/aitm/pull/453) merged to `trunk` at `e4c41649f6ccdba33396cf9af46d5cf98102c842`. The merged tree matches the reviewed and attested tree. [Delivery sign-off](retro/2026-11-25-delivery-sign-off.md).
