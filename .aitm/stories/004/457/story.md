@@ -10,12 +10,12 @@ children: []
 blocking: [458]
 blocked-by: []
 created: "2026-11-25T16:06:16Z"
-updated: "2026-11-25T19:24:49.970Z"
+updated: "2026-11-25T19:42:37.459Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/455/attachments/455-findings.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md", "attachments/timing/457-delivery-refresh-engagement-20261125-457.json", "attachments/timing/457-delivery-refresh-usage-20261125.json", "attachments/qualification/457-aipr-qualification.json", "attachments/qualification/457-grok-desktop-plan-review.md", "attachments/timing/457-grok-plan-review-usage-20261125.json", "attachments/timing/457-grok-plan-review-engagement-20261125-457.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md", "attachments/timing/457-delivery-refresh-engagement-20261125-457.json", "attachments/timing/457-delivery-refresh-usage-20261125.json", "attachments/qualification/457-aipr-qualification.json", "attachments/qualification/457-grok-desktop-plan-review.md", "attachments/timing/457-grok-plan-review-usage-20261125.json", "attachments/timing/457-grok-plan-review-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-setup.md", "attachments/timing/457-desktop-scratch-setup-usage-20261125.json", "attachments/timing/457-desktop-scratch-setup-engagement-20261125-457.json"]}
 expansions: []
 trips: []
 ---
@@ -45,9 +45,11 @@ Drafted the [session capture design](design/2026-11-25-session-owned-turn-captur
 
 Grok recommends qualifying first in an isolated Desktop chat and scratch repository. The original approval request is on hold. [Independent second opinion](attachments/qualification/457-grok-desktop-plan-review.md).
 
+The disposable Desktop chat and standalone repository are staged for the live check. [Scratch setup evidence](attachments/qualification/457-disposable-desktop-setup.md).
+
 ## Actual agent engagement
 
-**58m 33.519s observed (0.9760 agent-hours), partial coverage.** The coordinator turn is measured through 2026-11-25T19:24:49.883Z. Independent engagement is summed including overlap. Grok's plan review wrapper elapsed 76.049s. Its exact native start is unavailable, so that interval is excluded from engagement. [Timing receipt](attachments/timing/457-grok-plan-review-engagement-20261125-457.json).
+**62m 16.132s observed (1.0378 agent-hours), partial coverage.** The scratch setup turn is measured through 2026-11-25T19:42:37.228Z. The disposable Desktop bootstrap is included. Live hook qualification has yet to run. Independent engagement is summed including overlap. [Timing receipt](attachments/timing/457-desktop-scratch-setup-engagement-20261125-457.json).
 
 ## Agent activity and cost
 
@@ -70,8 +72,10 @@ Grok recommends qualifying first in an isolated Desktop chat and scratch reposit
 | Claude Code qualification 3 | 0m 00.554s | 649 | 2,245 | 4 | — | — | $0.009081 |
 | Claude AIPR review 1 (no seal) | 0m 37.161s | 260,227 | 45,301 | 4,622 | — | — | $0.253419 |
 | Claude AIPR review 2 (sealed) | 0m 38.676s | 262,677 | 43,393 | 4,543 | — | — | $0.245242 |
-| Codex coordination of Grok second opinion | 2m 47.454s | 4,289,408 | 14,392 | 6,137 | $1.007505 | — | — |
+| Codex coordination of Grok second opinion | 3m 30.362s | 5,640,832 | 18,011 | 7,652 | $1.314990 | — | — |
 | Grok Desktop qualification plan review | Unknown | 8,832 | 10,571 | 5,350 | — | $0.039207 | — |
-| **Observed subtotal** | **58m 33.519s** | 68,194,218 | 688,568 | 148,523 | $11.972340 | $0.055636 | $0.613878 |
+| Codex scratch Desktop setup | 2m 47.064s | 4,165,120 | 16,920 | 6,407 | $0.996809 | — | — |
+| Codex disposable Desktop chat bootstrap | 0m 12.641s | 69,248 | 14,528 | 329 | $0.039271 | — | — |
+| **Observed subtotal** | **62m 16.132s** | 73,780,010 | 723,635 | 156,774 | $13.315906 | $0.055636 | $0.613878 |
 
-**Combined cost reference for the observed work $12.641855.** Codex uses GPT-6.2 Sol Standard API rates. Grok values are provider-reported. Claude qualification values are provider list equivalents and Claude review values use Standard API list rates. New input includes cache writes where reported. **Verified billed cost is unknown.** [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Claude model rates](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Sanitized usage evidence](attachments/timing/457-grok-plan-review-usage-20261125.json).
+**Combined cost reference for the observed work $13.985420.** Codex uses GPT-6.2 Sol Standard API rates. Grok values are provider-reported. Claude qualification values are provider list equivalents and Claude review values use Standard API list rates. New input includes cache writes where reported. **Verified billed cost is unknown.** [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Claude model rates](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Sanitized usage evidence](attachments/timing/457-desktop-scratch-setup-usage-20261125.json).
