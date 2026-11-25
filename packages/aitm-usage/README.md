@@ -271,3 +271,35 @@ Cancellation without a settled native turn stays a gap.
 Grok receipts preserve integer provider USD ticks and cache-creation tokens as
 native evidence in the v2 wire format. These ticks do not establish a billed
 charge. Existing v1 receipts retain their canonical encoding.
+
+### Session-owned effort capture
+
+Use one owner-private effort database per project and keep that database through
+handoff and restart. It contains the private key for stable receipt identities.
+Use `aitm-effort --database "$EFFORT_DB" --project "$PROJECT_UUID"` before each
+subcommand below.
+
+- `session-select SESSION STORY REMOTE` selects the destination for upcoming
+  turns. It leaves previously enrolled attempts on their original story.
+- `session-expect SESSION ATTEMPT ROLE LAUNCH` records an attempt before dispatch.
+  Supply an exact caller-owned launch correlation and use `--review` and
+  `--round` for explicitly enrolled review turns. A supervising Python caller
+  can pass the configured harness and its typed adapter to
+  `SessionStore.run_owned`. An attempt that may have launched is recoverable by
+  exact evidence. Repeating the launch requires a fresh attempt.
+- `session-bind` and `session-settle` accept only the configured caller's
+  verified private reference and matching adapter receipt.
+  `session-status SESSION` shows pending bindings, pending evidence, observed
+  usage and unavailable usage.
+- `session-codex-hook SESSION THREAD ACCOUNT ROLLOUT_ROOT` reads one trusted
+  hook event from stdin. Configure the caller's verified project hooks for
+  UserPromptSubmit, Stop, Interrupt, SubagentStart and SubagentStop. Use the exact
+  enrolled thread and authorized local rollout root. A status of 3 means the
+  expected evidence is pending. After the provider flushes it, retry the
+  retained terminal callback using `--retry ATTEMPT`. Hook payloads and retry
+  commands belong to the local operator. Treat the installed app's hook
+  lifecycle trust and dispatch behavior as part of route qualification.
+- `session-publish SESSION REPOSITORY` publishes the sanitized immutable bytes
+  to that project's existing `origin/planning`. When permissions refuse a
+  push, retain the private batch for the existing authorized publisher.
+  A separately configured database cannot establish the same native identity.

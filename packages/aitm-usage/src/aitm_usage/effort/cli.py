@@ -1,4 +1,4 @@
-"""Portable, read-only reporting for the local effort store."""
+"""Portable effort reporting and caller-owned session capture."""
 
 import argparse
 import sqlite3
@@ -10,6 +10,7 @@ from uuid import UUID
 from .export import read_legacy, render_export
 from .report import build_report, render_text
 from .rollup import RollupTarget
+from .session_cli import add_session_commands, run_session_command
 from .store import EffortStore
 
 
@@ -29,8 +30,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         if command == "report":
             options.add_argument("--json", action="store_true")
+    add_session_commands(commands)
     args = parser.parse_args(argv)
     try:
+        if args.command.startswith("session-"):
+            return run_session_command(args)
         target = RollupTarget(args.project, epic=args.epic, story=args.story)
         snapshot = EffortStore(args.database, args.project, read_only=True).snapshot()
         legacy = None if args.legacy is None else read_legacy(args.legacy, args.project)
