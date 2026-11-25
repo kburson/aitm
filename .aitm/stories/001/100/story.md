@@ -10,7 +10,7 @@ children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124,
 blocking: [2]
 blocked-by: [101, 102, 456]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-25T16:12:21.860Z"
+updated: "2026-11-25T16:19:55.570Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -137,3 +137,5 @@ Owner direction on 2026-11-19. The monitor service is one Python program. The ho
 ## Accepted session-owned replan
 
 [Successor Epic #456](https://github.com/kburson/aitm/issues/456) owns the lightweight capture, reporting, and producer outcomes. The ten legacy monitor contracts have an approved **Not delivered** disposition. [Disposition and verified dependency rebaseline](plan/2026-11-25-100-session-owned-scope-disposition.md).
+
+GitHub confirmed all ten legacy monitor issues closed as **Not delivered**. [Successor Epic #456](https://github.com/kburson/aitm/issues/456) carries the retained work.

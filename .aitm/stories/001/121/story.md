@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 121
 title: "[M11] Root watches and coordinator"
 kind: "story"
-state: "planning"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/121"
 parent: 100
 children: []
 blocking: [123, 125]
 blocked-by: [115, 120, 304, 325, 326, 330, 331, 335]
 created: "2026-11-10T13:58:05Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-25T16:19:55.570Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: null
@@ -73,3 +73,9 @@ Apply the exact authorized #117 receipt verifier in the #329 capture callback fo
 [Independent JIT R2](plan/coordinator-independent-jit-r2.md) returned **PASS** against trunk `755fa2ece56cfa8c70a460b269d947ec6e958b2f` and the exact planning evidence snapshot `dcee3efeda7c17a80dd28f73c07a9aab49afe5fb`. The reviewed behavior refuses unverified v1 Stop frames and preserves admitted Change, keyed Park, and bounded watch and timer reconciliation. Apply the Develop conditions in the verdict within the three-file scope and four-hour cap. [Review receipt](plan/coordinator-independent-jit-r2-receipt.json) · [Timing receipt](attachments/timing/coordinator-independent-jit-r2-121.json)
 
 The delivered Registry invokes its Grok callback with `(change, active, pending)`. The coordinator callback selects the matching locators and forwards `(change, locators, active, pending, inventory=inventory)` to the bound ScopeState method. Keep the first RED for this wiring. The pinned trunk lists neither `monitor.py` nor `test_monitor_watches.py`.
+
+## Disposition
+
+**Not delivered.** The global root watches and coordinator are outside the session-owned scope. Explicit enrollment and exact recovery carry forward in #457.
+
+GitHub closed this issue as Not planned and Project 24 records the terminal state as Done. [Approved #455 assessment](../../004/455/attachments/100-child-assessment.md) · [Successor epic #456](https://github.com/kburson/aitm/issues/456).

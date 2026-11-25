@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 125
 title: "[M15] Host service lifecycle"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/125"
 parent: 100
 children: []
 blocking: [126]
 blocked-by: [121, 124, 304, 320]
 created: "2026-11-10T13:58:11Z"
-updated: "2026-11-19T12:56:00Z"
+updated: "2026-11-25T16:19:55.570Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -63,3 +63,9 @@ Refuse an insecure private directory. Refuse a second service, or a legacy write
 Product tests of this service run on the Linux runner. A developer machine may be a Mac, and that Mac runs the same program. #128 remains the Mac Codex Desktop carrier qualification. #129 remains the Linux carrier qualification.
 
 This story stays blocked by #121, #124, #304, and #320. It still blocks #126. #320 still owns the native wake-hook installers. Those are provider hook files, not this registration.
+
+## Disposition
+
+**Not delivered.** The host supervisor is outside the session-owned scope. Caller-owned launch and bounded capture carry forward in #457.
+
+GitHub closed this issue as Not planned and Project 24 records the terminal state as Done. [Approved #455 assessment](../../004/455/attachments/100-child-assessment.md) · [Successor epic #456](https://github.com/kburson/aitm/issues/456).

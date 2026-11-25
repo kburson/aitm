@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 127
 title: "[M17] Privacy and scale integration"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/127"
 parent: 100
 children: []
 blocking: [128]
 blocked-by: [126]
 created: "2026-11-10T13:58:15Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-25T16:19:55.570Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -39,3 +39,9 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_two_projects_same_issue_distinct_routes_and_three_roles`, `test_sentinel_secrets_never_persist_or_cross_export`, and `test_two_active_and_fifty_parked_with_one_changed_source` and `test_hookless_grok_beside_unqualified_shared_root_source_exports_no_sibling_data`. Include all NA-1 outcomes. Check actual persisted wake, hold, journal, witness, ledger, report and export data against field allowlists. Assert no unapproved path, raw provider ID or sibling identity in the emitted artifacts and no unapproved raw path in repository-visible files. Measure zero unchanged parked payload reads over a healthy reconciliation and constant root discovery count as project count increases.
 - [ ] Run red if the proof finds a gap and return the fix to the owning leaf before continuing. Run all locked tests and Ruff. Capture workload read counts, latency, CPU and memory. Record release budgets from evidence. Commit M17 evidence and tests.
+
+## Disposition
+
+**Not delivered.** The narrow privacy, replay and concurrent-writer proof carries forward in #457. The parked-project and global scale workload is retired.
+
+GitHub closed this issue as Not planned and Project 24 records the terminal state as Done. [Approved #455 assessment](../../004/455/attachments/100-child-assessment.md) · [Successor epic #456](https://github.com/kburson/aitm/issues/456).

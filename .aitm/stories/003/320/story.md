@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 320
 title: "[M10b] Install owned native wake hooks"
 kind: "story"
-state: "refine"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/320"
 parent: 100
 children: []
 blocking: [125]
 blocked-by: [120]
 created: "2026-11-15T16:09:48Z"
-updated: "2026-11-15T16:10:06Z"
+updated: "2026-11-25T16:19:55.570Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2.5, "size": "M", "scope": "provisional"}
 priority: null
@@ -34,3 +34,9 @@ Verified #120 Close and its approved M10b split release this leaf at Rank 285. [
 [Independent Refine R2 held](plan/native-wake-installers-independent-refine-r2.md) the Codex half pending a macOS Desktop-bundled carrier probe on the approved version. The pinned Grok personal hook discovery and all other first-review findings were verified. Both ordinary paid attempts were used.
 
 The [exact Desktop-bundled carrier proof](plan/installer-desktop-carrier-native-proof.json) and [revised Refine packet](plan/2026-11-15-320-native-wake-installers-refine-r3.md) address the recovery review findings. A further independent review requires the owner’s authorization.
+
+## Disposition
+
+**Not delivered.** Host-wide wake installers are outside the session-owned scope. Bounded route callbacks, where justified by measured coverage, belong in #457.
+
+GitHub closed this issue as Not planned and Project 24 records the terminal state as Done. [Approved #455 assessment](../../004/455/attachments/100-child-assessment.md) · [Successor epic #456](https://github.com/kburson/aitm/issues/456).

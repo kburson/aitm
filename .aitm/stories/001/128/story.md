@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 128
 title: "[M18] Native macOS qualification"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/128"
 parent: 100
 children: []
 blocking: [129]
 blocked-by: [127, 304]
 created: "2026-11-10T13:58:16Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-25T16:19:55.570Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -45,3 +45,9 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 Require the exact-build sanitized negative Claude refusal and isolation evidence in the macOS receipt. The admitted allowlist has no Claude tuple. Preserve all other controlled macOS qualification requirements.
 
 #304 supplies the isolated issuer's host executable and current authorization evidence. #128 owns the final native macOS installation, target acceptance and signed catalog. [Qualified-cost R2](https://github.com/kburson/aitm/blob/47228b4bdace19f25627814cd50b1664342bcca8/.aitm/stories/001/100/plan/2026-11-14-100-qualified-cost-acceptance-r2.md) governs the controlled qualification matrix. [Issuer amendment](https://github.com/kburson/aitm/blob/79aecafe17c5dc0417fd00c2ecd37cdfe3651d58/.aitm/stories/003/303/plan/2026-11-14-303-isolated-source-issuer-amendment.md).
+
+## Disposition
+
+**Not delivered.** Advertised macOS session-route qualification carries forward in #457. The integrated background monitor qualification is retired.
+
+GitHub closed this issue as Not planned and Project 24 records the terminal state as Done. [Approved #455 assessment](../../004/455/attachments/100-child-assessment.md) · [Successor epic #456](https://github.com/kburson/aitm/issues/456).

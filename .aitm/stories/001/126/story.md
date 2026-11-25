@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 126
 title: "[M16] Backup, legacy adoption and rollback"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/126"
 parent: 100
 children: []
 blocking: [127]
 blocked-by: [122, 124, 125]
 created: "2026-11-10T13:58:13Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-25T16:19:55.570Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -41,3 +41,9 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_cutover_first_report_and_fixed_export_parity`, `test_copied_pre_cutover_archive_cannot_reach_other_project`, `test_older_backup_before_handoff_and_accepted_export_holds_or_reconciles`, and `test_reversible_prewrite_failure_and_postwrite_forward_recovery`. Add `test_legacy_write_between_backup_and_stop_survives_cutover_failure` and `test_first_project_commit_without_ack_prevents_legacy_restore`. Add `test_pending_legacy_commands_apply_once_and_native_mark_remains_live`, `test_post_cutover_revision_updates_legacy_row_once`, `test_codex_counter_epoch_continues_across_cutover` and `test_legacy_restore_leaves_owned_hooks_removed_or_inert`. Verify frozen export bytes after each continuity case. Ambiguous lineage, mixed generations, missing independent tail and unverifiable post-fence state fail closed.
 - [ ] Run red. Implement dry-run validation, staged restore and adoption checks. Rehearse on copied representative #83 state, including rollback before new writes and recovery of pending routes. Run green with `test_monitor_recovery_fence.py`, `test_install.py` and `test_export.py`. Commit M16.
+
+## Disposition
+
+**Not delivered.** The guarded legacy takeover and rollback are outside the session-owned release. The delivered read-only frozen legacy input remains available under #443.
+
+GitHub closed this issue as Not planned and Project 24 records the terminal state as Done. [Approved #455 assessment](../../004/455/attachments/100-child-assessment.md) · [Successor epic #456](https://github.com/kburson/aitm/issues/456).

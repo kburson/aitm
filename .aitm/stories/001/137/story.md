@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 137
 title: "[M05-LG] Linux Grok Build native carrier and adapter bridge"
 kind: "story"
-state: "refine"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/137"
 parent: 100
 children: []
 blocking: [129]
 blocked-by: [115]
 created: "2026-11-10T16:40:10Z"
-updated: "2026-11-10T16:41:02+00:00"
+updated: "2026-11-25T16:19:55.570Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -44,3 +44,9 @@ The integrity-checked official arm64 candidate launched in a clean Linux sandbox
 ## Authenticated Linux capture and independent Refine
 
 The recovery held on executable extraction provenance, explicit structured lineage fields and capture authority documentation. The confirmation record contains the read-only Linux executable comparison, native lineage checks and actual owner continuation basis. A further independent Refine review requires specific authorization. [Native evidence](plan/grok-native-arm64-evidence.json) · [Review](plan/authenticated-refine-r2.md).
+
+## Disposition
+
+**Not delivered.** Linux Grok exact-turn and resume qualification belongs in #457 if that route is advertised. The old monitor carrier bridge is retired.
+
+GitHub closed this issue as Not planned and Project 24 records the terminal state as Done. [Approved #455 assessment](../../004/455/attachments/100-child-assessment.md) · [Successor epic #456](https://github.com/kburson/aitm/issues/456).

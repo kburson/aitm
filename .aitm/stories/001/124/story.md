@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 124
 title: "[M14] Compatible export and reconciliation"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/124"
 parent: 100
 children: []
 blocking: [125, 126]
 blocked-by: [123]
 created: "2026-11-10T13:58:10Z"
-updated: "2026-11-25T16:12:21.860Z"
+updated: "2026-11-25T16:19:55.570Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -39,3 +39,9 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_legacy_export_bytes_remain_fixed`, `test_pending_and_disputed_rows_are_excluded_from_compatible_export`, and `test_time_correction_after_receiver_acceptance_never_reuses_key_or_charges_twice`. Add `test_accept_then_crash_resolves_receipt_or_retries_identical_after_absence`. Verify report and export use the same fenced revision and privacy allowlist, and test that a post-ACK dispute excludes the span without changing the previous view.
 - [ ] Run red. Implement projection, export intent and receiver replay semantics. Run green with `test_export.py`, `test_rollup.py` and `test_monitor_recovery_fence.py`. Commit M14.
+
+## Disposition
+
+**Not delivered.** The Core-compatible export and verified reconciliation outcome carries forward in #459. The original monitor export contract is retired.
+
+GitHub closed this issue as Not planned and Project 24 records the terminal state as Done. [Approved #455 assessment](../../004/455/attachments/100-child-assessment.md) · [Successor epic #456](https://github.com/kburson/aitm/issues/456).

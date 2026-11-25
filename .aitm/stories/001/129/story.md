@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 129
 title: "[M19] Native Linux qualification"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/129"
 parent: 100
 children: []
 blocking: []
 blocked-by: [128, 134, 137, 300, 303, 304]
 created: "2026-11-10T13:58:18Z"
-updated: "2026-11-10T16:41:02+00:00"
+updated: "2026-11-25T16:19:55.570Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -50,3 +50,9 @@ The verified Linux carrier prerequisites are [#134 M04-LC](../134/story.md) and 
 ## Current qualified-cost prerequisite
 
 [#300](https://github.com/kburson/aitm/issues/300) is the verified direct first-release prerequisite. Its scope is the source exclusion and sanitized coverage proof. All remaining downstream delivery gates apply.
+
+## Disposition
+
+**Not delivered.** Advertised Linux session-route qualification carries forward in #457. The integrated Linux monitor qualification is retired.
+
+GitHub closed this issue as Not planned and Project 24 records the terminal state as Done. [Approved #455 assessment](../../004/455/attachments/100-child-assessment.md) · [Successor epic #456](https://github.com/kburson/aitm/issues/456).

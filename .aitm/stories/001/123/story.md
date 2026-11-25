@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 123
 title: "[M13] Snapshot reports"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/123"
 parent: 100
 children: []
 blocking: [124]
 blocked-by: [121, 122]
 created: "2026-11-10T13:58:08Z"
-updated: "2026-11-25T16:12:21.860Z"
+updated: "2026-11-25T16:19:55.570Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -39,3 +39,9 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_snapshot_pins_scope_time_and_rates_across_commands`, `test_project_totals_reconcile_without_inclusive_epic_double_count` and `test_partial_unknown_and_hookless_grok_visibility`. Verify a time correction moves only a new snapshot and a missing historical view returns explicit unavailable. Assert an ACK alone is invisible through the CLI when the coordinator cannot persist the fence. Issue summaries for two intervals over one publication and a third after a rate-card update without a new usage write. Reopen all three from a separate process after restart. Require exact original window and price or explicit unavailable if a pinned input expired. Verify a late post-ACK dispute removes current usage while the previous report stays identical.
 - [ ] Run red. Implement read-only local reporting with structured JSON. Run green with `test_rollup.py` and `test_monitor_recovery_fence.py`. Commit M13.
+
+## Disposition
+
+**Not delivered.** The pinned story-report outcome carries forward in #458. The original multi-project monitor report contract is retired.
+
+GitHub closed this issue as Not planned and Project 24 records the terminal state as Done. [Approved #455 assessment](../../004/455/attachments/100-child-assessment.md) · [Successor epic #456](https://github.com/kburson/aitm/issues/456).
