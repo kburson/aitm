@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 455
 title: "[Spike] Investigate session-owned agent activity and cost reporting"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/455"
 parent: null
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-25T15:05:37Z"
-updated: "2026-11-25T15:20:57.706Z"
+updated: "2026-11-25T15:21:25.060Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -47,3 +47,5 @@ Publish a reuse matrix, a small end-to-end feasibility receipt, and a recommenda
 [Feasibility findings and reuse matrix](attachments/455-findings.md) · [#100 child assessment](attachments/100-child-assessment.md) · [Native pilot receipt](attachments/455-pilot-receipt.json) · [Git publication receipt](attachments/455-publisher-receipt.json).
 
 [Independent evidence review](attachments/independent-evidence-review.md) passed. [Research sign-off](retro/2026-11-25-spike-sign-off.md).
+
+GitHub closed #455 as completed. Project 24 shows Done. The recommendations are recorded for a separate decision on the ten remaining #100 contracts and Core dependencies.
