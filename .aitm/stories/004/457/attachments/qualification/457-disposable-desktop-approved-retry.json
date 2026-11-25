@@ -1,0 +1,63 @@
+{
+  "schema": "aitm.disposable-desktop-retained-readback/v1",
+  "story": 457,
+  "live_callback_trace_present": false,
+  "live_scratch_counts": {
+    "session_expectations": 0,
+    "session_codex_callbacks": 0,
+    "revisions": 0
+  },
+  "source": "manual exact retained replay, separate scratch database",
+  "retained_turns": [
+    {
+      "role": "orchestrator",
+      "surface": "desktop",
+      "outcome": "completed",
+      "coverage": "complete",
+      "started_utc": "2026-11-25T21:56:18.022000+00:00",
+      "ended_utc": "2026-11-25T21:56:26.233000+00:00",
+      "tokens": {
+        "input_tokens": 110495,
+        "cached_input_tokens": 109696,
+        "cache_write_5m_tokens": null,
+        "cache_write_1h_tokens": null,
+        "output_tokens": 98,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 110593
+      },
+      "source_sha256": "8768cc9d3bb6cf3e2e993c9459d017367a536b6d8ce824ebe8ae7d66f0c881e8",
+      "recover_bind_settle_ms": 5.578
+    },
+    {
+      "role": "worker",
+      "surface": "desktop-subagent",
+      "outcome": "completed",
+      "coverage": "complete",
+      "started_utc": "2026-11-25T21:56:21.291000+00:00",
+      "ended_utc": "2026-11-25T21:56:24.276000+00:00",
+      "tokens": {
+        "input_tokens": 37533,
+        "cached_input_tokens": 36736,
+        "cache_write_5m_tokens": null,
+        "cache_write_1h_tokens": null,
+        "output_tokens": 10,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 37543
+      },
+      "source_sha256": "4ba675033080f76d0dbef8883680b62c3d1e6c5c41dcf657f6ba34c63ea5a6b6",
+      "recover_bind_settle_ms": 4.277
+    }
+  ],
+  "verified_native_parent_link": true,
+  "story_switch_to": 458,
+  "reopened_in_fresh_process": true,
+  "receipt_bytes_identical": true,
+  "receipt_digests": [
+    "35a2bdbb27bb287da95241d968add809be33ce395ff05a3b72fb59969fafe8c7",
+    "14dc0f569409613bd2aae20f7eadbe992c37365ecf3b7f55b4988e3538908cf3"
+  ],
+  "candidate_wheel_sha256": "77ef65b805bc3174a8cb5b5da8e1496d6c301bfe54b2260feafed9787604dd17",
+  "scratch_project_trusted": true,
+  "scratch_hooks_trusted": 5,
+  "desktop_turn_hooks_feature_enabled": true
+}

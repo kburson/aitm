@@ -1,0 +1,177 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 457,
+  "batch": "457-desktop-approved-retry-engagement-20261125",
+  "recorded_at_utc": "2026-11-25T21:58:06.109Z",
+  "source": {
+    "ref": "manual:native-457-disposable-desktop-approved-retry"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.engagement.8e1e50e72d5d3b5ee67b229a.close",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.8e1e50e72d5d3b5ee67b229a",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T21:04:31.069Z",
+      "end_utc": "2026-11-25T21:05:19.832Z",
+      "source": {
+        "sha256": "db7df0a4c67c0929ee8adf5833fcd1f82198ee88a8c3b58835e3f7f2cd53a99f"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.6a9de34d3427eb0f5939dfe3",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.6a9de34d3427eb0f5939dfe3",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T21:33:32.988Z",
+      "end_utc": "2026-11-25T21:33:39.933Z",
+      "source": {
+        "sha256": "a20fac66d266f55f05544d64fae57ab3d2e28075da7f5cf8c6ba1fac827dc784"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.be70039a8947fa6bbc567a03",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.be70039a8947fa6bbc567a03",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T21:37:14.333Z",
+      "end_utc": "2026-11-25T21:37:36.082Z",
+      "source": {
+        "sha256": "3074a567a2b2cef3f77de83d0a1ad9a0d51015ff9ba4b8be2bf4f2f0a2c257a5"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.e2badda93360f767d17bafa6",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.e2badda93360f767d17bafa6",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T21:40:44.345Z",
+      "end_utc": "2026-11-25T21:41:16.268Z",
+      "source": {
+        "sha256": "471f275ce1675871c983d2c022a4b29f58fd0459e3328aeb21bb2f78d48a5035"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.964e0a991566bcf357a8b3ac",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.964e0a991566bcf357a8b3ac",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T21:44:27.601Z",
+      "end_utc": "2026-11-25T21:44:40.100Z",
+      "source": {
+        "sha256": "cfb86dca48a69cba8c9ba803ababef1f4af330d24f9ce852e042a0a345647169"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.0bc898ad9166f228f6b82559",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.0bc898ad9166f228f6b82559",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T21:48:33.721Z",
+      "end_utc": "2026-11-25T21:48:50.158Z",
+      "source": {
+        "sha256": "f14d5b47ba3322b062d2261e906d5c3ef360049705456dd5af3872bc6db93920"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.5cf50d3e715ea91766a077af",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.5cf50d3e715ea91766a077af",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T21:51:49.365Z",
+      "end_utc": "2026-11-25T21:52:48.699Z",
+      "source": {
+        "sha256": "a17b1c3a71e0d4d46be5b9a14eabdcadd9043ca114bc402d0c98508aedc69f83"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.1384f3ada68d280f1612a9d6",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.1384f3ada68d280f1612a9d6",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-through-observed-frame",
+      "start_utc": "2026-11-25T21:55:58.255Z",
+      "end_utc": "2026-11-25T21:58:05.595Z",
+      "source": {
+        "sha256": "19587ac1327d0a228a05b907212c46491195bfe2a17ab402848784a80788f230"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.ab748c8b85316667c8bc59d3",
+      "actor": "codex.actor.545b7ebb6a720f8e304cc7a9",
+      "turn": "codex.turn.ab748c8b85316667c8bc59d3",
+      "phase": null,
+      "role": "worker",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T21:47:04.998Z",
+      "end_utc": "2026-11-25T21:47:10.153Z",
+      "source": {
+        "sha256": "cd1158e74a4d64a836a09481c8719efea0f982641ae67ef846ca36a1c8a647ff"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.b972c5d5905ba397608ad527",
+      "actor": "codex.actor.545b7ebb6a720f8e304cc7a9",
+      "turn": "codex.turn.b972c5d5905ba397608ad527",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T21:56:18.022Z",
+      "end_utc": "2026-11-25T21:56:26.233Z",
+      "source": {
+        "sha256": "0182787b5a963afaac6c71d768150ca6befde48566ea45a7be3389d6b9de4605"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.4e74ea675f442c62142ace58",
+      "actor": "codex.actor.3792033702f7126aaeff3d75",
+      "turn": "codex.turn.4e74ea675f442c62142ace58",
+      "phase": null,
+      "role": "worker",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T21:56:21.291Z",
+      "end_utc": "2026-11-25T21:56:24.276Z",
+      "source": {
+        "sha256": "8fa44959ce273f58f5f1c74703b97db7fa685e43334f3815a469c6b3c6afff1d"
+      }
+    }
+  ]
+}
