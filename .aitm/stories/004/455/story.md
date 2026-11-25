@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 455
 title: "[Spike] Investigate session-owned agent activity and cost reporting"
 kind: "spike"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/455"
 parent: null
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-25T15:05:37Z"
-updated: "2026-11-25T15:11:52.556Z"
+updated: "2026-11-25T15:13:39.663Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
