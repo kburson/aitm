@@ -10,12 +10,12 @@ children: [427, 428, 429, 430, 431, 432, 433, 434]
 blocking: []
 blocked-by: []
 created: "2026-11-24T15:08:19Z"
-updated: "2026-11-25T01:26:49Z"
+updated: "2026-11-25T02:03:25Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: null
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/cost-management-master-plan.md"], "attachments": ["attachments/native-harness-cost-findings.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/cost-management-master-plan.md", "plan/2026-11-24-agent-effort-cost-implementation-plan.md"], "attachments": ["attachments/native-harness-cost-findings.md"]}
 expansions: []
 trips: []
 ---
@@ -61,6 +61,8 @@ Compare the tactics on existing-chat support, autonomous assignment, own-orchest
 - Where available, use a bounded API-backed billing comparison to check receipt totals and reporting lag. Record what can be verified for subscription-backed runs separately. Repeat the same small workload across a harness version change when practical and record any capability or coverage drift.
 
 ## Research results and delivery recommendation
+
+The [agent effort and cost management implementation plan](plan/2026-11-24-agent-effort-cost-implementation-plan.md) reconciles #100’s completed and open work with #426’s findings. It proposes a portable first release and records which #100 scope and dependency decisions remain open.
 
 [Cost management master plan](plan/cost-management-master-plan.md) tracks the results of all eight spikes, open capabilities, the proposed delivery sequence, and lessons for later AIPR design. [Public examples and early evidence](attachments/native-harness-cost-findings.md) retain the original research comparison.
 

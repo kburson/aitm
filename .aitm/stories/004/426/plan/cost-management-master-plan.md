@@ -2,6 +2,8 @@
 
 Living research and delivery record for [#426](../story.md). Initial synthesis recorded November 24, 2026. The recommendations below are inputs to the [existing delivery plan for #100](../../../001/100/story.md), [AITM master-plan milestones M3 and M4](../../../000/1/plan/master-plan.md#milestone-delivery-map), and later AIPR design. Use the linked spike reports for tested versions, scope, receipts, and limits.
 
+The [agent effort and cost management implementation plan](2026-11-24-agent-effort-cost-implementation-plan.md) reconciles #100’s completed and open work with #426’s findings. It proposes a portable first release and records which #100 scope and dependency decisions remain open.
+
 ## Portability and provider boundaries
 
 **Provider-reported usage capture** means reading structured usage from the provider harness the engineer already uses, such as a documented completion stream, hook payload, or exact session and turn lookup. Keep Codex, Claude Code, and Grok Build as the execution environments. AITM ships portable code only, with no project-built native binaries, compiled extensions, or OS-specific collection code. A provider's installed executable is an external dependency of its adapter.
