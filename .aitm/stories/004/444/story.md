@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 444
 title: "Reconcile AIPR companion usage receipts"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/444"
 parent: 435
 children: []
 blocking: [445]
 blocked-by: [437, 440, 441]
 created: "2026-11-25T03:17:36Z"
-updated: "2026-11-25T13:10:41.926Z"
+updated: "2026-11-25T14:12:32.035Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-aipr-companions.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -39,3 +39,7 @@ Validate sealed decisions separately from usage. Exercise two rounds, delayed an
 ## Refinement
 
 **Size M. Estimate 3 agent-hours.** [Sizing basis and evidence](<../435/plan/2026-11-25-refinement-and-engagement-backfill.md>).
+
+## Implementation
+
+[Companion receipt plan](plan/2026-11-25-aipr-companions.md).
