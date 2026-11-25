@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: [439, 440, 441, 443, 444]
 created: "2026-11-25T03:17:38Z"
-updated: "2026-11-25T14:36:02.475Z"
+updated: "2026-11-25T14:37:58.311Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "L"}
 priority: null
@@ -51,3 +51,7 @@ Run Linux/macOS qualification and early Windows fixture/import checks. Pilot one
 The [live pilot](attachments/pilot-results.md) matched 93,953 native tokens across four unique observations and verified pending settlement across restart and byte-identical replay.
 
 The [release qualification matrix](attachments/qualification-matrix.md), [independent review](attachments/pr-454-source-review.md), and [trusted verifier](attachments/trusted-pr-454.json) passed for the exact candidate.
+
+## Delivery
+
+[PR #454](https://github.com/kburson/aitm/pull/454) merged to `trunk` at `1956fecf716e06236a9741afc0a3e49643835e1e`. Its tree matches the verified candidate. [Delivery sign-off](retro/2026-11-25-delivery-sign-off.md).
