@@ -299,3 +299,78 @@ def test_stop_for_an_earlier_prompt_cannot_claim_the_armed_prompt():
 
     assert live.receipt is None
     assert live.gap is CaptureGap.WRONG_TURN
+
+
+def previous_turn(*, cross_surface=False, reuse_identity=False):
+    prompt = str(UUID(int=31))
+    root = str(UUID(int=32))
+    message = assistant(identifier=str(UUID(int=33)), output=333)
+    if not reuse_identity:
+        message["requestId"] = "req_prior"
+        message["message"]["id"] = "msg_prior"
+    profile = {"entrypoint": "cli", "version": "2.1.330"} if cross_surface else {}
+    root_record = (
+        user() | {"uuid": root, "promptId": prompt, "turnPromptId": prompt} | profile
+    )
+    return root_record, message | {"parentUuid": root} | profile
+
+
+def test_resume_counts_only_selected_prompt_in_mixed_native_history():
+    prior, prior_result = previous_turn(cross_surface=True)
+    target = user() | {"parentUuid": prior_result["uuid"]}
+    retained = lines(prior, prior_result, target, assistant())
+    claude = adapter(retained)
+
+    live = observe(claude, stream())
+    later = recover(
+        claude,
+        enrollment=ENROLLMENT,
+        expected_turn=claude.native_turn(PROMPT, surface="print"),
+        evidence=BytesIO(retained),
+    )
+
+    assert live == later
+    assert later.gap is None
+    assert later.receipt.tokens.output_tokens == 11
+
+
+def test_exact_recovery_rejects_message_claimed_by_two_requests():
+    second = assistant(identifier=str(UUID(int=30)))
+    second["requestId"] = "req_second"
+    retained = lines(user(), assistant(), second)
+    claude = adapter(retained)
+
+    result = recover(
+        claude,
+        enrollment=ENROLLMENT,
+        expected_turn=claude.native_turn(PROMPT, surface="print"),
+        evidence=BytesIO(retained),
+    )
+
+    assert result.receipt is None
+    assert result.gap is CaptureGap.WRONG_TURN
+
+
+def test_exact_recovery_rejects_request_reused_by_two_prompts():
+    prior, prior_result = previous_turn(reuse_identity=True)
+    retained = lines(prior, prior_result, user(), assistant())
+    claude = adapter(retained)
+
+    result = recover(
+        claude,
+        enrollment=ENROLLMENT,
+        expected_turn=claude.native_turn(PROMPT, surface="print"),
+        evidence=BytesIO(retained),
+    )
+
+    assert result.receipt is None
+    assert result.gap is CaptureGap.WRONG_TURN
+
+
+def test_cancelled_result_cannot_conflict_with_retained_completion():
+    result = observe(
+        adapter(lines(user(), assistant())), stream(terminal="aborted_streaming")
+    )
+
+    assert result.receipt is None
+    assert result.gap is CaptureGap.MALFORMED

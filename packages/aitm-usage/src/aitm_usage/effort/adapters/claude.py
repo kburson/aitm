@@ -183,7 +183,7 @@ class _Transcript:
     prompts: dict[str, str] = field(repr=False)
 
 
-def _transcript(evidence: bytes, session: str, surface: str) -> _Transcript:
+def _transcript(evidence: bytes, session: str) -> _Transcript:
     nodes = {}
     prompts = {}
     for line, row in _rows(evidence):
@@ -210,11 +210,6 @@ def _transcript(evidence: bytes, session: str, surface: str) -> _Transcript:
             if root in prompts:
                 raise _Invalid(CaptureGap.WRONG_TURN)
             prompts[root] = identifier
-        if root is not None and (
-            row.get("version") != _VERSION
-            or row.get("entrypoint") != _ENTRYPOINTS[surface]
-        ):
-            raise _Invalid(CaptureGap.UNEXPECTED_HARNESS)
         nodes[identifier] = _Node(line, row, root)
     return _Transcript(nodes, prompts)
 
@@ -229,18 +224,24 @@ class _Retained:
     digest: str
 
 
-def _requests(transcript: _Transcript, prompt: str) -> _Retained:
+def _requests(transcript: _Transcript, prompt: str, surface: str) -> _Retained:
     root = transcript.prompts.get(prompt)
     if root is None:
         raise _Invalid(CaptureGap.WRONG_TURN)
     start = transcript.nodes[root]
     seen = {}
+    message_owners = {}
     final = {}
     interruption = None
     for node in transcript.nodes.values():
         if node.root != prompt:
             continue
         row = node.row
+        if (
+            row.get("version") != _VERSION
+            or row.get("entrypoint") != _ENTRYPOINTS[surface]
+        ):
+            raise _Invalid(CaptureGap.UNEXPECTED_HARNESS)
         if row.get("type") == "user" and row.get("turnPromptId") is None:
             message = row.get("message")
             if isinstance(message, dict) and message.get("content") == _INTERRUPTION:
@@ -253,7 +254,10 @@ def _requests(transcript: _Transcript, prompt: str) -> _Retained:
         request = _key(row["requestId"])
         message_id = _key(message.get("id"))
         model = _key(message.get("model"))
-        if seen.setdefault(request, (message_id, model)) != (message_id, model):
+        if (
+            seen.setdefault(request, (message_id, model)) != (message_id, model)
+            or message_owners.setdefault(message_id, request) != request
+        ):
             raise _Invalid(CaptureGap.WRONG_TURN)
         previous = final.get(request)
         if previous is not None:
@@ -268,6 +272,18 @@ def _requests(transcript: _Transcript, prompt: str) -> _Retained:
                     raise _Invalid()
                 continue
         final[request] = node
+
+    for node in transcript.nodes.values():
+        row = node.row
+        if node.root == prompt or row.get("type") != "assistant":
+            continue
+        request = row.get("requestId")
+        message = row.get("message")
+        message_id = message.get("id") if isinstance(message, dict) else None
+        if (isinstance(request, str) and request in seen) or (
+            isinstance(message_id, str) and message_id in message_owners
+        ):
+            raise _Invalid(CaptureGap.WRONG_TURN)
 
     usage = {}
     sources = [start.line]
@@ -447,7 +463,7 @@ class ClaudeAdapter:
                     result.get("model_usage_since_last_result")
                 ).items()
             }
-            transcript = _transcript(self._lookup(), self.session, "print")
+            transcript = _transcript(self._lookup(), self.session)
             prompts = set()
             streamed_requests = set()
             for row in witnesses:
@@ -473,18 +489,13 @@ class ClaudeAdapter:
             if len(prompts) != 1:
                 raise _Invalid(CaptureGap.WRONG_TURN)
             prompt = prompts.pop()
-            retained = _requests(transcript, prompt)
+            retained = _requests(transcript, prompt, "print")
             if not streamed_requests <= retained.requests:
                 raise _Invalid(CaptureGap.WRONG_TURN)
-            if retained.usage != usage or retained.outcome != outcome:
-                if (
-                    outcome is not Outcome.INTERRUPTED
-                    or (retained.usage and retained.usage != usage)
-                    or (
-                        not retained.usage
-                        and retained.outcome is not Outcome.INTERRUPTED
-                    )
-                ):
+            if retained.outcome != outcome:
+                raise _Invalid()
+            if retained.usage != usage:
+                if outcome is not Outcome.INTERRUPTED or retained.usage:
                     raise _Invalid()
                 digest = sha256(bytes.fromhex(retained.digest) + line).hexdigest()
             else:
@@ -544,10 +555,10 @@ class ClaudeAdapter:
                 raise _Invalid(CaptureGap.EVIDENCE_LIMIT)
             if not exact_ref.evidence:
                 raise _Invalid(CaptureGap.MISSING)
-            transcript = _transcript(exact_ref.evidence, self.session, wanted.surface)
+            transcript = _transcript(exact_ref.evidence, self.session)
             for prompt in transcript.prompts:
                 if wanted == self.native_turn(prompt, surface=wanted.surface):
-                    retained = _requests(transcript, prompt)
+                    retained = _requests(transcript, prompt, wanted.surface)
                     if retained.outcome is Outcome.UNKNOWN:
                         raise _Invalid(CaptureGap.MISSING)
                     return self._observation(
