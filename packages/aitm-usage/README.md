@@ -192,3 +192,24 @@ aitm-usage --project "$ROOT" qualify --receipt "$RECEIPT" --json
 Exit zero with `{"status":"qualified"}` certifies the installed read-only checks. A nonzero result gives a bounded disposition such as `fixture-only`, `source-watermark`, `process-incarnation`, `wheel-mismatch`, `processing-order` or `export-parity`. The pure Python receipt validator checks only structure and internal consistency. Keep the installed result with the reviewed evidence. Publish the sanitized receipt after scanning it for raw IDs, paths, credentials, content and authentication tags. Keep status snapshots, transcripts, inbox publications, recovery artifacts and the private proof in the authorized local evidence location.
 
 Leave the qualified production service and same registered ledger in service. Future upgrades must use verified wheels and same-schema recovery. Preserve the fixed export and local revision history for later C44 compatibility and idempotent receiver qualification.
+
+### Portable effort receipts
+
+The `aitm_usage.effort` Python API stores normalized evidence for an explicitly
+enrolled native turn in a local, project-bound SQLite file. Supply a private
+state directory controlled by the calling application. The API expects the
+caller to verify provider evidence, project and story membership, and the
+authorization for any later attribution. Store only project-keyed references,
+evidence digests, and normalized counters.
+
+Enroll one attempt per native turn with `EffortStore.enroll`, apply evidence
+with `ingest`, and read a consistent current view with `snapshot`. Distinct
+attempts can share a native session and each keeps its original assignment.
+Keep ambiguous and mixed turns outside story totals. Use `attribute` to attach
+one bounded, unattached observation to an authorized story. Replayed evidence
+and links leave the snapshot unchanged. Out-of-order revisions settle only
+against their exact predecessor. Conflicts retain their evidence for later
+reconciliation.
+
+Provider capture, rollups, and user-facing commands are separate delivery
+stories.
