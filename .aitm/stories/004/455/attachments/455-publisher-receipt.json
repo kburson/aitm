@@ -1,0 +1,15 @@
+{
+  "transport": "two isolated writers to one disposable local planning ref",
+  "published_manifest_and_two_receipts_read_back": true,
+  "fixture_story": 45501,
+  "first_pushes_accepted": 1,
+  "first_pushes_refused": 1,
+  "successful_retries": 1,
+  "force_pushes": 0,
+  "exact_replays_noop": 2,
+  "conflicting_same_identity_writes_refused": 2,
+  "race_and_rebase_ms": 248.058,
+  "published_commit": "5caf23e876e8104863d128860f0839a6cf1403e3",
+  "receipt_count": 2,
+  "manifest_sha256": "4d59fc6b68ad59c689cf5d48d5dae948f91642fd2d3d8804d8a45fe5ebdfa99f"
+}

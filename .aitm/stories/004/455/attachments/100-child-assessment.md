@@ -1,0 +1,26 @@
+# Remaining Epic #100 scope
+
+The recommendation is to close the ten original monitor leaves as **Not delivered** under their current contracts. Preserve the useful report, producer, privacy, and native-route outcomes in bounded session-owned delivery. The assessment found three substantial benefits with an active consumer: reproducible story reporting, Core-compatible export, and privacy/replay assurance. Host-specific capture proof is valuable wherever the session path advertises support.
+
+Rough effort is active implementation time for a possible successor. Host access and review wait are excluded.
+
+| Open child | Residual capability and beneficiary | Recommendation and delivery burden |
+| --- | --- | --- |
+| [#121](https://github.com/kburson/aitm/issues/121) | Continuous watcher and coordinator for unattended, multi-project operators. | Close. Reuse #437/#438 dispatch enrollment and explicit exact recovery. Reviewed legacy estimate 3.5h plus ongoing OS and source custody. |
+| [#123](https://github.com/kburson/aitm/issues/123) | Reproducible scope, time cutoff, and pricing for story owners, auditors and Core. #442/#443 supply the receipt/rollup foundation. | Close the old monitor leaf and deliver a pinned story report. Bind it to the planning commit, receipt revisions, time basis and rate digest. Prove late receipts and repricing preserve earlier output. Roughly 2–4h. |
+| [#124](https://github.com/kburson/aitm/issues/124) | Stable compatible export and reconciliation for the Core receiver. #443 supplies deterministic export and a legacy reader. | Close the old monitor leaf and deliver a #51-fixture-qualified producer with stable payload identity, verified receipt/absence evidence, identical retries and fail-closed conflicts. #230 owns live qualification. Roughly 3–4h after the contract is pinned, with a split if live authentication grows. |
+| [#125](https://github.com/kburson/aitm/issues/125) | A Python supervisor, registration and writer guard for daemon operators. | Close. Use #438's caller-owned bounded lifetime and private per-session state. The supervisor is a four-hour-class implementation with recurring operational maintenance. |
+| [#126](https://github.com/kburson/aitm/issues/126) | Guarded #83 migration and rollback for operators replacing the legacy collector. | Close. Keep frozen legacy input readable through #443, with unresolved overlap visible. Adoption requires significant data-custody and operational work. |
+| [#127](https://github.com/kburson/aitm/issues/127) | Privacy, replay and concurrency assurance for story owners publishing from overlapping sessions. | Close the global scale leaf and carry the narrow tests into reporter acceptance. Exercise correct project/story identity, foreign input, sentinel redaction, and planning publication retry. Reuse #436, #442 and #445. Roughly 1–2h incremental. |
+| [#128](https://github.com/kburson/aitm/issues/128) | Exact Codex Desktop owning-session and recovery coverage for Mac users. | Close the integrated monitor leaf. Verify advertised Desktop routes under authorized session identity with native readback, incomplete coverage and denial controls. Reuse #439/#445. Roughly 1–2h per available target. |
+| [#129](https://github.com/kburson/aitm/issues/129) | Native Linux evidence for users of advertised session routes. | Close the integrated monitor leaf. Start from #445's Linux wheel/fixtures and #134's carrier evidence, then prove only advertised routes on exact native builds. Roughly 1–2h per needed available target. |
+| [#137](https://github.com/kburson/aitm/issues/137) | Exact live Grok capture and resume for Linux users. | Close the #115-specific carrier bridge. If Linux Grok is an advertised route, run #441's exact retained-turn and resume checks on the authorized target. Roughly 1–2h after access. |
+| [#320](https://github.com/kburson/aitm/issues/320) | Installed wake hooks for unattended monitor operators. | Close. Reuse existing native hooks and exact recovery on configured session routes. Add a bounded session callback when measured capture coverage warrants it. Legacy estimate 2.5h plus provider and host maintenance. |
+
+## Core graph implications
+
+The native graph still has #100 blocking #2, and #51, #123 and #124 directly blocking #230. A scoped successor should preserve the actual producer obligations before a graph rebaseline. Retain #51 and #230's live-consumer qualification. Replace the two old producer dependencies with the fixture-qualified planning producer if the scope decision is accepted. Keep that producer independent of #51 delivery while qualifying the agreed receiver-fixture contract so the replan can avoid a cycle.
+
+The accepted #259 contract retains qualified #230 and the M2 gate. Its current native dependency list omits #230, while #259 still natively blocks #260. Record that discrepancy explicitly when rebaselining. This spike makes recommendations about closure and replacement scope. The existing child dispositions and graph changes require a separate decision.
+
+[Core #2 record](../../../000/2/story.md) · [#230 reviewed replan](../../../002/230/plan/2026-11-11-230-cost-dependency-replan.md) · [#259](https://github.com/kburson/aitm/issues/259)

@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 455
 title: "[Spike] Investigate session-owned agent activity and cost reporting"
 kind: "spike"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/455"
 parent: null
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-25T15:05:37Z"
-updated: "2026-11-25T15:13:39.663Z"
+updated: "2026-11-25T15:19:33.443Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: null
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/455-findings.md", "attachments/100-child-assessment.md", "attachments/455-pilot-receipt.json", "attachments/455-publisher-receipt.json"]}
 expansions: []
 trips: []
 ---
@@ -41,3 +41,7 @@ What is the smallest reliable way for the agent in a live chat to record its own
 ## Deliverable
 
 Publish a reuse matrix, a small end-to-end feasibility receipt, and a recommendation for the session-owned capture and reporting path. Evaluate each open #100 child against the session-owned pilot. Identify the concrete capability it would add, who benefits, what the delivered work already covers, and the expected implementation and maintenance effort. Recommend closing a child as **Not delivered** when the newer approach covers its useful outcome or the residual benefit does not justify the work. Where a child offers significant additional value, outline the smallest design and verification path that delivers that value using what we learned from #422 onward. Identify the impact of each recommendation on Core #2 and #230, including any dependency that would need a replacement. The spike concerns live chat sessions and their supervised work, using per-story evidence on `planning`. Global project discovery, an always-on host service, and a new platform integration are outside its scope.
+
+## Evidence
+
+[Feasibility findings and reuse matrix](attachments/455-findings.md) · [#100 child assessment](attachments/100-child-assessment.md) · [Native pilot receipt](attachments/455-pilot-receipt.json) · [Git publication receipt](attachments/455-publisher-receipt.json).
