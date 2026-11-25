@@ -1,0 +1,42 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 457,
+  "batch": "457-desktop-route-probe-preflight-engagement-20261125",
+  "recorded_at_utc": "2026-11-25T23:48:30.010Z",
+  "source": {
+    "ref": "manual:native-457-desktop-route-probe-preflight"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.engagement.5eb3950ebb7b71bae9f3c6bf.close",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.5eb3950ebb7b71bae9f3c6bf",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn",
+      "start_utc": "2026-11-25T22:16:55.369Z",
+      "end_utc": "2026-11-25T22:17:26.003Z",
+      "source": {
+        "sha256": "f947b282d11df44132af6a62c2721264eb8a7ad9888ef900b93d8c7407518d0e"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.7f59001bd9823fbee1fdb2c7",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.7f59001bd9823fbee1fdb2c7",
+      "phase": null,
+      "role": "orchestrator",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-through-observed-frame",
+      "start_utc": "2026-11-25T23:46:31.776Z",
+      "end_utc": "2026-11-25T23:48:29.811Z",
+      "source": {
+        "sha256": "1b96beb08744e7f832c28c38e2cceaabedb87a1b283485d107a7671eb1a160ba"
+      }
+    }
+  ]
+}
