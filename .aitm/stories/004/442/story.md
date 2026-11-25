@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 442
 title: "Roll up epic trails, handoffs and overlapping agent effort"
 kind: "story"
-state: "backlog"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/442"
 parent: 435
 children: []
 blocking: [443]
 blocked-by: [437]
 created: "2026-11-25T03:17:32Z"
-updated: "2026-11-25T03:22:27Z"
+updated: "2026-11-25T13:10:41Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-trail-rollup.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -33,3 +33,7 @@ Validate story marker lifecycle and detach/attach with exact native boundaries. 
 ## Dependencies
 
 - #437
+
+## Implementation
+
+[PR #451](https://github.com/kburson/aitm/pull/451) implements the [trail rollup plan](plan/2026-11-25-trail-rollup.md). Delivery requires independent review and trusted verification for the current candidate.
