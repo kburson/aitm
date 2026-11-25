@@ -124,7 +124,9 @@ def test_open_and_mixed_turns_are_unassigned(tmp_path):
     store.ingest(receipt)
     snapshot = store.snapshot()
     assert snapshot.attributed[0].story is None
-    assert rollup(snapshot, target()).total.observations == 0
+    result = rollup(snapshot, target())
+    assert result.total.observations == 0
+    assert result.unassigned_observations == 1
     store.mark_scope(marker(receipt, MarkerKind.END, 2100))
     assert rollup(store.snapshot(), target()).total.observations == 1
 
@@ -135,7 +137,9 @@ def test_open_and_mixed_turns_are_unassigned(tmp_path):
     store.mark_scope(marker(receipt, MarkerKind.END, 2100))
     store.ingest(receipt)
     snapshot = store.snapshot()
-    assert rollup(snapshot, target()).total.observations == 1
+    result = rollup(snapshot, target())
+    assert result.total.observations == 1
+    assert result.unassigned_observations == 1
     assert rollup(snapshot, RollupTarget(PROJECT)).total.usage_gaps == 1
 
 
@@ -167,8 +171,7 @@ def test_nested_disjoint_usage_and_overlapping_sessions(tmp_path):
         snapshot,
         target(),
         clocks={
-            (row.receipt.turn.session_key, TimeBasis.NATIVE): ref("clock")
-            for row in snapshot.attributed
+            row.receipt.observation_id: ref("clock") for row in snapshot.attributed
         },
     )
     assert aligned.total.observed_tokens == 30
@@ -184,6 +187,7 @@ def test_missing_time_unknown_counts_and_project_authority(tmp_path):
     store = EffortStore(tmp_path / "effort.db", PROJECT)
     enrolled, receipt = evidence("unknown")
     store.enroll(enrolled)
+    store.enroll(replace(enrolled, attempt_id=uuid4()))
     store.ingest(
         replace(
             receipt, tokens=TokenCounts(), coverage=Availability.PARTIAL, ended_at=None
@@ -194,6 +198,7 @@ def test_missing_time_unknown_counts_and_project_authority(tmp_path):
     assert rollup(snapshot, target()).total.engaged is None
     assert rollup(snapshot, target()).total.clock_gaps == 1
     assert rollup(snapshot, target()).total.price_gaps == 1
+    assert rollup(snapshot, target()).unsettled_attempts == 1
     with pytest.raises(EffortError):
         rollup(snapshot, replace(target(), project_id=uuid4()))
 
@@ -252,7 +257,7 @@ def test_published_epic_trail_fixture(tmp_path):
                 grok_cache_creation_tokens=row["tokens"]["cache_creation_input_tokens"],
             )
         receipts[row["attempt"]] = receipt
-        clocks[(receipt.turn.session_key, receipt.time_basis)] = ref("clock")
+        clocks[receipt.observation_id] = ref("clock")
         db.enroll(enrollment)
         assignment = fixture["assignment_markers"].get(row["attempt"])
         if assignment and "start_ms" in assignment:
@@ -332,10 +337,7 @@ def test_clock_domains_require_explicit_alignment():
     assert totals.engaged is None
     assert totals.working_wall is None
     assert totals.clock_domains == 2
-    clocks = {
-        (first.turn.session_key, basis): ref("clock")
-        for basis in (TimeBasis.CALLER, TimeBasis.NATIVE)
-    }
+    clocks = {receipt.observation_id: ref("clock") for receipt in (first, second)}
     totals = rollup(snapshot, target(), clocks=clocks).total
     assert totals.engaged == timedelta(seconds=3)
     assert totals.working_wall == timedelta(seconds=3)
@@ -344,8 +346,8 @@ def test_clock_domains_require_explicit_alignment():
 def test_inclusive_grok_receipt_round_trips_without_duplicating_price():
     from aitm_usage.effort.store import Snapshot, StoryObservation
 
-    parent, inclusive = evidence("aggregate")
-    child, bounded = evidence("child")
+    parent, inclusive = evidence("aggregate", 1000, 5000, session="parent")
+    child, bounded = evidence("child", 2000, 3000, session="child")
     inclusive = replace(
         inclusive,
         turn=replace(inclusive.turn, provider="grok"),
@@ -376,8 +378,62 @@ def test_inclusive_grok_receipt_round_trips_without_duplicating_price():
         (),
         (),
     )
-    totals = rollup(snapshot, target()).total
+    clocks = {receipt.observation_id: ref("clock") for receipt in (inclusive, bounded)}
+    totals = rollup(snapshot, target(), clocks=clocks).total
     assert totals.observed_tokens == 10
+    assert totals.engaged == timedelta(seconds=5)
+    assert totals.working_wall == timedelta(seconds=4)
     assert totals.grok_cost_usd_ticks == 0
     assert totals.price_gaps == 1
     assert totals.inclusive_observations == 1
+
+
+def test_receipt_crossing_comparable_markers_leaves_a_boundary_gap(tmp_path):
+    store = EffortStore(tmp_path / "effort.db", PROJECT)
+    enrolled, receipt = evidence("crossing", 1000, 4000)
+    store.enroll(enrolled)
+    store.mark_scope(marker(receipt, MarkerKind.START, 1000))
+    store.mark_scope(marker(receipt, MarkerKind.END, 1500))
+    store.ingest(receipt)
+    snapshot = store.snapshot()
+    clocks = {receipt.observation_id: ref("clock")}
+    totals = rollup(snapshot, target(), clocks=clocks).total
+    assert totals.observed_tokens is None
+    assert totals.engaged is None
+    assert totals.working_wall is None
+    assert totals.boundary_gaps == 1
+    assert totals.usage_gaps == 1
+
+
+def test_handoff_rejects_wrong_project_time_and_conflicting_relink(tmp_path):
+    store = EffortStore(tmp_path / "effort.db", PROJECT)
+    turns = []
+    for name, start, end in (
+        ("predecessor", 2000, 3000),
+        ("successor", 3000, 4000),
+        ("early", 1000, 2000),
+    ):
+        enrollment, receipt = evidence(name, start, end, session=name)
+        turns.append(receipt.turn)
+        store.enroll(enrollment)
+        first = marker(receipt, MarkerKind.START, start)
+        final = marker(receipt, MarkerKind.END, end)
+        with pytest.raises(EffortError):
+            store.mark_scope(replace(first, project_id=uuid4()))
+        store.mark_scope(first)
+        assert (
+            store.mark_scope(replace(first, at=instant(start + 1)))
+            == Disposition.CONFLICTED
+        )
+        with pytest.raises(EffortError):
+            store.mark_scope(replace(final, clock=ref("unaligned")))
+        store.mark_scope(final)
+        assert store.mark_scope(final) == Disposition.REPLAYED
+    predecessor, successor, early = turns
+    with pytest.raises(EffortError, match="Detach follows attach"):
+        store.handoff(Handoff(PROJECT, predecessor, early, ref("invalid")))
+    handoff = Handoff(PROJECT, predecessor, successor, ref("handoff"))
+    with pytest.raises(EffortError):
+        store.handoff(replace(handoff, project_id=uuid4()))
+    assert store.handoff(handoff) == Disposition.INSERTED
+    assert store.handoff(replace(handoff, proof=ref("new"))) == Disposition.CONFLICTED

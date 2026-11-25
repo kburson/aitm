@@ -7,13 +7,12 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from ..types import Availability, SourceRef
-from .assignments import MarkerKind
-from .receipts import Role, TimeBasis, UsageScope, require_item
+from .assignments import MarkerKind, ScopeMarker
+from .receipts import Role, UsageScope, require_item
 from .store import EffortError, Snapshot, StoryObservation
 
 SessionKey = tuple[str, SourceRef, SourceRef]
-ClockKey = tuple[SessionKey, TimeBasis]
-ClockDomain = SourceRef | ClockKey
+ClockDomain = SourceRef | str
 Interval = tuple[datetime, datetime]
 
 
@@ -30,13 +29,14 @@ class RollupTarget:
         require_item(self.story)
 
     def contains(self, row: StoryObservation) -> bool:
+        return self.selects(row.story, row.epic)
+
+    def selects(self, story: int | None, epic: int | None) -> bool:
         if self.story is not None:
-            return row.story == self.story and (
-                self.epic is None or self.epic == row.epic
-            )
+            return story == self.story and (self.epic is None or self.epic == epic)
         if self.epic is not None:
-            return row.epic == self.epic
-        return row.story is None and row.epic is None
+            return epic == self.epic
+        return story is None and epic is None
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +69,7 @@ class EffortTotals:
     workflow_elapsed: timedelta | None
     clock_gaps: int
     clock_domains: int
+    boundary_gaps: int
     grok_cost_usd_ticks: int | None
     price_gaps: int
 
@@ -78,6 +79,8 @@ class EffortRollup:
     total: EffortTotals
     by_role: Mapping[Role, EffortTotals]
     by_provider: Mapping[str, EffortTotals]
+    unassigned_observations: int
+    unsettled_attempts: int
 
 
 def _union(intervals: list[Interval]) -> timedelta:
@@ -92,12 +95,12 @@ def _union(intervals: list[Interval]) -> timedelta:
 
 def _totals(
     rows: list[StoryObservation],
-    open_turns: set[str],
-    clocks: Mapping[ClockKey, SourceRef],
+    invalid_boundaries: set[str],
+    clocks: Mapping[str, SourceRef],
     workflow: WorkflowWindow | None = None,
 ) -> EffortTotals:
     tokens, prices = [], []
-    usage_gaps = inclusive = price_gaps = clock_gaps = 0
+    usage_gaps = inclusive = price_gaps = clock_gaps = boundary_gaps = 0
     sessions: dict[SessionKey, dict[ClockDomain, list[Interval]]] = defaultdict(
         lambda: defaultdict(list)
     )
@@ -105,10 +108,9 @@ def _totals(
     for row in rows:
         receipt = row.receipt
         is_inclusive = receipt.scope == UsageScope.INCLUSIVE
-        bounded = (
-            receipt.scope == UsageScope.BOUNDED
-            and receipt.observation_id not in open_turns
-        )
+        boundary_invalid = receipt.observation_id in invalid_boundaries
+        boundary_gaps += boundary_invalid
+        bounded = receipt.scope == UsageScope.BOUNDED and not boundary_invalid
         token_count = receipt.tokens.total_tokens if bounded else None
         price = receipt.grok_cost_usd_ticks if bounded else None
         if token_count is not None and receipt.coverage != Availability.UNKNOWN:
@@ -119,16 +121,14 @@ def _totals(
         price_gaps += price is None or receipt.coverage != Availability.COMPLETE
         inclusive += is_inclusive
 
-        # Inclusive aggregates have no verified independent engagement interval.
-        if is_inclusive:
-            continue
+        # Usage coverage and the native engagement interval are independent.
         start, end = receipt.started_at, receipt.ended_at
-        if not bounded or start is None or end is None:
+        timed = (bounded or is_inclusive) and not boundary_invalid
+        if not timed or start is None or end is None:
             clock_gaps += 1
             continue
         session = receipt.turn.session_key
-        key = (session, receipt.time_basis)
-        domain = clocks.get(key, key)
+        domain = clocks.get(receipt.observation_id, receipt.observation_id)
         sessions[session][domain].append((start, end))
         wall[domain].append((start, end))
 
@@ -166,38 +166,54 @@ def _totals(
         workflow_elapsed,
         clock_gaps,
         len(wall),
+        boundary_gaps,
         sum(prices) if prices else None,
         price_gaps,
     )
+
+
+def _invalid_boundaries(
+    snapshot: Snapshot, clocks: Mapping[str, SourceRef]
+) -> set[str]:
+    starts: dict[str, ScopeMarker] = {}
+    ends: dict[str, ScopeMarker] = {}
+    for marker in snapshot.markers:
+        markers = starts if marker.kind == MarkerKind.START else ends
+        markers[marker.turn.identity] = marker
+    invalid = set(starts) - set(ends)
+    for row in snapshot.attributed:
+        receipt = row.receipt
+        observation = receipt.observation_id
+        start, end = starts.get(observation), ends.get(observation)
+        if start is None or end is None or clocks.get(observation) != start.clock:
+            continue
+        if (
+            receipt.started_at is not None
+            and receipt.started_at < start.at
+            or receipt.ended_at is not None
+            and receipt.ended_at > end.at
+        ):
+            invalid.add(observation)
+    return invalid
 
 
 def rollup(
     snapshot: Snapshot,
     target: RollupTarget,
     *,
-    clocks: Mapping[ClockKey, SourceRef] | None = None,
+    clocks: Mapping[str, SourceRef] | None = None,
     workflow: WorkflowWindow | None = None,
 ) -> EffortRollup:
     """Sum known disjoint totals from a fixed project snapshot.
 
-    A caller can attest that specified session/account/basis keys share a
-    clock domain. An unlisted key is comparable only with itself. Missing
-    intervals and partial usage leave gaps beside any measured subtotal.
+    A caller can attest that exact observation IDs share a clock domain.
+    Each unlisted observation is comparable only with itself. Missing or
+    incomparable intervals and partial usage leave gaps beside known amounts.
     """
     if target.project_id != snapshot.project_id:
         raise EffortError("Rollup target belongs to another project")
-    start = {
-        marker.turn.identity
-        for marker in snapshot.markers
-        if marker.kind == MarkerKind.START
-    }
-    end = {
-        marker.turn.identity
-        for marker in snapshot.markers
-        if marker.kind == MarkerKind.END
-    }
-    open_turns = start - end
     clock_domains = clocks if clocks is not None else {}
+    invalid = _invalid_boundaries(snapshot, clock_domains)
 
     rows = [row for row in snapshot.attributed if target.contains(row)]
     roles: dict[Role, list[StoryObservation]] = defaultdict(list)
@@ -205,14 +221,27 @@ def rollup(
     for row in rows:
         roles[row.enrollment.role].append(row)
         providers[row.receipt.turn.provider].append(row)
+    attempts = {row.enrollment.attempt_id for row in snapshot.attributed}
+    selected_enrollments = {
+        enrollment.attempt_id
+        for enrollment in snapshot.enrollments
+        if target.selects(enrollment.story, enrollment.epic)
+    }
+    unassigned = sum(
+        row.enrollment.attempt_id in selected_enrollments
+        and row.story is None
+        and row.epic is None
+        for row in snapshot.attributed
+        if row.receipt.scope != UsageScope.BOUNDED
+        or row.receipt.observation_id in invalid
+    )
     return EffortRollup(
-        _totals(rows, open_turns, clock_domains, workflow),
+        _totals(rows, invalid, clock_domains, workflow),
+        {role: _totals(roles[role], invalid, clock_domains) for role in sorted(roles)},
         {
-            role: _totals(roles[role], open_turns, clock_domains)
-            for role in sorted(roles)
-        },
-        {
-            provider: _totals(providers[provider], open_turns, clock_domains)
+            provider: _totals(providers[provider], invalid, clock_domains)
             for provider in sorted(providers)
         },
+        unassigned,
+        len(selected_enrollments - attempts),
     )
