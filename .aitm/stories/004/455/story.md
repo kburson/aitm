@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 455
 title: "[Spike] Investigate session-owned agent activity and cost reporting"
 kind: "spike"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/455"
 parent: null
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-25T15:05:37Z"
-updated: "2026-11-25T15:19:33.443Z"
+updated: "2026-11-25T15:20:57.706Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: null
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/455-findings.md", "attachments/100-child-assessment.md", "attachments/455-pilot-receipt.json", "attachments/455-publisher-receipt.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/455-findings.md", "attachments/100-child-assessment.md", "attachments/455-pilot-receipt.json", "attachments/455-publisher-receipt.json", "attachments/independent-evidence-review.md"]}
 expansions: []
 trips: []
 ---
@@ -45,3 +45,5 @@ Publish a reuse matrix, a small end-to-end feasibility receipt, and a recommenda
 ## Evidence
 
 [Feasibility findings and reuse matrix](attachments/455-findings.md) · [#100 child assessment](attachments/100-child-assessment.md) · [Native pilot receipt](attachments/455-pilot-receipt.json) · [Git publication receipt](attachments/455-publisher-receipt.json).
+
+[Independent evidence review](attachments/independent-evidence-review.md) passed. [Research sign-off](retro/2026-11-25-spike-sign-off.md).
