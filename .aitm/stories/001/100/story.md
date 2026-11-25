@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 100
 title: "Multi-project agent usage monitor"
 kind: "epic"
-state: "develop"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300, 303, 304, 310, 320, 325, 326, 329, 330, 331, 335]
+children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300, 303, 304, 310, 320, 325, 326, 329, 330, 331, 335, 455]
 blocking: [2]
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-19T12:56:00Z"
+updated: "2026-11-25T15:06:42.092Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -25,6 +25,12 @@ trips: []
 [GitHub issue #100](https://github.com/kburson/aitm/issues/100)
 
 Extend the delivered [#83 collector](../../000/83/story.md) to concurrent registered projects with Codex, Claude Code and Grok Build CLI, event-assisted park/resume, project totals, and story drilldown.
+
+## Current direction
+
+The agent in the live chat owns activity and cost measurement for its own turns and the turns it supervises, including spawned headless agents, subagents, and SPR/XPR reviewers. Record each measured turn against the story active in the owning session when the turn starts or is dispatched. Publish sanitized evidence to that story on `planning`, with exact recovery, replay, and coverage gaps visible. The delivery target is a lightweight session-owned reporter. Global project monitoring and an always-on host service are outside the current direction.
+
+Use #100's existing work as a learning foundation alongside #422–#435. The earlier monitor plan remains a historical record. Evaluate the ten open monitor children for reuse, reshaping, or retirement based on their fit with this direction. [Spike #455](https://github.com/kburson/aitm/issues/455) owns that assessment, the feasibility probe, and the recommendation for Core #2 and #230.
 
 ## Evidence and review order
 
