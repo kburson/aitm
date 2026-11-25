@@ -218,6 +218,7 @@ def _transcript(evidence: bytes, session: str) -> _Transcript:
 class _Retained:
     usage: dict[str, _Usage]
     requests: frozenset[tuple[str, str]]
+    request_usage: tuple[TokenCounts, ...]
     outcome: Outcome
     started: datetime
     ended: datetime
@@ -286,13 +287,14 @@ def _requests(transcript: _Transcript, prompt: str, surface: str) -> _Retained:
             raise _Invalid(CaptureGap.WRONG_TURN)
 
     usage = {}
+    request_usage = []
     sources = [start.line]
     for request, node in final.items():
         message = node.row["message"]
         model = seen[request][1]
-        usage[model] = usage.get(model, _ZERO) + _Usage.from_request(
-            message.get("usage")
-        )
+        observed = _Usage.from_request(message.get("usage"))
+        usage[model] = usage.get(model, _ZERO) + observed
+        request_usage.append(observed.tokens())
         sources.append(node.line)
     last = next(reversed(final.values()), start)
     outcome = Outcome.UNKNOWN
@@ -317,6 +319,7 @@ def _requests(transcript: _Transcript, prompt: str, surface: str) -> _Retained:
     return _Retained(
         usage,
         frozenset((request, pair[0]) for request, pair in seen.items()),
+        tuple(request_usage),
         outcome,
         started,
         ended,
@@ -386,6 +389,7 @@ class ClaudeAdapter:
         if not usage:
             return Observation(outcome, gap=CaptureGap.MISSING)
         total = sum(usage.values(), _ZERO)
+        model = next(iter(usage)) if len(usage) == 1 else None
         return Observation(
             outcome,
             UsageReceipt(
@@ -406,6 +410,10 @@ class ClaudeAdapter:
                 ended_at=retained.ended,
                 time_basis=TimeBasis.NATIVE,
             ),
+            model=model,
+            request_usage=retained.request_usage
+            if model and retained.usage == usage
+            else None,
         )
 
     def observe(self, event: CaptureEvent) -> Observation:

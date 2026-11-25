@@ -152,6 +152,8 @@ def test_fresh_headless_and_retrospective_receipt_are_identical():
     replay = exact(codex, evidence + turn(SECOND, TOTAL_USE, SECOND_USE), FIRST)
 
     assert observation == replay
+    assert observation.model == "synthetic"
+    assert observation.request_usage == (tokens(FIRST_USE),)
     assert observation.gap is None
     assert observation.outcome is Outcome.COMPLETED
     assert observation.receipt.coverage is Availability.COMPLETE

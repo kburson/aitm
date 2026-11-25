@@ -164,8 +164,9 @@ def test_session_cli_registers_expectation_before_provider(
     assert json.loads(capsys.readouterr().out) == {str(OWNER): "pending-binding"}
 
 
+@pytest.mark.parametrize("prebind", [False, True])
 def test_supervised_launch_settles_automatically_and_will_not_repeat(
-    session_api, tmp_path
+    session_api, tmp_path, prebind
 ):
     import asyncio
     import sys
@@ -178,7 +179,9 @@ def test_supervised_launch_settles_automatically_and_will_not_repeat(
     class Observes:
         def observe(self, event):
             assert event.stdout.splitlines() == [b"finished"]
-            assert store.status(SESSION)[CHILD] == "pending-binding"
+            assert store.status(SESSION)[CHILD] == (
+                "pending-evidence" if prebind else "pending-binding"
+            )
             return Observation(
                 Outcome.COMPLETED,
                 UsageReceipt(
@@ -197,7 +200,14 @@ def test_supervised_launch_settles_automatically_and_will_not_repeat(
 
     command = HarnessCommand((sys.executable, "-c", "print('finished')"), Path.cwd())
     assert asyncio.run(
-        store.run_owned(SESSION, CHILD, launch, Observes(), command)
+        store.run_owned(
+            SESSION,
+            CHILD,
+            launch,
+            Observes(),
+            command,
+            expected_turn=turn if prebind else None,
+        )
     ).observation.receipt
     assert store.status(SESSION)[CHILD] == "observed"
     with pytest.raises(EffortError, match="already dispatched"):
@@ -314,3 +324,37 @@ def test_review_companion_keeps_sealed_decision_independent(session_api, tmp_pat
     assert result.decision == decision and result.usage == usage
     with pytest.raises(EffortError, match="exact session"):
         store.review_companion(SESSION, replace(attempt, observation_id="e" * 64), None)
+
+
+def test_late_scope_proof_redacts_historical_usage_without_losing_lineage(
+    session_api, tmp_path
+):
+    from hashlib import sha256
+
+    store, launch, turn = layout(session_api, tmp_path / "effort.db")
+    store.bind(SESSION, CHILD, launch, turn)
+    first = UsageReceipt(
+        PROJECT,
+        CHILD,
+        turn,
+        "e" * 64,
+        STAMP,
+        1,
+        Availability.PARTIAL,
+        Outcome.COMPLETED,
+        TokenCounts(input_tokens=12),
+    )
+    future = replace(
+        first, revision=2, previous_digest=first.digest, scope=UsageScope.BOUNDED
+    )
+    assert store.accept(SESSION, future) is Disposition.PENDING
+    assert store.public_receipts(SESSION) == ()
+    assert store.accept(SESSION, first) is Disposition.REFINED
+    redacted, final = store.public_receipts(SESSION)
+    assert all(
+        value is None
+        for value in session_api.validate_public_receipt(redacted)["tokens"].values()
+    )
+    row = session_api.validate_public_receipt(final)
+    assert row["tokens"]["input_tokens"] == 12
+    assert row["previous_receipt_sha256"] == sha256(redacted).hexdigest()

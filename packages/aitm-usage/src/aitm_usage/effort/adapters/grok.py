@@ -301,6 +301,8 @@ class GrokAdapter:
             reasoning_output_tokens=tokens.reasoning_output_tokens,
             total_tokens=tokens.total_tokens,
         )
+        models = turn.usage.breakdown
+        single = models[0] if len(models) == 1 else None
         return Observation(
             Outcome.COMPLETED,
             UsageReceipt(
@@ -320,6 +322,10 @@ class GrokAdapter:
                 grok_cost_usd_ticks=turn.usage.ticks,
                 grok_cache_creation_tokens=tokens.cache_creation_tokens,
             ),
+            model=None if single is None else single[0],
+            request_usage=(normalized,)
+            if single is not None and single[-1] == 1
+            else None,
         )
 
     def observe(self, event: CaptureEvent) -> Observation:

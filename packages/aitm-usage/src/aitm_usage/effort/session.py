@@ -157,8 +157,14 @@ class PublicReceipt:
                 raise EffortError("Unrecognized public provider model")
         elif self.rate_inputs is not None:
             raise EffortError("Request rate inputs require a verified model")
-        if self.usage_scope not in (UsageScope.BOUNDED, UsageScope.INCLUSIVE):
-            raise EffortError("Unattributed usage cannot be published under a story")
+        if self.usage_scope not in (UsageScope.BOUNDED, UsageScope.INCLUSIVE) and (
+            self.coverage != Availability.UNKNOWN
+            or self.tokens != TokenCounts()
+            or self.time_basis != TimeBasis.UNKNOWN
+            or self.model is not None
+            or self.reported_grok_usd_ticks is not None
+        ):
+            raise EffortError("Unattributed revision must be coverage-only")
         if self.started_at and self.ended_at and self.ended_at < self.started_at:
             raise EffortError("Invalid observation interval")
         if self.time_basis == TimeBasis.UNKNOWN and (self.started_at or self.ended_at):
@@ -349,27 +355,34 @@ class SessionStore(EffortStore):
         self, session: UUID, attempt: UUID, launch: SourceRef, turn: NativeTurn
     ) -> None:
         """Attach the exact reference verified by the authorized caller."""
+        with self._transaction(write=True) as db:
+            self._bind(db, self._expected(db, session, attempt), launch, turn)
+
+    @staticmethod
+    def _bind(db, expected: Expectation, launch: SourceRef, turn: NativeTurn) -> None:
         if turn.provider not in _ROUTES:
             raise EffortError("Unsupported provider binding")
-        with self._transaction(write=True) as db:
-            expected = self._expected(db, session, attempt)
-            if expected.enrollment.story is None:
-                raise EffortError("Attempt has no verified story assignment")
-            if not hmac.compare_digest(expected.launch.value, launch.value):
-                raise EffortError("Native reference does not match the launch binding")
-            if expected.native is not None:
-                if expected.native != turn:
-                    raise EffortError("Conflicting native binding")
-                return
-            if db.execute(
-                "SELECT 1 FROM session_expectations WHERE observation=?",
-                (turn.identity,),
-            ).fetchone():
-                raise EffortError("Native turn already belongs to another binding")
-            db.execute(
-                "UPDATE session_expectations SET native=?, observation=? WHERE attempt=?",
-                (_encode(turn, NativeTurn), turn.identity, str(attempt)),
-            )
+        if expected.enrollment.story is None:
+            raise EffortError("Attempt has no verified story assignment")
+        if not hmac.compare_digest(expected.launch.value, launch.value):
+            raise EffortError("Native reference does not match the launch binding")
+        if expected.native is not None:
+            if expected.native != turn:
+                raise EffortError("Conflicting native binding")
+            return
+        if db.execute(
+            "SELECT 1 FROM session_expectations WHERE observation=?",
+            (turn.identity,),
+        ).fetchone():
+            raise EffortError("Native turn already belongs to another binding")
+        db.execute(
+            "UPDATE session_expectations SET native=?, observation=? WHERE attempt=?",
+            (
+                _encode(turn, NativeTurn),
+                turn.identity,
+                str(expected.enrollment.attempt_id),
+            ),
+        )
 
     def retain_codex_callback(self, session: UUID, attempt: UUID, payload: str) -> None:
         with self._transaction(write=True) as db:
@@ -424,6 +437,14 @@ class SessionStore(EffortStore):
                     )
             return disposition
 
+    def _settle_capture(self, session: UUID, observation: Observation) -> None:
+        receipt = observation.receipt
+        if receipt is not None:
+            rates = None
+            if observation.model in _MODELS[receipt.turn.provider]:
+                rates = RateEvidence(observation.model, observation.request_usage)
+            self.accept(session, receipt, rates)
+
     async def run_owned(
         self,
         session: UUID,
@@ -436,19 +457,22 @@ class SessionStore(EffortStore):
         expected_turn: NativeTurn | None = None,
     ) -> CaptureResult:
         """Launch an already enrolled attempt at most once and bind its native result."""
-        if expected_turn is not None:
-            self.bind(session, attempt, launch, expected_turn)
         with self._transaction(write=True) as db:
             expected = self._expected(db, session, attempt)
+            if expected.enrollment.story is None:
+                raise EffortError("Attempt has no verified story assignment")
             if not hmac.compare_digest(expected.launch.value, launch.value):
                 raise EffortError("Launch does not match the enrollment")
-            if (
-                expected.native is not None
-                or db.execute(
-                    "SELECT 1 FROM session_dispatches WHERE attempt=?", (str(attempt),)
-                ).fetchone()
-            ):
-                raise EffortError("Attempt already dispatched or bound")
+            if db.execute(
+                "SELECT 1 FROM session_dispatches WHERE attempt=?", (str(attempt),)
+            ).fetchone():
+                raise EffortError("Attempt already dispatched")
+            if expected_turn is not None:
+                self._bind(db, expected, launch, expected_turn)
+            elif expected.native is not None:
+                raise EffortError(
+                    "Attempt already bound without an explicit native reference"
+                )
             db.execute("INSERT INTO session_dispatches VALUES (?)", (str(attempt),))
         result = await capture(
             adapter, enrollment=expected.enrollment, command=command, limits=limits
@@ -456,7 +480,7 @@ class SessionStore(EffortStore):
         receipt = result.observation.receipt
         if receipt is not None:
             self.bind(session, attempt, launch, receipt.turn)
-            self.accept(session, receipt)
+            self._settle_capture(session, result.observation)
         return result
 
     def recover(
@@ -472,8 +496,7 @@ class SessionStore(EffortStore):
             evidence=io.BytesIO(evidence),
             max_bytes=max(len(evidence), 1),
         )
-        if observation.receipt:
-            self.accept(session, observation.receipt)
+        self._settle_capture(session, observation)
         return observation
 
     def review_companion(
@@ -520,7 +543,7 @@ class SessionStore(EffortStore):
         with self._transaction() as db:
             results = []
             previous = {}
-            withheld = set()
+            story_scopes = (UsageScope.BOUNDED, UsageScope.INCLUSIVE)
             markers = {}
             for observation, kind, payload in db.execute(
                 "SELECT observation, kind, payload FROM scope_markers"
@@ -528,10 +551,13 @@ class SessionStore(EffortStore):
                 markers.setdefault(observation, {})[kind] = _decode(
                     payload, ScopeMarker
                 )
-            for payload, enrollment, rate_payload in db.execute(
-                """SELECT r.payload, a.payload, v.payload FROM revisions r
+            for payload, enrollment, rate_payload, effective_payload in db.execute(
+                """SELECT r.payload, a.payload, v.payload, current.payload FROM revisions r
                    JOIN session_expectations s ON s.attempt=r.attempt
                    JOIN enrollments a ON a.attempt=r.attempt
+                   JOIN effective e ON e.observation=r.observation
+                   JOIN revisions current ON current.observation=e.observation
+                                          AND current.revision=e.revision
                    LEFT JOIN session_rate_evidence v ON v.digest=r.digest
                    WHERE s.session=? ORDER BY r.observation, r.revision""",
                 (str(session),),
@@ -553,13 +579,15 @@ class SessionStore(EffortStore):
                     )
                 )
                 if (
-                    native.observation_id in withheld
-                    or assignment.story is None
-                    or native.scope not in (UsageScope.BOUNDED, UsageScope.INCLUSIVE)
+                    assignment.story is None
+                    or UsageReceipt.from_json(effective_payload).scope
+                    not in story_scopes
                     or outside
                 ):
-                    withheld.add(native.observation_id)
                     continue
+                coverage_only = native.scope not in story_scopes
+                if coverage_only:
+                    rate = None
                 if rate is not None and rate.model not in _MODELS[native.turn.provider]:
                     rate = None
                 identity = self._pseudonym("publication", native.observation_id)
@@ -575,19 +603,19 @@ class SessionStore(EffortStore):
                     native.turn.version,
                     native.turn.surface,
                     native.observed_at,
-                    native.started_at,
-                    native.ended_at,
-                    native.time_basis,
-                    native.coverage,
+                    None if coverage_only else native.started_at,
+                    None if coverage_only else native.ended_at,
+                    TimeBasis.UNKNOWN if coverage_only else native.time_basis,
+                    Availability.UNKNOWN if coverage_only else native.coverage,
                     native.outcome,
                     native.scope,
-                    native.tokens,
+                    TokenCounts() if coverage_only else native.tokens,
                     native.source_sha256,
                     previous.get(identity),
                     None if rate is None else rate.model,
                     None if rate is None else rate.requests,
-                    native.grok_cost_usd_ticks,
-                    native.grok_cache_creation_tokens,
+                    None if coverage_only else native.grok_cost_usd_ticks,
+                    None if coverage_only else native.grok_cache_creation_tokens,
                 )
                 data = _encode(public, PublicReceipt).encode()
                 previous[identity] = hashlib.sha256(data).hexdigest()

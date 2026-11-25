@@ -157,6 +157,8 @@ class _Turn:
     outcome: Outcome
     counts: _Counts | None
     cumulative: _Counts | None
+    models: frozenset[str | None]
+    requests: tuple[TokenCounts, ...]
 
 
 @dataclass(slots=True)
@@ -169,6 +171,9 @@ class _ActiveTurn:
     cumulative: _Counts | None = None
     pending_counter: tuple[_Counts, _Counts] | None = None
     context: bool = False
+    model: str | None = None
+    models: set[str | None] = field(default_factory=set)
+    requests: list[TokenCounts] = field(default_factory=list)
 
     def bind(self, payload: dict) -> None:
         if (
@@ -220,6 +225,8 @@ class _ActiveTurn:
             raise _Invalid()
         self.cumulative = after
         self.last = last
+        self.models.add(self.model)
+        self.requests.append(last.tokens())
 
     def finish(self, offset: int, row: dict, outcome: Outcome) -> _Turn:
         ended = _moment(row)
@@ -234,6 +241,8 @@ class _ActiveTurn:
             outcome,
             None if self.cumulative is None else self.cumulative.since(self.before),
             self.cumulative,
+            frozenset(self.models),
+            tuple(self.requests),
         )
 
 
@@ -287,6 +296,8 @@ def _rollout(evidence: bytes) -> _Rollout:
         elif kind == "turn_context" and active is not None:
             active.bind(payload)
             active.context = True
+            model = payload.get("model")
+            active.model = model if isinstance(model, str) else None
         elif kind == "token_usage_record":
             if active is None:
                 raise _Invalid(CaptureGap.WRONG_TURN)
@@ -449,8 +460,13 @@ class CodexAdapter:
             ended_at=turn.ended,
             time_basis=TimeBasis.NATIVE,
         )
+        model = next(iter(turn.models)) if len(turn.models) == 1 else None
         return Observation(
-            turn.outcome, receipt, CaptureGap.MISSING if counts is None else None
+            turn.outcome,
+            receipt,
+            CaptureGap.MISSING if counts is None else None,
+            model=model,
+            request_usage=turn.requests if model else None,
         )
 
     def observe(self, event: CaptureEvent) -> Observation:

@@ -9,6 +9,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import BinaryIO, Protocol
 
+from ..types import TokenCounts
 from .receipts import Enrollment, NativeTurn, Outcome, UsageReceipt
 
 _DEFAULT_ENV = frozenset(
@@ -117,6 +118,8 @@ class Observation:
     outcome: Outcome = Outcome.UNKNOWN
     receipt: UsageReceipt | None = None
     gap: CaptureGap | None = None
+    model: str | None = None
+    request_usage: tuple[TokenCounts, ...] | None = None
 
 
 class CaptureAdapter(Protocol):
