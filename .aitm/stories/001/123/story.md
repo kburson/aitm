@@ -7,10 +7,10 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/123"
 parent: 100
 children: []
-blocking: [124, 230]
+blocking: [124]
 blocked-by: [121, 122]
 created: "2026-11-10T13:58:08Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-25T16:12:21.860Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null

@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/230"
 parent: 2
 children: []
 blocking: []
-blocked-by: [51, 123, 124]
+blocked-by: [51, 459]
 created: "2026-11-11T14:37:29Z"
-updated: "2026-11-12T01:09:16Z"
+updated: "2026-11-25T16:12:21.860Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.25, "size": "S", "scope": "preliminary transfer estimate"}
 priority: "P1"
@@ -41,3 +41,7 @@ This carries forward C04 from the owner-approved #181 scope transfer. The live m
 - Runtime prerequisites #51, #123, #124. Preserve the release, scope and authority gates in the reviewed section.
 
 [Dependency replan](plan/2026-11-11-230-cost-dependency-replan.md) · [Independent review](plan/2026-11-11-230-cost-dependency-replan-review.md)
+
+## Current producer dependency
+
+The owner-approved #455 replan replaces the old #123/#124 producer dependencies with [#459](https://github.com/kburson/aitm/issues/459), the fixture-qualified planning usage producer. #51 and this story's live receiver qualification remain the Core gates. [Verified rebaseline](../../001/100/plan/2026-11-25-100-session-owned-scope-disposition.md).
