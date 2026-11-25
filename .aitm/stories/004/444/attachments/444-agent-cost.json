@@ -1,0 +1,173 @@
+{
+  "story": 444,
+  "measurement_cutoff_utc": "2026-11-25T14:22:50.771Z",
+  "pricing_source": "https://developers.openai.com/api/docs/models/gpt-6.2-sol",
+  "rate_per_million_tokens": {
+    "short": {
+      "uncached_input_usd": "2",
+      "cached_input_usd": "0.10",
+      "output_usd": "10"
+    },
+    "long": {
+      "uncached_input_usd": "4",
+      "cached_input_usd": "0.20",
+      "output_usd": "15"
+    }
+  },
+  "long_context_starts_above_input_tokens": 272000,
+  "verified_billed_usd": null,
+  "turns": [
+    {
+      "label": "Codex delivery",
+      "milliseconds": 720169,
+      "source_through_utc": "2026-11-25T14:22:50.719Z",
+      "tokens": 10747571,
+      "model": "gpt-6.2-sol",
+      "requests": 47,
+      "usage_by_tier": {
+        "short": {
+          "input_tokens": 10718254,
+          "cached_input_tokens": 10642816,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 29317,
+          "reasoning_output_tokens": 6363,
+          "total_tokens": 10747571
+        },
+        "long": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        }
+      },
+      "coverage": "partial",
+      "cached_input_tokens": 10642816,
+      "new_input_tokens": 75438,
+      "output_tokens": 29317,
+      "standard_api_estimate_usd": "1.5083276"
+    },
+    {
+      "label": "Codex independent review",
+      "milliseconds": 84602,
+      "source_through_utc": "2026-11-25T14:19:05.925Z",
+      "tokens": 448025,
+      "model": "gpt-6.2-sol",
+      "requests": 11,
+      "usage_by_tier": {
+        "short": {
+          "input_tokens": 445048,
+          "cached_input_tokens": 416896,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 2977,
+          "reasoning_output_tokens": 255,
+          "total_tokens": 448025
+        },
+        "long": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        }
+      },
+      "coverage": "complete",
+      "cached_input_tokens": 416896,
+      "new_input_tokens": 28152,
+      "output_tokens": 2977,
+      "standard_api_estimate_usd": "0.1277636"
+    },
+    {
+      "label": "Claude AIPR round 1",
+      "provider": "claude",
+      "milliseconds": 20022,
+      "source_through_utc": "2026-11-25T14:13:03.205Z",
+      "tokens": 185953,
+      "cached_input_tokens": 154833,
+      "new_input_tokens": 28916,
+      "output_tokens": 2204,
+      "claude_list_usd": "0.1531673",
+      "grok_ticks": null,
+      "model": "claude-sonnet-5-5",
+      "coverage": "complete",
+      "standard_api_estimate_usd": null
+    },
+    {
+      "label": "Claude AIPR round 2",
+      "provider": "claude",
+      "milliseconds": 12697,
+      "source_through_utc": "2026-11-25T14:13:16.973Z",
+      "tokens": 128881,
+      "cached_input_tokens": 123091,
+      "new_input_tokens": 4357,
+      "output_tokens": 1433,
+      "claude_list_usd": "0.0440551",
+      "grok_ticks": null,
+      "model": "claude-sonnet-5-5",
+      "coverage": "complete",
+      "standard_api_estimate_usd": null
+    },
+    {
+      "label": "Claude AIPR interrupted",
+      "provider": "claude",
+      "milliseconds": 10119,
+      "source_through_utc": "2026-11-25T14:12:52.809Z",
+      "tokens": 103602,
+      "cached_input_tokens": 77752,
+      "new_input_tokens": 25224,
+      "output_tokens": 626,
+      "claude_list_usd": "0.1149192",
+      "grok_ticks": null,
+      "model": "claude-sonnet-5-5",
+      "coverage": "partial",
+      "standard_api_estimate_usd": null
+    },
+    {
+      "label": "Grok AIPR round 1",
+      "provider": "grok",
+      "milliseconds": 46963,
+      "source_through_utc": "2026-11-25T14:13:29.172Z",
+      "tokens": 261025,
+      "cached_input_tokens": 210816,
+      "new_input_tokens": 47958,
+      "output_tokens": 2251,
+      "claude_list_usd": null,
+      "grok_ticks": 1460844000,
+      "model": "grok-4.7-build-fast",
+      "coverage": "complete",
+      "standard_api_estimate_usd": null
+    },
+    {
+      "label": "Grok AIPR round 2",
+      "provider": "grok",
+      "milliseconds": 20237,
+      "source_through_utc": "2026-11-25T14:13:49.952Z",
+      "tokens": 163080,
+      "cached_input_tokens": 127360,
+      "new_input_tokens": 34710,
+      "output_tokens": 1010,
+      "claude_list_usd": null,
+      "grok_ticks": 946288000,
+      "model": "grok-4.7-build-fast",
+      "coverage": "complete",
+      "standard_api_estimate_usd": null
+    },
+    {
+      "label": "Grok AIPR interrupted",
+      "provider": "grok",
+      "milliseconds": 15399,
+      "source_through_utc": "2026-11-25T14:12:58.363Z",
+      "tokens": 114169,
+      "cached_input_tokens": 70528,
+      "new_input_tokens": 42816,
+      "output_tokens": 825,
+      "claude_list_usd": null,
+      "grok_ticks": null,
+      "model": null,
+      "coverage": "partial",
+      "standard_api_estimate_usd": null
+    }
+  ]
+}

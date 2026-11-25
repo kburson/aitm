@@ -1,0 +1,192 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 444,
+  "batch": "444-delivery-native-engagement-20261125",
+  "recorded_at_utc": "2026-11-25T14:22:50.771Z",
+  "source": {
+    "ref": "manual:native-444-delivery-boundaries"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.engagement.d64fdaa4983a5bab2692198e",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.8f0d1b9341866b04badb812e",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:10:26.534Z",
+      "end_utc": "2026-11-25T14:19:36.396Z",
+      "source": {
+        "sha256": "a53c111ff6789203dede8beebe6f0f0dcca79e311b12746b7924a7e1b5cee86a"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.0ef03b4376410731a3f9ac29",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.8f0d1b9341866b04badb812e",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:19:42.401Z",
+      "end_utc": "2026-11-25T14:19:43.703Z",
+      "source": {
+        "sha256": "a53c111ff6789203dede8beebe6f0f0dcca79e311b12746b7924a7e1b5cee86a"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.e97292710b0d123ecd2f83ba",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.8f0d1b9341866b04badb812e",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:19:49.708Z",
+      "end_utc": "2026-11-25T14:19:50.776Z",
+      "source": {
+        "sha256": "a53c111ff6789203dede8beebe6f0f0dcca79e311b12746b7924a7e1b5cee86a"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.79a5ab145c83a119548dc319",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.8f0d1b9341866b04badb812e",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:19:56.781Z",
+      "end_utc": "2026-11-25T14:19:58.049Z",
+      "source": {
+        "sha256": "a53c111ff6789203dede8beebe6f0f0dcca79e311b12746b7924a7e1b5cee86a"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.8b62e78754bc0e853d580a84",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.8f0d1b9341866b04badb812e",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:20:04.050Z",
+      "end_utc": "2026-11-25T14:22:50.719Z",
+      "source": {
+        "sha256": "a53c111ff6789203dede8beebe6f0f0dcca79e311b12746b7924a7e1b5cee86a"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.6baf40881f2be11217e574d1",
+      "actor": "codex.actor.08aaa7ebb0cfe67a7732f78e",
+      "turn": "codex.turn.5c5bdff34c5da9a1423da68f",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-review-turn-boundaries",
+      "start_utc": "2026-11-25T14:17:41.323Z",
+      "end_utc": "2026-11-25T14:19:05.925Z",
+      "source": {
+        "sha256": "4601e3080d44087c52e17baff928aac53fd2a5f4802f9cdf7f6d9346c477f52f"
+      }
+    },
+    {
+      "observation_id": "claude.engagement.4c07c04d334dbe328f4e10c6",
+      "actor": "claude.actor.b2dba0d2dcead5cd6f331d29",
+      "turn": "claude.turn.4c07c04d334dbe328f4e10c6",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "claude-pilot-launch-to-native-process-exit",
+      "start_utc": "2026-11-25T14:12:43.183Z",
+      "end_utc": "2026-11-25T14:13:03.205Z",
+      "source": {
+        "sha256": "9b80574221d68bb8631a44aec33232356686c4fcf0352ee2635fcf38a34a1f6a"
+      }
+    },
+    {
+      "observation_id": "claude.engagement.c5443f7879a1877481e59ba3",
+      "actor": "claude.actor.b2dba0d2dcead5cd6f331d29",
+      "turn": "claude.turn.c5443f7879a1877481e59ba3",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "claude-pilot-launch-to-native-process-exit",
+      "start_utc": "2026-11-25T14:13:04.276Z",
+      "end_utc": "2026-11-25T14:13:16.973Z",
+      "source": {
+        "sha256": "8dd55adccb68f8aced8a8084320408dd5b2c497eb47614a0f1d8d22055db1e68"
+      }
+    },
+    {
+      "observation_id": "claude.engagement.d3e5307cfe5c79be80c4fcf7",
+      "actor": "claude.actor.1e7e4618d641c7e168fcc93a",
+      "turn": "claude.turn.d3e5307cfe5c79be80c4fcf7",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "claude-pilot-launch-to-native-process-exit",
+      "start_utc": "2026-11-25T14:12:42.690Z",
+      "end_utc": "2026-11-25T14:12:52.809Z",
+      "source": {
+        "sha256": "11863ad03715fe4a4ecc2328daaef15383ba6082e4ff8842e55e14909fc1c16c"
+      }
+    },
+    {
+      "observation_id": "grok.engagement.cba829ae3e0103f70a4a1b30",
+      "actor": "grok.actor.214062e5bbe01d3801d26a6c",
+      "turn": "grok.turn.cba829ae3e0103f70a4a1b30",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "grok-pilot-launch-to-native-process-exit",
+      "start_utc": "2026-11-25T14:12:42.209Z",
+      "end_utc": "2026-11-25T14:13:29.172Z",
+      "source": {
+        "sha256": "8f40d53cd0e839f5236a5e5c0eb1016827c51baeb088b0bf02463fcff600e616"
+      }
+    },
+    {
+      "observation_id": "grok.engagement.c9e51b2fcd6f41db82954ab5",
+      "actor": "grok.actor.214062e5bbe01d3801d26a6c",
+      "turn": "grok.turn.c9e51b2fcd6f41db82954ab5",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "grok-pilot-launch-to-native-process-exit",
+      "start_utc": "2026-11-25T14:13:29.715Z",
+      "end_utc": "2026-11-25T14:13:49.952Z",
+      "source": {
+        "sha256": "937293bf33019efae51e34d7f4a1a267cd04768de37d64822a5923ed6b4497f7"
+      }
+    },
+    {
+      "observation_id": "grok.engagement.08b3004563fb09610a5bceb7",
+      "actor": "grok.actor.57f4d9f287081a035cf2f2ac",
+      "turn": "grok.turn.08b3004563fb09610a5bceb7",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "grok-pilot-launch-to-native-process-exit",
+      "start_utc": "2026-11-25T14:12:42.964Z",
+      "end_utc": "2026-11-25T14:12:58.363Z",
+      "source": {
+        "sha256": "bd685f12ece599a7a186542ebe6b54731ee2c995bccfbfd24d0d18cb1493eee9"
+      }
+    }
+  ]
+}
