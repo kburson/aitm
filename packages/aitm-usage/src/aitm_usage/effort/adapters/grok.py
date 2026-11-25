@@ -316,7 +316,7 @@ class GrokAdapter:
                 scope=self.scope,
                 ended_at=turn.ended,
                 time_basis=TimeBasis.NATIVE,
-                schema="aitm.effort.receipt/v2",
+                schema=UsageReceipt.schema_for(self.scope, grok_fields=True),
                 grok_cost_usd_ticks=turn.usage.ticks,
                 grok_cache_creation_tokens=tokens.cache_creation_tokens,
             ),

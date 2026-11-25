@@ -35,6 +35,7 @@ class Outcome(StrEnum):
 class UsageScope(StrEnum):
     BOUNDED = "bounded"
     MIXED = "mixed"
+    INCLUSIVE = "inclusive"
     UNKNOWN = "unknown"
 
 
@@ -102,6 +103,10 @@ class NativeTurn:
                 raise ValueError("Invalid harness metadata")
 
     @property
+    def session_key(self) -> tuple[str, SourceRef, SourceRef]:
+        return self.provider, self.account, self.session
+
+    @property
     def identity(self) -> str:
         # A headless stream and an exact later lookup can observe the same turn.
         fields = (
@@ -135,14 +140,17 @@ class UsageReceipt:
 
     def __post_init__(self) -> None:
         grok = (self.grok_cost_usd_ticks, self.grok_cache_creation_tokens)
-        if self.schema == "aitm.effort.receipt/v2":
-            if self.turn.provider != "grok" or any(
-                type(count) is not int or not 0 <= count < 2**63 for count in grok
-            ):
+        no_grok = grok == (None, None)
+        valid_grok = self.turn.provider == "grok" and all(
+            type(count) is int and 0 <= count < 2**63 for count in grok
+        )
+        if self.scope == UsageScope.INCLUSIVE:
+            if self.schema != "aitm.effort.receipt/v3" or not (no_grok or valid_grok):
+                raise ValueError("Expected a v3 inclusive receipt")
+        elif self.schema == "aitm.effort.receipt/v2":
+            if not valid_grok:
                 raise ValueError("Expected native Grok usage fields")
-        elif self.schema != "aitm.effort.receipt/v1" or any(
-            v is not None for v in grok
-        ):
+        elif self.schema != "aitm.effort.receipt/v1" or not no_grok:
             raise ValueError("Unsupported receipt schema")
         require_digest(self.source_sha256)
         if type(self.revision) is not int or not 1 <= self.revision < 2**63:
@@ -164,6 +172,12 @@ class UsageReceipt:
             raise ValueError("Interval times require a known basis")
         if self.started_at and self.ended_at and self.ended_at < self.started_at:
             raise ValueError("Receipt end precedes start")
+
+    @staticmethod
+    def schema_for(scope: UsageScope, *, grok_fields: bool = False) -> str:
+        if scope == UsageScope.INCLUSIVE:
+            return "aitm.effort.receipt/v3"
+        return "aitm.effort.receipt/v2" if grok_fields else "aitm.effort.receipt/v1"
 
     @property
     def observation_id(self) -> str:

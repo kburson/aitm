@@ -429,6 +429,7 @@ class CodexAdapter:
             turn.outcome,
             TokenCounts() if counts is None else counts.tokens(),
             scope=self.scope,
+            schema=UsageReceipt.schema_for(self.scope),
             started_at=turn.started,
             ended_at=turn.ended,
             time_basis=TimeBasis.NATIVE,

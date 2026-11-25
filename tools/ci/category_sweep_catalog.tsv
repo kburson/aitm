@@ -407,6 +407,13 @@ packages/aitm-usage/tests/test_effort_store.py::test_replays_are_idempotent_acro
 packages/aitm-usage/tests/test_effort_store.py::test_snapshot_retains_enrolled_attempts_without_usage	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_strict_wire_format_and_provenance	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_unattached_link_is_immutable_authorized_and_idempotent	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_trail.py::test_clock_domains_require_explicit_alignment	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_trail.py::test_inclusive_grok_receipt_round_trips_without_duplicating_price	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_trail.py::test_markers_handoff_and_late_receipt_preserve_original_story	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_trail.py::test_missing_time_unknown_counts_and_project_authority	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_trail.py::test_nested_disjoint_usage_and_overlapping_sessions	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_trail.py::test_open_and_mixed_turns_are_unassigned	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_trail.py::test_published_epic_trail_fixture	local-integration	yes	yes
 packages/aitm-usage/tests/test_export.py::test_competing_destination_keeps_complete_atomic_visibility[False]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_competing_destination_keeps_complete_atomic_visibility[True]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_export.py::test_exact_replay_resyncs_parent_after_interrupted_publication	fast-unit	yes	yes
