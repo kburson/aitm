@@ -211,5 +211,38 @@ and links leave the snapshot unchanged. Out-of-order revisions settle only
 against their exact predecessor. Conflicts retain their evidence for later
 reconciliation.
 
-Provider capture, rollups, and user-facing commands are separate delivery
-stories.
+#### Codex session capture
+
+`aitm_usage.effort.adapters.codex.CodexAdapter` supports native Codex CLI
+`0.171.0-alpha.13` on the tested local `exec` and `cli` rollout sources.
+Supply the enrollment's project, a project-keyed account reference and
+pseudonymizer, and an opener for one authorized rollout selected by exact
+thread ID. Refuse missing or ambiguous paths in the opener. Set the byte limit
+to suit the authorized evidence. The default is 1 MiB.
+Use `scope=UsageScope.BOUNDED` only with an independently authorized assignment
+covering the whole turn. Use `UsageScope.MIXED` when the turn spans assignments.
+Scope defaults to `UsageScope.UNKNOWN`.
+
+- **Headless.** Pass the adapter and the existing authenticated Codex
+  `exec --json` argument vector to `aitm_usage.effort.capture.capture`.
+  Preserve the configured sandbox and sign-in. To `resume` an exact thread,
+  take a bounded prelaunch rollout snapshot and pass it as `CodexResume`.
+  Keep the thread exclusively assigned from snapshot through capture. The
+  adapter verifies the unchanged prefix, one new turn and agreement between
+  the retained and structured completion counters. When present, retained native
+  usage records must agree with the exact turn and its positional counters.
+- **Configured TUI.** Pass the local `agent-turn-complete` notify payload to
+  `observe_notification` with the enrollment and its independently bound
+  exact `NativeTurn`. Use `native_turn(..., surface="cli")` to derive that
+  reference. An open or unflushed turn can be recovered once its exact evidence
+  is retained.
+- **Exact recovery.** Use `native_turn` with the exact thread, turn, and
+  recorded surface, then pass the authorized binary rollout stream to
+  `aitm_usage.effort.capture.recover`. Retaining later turns in the same
+  rollout preserves the earlier receipt's identity and evidence digest.
+
+Cached input is part of gross input. Reasoning is part of output. Codex cache
+writes have no time bucket in this route. An exact interrupted turn can
+retain observed partial counts or a coverage gap if no counters were recorded.
+The provider counters represent observed usage. Keep native outputs, rollout
+bytes and notification payloads private.
