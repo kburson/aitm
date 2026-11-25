@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 443
 title: "Report agent effort and usage with compatible snapshot exports"
 kind: "story"
-state: "test"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/443"
 parent: 435
 children: []
 blocking: [445]
 blocked-by: [442]
 created: "2026-11-25T03:17:34Z"
-updated: "2026-11-25T13:52:26.820Z"
+updated: "2026-11-25T13:57:26.855Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-effort-report.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-effort-report.md"], "attachments": ["attachments/pr-452-source-review.md"]}
 expansions: []
 trips: []
 ---
@@ -45,3 +45,5 @@ Add portable CLI and deterministic views by story, epic, role, provider and unat
 [PR #452](https://github.com/kburson/aitm/pull/452) opened against `trunk` at head `133342fc127b6547dcfde48812185859de4683c1`. The focused local effort and legacy export suite passed 145 tests. [Hosted CI](https://github.com/kburson/aitm/actions/runs/45627558227).
 
 The first hosted candidate failed shard collection because six IDs were absent from the test catalog. The replacement at `118c415eb0b1f8ef98fe982381d8e8bb3761e462` registers all six as local integration cases. The focused report and catalog run passed 157 tests. [Replacement hosted run](https://github.com/kburson/aitm/actions/runs/45627810253).
+
+[Independent source review](attachments/pr-452-source-review.md) held the first passing hosted candidate for three findings.
