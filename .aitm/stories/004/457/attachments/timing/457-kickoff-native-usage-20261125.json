@@ -1,0 +1,170 @@
+{
+  "schema": "aitm.kickoff-usage-snapshot/v1",
+  "story": 457,
+  "rates": {
+    "source": "https://developers.openai.com/api/docs/models/gpt-6.2-sol",
+    "retrieved_date": "2026-11-25",
+    "basis": "standard API estimate",
+    "usd_per_million": {
+      "short_context": {
+        "input": "2",
+        "cached_input": "0.10",
+        "output": "10"
+      },
+      "long_context": {
+        "input": "4",
+        "cached_input": "0.20",
+        "output": "15"
+      }
+    },
+    "long_context_above_input_tokens": 272000
+  },
+  "observations": [
+    {
+      "label": "Codex story kickoff",
+      "role": "orchestrator",
+      "model": "gpt-6.2-sol",
+      "started_utc": "2026-11-25T18:00:10.991Z",
+      "observed_through_utc": "2026-11-25T18:03:24.882Z",
+      "native_completion_observed": false,
+      "request_frames": [
+        {
+          "utc": "2026-11-25T18:00:21.508Z",
+          "cached_input": 93568,
+          "new_input": 454,
+          "output": 323
+        },
+        {
+          "utc": "2026-11-25T18:00:28.679Z",
+          "cached_input": 93824,
+          "new_input": 9532,
+          "output": 282
+        },
+        {
+          "utc": "2026-11-25T18:00:37.242Z",
+          "cached_input": 103296,
+          "new_input": 5439,
+          "output": 315
+        },
+        {
+          "utc": "2026-11-25T18:00:46.722Z",
+          "cached_input": 108672,
+          "new_input": 1116,
+          "output": 402
+        },
+        {
+          "utc": "2026-11-25T18:00:56.075Z",
+          "cached_input": 109696,
+          "new_input": 2160,
+          "output": 337
+        },
+        {
+          "utc": "2026-11-25T18:01:04.630Z",
+          "cached_input": 111744,
+          "new_input": 5972,
+          "output": 330
+        },
+        {
+          "utc": "2026-11-25T18:01:30.365Z",
+          "cached_input": 117632,
+          "new_input": 2946,
+          "output": 1207
+        },
+        {
+          "utc": "2026-11-25T18:01:34.514Z",
+          "cached_input": 120448,
+          "new_input": 1395,
+          "output": 144
+        },
+        {
+          "utc": "2026-11-25T18:01:45.817Z",
+          "cached_input": 121728,
+          "new_input": 283,
+          "output": 486
+        },
+        {
+          "utc": "2026-11-25T18:01:52.184Z",
+          "cached_input": 121984,
+          "new_input": 1428,
+          "output": 189
+        },
+        {
+          "utc": "2026-11-25T18:01:54.553Z",
+          "cached_input": 123264,
+          "new_input": 886,
+          "output": 43
+        },
+        {
+          "utc": "2026-11-25T18:02:07.443Z",
+          "cached_input": 124032,
+          "new_input": 501,
+          "output": 544
+        },
+        {
+          "utc": "2026-11-25T18:02:13.823Z",
+          "cached_input": 124288,
+          "new_input": 1442,
+          "output": 234
+        },
+        {
+          "utc": "2026-11-25T18:02:20.638Z",
+          "cached_input": 125568,
+          "new_input": 1163,
+          "output": 256
+        },
+        {
+          "utc": "2026-11-25T18:03:12.567Z",
+          "cached_input": 126592,
+          "new_input": 466,
+          "output": 2506
+        },
+        {
+          "utc": "2026-11-25T18:03:21.008Z",
+          "cached_input": 126848,
+          "new_input": 2803,
+          "output": 314
+        },
+        {
+          "utc": "2026-11-25T18:03:24.882Z",
+          "cached_input": 129408,
+          "new_input": 2385,
+          "output": 115
+        }
+      ]
+    },
+    {
+      "label": "Codex independent builder check",
+      "role": "reviewer",
+      "model": "gpt-6.2-sol",
+      "started_utc": "2026-11-25T18:01:34.516Z",
+      "observed_through_utc": "2026-11-25T18:01:57.847Z",
+      "native_completion_observed": true,
+      "request_frames": [
+        {
+          "utc": "2026-11-25T18:01:39.677Z",
+          "cached_input": 121984,
+          "new_input": 816,
+          "output": 90
+        },
+        {
+          "utc": "2026-11-25T18:01:46.298Z",
+          "cached_input": 122752,
+          "new_input": 1946,
+          "output": 259
+        },
+        {
+          "utc": "2026-11-25T18:01:54.231Z",
+          "cached_input": 124544,
+          "new_input": 774,
+          "output": 341
+        },
+        {
+          "utc": "2026-11-25T18:01:57.843Z",
+          "cached_input": 125056,
+          "new_input": 615,
+          "output": 107
+        }
+      ]
+    }
+  ]
+}

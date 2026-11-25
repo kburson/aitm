@@ -10,7 +10,7 @@ children: [457, 458, 459]
 blocking: [100]
 blocked-by: []
 created: "2026-11-25T16:06:13Z"
-updated: "2026-11-25T16:12:21.860Z"
+updated: "2026-11-25T18:03:41.017Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -33,3 +33,7 @@ Implement the delivery recommendation approved after [Spike #455](https://github
 3. Provide a deterministic planning producer for the Core Cost receiver fixture. Live receiver qualification stays in #230 and retains #51.
 
 Use the shipped #435 portable assets and the narrow validated #100 components. Native provider scope follows advertised, verified routes. The epic excludes always-on global discovery, host-service adoption and rollback. [Research findings](https://github.com/kburson/aitm/blob/f39eb4d681c86f3c9a747d606e95d969e900b43b/.aitm/stories/004/455/attachments/455-findings.md) · [Child assessment](https://github.com/kburson/aitm/blob/f39eb4d681c86f3c9a747d606e95d969e900b43b/.aitm/stories/004/455/attachments/100-child-assessment.md)
+
+## Kickoff
+
+First delivery story [#457](../457/story.md) has started design. Its story holds the engagement and cost records.
