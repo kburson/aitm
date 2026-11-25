@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 440
 title: "Capture provider-reported Claude Code usage"
 kind: "story"
-state: "backlog"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/440"
 parent: 435
 children: []
 blocking: [444, 445]
 blocked-by: [438]
 created: "2026-11-25T03:17:28Z"
-updated: "2026-11-25T03:22:27Z"
+updated: "2026-11-25T12:39:13Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -33,3 +33,7 @@ Normalize per-result usage, deduplicated finalized requests, cache fields and pa
 ## Dependencies
 
 - #438
+
+## Implementation
+
+[PR #449](https://github.com/kburson/aitm/pull/449) contains the Claude Code usage adapter. Independent review and native qualification passed on the candidate. Hosted CI and the full product unit-test gate precede merge.
