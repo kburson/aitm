@@ -1,0 +1,60 @@
+{
+  "schema": "aitm.grok-effort-qualification/v1",
+  "head": "05d7c00c0a618618ca5bb85ea6ca497a4eba7f64",
+  "harness": "grok 1.0.92 (b06756fd6256) [stable]",
+  "platform": "macOS",
+  "fresh": {
+    "outcome": "completed",
+    "coverage": "complete",
+    "tokens": {
+      "input_tokens": 18633,
+      "cached_input_tokens": 8832,
+      "cache_write_5m_tokens": null,
+      "cache_write_1h_tokens": null,
+      "output_tokens": 35,
+      "reasoning_output_tokens": 28,
+      "total_tokens": 18668
+    },
+    "native_cost_usd_ticks": 164750400,
+    "native_cache_creation_tokens": 0
+  },
+  "resumed": {
+    "outcome": "completed",
+    "coverage": "complete",
+    "tokens": {
+      "input_tokens": 18703,
+      "cached_input_tokens": 18560,
+      "cache_write_5m_tokens": null,
+      "cache_write_1h_tokens": null,
+      "output_tokens": 28,
+      "reasoning_output_tokens": 22,
+      "total_tokens": 18731
+    },
+    "native_cost_usd_ticks": 66191200,
+    "native_cache_creation_tokens": 0
+  },
+  "configured_interactive_lookup": {
+    "outcome": "completed",
+    "coverage": "complete",
+    "tokens": {
+      "input_tokens": 18821,
+      "cached_input_tokens": 18560,
+      "cache_write_5m_tokens": null,
+      "cache_write_1h_tokens": null,
+      "output_tokens": 81,
+      "reasoning_output_tokens": 74,
+      "total_tokens": 18902
+    },
+    "native_cost_usd_ticks": 34979200,
+    "native_cache_creation_tokens": 0
+  },
+  "interruption": {
+    "source": "same-build native headless cancellation captured in #429",
+    "outcome": "interrupted",
+    "numeric_usage": "unknown"
+  },
+  "resume_baseline_verified": true,
+  "exact_ordinal_recovery_matches": true,
+  "replay_idempotent": true,
+  "billed_amount_verified": false
+}
