@@ -266,21 +266,28 @@ def recover(
     max_bytes: int = _DEFAULT_EVIDENCE_BYTES,
 ) -> Observation:
     """Read completed, caller-authorized local evidence for one exact turn."""
+    payload = _read_evidence(evidence, max_bytes)
+    if isinstance(payload, CaptureGap):
+        return Observation(gap=payload)
+    reference = ExactReference(enrollment, expected_turn, payload)
+    return _checked_observation(adapter.recover(reference), enrollment, expected_turn)
+
+
+def _read_evidence(evidence: BinaryIO, max_bytes: int) -> bytes | CaptureGap:
     _validate_byte_limit(max_bytes)
     payload = bytearray()
     try:
         while len(payload) <= max_bytes:
             chunk = evidence.read(max_bytes + 1 - len(payload))
             if chunk is None:
-                return Observation(gap=CaptureGap.MISSING)
+                return CaptureGap.MISSING
             if not chunk:
                 break
             payload.extend(chunk)
     except OSError:
-        return Observation(gap=CaptureGap.MISSING)
+        return CaptureGap.MISSING
     if not payload:
-        return Observation(gap=CaptureGap.MISSING)
+        return CaptureGap.MISSING
     if len(payload) > max_bytes:
-        return Observation(gap=CaptureGap.EVIDENCE_LIMIT)
-    reference = ExactReference(enrollment, expected_turn, bytes(payload))
-    return _checked_observation(adapter.recover(reference), enrollment, expected_turn)
+        return CaptureGap.EVIDENCE_LIMIT
+    return bytes(payload)
