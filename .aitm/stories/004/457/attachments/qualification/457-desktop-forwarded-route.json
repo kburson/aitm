@@ -1,0 +1,211 @@
+{
+  "schema": "aitm.disposable-desktop-retained-readback/v1",
+  "story": 457,
+  "live_callback_trace_present": true,
+  "live_scratch_counts": {
+    "session_expectations": 1,
+    "session_codex_callbacks": 1,
+    "revisions": 0
+  },
+  "source": "manual exact retained replay, separate scratch database",
+  "retained_turns": [
+    {
+      "role": "orchestrator",
+      "surface": "desktop",
+      "outcome": "completed",
+      "coverage": "complete",
+      "started_utc": "2026-11-25T23:53:54.817000+00:00",
+      "ended_utc": "2026-11-25T23:54:04.977000+00:00",
+      "tokens": {
+        "input_tokens": 124230,
+        "cached_input_tokens": 123264,
+        "cache_write_5m_tokens": null,
+        "cache_write_1h_tokens": null,
+        "output_tokens": 106,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 124336
+      },
+      "source_sha256": "e01584a1f1353d0f5c4ab4419babbce06425bc7f2e5aa306e16d85fcc0293e8f",
+      "recover_bind_settle_ms": 7.479
+    },
+    {
+      "role": "worker",
+      "surface": "desktop-subagent",
+      "outcome": "completed",
+      "coverage": "complete",
+      "started_utc": "2026-11-25T23:53:59.657000+00:00",
+      "ended_utc": "2026-11-25T23:54:03.093000+00:00",
+      "tokens": {
+        "input_tokens": 42110,
+        "cached_input_tokens": 41344,
+        "cache_write_5m_tokens": null,
+        "cache_write_1h_tokens": null,
+        "output_tokens": 10,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 42120
+      },
+      "source_sha256": "4ce26359e967c835caaa4027788642203969c881957113da82cb3a749b19c613",
+      "recover_bind_settle_ms": 5.478
+    }
+  ],
+  "verified_native_parent_link": true,
+  "story_switch_to": 458,
+  "reopened_in_fresh_process": true,
+  "receipt_bytes_identical": true,
+  "receipt_digests": [
+    "4b02dfd9e3586fa8971a0130208d320df7fa30f4884135b1d6a48f5636d3649a",
+    "0bd7c1bf7dba60f7c87102f4348a489b0695f9ad7459b01ba5c9d277826b5b80"
+  ],
+  "candidate_wheel_sha256": "77ef65b805bc3174a8cb5b5da8e1496d6c301bfe54b2260feafed9787604dd17",
+  "trace_sha256": "0cfd8e9077d8c7c30aba84e7bf40e401a1543a8cc2809f124d2047b842f32bdb",
+  "diagnostic_trace": [
+    {
+      "event": "SubagentStart",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": null
+    },
+    {
+      "event": "SubagentStart",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": 0
+    },
+    {
+      "event": "SubagentStop",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": null
+    },
+    {
+      "event": "SubagentStop",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": 2
+    },
+    {
+      "event": "Stop",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": null
+    },
+    {
+      "event": "Stop",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": 2
+    }
+  ],
+  "live_run": {
+    "route": "app_tool_send_message",
+    "owner_completed": true,
+    "child_completed": true,
+    "terminal_hooks_nonblocking": true,
+    "user_prompt_submit_at_probe_entry": false
+  },
+  "composer_comparison": {
+    "schema": "aitm.disposable-desktop-composer-replay/v1",
+    "story": 457,
+    "route": "composer",
+    "selected_story_during_retry": 458,
+    "receipt_bytes_identical_after_fresh_readback": true,
+    "diagnostic_trace": [
+      {
+        "event": "UserPromptSubmit",
+        "thread_match": true,
+        "turn_id_present": true,
+        "capture_status": null
+      },
+      {
+        "event": "UserPromptSubmit",
+        "thread_match": true,
+        "turn_id_present": true,
+        "capture_status": 0
+      },
+      {
+        "event": "SubagentStart",
+        "thread_match": true,
+        "turn_id_present": true,
+        "capture_status": null
+      },
+      {
+        "event": "SubagentStart",
+        "thread_match": true,
+        "turn_id_present": true,
+        "capture_status": 0
+      },
+      {
+        "event": "SubagentStop",
+        "thread_match": true,
+        "turn_id_present": true,
+        "capture_status": null
+      },
+      {
+        "event": "SubagentStop",
+        "thread_match": true,
+        "turn_id_present": true,
+        "capture_status": 3
+      },
+      {
+        "event": "Stop",
+        "thread_match": true,
+        "turn_id_present": true,
+        "capture_status": null
+      },
+      {
+        "event": "Stop",
+        "thread_match": true,
+        "turn_id_present": true,
+        "capture_status": 3
+      }
+    ],
+    "trace_sha256": "b14276bbd1553d812d83130b7d34609aca9a305ab20cee516cc724f31e2d7b37",
+    "retained_live_callbacks_retried": 2,
+    "receipt_roles": [
+      "orchestrator",
+      "worker"
+    ],
+    "receipts": [
+      {
+        "role": "orchestrator",
+        "story": 457,
+        "surface": "desktop",
+        "coverage": "complete",
+        "outcome": "completed",
+        "started_at": "2026-11-25T23:54:59.653000+00:00",
+        "ended_at": "2026-11-25T23:55:08.101000+00:00",
+        "tokens": {
+          "cache_write_1h_tokens": null,
+          "cache_write_5m_tokens": null,
+          "cached_input_tokens": 124544,
+          "input_tokens": 125229,
+          "output_tokens": 103,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 125332
+        }
+      },
+      {
+        "role": "worker",
+        "story": 457,
+        "surface": "desktop-subagent",
+        "coverage": "complete",
+        "outcome": "completed",
+        "started_at": "2026-11-25T23:55:02.662000+00:00",
+        "ended_at": "2026-11-25T23:55:06.607000+00:00",
+        "tokens": {
+          "cache_write_1h_tokens": null,
+          "cache_write_5m_tokens": null,
+          "cached_input_tokens": 41600,
+          "input_tokens": 42442,
+          "output_tokens": 10,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 42452
+        }
+      }
+    ],
+    "receipt_sha256": [
+      "31267764d2575fdb3a9bcc69ebea0434ff4a5d072629dd21d66cb5fdc0bc5c54",
+      "5565f9ddbad3918aa536ee0a326ae6ba8c501a131b1319d379d10bed647d7337"
+    ]
+  }
+}
