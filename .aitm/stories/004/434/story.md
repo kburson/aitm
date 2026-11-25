@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 434
 title: "[Spike] Qualify the Codex headless AIPR review-lock path"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/434"
 parent: 426
 children: []
 blocking: []
 blocked-by: [431]
 created: "2026-11-24T20:29:15Z"
-updated: "2026-11-25T00:25:55Z"
+updated: "2026-11-25T00:26:04Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
