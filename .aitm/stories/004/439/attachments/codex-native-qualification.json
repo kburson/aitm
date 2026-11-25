@@ -1,0 +1,72 @@
+{
+  "schema": "aitm.codex-effort-qualification/v1",
+  "platform": "macOS",
+  "harness_build": "codex-cli 0.171.0-alpha.13",
+  "authentication": "existing ChatGPT sign-in",
+  "headless_fresh": {
+    "outcome": "completed",
+    "gap": null,
+    "coverage": "complete",
+    "tokens": {
+      "input_tokens": 25162,
+      "cached_input_tokens": 14976,
+      "cache_write_5m_tokens": null,
+      "cache_write_1h_tokens": null,
+      "output_tokens": 9,
+      "reasoning_output_tokens": 0,
+      "total_tokens": 25171
+    }
+  },
+  "headless_resume": {
+    "outcome": "completed",
+    "gap": null,
+    "coverage": "complete",
+    "tokens": {
+      "input_tokens": 25194,
+      "cached_input_tokens": 14976,
+      "cache_write_5m_tokens": null,
+      "cache_write_1h_tokens": null,
+      "output_tokens": 10,
+      "reasoning_output_tokens": 0,
+      "total_tokens": 25204
+    }
+  },
+  "resume_baseline": "prelaunch native rollout bytes verified as unchanged prefix",
+  "interrupted_exact": {
+    "outcome": "interrupted",
+    "gap": "missing",
+    "coverage": "unknown",
+    "tokens": {
+      "input_tokens": null,
+      "cached_input_tokens": null,
+      "cache_write_5m_tokens": null,
+      "cache_write_1h_tokens": null,
+      "output_tokens": null,
+      "reasoning_output_tokens": null,
+      "total_tokens": null
+    }
+  },
+  "configured_interactive": {
+    "outcome": "completed",
+    "gap": null,
+    "coverage": "complete",
+    "tokens": {
+      "input_tokens": 18687,
+      "cached_input_tokens": 13696,
+      "cache_write_5m_tokens": null,
+      "cache_write_1h_tokens": null,
+      "output_tokens": 11,
+      "reasoning_output_tokens": 0,
+      "total_tokens": 18698
+    }
+  },
+  "interactive_hook": "agent-turn-complete native notify identity fields, unique exact assigned turn",
+  "notify_and_exact_lookup_equal": true,
+  "wrong_notify_boundary_refused": true,
+  "source_head": "1875e6bd03504c016d25b0faf1845218cf59f910",
+  "exact_lookup_replayed": true,
+  "wrong_turn_refused": true,
+  "receipt_replay_no_duplicate": true,
+  "billed_amount_verified": false,
+  "source": "disposable native harness sessions, read-only exec and no-tool prompts"
+}
