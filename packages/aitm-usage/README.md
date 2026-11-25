@@ -4,7 +4,7 @@ The per-user AITM service captures supported local Codex Desktop and Claude Code
 
 ## Portable agent effort reports
 
-Use the project UUID and its existing private effort SQLite database. Each command reads one committed generation and leaves the store intact.
+Set `PROJECT_UUID` to the configured project UUID and `EFFORT_DB` to the absolute path of its existing private effort SQLite database. Each report command reads one committed generation and leaves the store intact.
 
 ```sh
 aitm-effort --database "$EFFORT_DB" --project "$PROJECT_UUID" report --story 443
@@ -207,7 +207,7 @@ Exit zero with `{"status":"qualified"}` certifies the installed read-only checks
 
 Leave the qualified production service and same registered ledger in service. Future upgrades must use verified wheels and same-schema recovery. Preserve the fixed export and local revision history for later C44 compatibility and idempotent receiver qualification.
 
-### Portable effort receipts
+## Portable effort receipts
 
 The `aitm_usage.effort` Python API stores normalized evidence for an explicitly
 enrolled native turn in a local, project-bound SQLite file. Supply a private
@@ -225,7 +225,7 @@ and links leave the snapshot unchanged. Out-of-order revisions settle only
 against their exact predecessor. Conflicts retain their evidence for later
 reconciliation.
 
-#### Codex session capture
+### Codex session capture
 
 `aitm_usage.effort.adapters.codex.CodexAdapter` supports native Codex CLI
 `0.171.0-alpha.13` on the tested local `exec` and `cli` rollout sources.
@@ -261,6 +261,8 @@ retain observed partial counts or a coverage gap if no counters were recorded.
 The provider counters represent observed usage. Keep native outputs, rollout
 bytes and notification payloads private.
 
+### Grok Build session capture
+
 The Grok Build effort adapter supports the qualified 1.0.92 streaming and
 `grok usage` surfaces. Capture uses a fresh explicit session or an exclusive
 resume with a prelaunch usage snapshot. A successful stream is linked only to
@@ -272,7 +274,7 @@ Grok receipts preserve integer provider USD ticks and cache-creation tokens as
 native evidence in the v2 wire format. These ticks do not establish a billed
 charge. Existing v1 receipts retain their canonical encoding.
 
-### Session-owned effort capture
+## Session-owned effort capture
 
 Use one owner-private effort database per project and keep that database through
 handoff and restart. It contains the private key for stable receipt identities.
