@@ -10,12 +10,12 @@ children: []
 blocking: [458]
 blocked-by: []
 created: "2026-11-25T16:06:16Z"
-updated: "2026-11-25T20:27:18.623Z"
+updated: "2026-11-25T21:04:31.146Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/455/attachments/455-findings.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md", "attachments/timing/457-delivery-refresh-engagement-20261125-457.json", "attachments/timing/457-delivery-refresh-usage-20261125.json", "attachments/qualification/457-aipr-qualification.json", "attachments/qualification/457-grok-desktop-plan-review.md", "attachments/timing/457-grok-plan-review-usage-20261125.json", "attachments/timing/457-grok-plan-review-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-setup.md", "attachments/timing/457-desktop-scratch-setup-usage-20261125.json", "attachments/timing/457-desktop-scratch-setup-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-readback.md", "attachments/timing/457-desktop-scratch-readback-usage-20261125.json", "attachments/timing/457-desktop-scratch-readback-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-retry-verification.md", "attachments/timing/457-desktop-scratch-retry-usage-20261125.json", "attachments/timing/457-desktop-scratch-retry-engagement-20261125-457.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md", "attachments/timing/457-delivery-refresh-engagement-20261125-457.json", "attachments/timing/457-delivery-refresh-usage-20261125.json", "attachments/qualification/457-aipr-qualification.json", "attachments/qualification/457-grok-desktop-plan-review.md", "attachments/timing/457-grok-plan-review-usage-20261125.json", "attachments/timing/457-grok-plan-review-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-setup.md", "attachments/timing/457-desktop-scratch-setup-usage-20261125.json", "attachments/timing/457-desktop-scratch-setup-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-readback.md", "attachments/timing/457-desktop-scratch-readback-usage-20261125.json", "attachments/timing/457-desktop-scratch-readback-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-retry-verification.md", "attachments/timing/457-desktop-scratch-retry-usage-20261125.json", "attachments/timing/457-desktop-scratch-retry-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-replay-fix.md", "attachments/timing/457-desktop-replay-fix-usage-20261125.json", "attachments/timing/457-desktop-replay-fix-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-replay-fix.json"]}
 expansions: []
 trips: []
 ---
@@ -51,9 +51,11 @@ The owner reported running the disposable test. Desktop and scratch readback did
 
 The authorized scratch retry completed the owner and supervised subagent turns. Callback evidence was absent, and the candidate rejected both retained reads. [Retry verification](attachments/qualification/457-disposable-desktop-retry-verification.md).
 
+PR #460 now recovers both retained Desktop turns and preserves their #457 receipts through an actual story switch and fresh process. The live callback retest awaits approval of the exact scratch folder and updated scratch hooks. [Replay fix and callback diagnosis](attachments/qualification/457-disposable-desktop-replay-fix.md).
+
 ## Actual agent engagement
 
-**67m 26.040s observed (1.1239 agent-hours), partial coverage.** The verification turn is measured through 2026-11-25T20:27:18.394Z. The disposable owner and subagent test rows use native turn and usage metadata. The hook reported no callbacks. The original user-reported test remains outside the observed subtotal. Independent engagement is summed including overlap. [Timing receipt](attachments/timing/457-desktop-scratch-retry-engagement-20261125-457.json).
+**74m 38.690s observed (1.2441 agent-hours), partial coverage.** The implementation turn is measured through 2026-11-25T21:04:31.069Z. Exact retained replay used the previously measured owner and subagent turns and added no model calls. The live rerun remains pending scratch-only approval. Independent engagement is summed including overlap. [Timing receipt](attachments/timing/457-desktop-replay-fix-engagement-20261125-457.json).
 
 ## Agent activity and cost
 
@@ -81,9 +83,12 @@ The authorized scratch retry completed the owner and supervised subagent turns. 
 | Codex scratch Desktop setup | 3m 25.547s | 5,591,552 | 21,378 | 7,785 | $1.320597 | — | — |
 | Codex disposable Desktop chat bootstrap | 0m 12.641s | 69,248 | 14,528 | 329 | $0.039271 | — | — |
 | Codex scratch Desktop evidence readback | 1m 38.768s | 3,620,608 | 9,174 | 3,545 | $0.813993 | — | — |
-| Codex coordination and retry verification | 2m 40.383s | 5,172,736 | 11,330 | 6,476 | $1.177007 | — | — |
+| Codex coordination and retry verification | 3m 19.785s | 6,680,320 | 15,165 | 7,897 | $1.515179 | — | — |
 | Codex disposable Desktop owner test | 0m 08.504s | 87,936 | 957 | 95 | $0.011658 | — | — |
 | Codex disposable Desktop subagent test | 0m 03.770s | 29,568 | 779 | 10 | $0.004615 | — | — |
-| **Observed subtotal** | **67m 26.040s** | 84,117,290 | 750,333 | 168,278 | $15.646967 | $0.055636 | $0.613878 |
+| Codex replay fix and scratch qualification | 4m 09.255s | 8,301,184 | 31,295 | 9,373 | $1.926012 | — | — |
+| Codex scratch callback diagnosis | 2m 12.427s | 5,964,160 | 34,537 | 4,048 | $1.391700 | — | — |
+| Codex scratch callback diagnosis follow-up | 0m 11.566s | 828,928 | 820 | 323 | $0.173911 | — | — |
+| **Observed subtotal** | **74m 38.690s** | 100,719,146 | 820,820 | 183,443 | $19.476761 | $0.055636 | $0.613878 |
 
-**Combined cost reference for the observed work $16.316481.** Codex uses GPT-6.2 Sol Standard API rates. Grok values are provider-reported. Claude qualification values are provider list equivalents and Claude review values use Standard API list rates. New input includes cache writes where reported. **Verified billed cost is unknown.** [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Claude model rates](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Sanitized usage evidence](attachments/timing/457-desktop-scratch-retry-usage-20261125.json).
+**Combined cost reference for the observed work $20.146275.** Codex uses GPT-6.2 Sol Standard API rates. Grok values are provider-reported. Claude qualification values are provider list equivalents and Claude review values use Standard API list rates. New input includes cache writes where reported. **Verified billed cost is unknown.** [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Claude model rates](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Sanitized usage evidence](attachments/timing/457-desktop-replay-fix-usage-20261125.json).

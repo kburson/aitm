@@ -1,0 +1,463 @@
+{
+  "schema": "aitm.story-cost-update/v1",
+  "story": 457,
+  "prior_snapshot": "attachments/timing/457-desktop-scratch-retry-usage-20261125.json",
+  "replaced_or_added_observations": [
+    {
+      "label": "Codex coordination and retry verification",
+      "provider": "codex",
+      "role": "orchestrator",
+      "start_utc": "2026-11-25T20:24:38.011Z",
+      "observed_through_utc": "2026-11-25T20:27:57.796Z",
+      "completion_observed": true,
+      "request_basis": "native request frames",
+      "requests": [
+        {
+          "utc": "2026-11-25T20:24:49.396Z",
+          "cached_input": 366208,
+          "new_input": 336,
+          "output": 416,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:24:56.776Z",
+          "cached_input": 366464,
+          "new_input": 1259,
+          "output": 226,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:25:07.745Z",
+          "cached_input": 367488,
+          "new_input": 479,
+          "output": 441,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:25:16.882Z",
+          "cached_input": 367744,
+          "new_input": 975,
+          "output": 345,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:25:21.244Z",
+          "cached_input": 368512,
+          "new_input": 451,
+          "output": 125,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:25:27.561Z",
+          "cached_input": 368768,
+          "new_input": 388,
+          "output": 213,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:25:32.953Z",
+          "cached_input": 369024,
+          "new_input": 485,
+          "output": 145,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:25:38.242Z",
+          "cached_input": 369280,
+          "new_input": 617,
+          "output": 178,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:25:44.772Z",
+          "cached_input": 369792,
+          "new_input": 477,
+          "output": 224,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:25:57.084Z",
+          "cached_input": 370048,
+          "new_input": 958,
+          "output": 484,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:26:24.059Z",
+          "cached_input": 370816,
+          "new_input": 825,
+          "output": 1252,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:26:31.135Z",
+          "cached_input": 371584,
+          "new_input": 1442,
+          "output": 259,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:26:49.645Z",
+          "cached_input": 372864,
+          "new_input": 1337,
+          "output": 825,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:27:18.394Z",
+          "cached_input": 374144,
+          "new_input": 1301,
+          "output": 1343,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:27:32.964Z",
+          "cached_input": 375424,
+          "new_input": 1450,
+          "output": 599,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:27:43.587Z",
+          "cached_input": 376704,
+          "new_input": 1000,
+          "output": 398,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:27:51.383Z",
+          "cached_input": 377472,
+          "new_input": 686,
+          "output": 215,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T20:27:57.791Z",
+          "cached_input": 377984,
+          "new_input": 699,
+          "output": 209,
+          "model": "gpt-6.2-sol"
+        }
+      ],
+      "cached_input": 6680320,
+      "new_input": 15165,
+      "output": 7897,
+      "observed_seconds": 199.785,
+      "codex_api_estimate": "1.5151790"
+    },
+    {
+      "label": "Codex replay fix and scratch qualification",
+      "provider": "codex",
+      "role": "implementer",
+      "start_utc": "2026-11-25T21:00:21.814Z",
+      "observed_through_utc": "2026-11-25T21:04:31.069Z",
+      "completion_observed": false,
+      "request_basis": "native request frames",
+      "requests": [
+        {
+          "utc": "2026-11-25T21:00:30.559Z",
+          "cached_input": 378496,
+          "new_input": 575,
+          "output": 328,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:00:48.095Z",
+          "cached_input": 379008,
+          "new_input": 2790,
+          "output": 275,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:00:55.003Z",
+          "cached_input": 381568,
+          "new_input": 529,
+          "output": 198,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:01:06.234Z",
+          "cached_input": 382080,
+          "new_input": 1884,
+          "output": 441,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:01:17.863Z",
+          "cached_input": 383872,
+          "new_input": 2420,
+          "output": 443,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:01:29.927Z",
+          "cached_input": 386176,
+          "new_input": 6251,
+          "output": 460,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:01:44.582Z",
+          "cached_input": 392320,
+          "new_input": 1023,
+          "output": 576,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:01:54.753Z",
+          "cached_input": 393088,
+          "new_input": 1057,
+          "output": 349,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:03.880Z",
+          "cached_input": 394112,
+          "new_input": 3684,
+          "output": 360,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:14.137Z",
+          "cached_input": 397696,
+          "new_input": 1175,
+          "output": 386,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:34.595Z",
+          "cached_input": 398720,
+          "new_input": 1665,
+          "output": 910,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:42.141Z",
+          "cached_input": 400256,
+          "new_input": 1306,
+          "output": 222,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:50.891Z",
+          "cached_input": 401536,
+          "new_input": 503,
+          "output": 329,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:55.391Z",
+          "cached_input": 401792,
+          "new_input": 1283,
+          "output": 126,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:03:01.898Z",
+          "cached_input": 402816,
+          "new_input": 563,
+          "output": 224,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:03:16.259Z",
+          "cached_input": 403328,
+          "new_input": 492,
+          "output": 632,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:03:22.507Z",
+          "cached_input": 403584,
+          "new_input": 1119,
+          "output": 159,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:03:26.579Z",
+          "cached_input": 404608,
+          "new_input": 273,
+          "output": 77,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:03:38.001Z",
+          "cached_input": 404864,
+          "new_input": 107,
+          "output": 485,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:03:54.486Z",
+          "cached_input": 404864,
+          "new_input": 1665,
+          "output": 695,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:04:31.069Z",
+          "cached_input": 406400,
+          "new_input": 931,
+          "output": 1698,
+          "model": "gpt-6.2-sol"
+        }
+      ],
+      "cached_input": 8301184,
+      "new_input": 31295,
+      "output": 9373,
+      "observed_seconds": 249.255,
+      "codex_api_estimate": "1.9260118"
+    },
+    {
+      "label": "Codex scratch callback diagnosis",
+      "provider": "codex",
+      "role": "researcher",
+      "start_utc": "2026-11-25T21:00:48.254Z",
+      "observed_through_utc": "2026-11-25T21:03:00.681Z",
+      "completion_observed": true,
+      "request_basis": "native request frames",
+      "requests": [
+        {
+          "utc": "2026-11-25T21:00:57.556Z",
+          "cached_input": 381568,
+          "new_input": 1353,
+          "output": 239,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:01:08.287Z",
+          "cached_input": 382848,
+          "new_input": 4939,
+          "output": 323,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:01:19.817Z",
+          "cached_input": 387712,
+          "new_input": 485,
+          "output": 375,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:01:25.126Z",
+          "cached_input": 387968,
+          "new_input": 5948,
+          "output": 111,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:01:30.675Z",
+          "cached_input": 393856,
+          "new_input": 183,
+          "output": 162,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:01:45.398Z",
+          "cached_input": 393856,
+          "new_input": 4397,
+          "output": 559,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:02.297Z",
+          "cached_input": 398208,
+          "new_input": 700,
+          "output": 668,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:08.577Z",
+          "cached_input": 398720,
+          "new_input": 1142,
+          "output": 175,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:17.140Z",
+          "cached_input": 399744,
+          "new_input": 305,
+          "output": 211,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:25.075Z",
+          "cached_input": 400000,
+          "new_input": 4950,
+          "output": 186,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:31.879Z",
+          "cached_input": 404864,
+          "new_input": 632,
+          "output": 175,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:39.083Z",
+          "cached_input": 405376,
+          "new_input": 307,
+          "output": 231,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:46.673Z",
+          "cached_input": 405632,
+          "new_input": 4328,
+          "output": 225,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:02:53.957Z",
+          "cached_input": 409728,
+          "new_input": 4498,
+          "output": 212,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:03:00.608Z",
+          "cached_input": 414080,
+          "new_input": 370,
+          "output": 196,
+          "model": "gpt-6.2-sol"
+        }
+      ],
+      "cached_input": 5964160,
+      "new_input": 34537,
+      "output": 4048,
+      "observed_seconds": 132.427,
+      "codex_api_estimate": "1.3917000"
+    },
+    {
+      "label": "Codex scratch callback diagnosis follow-up",
+      "provider": "codex",
+      "role": "researcher",
+      "start_utc": "2026-11-25T21:03:26.523Z",
+      "observed_through_utc": "2026-11-25T21:03:38.089Z",
+      "completion_observed": true,
+      "request_basis": "native request frames",
+      "requests": [
+        {
+          "utc": "2026-11-25T21:03:35.326Z",
+          "cached_input": 414336,
+          "new_input": 387,
+          "output": 290,
+          "model": "gpt-6.2-sol"
+        },
+        {
+          "utc": "2026-11-25T21:03:38.084Z",
+          "cached_input": 414592,
+          "new_input": 433,
+          "output": 33,
+          "model": "gpt-6.2-sol"
+        }
+      ],
+      "cached_input": 828928,
+      "new_input": 820,
+      "output": 323,
+      "observed_seconds": 11.566,
+      "codex_api_estimate": "0.1739106"
+    }
+  ]
+}

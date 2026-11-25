@@ -1,0 +1,7 @@
+# Desktop replay fix and scratch callback discovery
+
+PR #460 at `1c2df261` recognizes the exact agent-created Desktop root and its app-tool parent/root attribution. The reader still requires the verified Desktop build, exact thread and turn IDs, and the supervised child's native parent correlation. The original hook integration test reproduced the failure before the change. The focused session suite passed 29 tests after the fix.
+
+The rebuilt wheel recovered complete receipts for both exact retained turns from the prior scratch retry. The private replay store started at story #457 and switched to #458. A separate Python process reopened the store and returned both original receipt files byte-identically, with both still attributed to #457. Owner recovery and settlement took 4.772 ms and child recovery and settlement took 3.963 ms. The retained replay consumed no additional model turns. [Sanitized replay proof](457-disposable-desktop-replay-fix.json).
+
+The installed app server reported the exact scratch project layer disabled and zero scratch hooks discovered. Project-folder trust and individual hook review are separate. The five updated scratch hooks pin the fixed wheel and wrapper and are staged for review. The live owner and child callback rerun awaits that approval. The original chat's hook trust was left untouched. [Codex project trust](https://learn.chatgpt.com/docs/config-file/config-advanced#project-config-files-codexconfigtoml) · [Hook review](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks)
