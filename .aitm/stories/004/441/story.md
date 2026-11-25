@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 441
 title: "Capture provider-reported Grok Build usage"
 kind: "story"
-state: "backlog"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/441"
 parent: 435
 children: []
 blocking: [444, 445]
 blocked-by: [438]
 created: "2026-11-25T03:17:30Z"
-updated: "2026-11-25T03:22:27Z"
+updated: "2026-11-25T12:52:33Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -33,3 +33,7 @@ Normalize per-process and exact retained turn usage. Preserve opaque turn identi
 ## Dependencies
 
 - #438
+
+## Implementation
+
+[PR #450](https://github.com/kburson/aitm/pull/450) contains the portable Grok Build adapter. Exact native evidence, independent review and full-product CI gate delivery.
