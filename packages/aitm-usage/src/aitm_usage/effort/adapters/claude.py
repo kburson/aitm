@@ -401,6 +401,7 @@ class ClaudeAdapter:
                 outcome,
                 total.tokens(),
                 scope=self.scope,
+                schema=UsageReceipt.schema_for(self.scope),
                 started_at=retained.started,
                 ended_at=retained.ended,
                 time_basis=TimeBasis.NATIVE,

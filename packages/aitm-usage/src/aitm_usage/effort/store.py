@@ -9,7 +9,7 @@ from pathlib import Path
 from uuid import UUID
 
 from ..types import Availability, _decode, _encode
-from .assignments import Attribution
+from .assignments import Attribution, Handoff, MarkerKind, ScopeMarker
 from .receipts import Enrollment, Outcome, UsageReceipt, UsageScope
 
 _APPLICATION_ID = 0x41495445  # AITE
@@ -46,6 +46,18 @@ _SCHEMA = (
         payload TEXT NOT NULL
     )""",
 )
+
+_TRAIL_SCHEMA = (
+    """CREATE TABLE IF NOT EXISTS scope_markers (
+        observation TEXT NOT NULL, attempt TEXT NOT NULL REFERENCES enrollments(attempt),
+        kind TEXT NOT NULL, payload TEXT NOT NULL,
+        PRIMARY KEY (observation, kind), UNIQUE (attempt, kind)
+    )""",
+    """CREATE TABLE IF NOT EXISTS handoffs (
+        predecessor TEXT PRIMARY KEY, successor TEXT NOT NULL UNIQUE, payload TEXT NOT NULL
+    )""",
+)
+
 
 _COVERAGE_RANK = {
     Availability.UNKNOWN: 0,
@@ -89,6 +101,8 @@ class Snapshot:
     attributed: tuple[StoryObservation, ...]
     pending: tuple[UsageReceipt, ...]
     conflicts: tuple[ReceiptConflict, ...]
+    markers: tuple[ScopeMarker, ...] = ()
+    handoffs: tuple[Handoff, ...] = ()
 
 
 class EffortStore:
@@ -128,6 +142,8 @@ class EffortStore:
                     (str(self.project_id),),
                 )
             self._generation(connection)
+            for statement in _TRAIL_SCHEMA:
+                connection.execute(statement)
 
     @contextmanager
     def _transaction(
@@ -311,6 +327,100 @@ class EffortStore:
             self._conflict(db, UsageReceipt.from_json(payload), "turn-attempt")
             db.execute("DELETE FROM pending WHERE digest=?", (digest,))
 
+    @staticmethod
+    def _scope_marker(
+        db: sqlite3.Connection, observation: str, kind: MarkerKind
+    ) -> ScopeMarker | None:
+        row = db.execute(
+            "SELECT payload FROM scope_markers WHERE observation=? AND kind=?",
+            (observation, kind),
+        ).fetchone()
+        return _decode(row[0], ScopeMarker) if row else None
+
+    def mark_scope(self, marker: ScopeMarker) -> Disposition:
+        self._require_project(marker.project_id)
+        observation = marker.turn.identity
+        attempt = str(marker.attempt_id)
+        payload = _encode(marker, ScopeMarker)
+        with self._transaction(write=True) as db:
+            enrollment = self._enrollment(db, attempt)
+            if enrollment.story is None and enrollment.epic is None:
+                raise EffortError("Scope markers require an assigned attempt")
+            existing = db.execute(
+                """SELECT payload FROM scope_markers
+                   WHERE kind=? AND (observation=? OR attempt=?)""",
+                (marker.kind, observation, attempt),
+            ).fetchall()
+            if existing:
+                return (
+                    Disposition.REPLAYED
+                    if existing == [(payload,)]
+                    else Disposition.CONFLICTED
+                )
+            if marker.kind == MarkerKind.START:
+                for table in ("effective", "pending"):
+                    if db.execute(
+                        f"SELECT 1 FROM {table} WHERE observation=? OR attempt=?",
+                        (observation, attempt),
+                    ).fetchone():
+                        raise EffortError("Start must precede receipt ingestion")
+            else:
+                start = self._scope_marker(db, observation, MarkerKind.START)
+                if (
+                    start is None
+                    or start.attempt_id != marker.attempt_id
+                    or start.clock != marker.clock
+                    or start.at > marker.at
+                ):
+                    raise EffortError("End must match the exact start and clock")
+            db.execute(
+                "INSERT INTO scope_markers VALUES (?, ?, ?, ?)",
+                (observation, attempt, marker.kind, payload),
+            )
+            self._advance_generation(db)
+            return Disposition.INSERTED
+
+    def handoff(self, handoff: Handoff) -> Disposition:
+        self._require_project(handoff.project_id)
+        predecessor = handoff.predecessor.identity
+        successor = handoff.successor.identity
+        payload = _encode(handoff, Handoff)
+        with self._transaction(write=True) as db:
+            existing = db.execute(
+                "SELECT payload FROM handoffs WHERE predecessor=? OR successor=?",
+                (predecessor, successor),
+            ).fetchall()
+            if existing:
+                return (
+                    Disposition.REPLAYED
+                    if existing == [(payload,)]
+                    else Disposition.CONFLICTED
+                )
+            detach = self._scope_marker(db, predecessor, MarkerKind.END)
+            attach = self._scope_marker(db, successor, MarkerKind.START)
+            if detach is None or attach is None:
+                raise EffortError("Handoff requires exact detach and attach markers")
+            old = self._enrollment(db, str(detach.attempt_id))
+            new = self._enrollment(db, str(attach.attempt_id))
+            if (old.story, old.epic) != (new.story, new.epic):
+                raise EffortError("Handoff must preserve assignment")
+            if detach.clock == attach.clock and detach.at > attach.at:
+                raise EffortError("Detach follows attach on the same clock")
+            if db.execute(
+                """WITH RECURSIVE chain(turn) AS (
+                    VALUES (?) UNION SELECT h.successor FROM handoffs h
+                    JOIN chain ON h.predecessor=chain.turn
+                ) SELECT 1 FROM chain WHERE turn=?""",
+                (successor, predecessor),
+            ).fetchone():
+                raise EffortError("Handoff would create a cycle")
+            db.execute(
+                "INSERT INTO handoffs VALUES (?, ?, ?)",
+                (predecessor, successor, payload),
+            )
+            self._advance_generation(db)
+            return Disposition.INSERTED
+
     def ingest(self, receipt: UsageReceipt) -> Disposition:
         self._require_project(receipt.project_id)
         attempt = str(receipt.attempt_id)
@@ -336,7 +446,14 @@ class EffortStore:
                 "SELECT observation FROM effective WHERE attempt=? AND observation<>?",
                 (attempt, observation),
             ).fetchone()
-            if (active and active.attempt_id != receipt.attempt_id) or other:
+            wrong_marker = db.execute(
+                """SELECT 1 FROM scope_markers
+                   WHERE (observation=? AND attempt<>?) OR (attempt=? AND observation<>?)""",
+                (observation, attempt, attempt, observation),
+            ).fetchone()
+            if wrong_marker:
+                reason = "turn-marker"
+            elif (active and active.attempt_id != receipt.attempt_id) or other:
                 reason = "turn-attempt"
             elif occupied:
                 reason = "revision-conflict"
@@ -406,12 +523,15 @@ class EffortStore:
                     )
                 ),
                 tuple(
-                    self._story_observation(receipt, enrollment, link)
-                    for receipt, enrollment, link in db.execute(
-                        """SELECT r.payload, a.payload, t.payload
+                    self._story_observation(receipt, enrollment, link, open_scope)
+                    for receipt, enrollment, link, open_scope in db.execute(
+                        """SELECT r.payload, a.payload, t.payload,
+                               s.kind IS NOT NULL AND f.kind IS NULL
                            FROM effective e JOIN revisions r USING (observation, revision)
                            JOIN enrollments a ON a.attempt=e.attempt
                            LEFT JOIN attributions t ON t.observation=e.observation
+                           LEFT JOIN scope_markers s ON s.observation=e.observation AND s.kind='start'
+                           LEFT JOIN scope_markers f ON f.observation=e.observation AND f.kind='end'
                            ORDER BY e.observation"""
                     )
                 ),
@@ -427,11 +547,23 @@ class EffortStore:
                         "SELECT payload, reason FROM conflicts ORDER BY digest"
                     )
                 ),
+                tuple(
+                    _decode(payload, ScopeMarker)
+                    for (payload,) in db.execute(
+                        "SELECT payload FROM scope_markers ORDER BY observation, kind DESC"
+                    )
+                ),
+                tuple(
+                    _decode(payload, Handoff)
+                    for (payload,) in db.execute(
+                        "SELECT payload FROM handoffs ORDER BY predecessor"
+                    )
+                ),
             )
 
     @staticmethod
     def _story_observation(
-        receipt_data: str, enrollment_data: str, link_data: str | None
+        receipt_data: str, enrollment_data: str, link_data: str | None, open_scope: bool
     ) -> StoryObservation:
         receipt = UsageReceipt.from_json(receipt_data)
         enrollment = _decode(enrollment_data, Enrollment)
@@ -439,6 +571,9 @@ class EffortStore:
         story, epic = enrollment.story, enrollment.epic
         if link:
             story, epic = link.story, link.epic
-        if receipt.scope != UsageScope.BOUNDED:
+        if open_scope or receipt.scope not in (
+            UsageScope.BOUNDED,
+            UsageScope.INCLUSIVE,
+        ):
             story, epic = None, None
         return StoryObservation(receipt, enrollment, story, epic, link)
