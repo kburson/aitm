@@ -1,0 +1,282 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 443,
+  "batch": "443-delivery-native-engagement-20261125",
+  "recorded_at_utc": "2026-11-25T14:04:42.059Z",
+  "source": {
+    "ref": "manual:native-443-delivery-boundaries"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.engagement.9a88381f12ba12d45423f398",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T13:44:30.726Z",
+      "end_utc": "2026-11-25T13:53:41.088Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.7bba856437575c49aa9b5642",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T13:54:04.092Z",
+      "end_utc": "2026-11-25T13:54:57.832Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.0d951b2226d192d988ce0be0",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T13:55:21.838Z",
+      "end_utc": "2026-11-25T13:59:15.673Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.66b530ea13153df4b590d20d",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T13:59:21.675Z",
+      "end_utc": "2026-11-25T13:59:22.791Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.74997c16f12ba0d969921e14",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T13:59:28.797Z",
+      "end_utc": "2026-11-25T13:59:29.868Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.042d6fb0c966f7491f4c6f00",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T13:59:35.872Z",
+      "end_utc": "2026-11-25T13:59:37.123Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.42023901a9093529f501af1a",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T13:59:43.129Z",
+      "end_utc": "2026-11-25T14:00:54.839Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.0b9a7aca82366a01a35a36bc",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:01:00.845Z",
+      "end_utc": "2026-11-25T14:01:02.410Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.d156282bfdcc0f032aee5191",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:01:08.416Z",
+      "end_utc": "2026-11-25T14:01:09.569Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.9af6c02ab1a0dd21fc56c60f",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:01:15.570Z",
+      "end_utc": "2026-11-25T14:01:17.376Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.33702913810d429060173d6c",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:01:23.381Z",
+      "end_utc": "2026-11-25T14:01:33.219Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.1433e04928ed70470902ab07",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:01:39.223Z",
+      "end_utc": "2026-11-25T14:01:40.678Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.25ad9a164125d35a5b982817",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:01:46.683Z",
+      "end_utc": "2026-11-25T14:01:48.044Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.26dc17667c3dbc2010e8331c",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:01:54.049Z",
+      "end_utc": "2026-11-25T14:01:55.362Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.7a386564584c095e844e26d0",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:02:01.370Z",
+      "end_utc": "2026-11-25T14:02:13.891Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.5a820de9c4664e508f5a3663",
+      "actor": "codex.actor.43ae24fab63a3cade4c784e3",
+      "turn": "codex.turn.ee6c7de9ceb2e6a7295cef46",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-net-of-passive-ci-wait",
+      "start_utc": "2026-11-25T14:02:19.896Z",
+      "end_utc": "2026-11-25T14:04:41.908Z",
+      "source": {
+        "sha256": "d18416778bbc14a9437273ea99bf6e0b44aae3402889b3ce51d151e7201f2338"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.a69a41b31e1ee160dceb9c35",
+      "actor": "codex.actor.ee518dba2a04aeb20cf6ee1d",
+      "turn": "codex.turn.43ef3517c832d46ce741b5f0",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-review-turn-boundaries",
+      "start_utc": "2026-11-25T13:53:29.895Z",
+      "end_utc": "2026-11-25T13:56:37.585Z",
+      "source": {
+        "sha256": "4d688bed34177df23c97d86e1abb6275d5470cd5d9b1674850aca3c711540fc5"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.ba97d5a783e3c78d80fe2129",
+      "actor": "codex.actor.ee518dba2a04aeb20cf6ee1d",
+      "turn": "codex.turn.50e2cb353c171585b74af923",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "codex-native-review-turn-boundaries",
+      "start_utc": "2026-11-25T13:57:52.999Z",
+      "end_utc": "2026-11-25T13:58:32.117Z",
+      "source": {
+        "sha256": "05ccc7906ebbb82c03ccdd8dd20a3ac8c9bd85821ae9698847ffc3933b13f711"
+      }
+    }
+  ]
+}

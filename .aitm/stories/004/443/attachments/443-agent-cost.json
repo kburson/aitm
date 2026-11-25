@@ -1,0 +1,105 @@
+{
+  "story": 443,
+  "measurement_cutoff_utc": "2026-11-25T14:04:42.059Z",
+  "pricing_source": "https://developers.openai.com/api/docs/models/gpt-6.2-sol",
+  "rate_per_million_tokens": {
+    "short": {
+      "uncached_input_usd": "2",
+      "cached_input_usd": "0.10",
+      "output_usd": "10"
+    },
+    "long": {
+      "uncached_input_usd": "4",
+      "cached_input_usd": "0.20",
+      "output_usd": "15"
+    }
+  },
+  "long_context_starts_above_input_tokens": 272000,
+  "verified_billed_usd": null,
+  "turns": [
+    {
+      "label": "Codex delivery",
+      "milliseconds": 1086109,
+      "source_through_utc": "2026-11-25T14:04:41.908Z",
+      "tokens": 11356020,
+      "model": "gpt-6.2-sol",
+      "requests": 94,
+      "usage_by_tier": {
+        "short": {
+          "input_tokens": 11316239,
+          "cached_input_tokens": 11160064,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 39781,
+          "reasoning_output_tokens": 8527,
+          "total_tokens": 11356020
+        },
+        "long": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        }
+      },
+      "coverage": "partial",
+      "standard_api_estimate_usd": "1.8261664"
+    },
+    {
+      "label": "Codex independent review 1",
+      "milliseconds": 187690,
+      "source_through_utc": "2026-11-25T13:56:37.585Z",
+      "tokens": 1419818,
+      "model": "gpt-6.2-sol",
+      "requests": 23,
+      "usage_by_tier": {
+        "short": {
+          "input_tokens": 1412467,
+          "cached_input_tokens": 1346176,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 7351,
+          "reasoning_output_tokens": 1090,
+          "total_tokens": 1419818
+        },
+        "long": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        }
+      },
+      "coverage": "complete",
+      "standard_api_estimate_usd": "0.3407096"
+    },
+    {
+      "label": "Codex independent review 2",
+      "milliseconds": 39118,
+      "source_through_utc": "2026-11-25T13:58:32.117Z",
+      "tokens": 417328,
+      "model": "gpt-6.2-sol",
+      "requests": 5,
+      "usage_by_tier": {
+        "short": {
+          "input_tokens": 415721,
+          "cached_input_tokens": 407424,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1607,
+          "reasoning_output_tokens": 97,
+          "total_tokens": 417328
+        },
+        "long": {
+          "input_tokens": 0,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 0
+        }
+      },
+      "coverage": "complete",
+      "standard_api_estimate_usd": "0.0734064"
+    }
+  ]
+}

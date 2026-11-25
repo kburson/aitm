@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 443
 title: "Report agent effort and usage with compatible snapshot exports"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/443"
 parent: 435
 children: []
 blocking: [445]
 blocked-by: [442]
 created: "2026-11-25T03:17:34Z"
-updated: "2026-11-25T14:03:53.985Z"
+updated: "2026-11-25T14:05:15.252Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-effort-report.md"], "attachments": ["attachments/pr-452-source-review.md", "attachments/trusted-pr-452.json", "attachments/pr-452-test-mix.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-effort-report.md"], "attachments": ["attachments/pr-452-source-review.md", "attachments/trusted-pr-452.json", "attachments/pr-452-test-mix.json", "attachments/timing/443-delivery-native-engagement-20261125-443.json", "attachments/443-agent-cost.json"]}
 expansions: []
 trips: []
 ---
@@ -55,3 +55,18 @@ All six hosted checks passed on the revised candidate. The independent re-review
 ## Delivery
 
 [PR #452](https://github.com/kburson/aitm/pull/452) merged to `trunk` at `953a051f4954a14a8aeb8c310a561cafbede6185`. The merge tree matches the reviewed and tested tree. [Delivery sign-off](retro/2026-11-25-delivery-sign-off.md) · [Trusted verifier](attachments/trusted-pr-452.json).
+
+GitHub closed #443 as completed and Project 24 read back Done.
+
+## Agent activity and cost
+
+| Agent turn | Observed engagement | Observed tokens | Codex standard API estimate | Grok reported USD |
+| --- | ---: | ---: | ---: | ---: |
+| Codex delivery | 18m 6.109s | 11,356,020 | $1.826166 | — |
+| Codex independent review 1 | 3m 7.690s | 1,419,818 | $0.340710 | — |
+| Codex independent review 2 | 0m 39.118s | 417,328 | $0.073406 | — |
+| **Delivery subtotal (known amounts)** | **21m 52.917s** | **13,193,166** | **$2.240282** | — |
+
+**Observed delivery engagement 0.3647 agent-hours.** The subtotal includes concurrent independent agent activity and excludes explicitly timed passive CI waits. The delivery turn is measured through retained activity at 2026-11-25T14:04:41.908Z. **Verified billed story cost is unknown.**
+
+Codex estimates use GPT-6.2 Sol standard API rates per request with cached inputs priced separately. Amounts cover retained requests through the measurement cutoff. [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Engagement evidence](attachments/timing/443-delivery-native-engagement-20261125-443.json) · [Cost calculation inputs](attachments/443-agent-cost.json)

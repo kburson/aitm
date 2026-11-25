@@ -10,7 +10,7 @@ children: [436, 437, 438, 439, 440, 441, 442, 443, 444, 445]
 blocking: []
 blocked-by: []
 created: "2026-11-25T03:15:49Z"
-updated: "2026-11-25T13:10:41.926Z"
+updated: "2026-11-25T14:05:15.252Z"
 last-branch: "planning"
 estimate: {"agent-hours": 27.5, "size": "Feature"}
 priority: null
@@ -48,6 +48,8 @@ This epic is separate from #100. The existing monitor, cutover, and accepted dep
 ## Delivery progress
 
 The foundation and three provider adapters were delivered through [PR #446](https://github.com/kburson/aitm/pull/446), [#447](https://github.com/kburson/aitm/pull/447), [#448](https://github.com/kburson/aitm/pull/448), [#449](https://github.com/kburson/aitm/pull/449), and [#450](https://github.com/kburson/aitm/pull/450).
+
+[#442](../442/story.md) delivered epic trail rollups in [PR #451](https://github.com/kburson/aitm/pull/451). [#443](../443/story.md) delivered portable effort reports and legacy snapshot compatibility in [PR #452](https://github.com/kburson/aitm/pull/452).
 
 ## Refinement
 
