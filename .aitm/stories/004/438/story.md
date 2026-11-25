@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 438
 title: "Session-scoped capture and exact-recovery interface"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/438"
 parent: 435
 children: []
 blocking: [439, 440, 441]
 blocked-by: [436, 437]
 created: "2026-11-25T03:17:24Z"
-updated: "2026-11-25T04:30:29Z"
+updated: "2026-11-25T04:33:52Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/trusted-pr-447.json", "attachments/pr-447-test-mix.json", "attachments/pr-447-source-review.md"]}
 expansions: []
 trips: []
 ---
@@ -38,3 +38,7 @@ Expose a bounded Python interface around already-installed provider harnesses an
 ## Implementation
 
 [PR #447](https://github.com/kburson/aitm/pull/447) contains the shared capture and exact-recovery interface. Provider-specific adapters remain in #439–#441.
+
+## Delivery
+
+[PR #447](https://github.com/kburson/aitm/pull/447) merged to `trunk`. GitHub closed #438 and Project 24 read back Done. [Delivery sign-off](retro/2026-11-24-delivery-sign-off.md).
