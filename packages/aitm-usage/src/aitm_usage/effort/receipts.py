@@ -6,9 +6,16 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
 from hashlib import sha256
+from typing import cast
 from uuid import UUID
 
-from ..types import Availability, SourceRef, TokenCounts, _decode, _encode
+from ..types import (
+    Availability,
+    SourceRef,
+    TokenCounts,
+    _unique_fields,
+    _wire,
+)
 
 
 class Role(StrEnum):
@@ -123,9 +130,19 @@ class UsageReceipt:
     ended_at: datetime | None = None
     time_basis: TimeBasis = TimeBasis.UNKNOWN
     schema: str = "aitm.effort.receipt/v1"
+    grok_cost_usd_ticks: int | None = None
+    grok_cache_creation_tokens: int | None = None
 
     def __post_init__(self) -> None:
-        if self.schema != "aitm.effort.receipt/v1":
+        grok = (self.grok_cost_usd_ticks, self.grok_cache_creation_tokens)
+        if self.schema == "aitm.effort.receipt/v2":
+            if self.turn.provider != "grok" or any(
+                type(count) is not int or not 0 <= count < 2**63 for count in grok
+            ):
+                raise ValueError("Expected native Grok usage fields")
+        elif self.schema != "aitm.effort.receipt/v1" or any(
+            v is not None for v in grok
+        ):
             raise ValueError("Unsupported receipt schema")
         require_digest(self.source_sha256)
         if type(self.revision) is not int or not 1 <= self.revision < 2**63:
@@ -153,11 +170,28 @@ class UsageReceipt:
         return self.turn.identity
 
     def to_json(self) -> str:
-        return _encode(self, UsageReceipt)
+        payload = _wire(self, UsageReceipt, decode=False, validate_ref=None)
+        if self.schema == "aitm.effort.receipt/v1":
+            del payload["grok_cost_usd_ticks"], payload["grok_cache_creation_tokens"]
+        return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
     @classmethod
     def from_json(cls, value: str | bytes) -> "UsageReceipt":
-        return _decode(value, cls)
+        try:
+            payload = json.loads(value, object_pairs_hook=_unique_fields)
+            if (
+                isinstance(payload, dict)
+                and payload.get("schema") == "aitm.effort.receipt/v1"
+            ):
+                for name in ("grok_cost_usd_ticks", "grok_cache_creation_tokens"):
+                    if name in payload:
+                        raise ValueError("Unexpected native field in v1 receipt")
+                    payload[name] = None
+            return cast(
+                UsageReceipt, _wire(payload, cls, decode=True, validate_ref=None)
+            )
+        except (RecursionError, TypeError, ValueError):
+            raise ValueError("Invalid allowlisted usage envelope") from None
 
     @property
     def digest(self) -> str:

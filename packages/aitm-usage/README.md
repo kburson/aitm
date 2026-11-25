@@ -246,3 +246,14 @@ writes have no time bucket in this route. An exact interrupted turn can
 retain observed partial counts or a coverage gap if no counters were recorded.
 The provider counters represent observed usage. Keep native outputs, rollout
 bytes and notification payloads private.
+
+The Grok Build effort adapter supports the qualified 1.0.92 streaming and
+`grok usage` surfaces. Capture uses a fresh explicit session or an exclusive
+resume with a prelaunch usage snapshot. A successful stream is linked only to
+the unique new retained turn whose counters and cost ticks agree. Configured
+interactive recovery uses a caller-verified session and returned ordinal.
+Cancellation without a settled native turn stays a gap.
+
+Grok receipts preserve integer provider USD ticks and cache-creation tokens as
+native evidence in the v2 wire format. These ticks do not establish a billed
+charge. Existing v1 receipts retain their canonical encoding.

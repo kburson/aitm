@@ -373,6 +373,17 @@ packages/aitm-usage/tests/test_effort_codex.py::test_tui_notification_refuses_un
 packages/aitm-usage/tests/test_effort_codex.py::test_tui_notification_refuses_unbound_identity[callback0-wrong-turn]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_codex.py::test_tui_notification_refuses_unbound_identity[callback1-wrong-turn]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_codex.py::test_tui_notification_refuses_unbound_identity[callback2-malformed]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_cancelled_output_without_retained_turn_keeps_a_gap	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_conflicting_usage_cannot_create_a_receipt[evidence0-None]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_conflicting_usage_cannot_create_a_receipt[evidence1-baseline1]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_conflicting_usage_cannot_create_a_receipt[evidence2-None]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_conflicting_usage_cannot_create_a_receipt[evidence3-None]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_enrollment_authority_is_checked_before_usage_read	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_exact_ordinal_refuses_a_different_native_turn	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_fresh_and_configured_exact_recovery_preserve_native_units	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_headless_rejects_conflicting_model_breakdown	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_reopening_store_preserves_native_ticks_and_refuses_changed_settled_ticks	local-integration	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_resume_uses_the_only_new_opaque_ordinal_even_with_identical_usage	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_conflicting_incomplete_chain_records_gap_without_replacing_prior_usage	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_cross_project_and_cross_attempt_turn_reuse_are_isolated	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_different_agent_can_continue_same_story_with_fresh_session	local-integration	yes	yes

@@ -230,9 +230,23 @@ class EffortStore:
             return "revision-lineage"
         if _COVERAGE_RANK[candidate.coverage] < _COVERAGE_RANK[previous.coverage]:
             return "revision-coverage"
-        for field in fields(previous.tokens):
-            before = getattr(previous.tokens, field.name)
-            after = getattr(candidate.tokens, field.name)
+        counts = [
+            (
+                getattr(previous.tokens, field.name),
+                getattr(candidate.tokens, field.name),
+            )
+            for field in fields(previous.tokens)
+        ]
+        counts.extend(
+            (
+                (previous.grok_cost_usd_ticks, candidate.grok_cost_usd_ticks),
+                (
+                    previous.grok_cache_creation_tokens,
+                    candidate.grok_cache_creation_tokens,
+                ),
+            )
+        )
+        for before, after in counts:
             if before is not None and (
                 after is None
                 or (previous.coverage == Availability.COMPLETE and after != before)
