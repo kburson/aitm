@@ -2,7 +2,7 @@ import importlib
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, tzinfo
 from threading import Barrier
 from uuid import UUID
 
@@ -329,3 +329,82 @@ def test_pending_evidence_for_another_turn_moves_to_conflict_on_binding(
     assert not snapshot.pending
     assert snapshot.conflicts[0].receipt == other
     assert snapshot.conflicts[0].reason == "turn-attempt"
+
+
+def test_pending_collision_cannot_suppress_revision_with_valid_predecessor(
+    effort, enrollment, receipt, tmp_path
+):
+    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
+    store.enroll(enrollment)
+    wrong = replace(receipt, revision=2, previous_digest="e" * 64)
+    correct = replace(
+        receipt,
+        revision=2,
+        previous_digest=receipt.digest,
+        coverage=Availability.COMPLETE,
+        tokens=TokenCounts(total_tokens=42),
+    )
+    assert store.ingest(wrong) is effort.Disposition.PENDING
+    assert store.ingest(correct) is effort.Disposition.PENDING
+    assert store.ingest(receipt) is effort.Disposition.REFINED
+    snapshot = store.snapshot()
+    assert snapshot.pending == ()
+    assert snapshot.attributed[0].receipt == correct
+    assert snapshot.conflicts[0].receipt == wrong
+    assert store.ingest(correct) is effort.Disposition.REPLAYED
+
+
+def test_exact_recovery_can_refine_unknown_scope_and_keep_usage(
+    effort, enrollment, receipt, tmp_path
+):
+    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
+    store.enroll(enrollment)
+    unknown_scope = replace(
+        receipt, scope=effort.UsageScope.UNKNOWN, coverage=Availability.COMPLETE
+    )
+    store.ingest(unknown_scope)
+    assert store.snapshot().attributed[0].story is None
+    recovered = replace(
+        unknown_scope,
+        scope=effort.UsageScope.BOUNDED,
+        revision=2,
+        previous_digest=unknown_scope.digest,
+    )
+    assert store.ingest(recovered) is effort.Disposition.REFINED
+    assert store.snapshot().attributed[0].story == 12
+
+
+def test_refinement_cannot_erase_observed_counts(effort, enrollment, receipt, tmp_path):
+    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
+    store.enroll(enrollment)
+    store.ingest(receipt)
+    lost = replace(
+        receipt,
+        revision=2,
+        previous_digest=receipt.digest,
+        coverage=Availability.COMPLETE,
+        tokens=TokenCounts(),
+    )
+    assert store.ingest(lost) is effort.Disposition.CONFLICTED
+    assert store.snapshot().attributed[0].receipt == receipt
+
+
+def test_intervals_compare_actual_time_across_repeated_local_hour(effort, receipt):
+    class FoldZone(tzinfo):
+        def utcoffset(self, value):
+            return timedelta(hours=-4 - value.fold)
+
+        def dst(self, value):
+            return timedelta(hours=1 - value.fold)
+
+    zone = FoldZone()
+    start = datetime(2026, 11, 1, 1, 50, tzinfo=zone, fold=0)
+    end = datetime(2026, 11, 1, 1, 10, tzinfo=zone, fold=1)
+    observed = replace(
+        receipt,
+        started_at=start,
+        ended_at=end,
+        time_basis=effort.TimeBasis.NATIVE,
+    )
+    assert observed.ended_at - observed.started_at == timedelta(minutes=20)
+    assert effort.UsageReceipt.from_json(observed.to_json()) == observed

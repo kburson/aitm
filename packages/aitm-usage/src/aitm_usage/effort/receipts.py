@@ -3,7 +3,7 @@
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from hashlib import sha256
 from uuid import UUID
@@ -139,6 +139,10 @@ class UsageReceipt:
             moment is not None and moment.utcoffset() is None for moment in moments
         ):
             raise ValueError("Expected timezone-aware receipt times")
+        for name in ("observed_at", "started_at", "ended_at"):
+            moment = getattr(self, name)
+            if moment is not None:
+                object.__setattr__(self, name, moment.astimezone(UTC))
         if self.time_basis == TimeBasis.UNKNOWN and any(moments[1:]):
             raise ValueError("Interval times require a known basis")
         if self.started_at and self.ended_at and self.ended_at < self.started_at:

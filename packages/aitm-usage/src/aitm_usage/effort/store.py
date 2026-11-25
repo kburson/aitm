@@ -3,7 +3,7 @@
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from enum import StrEnum
 from pathlib import Path
 from uuid import UUID
@@ -27,7 +27,12 @@ _SCHEMA = (
         attempt TEXT NOT NULL REFERENCES enrollments(attempt), payload TEXT NOT NULL,
         PRIMARY KEY (observation, revision)
     )""",
-    "CREATE INDEX IF NOT EXISTS revisions_for_attempt ON revisions(attempt)",
+    """CREATE TABLE IF NOT EXISTS pending (
+        digest TEXT PRIMARY KEY, observation TEXT NOT NULL, revision INTEGER NOT NULL,
+        attempt TEXT NOT NULL REFERENCES enrollments(attempt), payload TEXT NOT NULL
+    )""",
+    "CREATE INDEX IF NOT EXISTS pending_for_observation ON pending(observation, revision)",
+    "CREATE INDEX IF NOT EXISTS pending_for_attempt ON pending(attempt)",
     """CREATE TABLE IF NOT EXISTS effective (
         observation TEXT PRIMARY KEY, revision INTEGER NOT NULL,
         attempt TEXT NOT NULL UNIQUE REFERENCES enrollments(attempt),
@@ -103,7 +108,7 @@ class EffortStore:
             or database.is_symlink()
         ):
             raise EffortError("Expected a database in an existing private directory")
-        self.database = database
+        self.database = database.absolute()
         self.project_id = project_id
         with self._transaction(write=True, initialize=True) as connection:
             app_id = connection.execute("PRAGMA application_id").fetchone()[0]
@@ -223,17 +228,22 @@ class EffortStore:
             return "turn-attempt"
         if candidate.previous_digest != previous.digest:
             return "revision-lineage"
-        if (
-            previous.coverage == Availability.COMPLETE
-            or _COVERAGE_RANK[candidate.coverage] < _COVERAGE_RANK[previous.coverage]
-        ):
+        if _COVERAGE_RANK[candidate.coverage] < _COVERAGE_RANK[previous.coverage]:
             return "revision-coverage"
+        for field in fields(previous.tokens):
+            before = getattr(previous.tokens, field.name)
+            after = getattr(candidate.tokens, field.name)
+            if before is not None and (
+                after is None
+                or (previous.coverage == Availability.COMPLETE and after != before)
+            ):
+                return "revision-usage"
         if (
             previous.outcome != Outcome.UNKNOWN
             and candidate.outcome != previous.outcome
         ):
             return "revision-outcome"
-        if candidate.scope != previous.scope:
+        if previous.scope != UsageScope.UNKNOWN and candidate.scope != previous.scope:
             return "revision-scope"
         return None
 
@@ -242,25 +252,36 @@ class EffortStore:
     ) -> UsageReceipt | None:
         while True:
             revision = 1 if previous is None else previous.revision + 1
-            row = db.execute(
-                "SELECT payload FROM revisions WHERE observation=? AND revision=?",
+            rows = db.execute(
+                "SELECT payload FROM pending WHERE observation=? AND revision=?",
                 (observation, revision),
-            ).fetchone()
-            if row is None:
+            ).fetchall()
+            candidates = []
+            for (payload,) in rows:
+                candidate = UsageReceipt.from_json(payload)
+                reason = self._revision_conflict(previous, candidate)
+                if reason:
+                    self._conflict(db, candidate, reason)
+                else:
+                    candidates.append(candidate)
+            db.execute(
+                "DELETE FROM pending WHERE observation=? AND revision=?",
+                (observation, revision),
+            )
+            if len(candidates) != 1:
+                for candidate in candidates:
+                    self._conflict(db, candidate, "revision-conflict")
                 return previous
-            candidate = UsageReceipt.from_json(row[0])
-            reason = self._revision_conflict(previous, candidate)
-            if reason:
-                self._conflict(db, candidate, reason)
-                db.execute(
-                    "DELETE FROM revisions WHERE observation=? AND revision=?",
-                    (observation, revision),
-                )
-                return previous
+            candidate = candidates[0]
+            attempt = str(candidate.attempt_id)
+            db.execute(
+                "INSERT INTO revisions VALUES (?, ?, ?, ?, ?)",
+                (observation, revision, candidate.digest, attempt, candidate.to_json()),
+            )
             db.execute(
                 """INSERT INTO effective VALUES (?, ?, ?)
                    ON CONFLICT(observation) DO UPDATE SET revision=excluded.revision""",
-                (observation, revision, str(candidate.attempt_id)),
+                (observation, revision, attempt),
             )
             previous = candidate
 
@@ -268,16 +289,13 @@ class EffortStore:
         self, db: sqlite3.Connection, observation: str, attempt: str
     ) -> None:
         rows = db.execute(
-            """SELECT observation, revision, payload FROM revisions
+            """SELECT digest, payload FROM pending
                WHERE (observation=? AND attempt<>?) OR (attempt=? AND observation<>?)""",
             (observation, attempt, attempt, observation),
         ).fetchall()
-        for other, revision, payload in rows:
+        for digest, payload in rows:
             self._conflict(db, UsageReceipt.from_json(payload), "turn-attempt")
-            db.execute(
-                "DELETE FROM revisions WHERE observation=? AND revision=?",
-                (other, revision),
-            )
+            db.execute("DELETE FROM pending WHERE digest=?", (digest,))
 
     def ingest(self, receipt: UsageReceipt) -> Disposition:
         self._require_project(receipt.project_id)
@@ -289,6 +307,8 @@ class EffortStore:
             if db.execute(
                 "SELECT 1 FROM conflicts WHERE digest=?", (digest,)
             ).fetchone():
+                return Disposition.REPLAYED
+            if db.execute("SELECT 1 FROM pending WHERE digest=?", (digest,)).fetchone():
                 return Disposition.REPLAYED
             occupied = db.execute(
                 "SELECT digest FROM revisions WHERE observation=? AND revision=?",
@@ -315,8 +335,8 @@ class EffortStore:
                 return Disposition.CONFLICTED
 
             db.execute(
-                "INSERT INTO revisions VALUES (?, ?, ?, ?, ?)",
-                (observation, receipt.revision, digest, attempt, payload),
+                "INSERT INTO pending VALUES (?, ?, ?, ?, ?)",
+                (digest, observation, receipt.revision, attempt, payload),
             )
             selected = self._advance(db, observation, active)
             if not selected or selected.revision < receipt.revision:
@@ -384,10 +404,7 @@ class EffortStore:
                 tuple(
                     UsageReceipt.from_json(row[0])
                     for row in db.execute(
-                        """SELECT r.payload FROM revisions r LEFT JOIN effective e
-                           USING (observation)
-                           WHERE r.revision > COALESCE(e.revision, 0)
-                           ORDER BY r.observation, r.revision"""
+                        "SELECT payload FROM pending ORDER BY observation, revision, digest"
                     )
                 ),
                 tuple(
