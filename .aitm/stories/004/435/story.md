@@ -10,12 +10,12 @@ children: [436, 437, 438, 439, 440, 441, 442, 443, 444, 445]
 blocking: []
 blocked-by: []
 created: "2026-11-25T03:15:49Z"
-updated: "2026-11-25T03:26:40Z"
+updated: "2026-11-25T13:10:41.926Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": "Feature"}
+estimate: {"agent-hours": 27.5, "size": "Feature"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-refinement-and-engagement-backfill.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -45,8 +45,10 @@ This epic is separate from #100. The existing monitor, cutover, and accepted dep
 - [#444 Reconcile AIPR companion usage receipts](../444/story.md)
 - [#445 Qualify the portable agent effort release](../445/story.md)
 
-## Draft implementation
+## Delivery progress
 
-[PR #446](https://github.com/kburson/aitm/pull/446) covers #436 and #437. The initial Python API passed 20 focused tests on macOS and Linux. The PR is open as a draft.
+The foundation and three provider adapters were delivered through [PR #446](https://github.com/kburson/aitm/pull/446), [#447](https://github.com/kburson/aitm/pull/447), [#448](https://github.com/kburson/aitm/pull/448), [#449](https://github.com/kburson/aitm/pull/449), and [#450](https://github.com/kburson/aitm/pull/450).
 
-Provider capture and recovery start with #438 after the receipt and attribution foundation.
+## Refinement
+
+**Size Feature. Estimate 27.5 agent-hours.** [Sizing basis and evidence](<plan/2026-11-25-refinement-and-engagement-backfill.md>).

@@ -10,12 +10,12 @@ children: []
 blocking: [437, 438]
 blocked-by: []
 created: "2026-11-25T03:17:19Z"
-updated: "2026-11-25T03:52:18Z"
+updated: "2026-11-25T13:10:41.926Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2, "size": "M"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/trusted-pr-446.json", "attachments/pr-446-test-mix.json", "attachments/pr-446-source-review.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/trusted-pr-446.json", "attachments/pr-446-test-mix.json", "attachments/pr-446-source-review.md", "attachments/timing/435-native-engagement-backfill-20261125-436.json"]}
 expansions: []
 trips: []
 ---
@@ -41,3 +41,7 @@ The initial work is scoped to the portable Python API and local project state. P
 ## Delivery
 
 [PR #446](https://github.com/kburson/aitm/pull/446) merged to `trunk`. GitHub closed this story and Project 24 read back Done. [Delivery sign-off](retro/2026-11-24-delivery-sign-off.md).
+
+## Refinement
+
+**Size M. Estimate 2 agent-hours.** [Sizing basis and evidence](<../435/plan/2026-11-25-refinement-and-engagement-backfill.md>). [Partial engagement receipt](attachments/timing/435-native-engagement-backfill-20261125-436.json).

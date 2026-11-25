@@ -1,0 +1,117 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 436,
+  "batch": "435-native-engagement-backfill-20261125",
+  "recorded_at_utc": "2026-11-25T13:10:41.926Z",
+  "source": {
+    "ref": "codex:completed-progress"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.d7b9772ef0cc5b5e22f84751",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.9c56cfecba3eb629000c2364",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T03:19:32.089Z",
+      "end_utc": "2026-11-25T03:19:32.374Z",
+      "source": {
+        "sha256": "271a742e342351459b4c8dc63c9dd7a83cc5feaebc023e3374fa5514750e0977"
+      }
+    },
+    {
+      "observation_id": "codex.item.1b59aace597bf9e5e726e1a4",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.9c56cfecba3eb629000c2364",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T03:19:49.813Z",
+      "end_utc": "2026-11-25T03:19:50.659Z",
+      "source": {
+        "sha256": "936f4ed143ce826e38f0339f2ae1f2834edc366a2007bf27357752059ae8da93"
+      }
+    },
+    {
+      "observation_id": "codex.item.5452dc0c300b47815ec02ed9",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.9c56cfecba3eb629000c2364",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T03:20:04.670Z",
+      "end_utc": "2026-11-25T03:20:04.806Z",
+      "source": {
+        "sha256": "95ee94b24023d0fe44e2c66e8f3e5db002fca17a24d81958b02005c15c08f2ce"
+      }
+    },
+    {
+      "observation_id": "codex.item.f28d19e98ae62dc38d19510b",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.9c56cfecba3eb629000c2364",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T03:20:19.137Z",
+      "end_utc": "2026-11-25T03:20:19.448Z",
+      "source": {
+        "sha256": "cf0005ef75809bb865df01f514682ead80465568c4cbf1706382d46e1c6c8d1d"
+      }
+    },
+    {
+      "observation_id": "codex.item.a5bdde4c7362754d4a1bf3ed",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.9c56cfecba3eb629000c2364",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T03:21:01.159Z",
+      "end_utc": "2026-11-25T03:21:01.337Z",
+      "source": {
+        "sha256": "90aa37097b88fe552ceef32e116ec4745755b0bc00303516c25ae0983863129f"
+      }
+    },
+    {
+      "observation_id": "codex.item.eb34b8390b4a0477cb2196a1",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.9c56cfecba3eb629000c2364",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T03:21:15.221Z",
+      "end_utc": "2026-11-25T03:21:15.402Z",
+      "source": {
+        "sha256": "8c4e051148e8b79af8368140120076ba9b89bd881dcd81ed6e0fdc0677ad89e7"
+      }
+    },
+    {
+      "observation_id": "codex.item.ddb35d7dd238c17f3efa9198",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.9c56cfecba3eb629000c2364",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T03:21:39.257Z",
+      "end_utc": "2026-11-25T03:21:39.668Z",
+      "source": {
+        "sha256": "b3c6e804191e1ded903587e7489b14805d68e4ae604a673fa3d1bfcbc73db9ff"
+      }
+    }
+  ]
+}

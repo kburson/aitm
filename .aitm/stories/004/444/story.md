@@ -10,9 +10,9 @@ children: []
 blocking: [445]
 blocked-by: [437, 440, 441]
 created: "2026-11-25T03:17:36Z"
-updated: "2026-11-25T03:22:27Z"
+updated: "2026-11-25T13:10:41.926Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 3, "size": "M"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -35,3 +35,7 @@ Validate sealed decisions separately from usage. Exercise two rounds, delayed an
 - #437
 - #440
 - #441
+
+## Refinement
+
+**Size M. Estimate 3 agent-hours.** [Sizing basis and evidence](<../435/plan/2026-11-25-refinement-and-engagement-backfill.md>).

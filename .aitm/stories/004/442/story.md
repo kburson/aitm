@@ -10,9 +10,9 @@ children: []
 blocking: [443]
 blocked-by: [437]
 created: "2026-11-25T03:17:32Z"
-updated: "2026-11-25T13:10:41Z"
+updated: "2026-11-25T13:10:41.926Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 3.5, "size": "L"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-trail-rollup.md"], "attachments": []}
@@ -37,3 +37,7 @@ Validate story marker lifecycle and detach/attach with exact native boundaries. 
 ## Implementation
 
 [PR #451](https://github.com/kburson/aitm/pull/451) implements the [trail rollup plan](plan/2026-11-25-trail-rollup.md). Delivery requires independent review and trusted verification for the current candidate.
+
+## Refinement
+
+**Size L. Estimate 3.5 agent-hours.** [Sizing basis and evidence](<../435/plan/2026-11-25-refinement-and-engagement-backfill.md>).

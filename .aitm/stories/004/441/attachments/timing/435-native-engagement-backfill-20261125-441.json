@@ -1,0 +1,1752 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 441,
+  "batch": "435-native-engagement-backfill-20261125",
+  "recorded_at_utc": "2026-11-25T13:10:41.926Z",
+  "source": {
+    "ref": "codex:completed-progress"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.8af22a7b15d602f614753d2a",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:45:48.030Z",
+      "end_utc": "2026-11-25T12:45:48.344Z",
+      "source": {
+        "sha256": "eff73939d985ccf1f47c191c6debaca723a819264379a40876b8f50c8e2cfe4e"
+      }
+    },
+    {
+      "observation_id": "codex.item.770586da4b5d9db3e0598b72",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:45:53.706Z",
+      "end_utc": "2026-11-25T12:45:56.944Z",
+      "source": {
+        "sha256": "bb8902a34ad833a92693a8a573e53a995639e3e4e1dad836b769fc02d2be24bf"
+      }
+    },
+    {
+      "observation_id": "codex.item.5d50f02ef464b5a2f08d9ee1",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:46:04.936Z",
+      "end_utc": "2026-11-25T12:46:12.953Z",
+      "source": {
+        "sha256": "2b597084bc852a76656b8a7176a568bf571aaf4f4a2dfef74e19a9882f048b5a"
+      }
+    },
+    {
+      "observation_id": "codex.item.7de2f038ea95635c384a4cf9",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:46:20.240Z",
+      "end_utc": "2026-11-25T12:46:29.874Z",
+      "source": {
+        "sha256": "f159080ebe68e226dbd85b398cd27868b268647314f2f3803f913f9703b05c85"
+      }
+    },
+    {
+      "observation_id": "codex.item.9d19f1a967cc8bc23743b9f8",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:46:35.478Z",
+      "end_utc": "2026-11-25T12:46:46.557Z",
+      "source": {
+        "sha256": "0aea7967323f284dada9766292c37ccdeb68af4acca28b393af1372efbe8e242"
+      }
+    },
+    {
+      "observation_id": "codex.item.c6ecb1d78959eca067dfb3ea",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:47:12.169Z",
+      "end_utc": "2026-11-25T12:47:13.073Z",
+      "source": {
+        "sha256": "df3201935757f091c5285ce50a3acb653a421f30b4cde199dad360237a9386a0"
+      }
+    },
+    {
+      "observation_id": "codex.item.db57a8b4df58e59617117662",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:47:15.183Z",
+      "end_utc": "2026-11-25T12:47:21.966Z",
+      "source": {
+        "sha256": "ad02f05f68c494cbc3f242f98cfef6203c04bb8f7db9af6d6a369d6f59db6fe3"
+      }
+    },
+    {
+      "observation_id": "codex.item.ebb4e2345f37789233e43cdd",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:48:29.122Z",
+      "end_utc": "2026-11-25T12:48:30.404Z",
+      "source": {
+        "sha256": "aa3a2970870dfd85ccf429f071bfdba11f0336da61eb2a85af5f2e9cff88ef8b"
+      }
+    },
+    {
+      "observation_id": "codex.item.94a39372eadb94827ab01c72",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:48:32.906Z",
+      "end_utc": "2026-11-25T12:48:43.272Z",
+      "source": {
+        "sha256": "5167dbaccb77c0d885f6c3bd58e38e95372f583d1dc1aaf81d9cdb089831cbdd"
+      }
+    },
+    {
+      "observation_id": "codex.item.34b34b650013847c95137354",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:48:48.929Z",
+      "end_utc": "2026-11-25T12:48:54.005Z",
+      "source": {
+        "sha256": "e45276991fedeeac007d88315c9966328560f1620640b2d78a57a9c05306b622"
+      }
+    },
+    {
+      "observation_id": "codex.item.c9451eddba2c452f2352a024",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:48:57.019Z",
+      "end_utc": "2026-11-25T12:48:57.716Z",
+      "source": {
+        "sha256": "57b95bfe06157c5aad7e1da84ca82650787504c4f0b3355c2e7ee3803c891530"
+      }
+    },
+    {
+      "observation_id": "codex.item.9e19081c997d27060aa376f8",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:49:00.270Z",
+      "end_utc": "2026-11-25T12:49:02.641Z",
+      "source": {
+        "sha256": "c5d9fac53b7cbac0c3358167fea9ea7161060409702ee95d590e06cd768d3e95"
+      }
+    },
+    {
+      "observation_id": "codex.item.6b53cb0848a4d614337bdc26",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:49:10.141Z",
+      "end_utc": "2026-11-25T12:49:18.433Z",
+      "source": {
+        "sha256": "c2c336d17d6d9030099f5c22881d9b32f339310c4f41f8a8ddd5300175a743aa"
+      }
+    },
+    {
+      "observation_id": "codex.item.302cfce1f7881ed57b101f59",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:49:12.925Z",
+      "end_utc": "2026-11-25T12:49:16.066Z",
+      "source": {
+        "sha256": "fcfdc409ccd042ac4adda0a32c10d8b08b03683c224c7fbc5c2a3b85e52d6e14"
+      }
+    },
+    {
+      "observation_id": "codex.item.b1a15a95359e0dcb940de945",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:49:38.485Z",
+      "end_utc": "2026-11-25T12:49:39.732Z",
+      "source": {
+        "sha256": "8ce633509f98dac3c99e8cde211c431711479724709326495b3ce1d2844501a2"
+      }
+    },
+    {
+      "observation_id": "codex.item.6810160006951318c6ea20cc",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:49:44.921Z",
+      "end_utc": "2026-11-25T12:49:45.188Z",
+      "source": {
+        "sha256": "aafeca557b1446d20ab3a37619c4182180a84392ac99601a314d6d05c499714d"
+      }
+    },
+    {
+      "observation_id": "codex.item.290f18b8a5d0ed2bbc08a4f3",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:49:55.703Z",
+      "end_utc": "2026-11-25T12:49:55.709Z",
+      "source": {
+        "sha256": "7d18d4eb1f17dd1cf88ba012de574676f3d196a64f8419d3a0c4fb58a9b84f2a"
+      }
+    },
+    {
+      "observation_id": "codex.item.94fc25ad1ad495577aca32a3",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:49:58.059Z",
+      "end_utc": "2026-11-25T12:50:01.882Z",
+      "source": {
+        "sha256": "26d7d5860604d2bee3a45f2394d22c7c745e8893d7f3594234460318644eb57b"
+      }
+    },
+    {
+      "observation_id": "codex.item.0308f38690c57f0a1fe6d29d",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:50:11.570Z",
+      "end_utc": "2026-11-25T12:50:13.982Z",
+      "source": {
+        "sha256": "b8908399d8cd26e602206b2ce9304465017c23d9ff500cfde1c047d1ec7894b2"
+      }
+    },
+    {
+      "observation_id": "codex.item.3e7bb0b2b8b272657d6400f8",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:50:18.946Z",
+      "end_utc": "2026-11-25T12:50:19.832Z",
+      "source": {
+        "sha256": "1c9acd73ac2264c4ff8440a71d396c062b82e6f5d66fc8936ea0622018679f32"
+      }
+    },
+    {
+      "observation_id": "codex.item.9205f54748d5cd4dcd34913c",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:50:22.110Z",
+      "end_utc": "2026-11-25T12:50:25.577Z",
+      "source": {
+        "sha256": "8ac8f9a0fe795f65d8c8fab28af4ae28cce09172288c886b8cd43f531100ba83"
+      }
+    },
+    {
+      "observation_id": "codex.item.cc86c2983e79df06475a7757",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:50:49.394Z",
+      "end_utc": "2026-11-25T12:50:49.780Z",
+      "source": {
+        "sha256": "b940e42bb9781172b02d506752041b5e2848331a18aafa78c0d7d993ef7c0f2e"
+      }
+    },
+    {
+      "observation_id": "codex.item.814eb4551cef21c2b3f3ed61",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:50:52.803Z",
+      "end_utc": "2026-11-25T12:50:59.807Z",
+      "source": {
+        "sha256": "160227cd349ffc12de39be0146746e158fe42e693c04b3dad8cf59c98eb07a58"
+      }
+    },
+    {
+      "observation_id": "codex.item.72ea1f8b09d77bd4a400f1a2",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-25T12:50:59.810Z",
+      "end_utc": "2026-11-25T12:51:01.056Z",
+      "source": {
+        "sha256": "ba87dece939e9d7a9d0db1fd13872133d552f2265c1b1c3203307702b04cb5c8"
+      }
+    },
+    {
+      "observation_id": "codex.item.554e876b2b0d11d2a67e724f",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:51:03.683Z",
+      "end_utc": "2026-11-25T12:51:03.779Z",
+      "source": {
+        "sha256": "42b41e7d6797e95ce1b7640095874fd2be9b06bd7896d4742ac6c63b862c1bd7"
+      }
+    },
+    {
+      "observation_id": "codex.item.97272fb7a62dba3fcff73ccc",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:51:06.197Z",
+      "end_utc": "2026-11-25T12:51:08.962Z",
+      "source": {
+        "sha256": "213e42e9a35b62c114609b8770658420b36d7930fdd1da3b362cf6c786eebefe"
+      }
+    },
+    {
+      "observation_id": "codex.item.6b7592fdaa1a6dbd8aa54207",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:51:25.338Z",
+      "end_utc": "2026-11-25T12:51:26.805Z",
+      "source": {
+        "sha256": "89dab7a16f2aeb94b0f2d1233b5e473f1c5988d1e99f17138b45a338bd0c629b"
+      }
+    },
+    {
+      "observation_id": "codex.item.61d63f6077b3c4a22e8245d1",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:51:28.822Z",
+      "end_utc": "2026-11-25T12:51:32.308Z",
+      "source": {
+        "sha256": "e515e09ce95c33f6b98ad451d9a667de75e06a746f590568804376b66cdd1809"
+      }
+    },
+    {
+      "observation_id": "codex.item.f2f6fb47f85a85687cb18a69",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:51:45.697Z",
+      "end_utc": "2026-11-25T12:51:50.523Z",
+      "source": {
+        "sha256": "ae25a35c7dd402a0fa5369af0d92b905acf03db20ebd166eb32b00ad8b1f5b32"
+      }
+    },
+    {
+      "observation_id": "codex.item.c9bc01c46b0014fb76f9e6e9",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:51:48.601Z",
+      "end_utc": "2026-11-25T12:51:49.119Z",
+      "source": {
+        "sha256": "81df434f90c6ec1aac2bc5bc0a0b3ea2e141c475b44c51170c146637fa42c07d"
+      }
+    },
+    {
+      "observation_id": "codex.item.aed969e732851df74457a85d",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-25T12:51:49.122Z",
+      "end_utc": "2026-11-25T12:51:50.132Z",
+      "source": {
+        "sha256": "0c9747083f45904c5a1adc61ab8d14c3b8a29f8725e7fef542cbbfea038c01b6"
+      }
+    },
+    {
+      "observation_id": "codex.item.067e74ac7a74022df528db6b",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:51:56.569Z",
+      "end_utc": "2026-11-25T12:51:59.884Z",
+      "source": {
+        "sha256": "7f62c0e87416e25d0b28692bccde3b28ec6f58431f1258e13f42e2004363433e"
+      }
+    },
+    {
+      "observation_id": "codex.item.cbb0569d0abfb1f2e2e7a081",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-25T12:51:56.772Z",
+      "end_utc": "2026-11-25T12:51:57.353Z",
+      "source": {
+        "sha256": "6fd77d5565cf6a98ab59ae5c259f8b72437ecb0a1f2034d4baf28a558e089973"
+      }
+    },
+    {
+      "observation_id": "codex.item.5f65e2b01456aafded631b0c",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:52:02.716Z",
+      "end_utc": "2026-11-25T12:52:04.821Z",
+      "source": {
+        "sha256": "3424b83e49cefece70c7552ad45c852e8d3df91b50444fcda7e07be3e5a9fdf0"
+      }
+    },
+    {
+      "observation_id": "codex.item.cc45eb4fb2d8cf48b42172ce",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:52:07.772Z",
+      "end_utc": "2026-11-25T12:52:09.066Z",
+      "source": {
+        "sha256": "f53a5cc95d28ead20c52b7bde0369a039e7eefcb0a3c1d6f628cbc3fb3775646"
+      }
+    },
+    {
+      "observation_id": "codex.item.c9eb152c0eb1e92c1bb6b17d",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:52:21.197Z",
+      "end_utc": "2026-11-25T12:52:21.198Z",
+      "source": {
+        "sha256": "caeea4a43ac021a5c576cc38a50273d8fafe3efc6a3ae540a38ae63015fb8a29"
+      }
+    },
+    {
+      "observation_id": "codex.item.12597d72ecab8d900343f47a",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:52:22.636Z",
+      "end_utc": "2026-11-25T12:52:23.380Z",
+      "source": {
+        "sha256": "f55d93610d348c1b84675425cb1bbffdb9f48715df2eee7d9861a2b04fa0c629"
+      }
+    },
+    {
+      "observation_id": "codex.item.64ac6761a2a7edb84028fe33",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:52:28.401Z",
+      "end_utc": "2026-11-25T12:52:29.455Z",
+      "source": {
+        "sha256": "2c9aadb6547bf796f809850a00569b6ed67ec42b8b5b3e20c4518d5f9cdba616"
+      }
+    },
+    {
+      "observation_id": "codex.item.230dc822766f37df5a18da2e",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:52:30.485Z",
+      "end_utc": "2026-11-25T12:52:33.381Z",
+      "source": {
+        "sha256": "b30642a914bad3b05e2f10cc521c8bae2aa035b16933b256f6c2aca243d661fa"
+      }
+    },
+    {
+      "observation_id": "codex.item.d6eb27d394da89d7761f5cc9",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:52:30.485Z",
+      "end_utc": "2026-11-25T12:52:36.346Z",
+      "source": {
+        "sha256": "20ce3eec346d596a9b77da84110f0820d54b53067219260f397e970f189fc56a"
+      }
+    },
+    {
+      "observation_id": "codex.item.a56d5ced8b0f11f687928b27",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:52:32.406Z",
+      "end_utc": "2026-11-25T12:52:32.407Z",
+      "source": {
+        "sha256": "bc8d1cb5e6939a5550f1567b8f8328c5902b0e0cc9ac0e289d048c7c9d9ab985"
+      }
+    },
+    {
+      "observation_id": "codex.item.7ae2fddb6f70b9477bc73d59",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:52:33.453Z",
+      "end_utc": "2026-11-25T12:52:34.350Z",
+      "source": {
+        "sha256": "eaec2d93fce152db7b9796759f3b7dfb44c35bb763370b9cd5fac74774a08dee"
+      }
+    },
+    {
+      "observation_id": "codex.item.682e999c2438cf0cff900a24",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:52:33.471Z",
+      "end_utc": "2026-11-25T12:52:42.323Z",
+      "source": {
+        "sha256": "c30ff0ea61aeec7886404415019ec8e3ff457ea2093d25e628dee8facab2f7e1"
+      }
+    },
+    {
+      "observation_id": "codex.item.d10fd8076529f00ce6067aa2",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:52:43.193Z",
+      "end_utc": "2026-11-25T12:52:43.194Z",
+      "source": {
+        "sha256": "fd46dfeeecbbc73776b519cbad7d5096c4614c942e51eead0dc65bb2c55e36cb"
+      }
+    },
+    {
+      "observation_id": "codex.item.9b30bea920a457e2bd106cf8",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:52:44.258Z",
+      "end_utc": "2026-11-25T12:52:46.754Z",
+      "source": {
+        "sha256": "c18c5cf205ef6d7e2ba89b86b51bed4c28a449ffd7336e2e244aea714fa93fa2"
+      }
+    },
+    {
+      "observation_id": "codex.item.f7508dc943b31d61dc97c007",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:52:45.552Z",
+      "end_utc": "2026-11-25T12:52:49.376Z",
+      "source": {
+        "sha256": "f364ba9423f89d7a044698570ad1d3d322a9a630f8994b9baddb2e16988db4b2"
+      }
+    },
+    {
+      "observation_id": "codex.item.0bcf61065e8282b7e79f8512",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:52:51.682Z",
+      "end_utc": "2026-11-25T12:52:52.245Z",
+      "source": {
+        "sha256": "8e41d1a1af5475ef4aaa7126f2feb8d518af1533b15346db5e365f4848d498ef"
+      }
+    },
+    {
+      "observation_id": "codex.item.667f31860610adf24cf4900c",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:52:56.192Z",
+      "end_utc": "2026-11-25T12:52:58.825Z",
+      "source": {
+        "sha256": "d65e476c695f7280edb6beb0a200da38039fdb95a9bdb91f725a4f23c35e67b2"
+      }
+    },
+    {
+      "observation_id": "codex.item.d235b03368808dff98080fb2",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:52:57.764Z",
+      "end_utc": "2026-11-25T12:53:01.771Z",
+      "source": {
+        "sha256": "e48f3458514b002b21936d0374b7d15ae29ff67c1be27c4218c53b58154518fa"
+      }
+    },
+    {
+      "observation_id": "codex.item.581fa3979ef42923ead9f1c8",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:01.291Z",
+      "end_utc": "2026-11-25T12:53:12.575Z",
+      "source": {
+        "sha256": "e6fea0f4ee50328f983964b579f643f23f5198ef5eb977e3370b9746d21975e8"
+      }
+    },
+    {
+      "observation_id": "codex.item.ae9216b1e2926c2b49151cbf",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:05.951Z",
+      "end_utc": "2026-11-25T12:53:07.529Z",
+      "source": {
+        "sha256": "31b058b71fc489b861f6288e2054e3953b0df0277d43833b68ef7b2bf84ecceb"
+      }
+    },
+    {
+      "observation_id": "codex.item.10d4d1563913afb50ad5eb48",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:10.047Z",
+      "end_utc": "2026-11-25T12:53:11.613Z",
+      "source": {
+        "sha256": "e1f5a871ea62b176ad8bd5bb008da9690ca5d337d40b51937e825008e8f0a971"
+      }
+    },
+    {
+      "observation_id": "codex.item.ea33c55fe526e9beea7a5238",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:16.442Z",
+      "end_utc": "2026-11-25T12:53:19.031Z",
+      "source": {
+        "sha256": "0c21c40b73cdedb20047ae9b42a9c649c5e08e71ccb242be19611449f9f75214"
+      }
+    },
+    {
+      "observation_id": "codex.item.c433dea90edf4f2607f7642a",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:53:25.927Z",
+      "end_utc": "2026-11-25T12:53:26.158Z",
+      "source": {
+        "sha256": "e64cad06ab176fcbf8666780fbb173bd53a3fd8a766779c12e2a4f05cb62a781"
+      }
+    },
+    {
+      "observation_id": "codex.item.0ba4cb675268657260eda565",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:53:26.062Z",
+      "end_utc": "2026-11-25T12:53:26.063Z",
+      "source": {
+        "sha256": "74e319b4ccf63a811438a371c6f4d705f25bae5419ebf4275fd0dd37c611e31c"
+      }
+    },
+    {
+      "observation_id": "codex.item.71a50647891478101110f8a7",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:28.220Z",
+      "end_utc": "2026-11-25T12:53:33.787Z",
+      "source": {
+        "sha256": "8693350e8e38a1d428a556b0fc822c0eca07b41fb4737b9e8ad06b9f765cd227"
+      }
+    },
+    {
+      "observation_id": "codex.item.888db9860e377d4b356689f1",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:30.500Z",
+      "end_utc": "2026-11-25T12:53:34.484Z",
+      "source": {
+        "sha256": "67366d49df42414119c257321c57aa90af62910f6203ec72fed0a8b1ee88864e"
+      }
+    },
+    {
+      "observation_id": "codex.item.0a8af64e309f0a8f07499d0e",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:36.783Z",
+      "end_utc": "2026-11-25T12:53:38.156Z",
+      "source": {
+        "sha256": "64aaeffb12e6af41bc4fa4e4ffe3f4d481dbc8d015f4e9709eea0039ba00bb52"
+      }
+    },
+    {
+      "observation_id": "codex.item.859a033b2d42dae9182240b0",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-25T12:53:38.157Z",
+      "end_utc": "2026-11-25T12:53:38.816Z",
+      "source": {
+        "sha256": "b8aaa12a1cb98f29df2a3335df7c4b75ba4f7a0c3065499a33122b899cfb4cdf"
+      }
+    },
+    {
+      "observation_id": "codex.item.9f45df41e7e82e3eb421ab2d",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:40.937Z",
+      "end_utc": "2026-11-25T12:53:44.168Z",
+      "source": {
+        "sha256": "e20a5244da5083335a67b8e46997378d74a6a7940a516a0c1477ff927dd5106a"
+      }
+    },
+    {
+      "observation_id": "codex.item.56c5a68babe3d781c2ed2ccb",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:53:42.745Z",
+      "end_utc": "2026-11-25T12:53:42.839Z",
+      "source": {
+        "sha256": "55c2e4794efe0400e3b69fe2fe1f33d1358e7c659fe80c2f2ebbdbb3b71b15c6"
+      }
+    },
+    {
+      "observation_id": "codex.item.f9b6594605f556283c10f8fb",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:45.388Z",
+      "end_utc": "2026-11-25T12:53:45.705Z",
+      "source": {
+        "sha256": "75245d3452e8a888af3d71dc82ebfc684f84c1de11314e1b8801979cf0f49c9d"
+      }
+    },
+    {
+      "observation_id": "codex.item.71e217b789a32454715d3cc0",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:47.657Z",
+      "end_utc": "2026-11-25T12:53:49.341Z",
+      "source": {
+        "sha256": "df092ce926ee31a0adea6be893f3383dd1d0459384ca366f47df57232dc0645c"
+      }
+    },
+    {
+      "observation_id": "codex.item.a2b4ed50f7009e445f766e4a",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:51.968Z",
+      "end_utc": "2026-11-25T12:53:52.440Z",
+      "source": {
+        "sha256": "ab0b40751c015845b1d8502309062452d1105483f5b5c1314f540fe4579e043c"
+      }
+    },
+    {
+      "observation_id": "codex.item.81cf7cd2dddb20f438322c37",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:53:54.420Z",
+      "end_utc": "2026-11-25T12:53:59.665Z",
+      "source": {
+        "sha256": "dbb2fde92ca488f4d12dfdbe0be66bd52e3728a17862e6f8e455d7dd2865be5a"
+      }
+    },
+    {
+      "observation_id": "codex.item.18efcb7a8ce9e3402c7bf966",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:54:04.120Z",
+      "end_utc": "2026-11-25T12:54:04.130Z",
+      "source": {
+        "sha256": "4d1f26c75c182657bf64188d0d0e743f5958a9d2639eb82fb41afa6b22573042"
+      }
+    },
+    {
+      "observation_id": "codex.item.7cc8d18adc90c7929174e21c",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:54:05.281Z",
+      "end_utc": "2026-11-25T12:54:06.535Z",
+      "source": {
+        "sha256": "887eb8e7840c22e22fcdbb26055944073ab20136a71546cf4dfe2525b922d2c4"
+      }
+    },
+    {
+      "observation_id": "codex.item.00214728e81a2004b195617e",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:54:07.210Z",
+      "end_utc": "2026-11-25T12:54:10.184Z",
+      "source": {
+        "sha256": "48e7e7510b6fb1375dff529658c3936e0012a11b19523633725ead1f7ebf3140"
+      }
+    },
+    {
+      "observation_id": "codex.item.156b173c64ce315cd5d3cd45",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:54:08.798Z",
+      "end_utc": "2026-11-25T12:54:08.862Z",
+      "source": {
+        "sha256": "1fc7fce629dd124bf913fe7771542bc44b312f5df44e4757672485b34094567c"
+      }
+    },
+    {
+      "observation_id": "codex.item.78228e0b832d330f57466406",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:54:10.147Z",
+      "end_utc": "2026-11-25T12:54:16.982Z",
+      "source": {
+        "sha256": "edb52d43341d0c8c73db414abf37d2f5db5d0c381294b79aa35e1b6d2d819bad"
+      }
+    },
+    {
+      "observation_id": "codex.item.704f468365d26360877b9a8c",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:54:10.769Z",
+      "end_utc": "2026-11-25T12:54:15.087Z",
+      "source": {
+        "sha256": "ac4b3353225d9f7535bbc6b9197b06c21469caca56893e266181f3bb479deb50"
+      }
+    },
+    {
+      "observation_id": "codex.item.a1666e7a455c50f7ef0e8012",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:54:19.373Z",
+      "end_utc": "2026-11-25T12:54:23.779Z",
+      "source": {
+        "sha256": "4ac1eac0a515a242e0d508efa00f062b449125d80534b6629937fd6d68cc3f51"
+      }
+    },
+    {
+      "observation_id": "codex.item.ba61787bce2d9a95083d5549",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:54:24.363Z",
+      "end_utc": "2026-11-25T12:54:24.910Z",
+      "source": {
+        "sha256": "f8f9f3f8c995881b755ea745f4da5e608a9dfbf8a60defaeec8c17ade1efb3b0"
+      }
+    },
+    {
+      "observation_id": "codex.item.61e572e99424d5e409ff8aa8",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:54:29.972Z",
+      "end_utc": "2026-11-25T12:54:30.595Z",
+      "source": {
+        "sha256": "dac5457abe0947ebbab1296442179068a3c9584a462406500927bc3aa49875d0"
+      }
+    },
+    {
+      "observation_id": "codex.item.9eebb134b092a580af24217d",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:54:30.299Z",
+      "end_utc": "2026-11-25T12:54:30.445Z",
+      "source": {
+        "sha256": "98f3e098ab2ca5969bc4976ed22076ddabeba4bfef7349fab9060dbd1187d027"
+      }
+    },
+    {
+      "observation_id": "codex.item.12337eb7e757908859a66fcf",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:54:33.217Z",
+      "end_utc": "2026-11-25T12:54:34.789Z",
+      "source": {
+        "sha256": "d6989eaaeecbf72946e583b3e60aeb889d43cb17d0631b14e342109733651812"
+      }
+    },
+    {
+      "observation_id": "codex.item.bb285753dcd5ca5466503679",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:54:34.877Z",
+      "end_utc": "2026-11-25T12:54:34.961Z",
+      "source": {
+        "sha256": "7c80c643846c1fb70080dd79e32d60d70a8b3b568dea4ad0707ecc8681deacb2"
+      }
+    },
+    {
+      "observation_id": "codex.item.b56aeae73b691c8e7453b70b",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:54:38.146Z",
+      "end_utc": "2026-11-25T12:54:38.191Z",
+      "source": {
+        "sha256": "9bf629cc5d1ffdbd9517764653a0ceb3b88898eedb6cba31453fc7dad2e73e58"
+      }
+    },
+    {
+      "observation_id": "codex.item.ac26aae45458f800f3468956",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:54:39.227Z",
+      "end_utc": "2026-11-25T12:54:39.659Z",
+      "source": {
+        "sha256": "7939069f9e06e45fde2add8faede19c3f5bc2fd5a70b654d82c30ba5b2688c50"
+      }
+    },
+    {
+      "observation_id": "codex.item.a2fe5cfdd4478d4f879d7a34",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:54:41.395Z",
+      "end_utc": "2026-11-25T12:54:41.396Z",
+      "source": {
+        "sha256": "ea19ed96ac64dc81b08962c77265abf31a098ebe61862dc9f4c52d5f000ca711"
+      }
+    },
+    {
+      "observation_id": "codex.item.cdb9c28025a25cc3bf4cdf48",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:54:42.656Z",
+      "end_utc": "2026-11-25T12:54:44.751Z",
+      "source": {
+        "sha256": "ea00ec26921440d7fe135cda33d3ed6503bdfc6783da071c03de6a5c305cd9b9"
+      }
+    },
+    {
+      "observation_id": "codex.item.e4f7f0d81f0f95a313d1509b",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:54:46.819Z",
+      "end_utc": "2026-11-25T12:54:49.526Z",
+      "source": {
+        "sha256": "cc1f4bf2c4fe8515c16e5cff61fbe4a1eb160c4e6353c982bc93c602719e04ab"
+      }
+    },
+    {
+      "observation_id": "codex.item.0dd68a6e293121a3761b9410",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:54:47.203Z",
+      "end_utc": "2026-11-25T12:54:50.003Z",
+      "source": {
+        "sha256": "700f1a7caf0739f7df8762a2ad603b92ac1a3cbb541ba35b508dbd20f9abe9b3"
+      }
+    },
+    {
+      "observation_id": "codex.item.a171720edff91d2b6a063927",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:54:54.217Z",
+      "end_utc": "2026-11-25T12:55:01.562Z",
+      "source": {
+        "sha256": "4477470084258e7549c8754e4cbd16ad4b8628b51d5065de5702cef381155268"
+      }
+    },
+    {
+      "observation_id": "codex.item.965d1efe49157347b57e6b27",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:54:59.963Z",
+      "end_utc": "2026-11-25T12:54:59.964Z",
+      "source": {
+        "sha256": "162c96260e69783de007295f589031696da0d9e47b1d31885f77f66b31096fa9"
+      }
+    },
+    {
+      "observation_id": "codex.item.3c1acb6192d542c0ca8a45eb",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:55:03.148Z",
+      "end_utc": "2026-11-25T12:55:04.158Z",
+      "source": {
+        "sha256": "1920607ecfa38a6391aac6024d08d11eb0a8c938e83f7ab31c95044c485aa811"
+      }
+    },
+    {
+      "observation_id": "codex.item.5605a3e82f287203ab46c34e",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:55:06.809Z",
+      "end_utc": "2026-11-25T12:55:09.917Z",
+      "source": {
+        "sha256": "e4cc9be1b1c8612e6561ee2fc7131ef29039f6fab40121eee7f222c26fdac1da"
+      }
+    },
+    {
+      "observation_id": "codex.item.4215a6ead7a05ca73a1ff37c",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:55:09.605Z",
+      "end_utc": "2026-11-25T12:55:10.294Z",
+      "source": {
+        "sha256": "f348afffd98b1de6abf6f9a6b302d35a2e1fb6eeb83b5b91e824e158c4ad4507"
+      }
+    },
+    {
+      "observation_id": "codex.item.8008295c677dea4f7d42bcac",
+      "actor": "codex.a1e41b17f8d1d2c27cabe269",
+      "turn": "codex.turn.827396ee4c7565986ca6670a",
+      "phase": null,
+      "role": "reviewer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-25T12:55:16.107Z",
+      "end_utc": "2026-11-25T12:55:18.310Z",
+      "source": {
+        "sha256": "c792f852e758a444704e932a05286c5ebf3a13f39a63c83149467c30e12ca0a5"
+      }
+    },
+    {
+      "observation_id": "codex.item.e08c0193281422161052c494",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:55:20.109Z",
+      "end_utc": "2026-11-25T12:55:21.949Z",
+      "source": {
+        "sha256": "6f418f1afbc8f9d4be5effa0109c9af0f8e8cd57de6491b2a26516cc82558833"
+      }
+    },
+    {
+      "observation_id": "codex.item.679a86186022c0f467c83ccc",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:55:24.493Z",
+      "end_utc": "2026-11-25T12:55:26.509Z",
+      "source": {
+        "sha256": "4f7c98c2455196c7be45910451094c8cb8c8bdf8e28a70f536b8ab825452b414"
+      }
+    },
+    {
+      "observation_id": "codex.item.0829d2141cb8f9816d3e5547",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-25T12:55:26.513Z",
+      "end_utc": "2026-11-25T12:55:27.986Z",
+      "source": {
+        "sha256": "9a3842e27452c188900b49951175054d09e8b5217b5cb75a5a2ba1bcaec979fd"
+      }
+    },
+    {
+      "observation_id": "codex.item.2319ee36307e3de2673f17da",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:55:49.293Z",
+      "end_utc": "2026-11-25T12:55:50.860Z",
+      "source": {
+        "sha256": "2196cc456b9b30d4bbddeb3456b7fa0d08beb3e8ba919eabef9b2174ab1ae2bf"
+      }
+    },
+    {
+      "observation_id": "codex.item.85db24b296b7e7eb53a31a1a",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:55:53.067Z",
+      "end_utc": "2026-11-25T12:55:58.998Z",
+      "source": {
+        "sha256": "b5ba6d0a2ea66c78e68c7e7889b7fa4cb35d08c892623748a04dd9914efa47ca"
+      }
+    },
+    {
+      "observation_id": "codex.item.402289ea14a76886c9072ada",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:56:02.357Z",
+      "end_utc": "2026-11-25T12:56:05.653Z",
+      "source": {
+        "sha256": "ff08ea2d574cff54ba67b4a445f75d8e64e7ee3de53f84eefe3823892029b153"
+      }
+    },
+    {
+      "observation_id": "codex.item.02cdc4c5513b1f947d9e9eb4",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:56:07.798Z",
+      "end_utc": "2026-11-25T12:56:09.594Z",
+      "source": {
+        "sha256": "0ff3a822b29f08ca9614a4b45e57c5ca05085c4c2ba91792dd3420dd5f24a2d7"
+      }
+    },
+    {
+      "observation_id": "codex.item.6d7eb10c93cd20d6d2f526d9",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:56:13.217Z",
+      "end_utc": "2026-11-25T12:56:15.451Z",
+      "source": {
+        "sha256": "6fd9bb8b4e4639293b671c1d43194f57e97f46117521b6d7ee048428d8d30126"
+      }
+    },
+    {
+      "observation_id": "codex.item.bd3c66aec11cc66d42a9e989",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:56:19.939Z",
+      "end_utc": "2026-11-25T12:56:24.230Z",
+      "source": {
+        "sha256": "f4dabbb20a436aebfe5470c5b4dd20e4f91473d42ba96999d07f4559ab3041df"
+      }
+    },
+    {
+      "observation_id": "codex.item.dcb953c369d5d2025861e2ec",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:56:49.265Z",
+      "end_utc": "2026-11-25T12:56:51.867Z",
+      "source": {
+        "sha256": "5d8b84be04f9d41c293dd5f6ad969f79d42933337ae91aa941584e0e73d11cc0"
+      }
+    },
+    {
+      "observation_id": "codex.item.d72dad2bad56d517b51f9068",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:57:03.998Z",
+      "end_utc": "2026-11-25T12:57:07.044Z",
+      "source": {
+        "sha256": "568090fb23df0e94db8afa3a7760d906b17916a70995be7fe8420a5c70904a90"
+      }
+    },
+    {
+      "observation_id": "codex.item.e532824e075eb2492c43c811",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:57:08.399Z",
+      "end_utc": "2026-11-25T12:57:09.460Z",
+      "source": {
+        "sha256": "99da1a38e95ce9bbce9a13db17be29e844247b2342904a6db06092c28d16df91"
+      }
+    },
+    {
+      "observation_id": "codex.item.42729ea431abc6db3dea71d1",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:57:12.179Z",
+      "end_utc": "2026-11-25T12:57:13.955Z",
+      "source": {
+        "sha256": "0af74abd2832365e5e9a4245919eeb66f8f1c2c1e5f046d3719d4e9f6ffc502e"
+      }
+    },
+    {
+      "observation_id": "codex.item.d6d09baa7074a52e4e4aee8e",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:57:19.028Z",
+      "end_utc": "2026-11-25T12:57:22.214Z",
+      "source": {
+        "sha256": "99d8ea21617bb3e08b89c39f72cdc159ee93be9170311627a63af7e54ada9ce8"
+      }
+    },
+    {
+      "observation_id": "codex.item.b75cf85171d681d5f703ea9b",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:57:45.989Z",
+      "end_utc": "2026-11-25T12:57:49.437Z",
+      "source": {
+        "sha256": "40aa4c4b58f17a1ce296e84507ecb1ad2f31dd303bb426f681c0d0b8f638de0d"
+      }
+    },
+    {
+      "observation_id": "codex.item.a56debe4bce0ae4aa9e1505f",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:58:08.169Z",
+      "end_utc": "2026-11-25T12:58:09.317Z",
+      "source": {
+        "sha256": "329f5732ab1a84cf3d5e7b40fdcfc8a3842660b5a155828ab35a167d88b03339"
+      }
+    },
+    {
+      "observation_id": "codex.item.a07a8cb549d16f3c1002c866",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:58:10.748Z",
+      "end_utc": "2026-11-25T12:58:11.855Z",
+      "source": {
+        "sha256": "8251025e921930e4347ecd645d51a84308a8070c9200c4e922d953eb0a969278"
+      }
+    },
+    {
+      "observation_id": "codex.item.8120e3fd8e1326ea88c5ae54",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:58:14.103Z",
+      "end_utc": "2026-11-25T12:58:17.494Z",
+      "source": {
+        "sha256": "c465ee0527267b62c79d61e15d28e9c156a70ac65d31409f82321219e212bc40"
+      }
+    },
+    {
+      "observation_id": "codex.item.01a625b93fd3bfe63588cecf",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:58:21.799Z",
+      "end_utc": "2026-11-25T12:58:25.866Z",
+      "source": {
+        "sha256": "e90ba8d49666bbaed1ff5c0719f6bc90cd71f14ee3b5cf125154e6391dfe156b"
+      }
+    },
+    {
+      "observation_id": "codex.item.fa641752870e3941fcb33f6b",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:58:49.373Z",
+      "end_utc": "2026-11-25T12:58:50.236Z",
+      "source": {
+        "sha256": "58bd5e5e7ce60e11c6b2f7f7c106916c704ceffc5757b241dc2b2afc0d110901"
+      }
+    },
+    {
+      "observation_id": "codex.item.93a35e6bbfccbcbd4010ab28",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:58:57.170Z",
+      "end_utc": "2026-11-25T12:58:58.107Z",
+      "source": {
+        "sha256": "2f42f421d3105d35758bfdffb86285ea23efe8afce5c479fc44a4cd6e1b47f29"
+      }
+    },
+    {
+      "observation_id": "codex.item.92ab09d502a5e603a4e9352c",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:59:00.329Z",
+      "end_utc": "2026-11-25T12:59:00.728Z",
+      "source": {
+        "sha256": "6749adcbdbb2c2698bd9d18117310d0c0b1ee594540c4a460a2d0c179eb55cf6"
+      }
+    },
+    {
+      "observation_id": "codex.item.a00f6cb54a352cae18371b06",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:59:11.325Z",
+      "end_utc": "2026-11-25T12:59:12.130Z",
+      "source": {
+        "sha256": "9f9730ac2277a503de8158bd25930c3a81896d729e14ec760f8a62c72e2d7091"
+      }
+    },
+    {
+      "observation_id": "codex.item.639599b9d71865b0e2c199c9",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-25T12:59:12.133Z",
+      "end_utc": "2026-11-25T12:59:13.283Z",
+      "source": {
+        "sha256": "0173105195b355780e19aaae6dcc6d9166ecbb08c652f477010f49d63f816698"
+      }
+    },
+    {
+      "observation_id": "codex.item.56610021fd86685beefcc5e8",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T12:59:14.756Z",
+      "end_utc": "2026-11-25T12:59:33.454Z",
+      "source": {
+        "sha256": "a739bcfa8c103fadf3c72842cbb8f2ba05331fe138ec476d44dd5af4aedd90c9"
+      }
+    },
+    {
+      "observation_id": "codex.item.0142d819a9c639271e81f2cd",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-reasoning-boundaries",
+      "start_utc": "2026-11-25T12:59:17.751Z",
+      "end_utc": "2026-11-25T12:59:19.653Z",
+      "source": {
+        "sha256": "85f8f26ca180737b57d092cf8ff79a617ec92e591ece9cc39872c24d562252b4"
+      }
+    },
+    {
+      "observation_id": "codex.item.645c76842593cd7c92d4a23b",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.46a1c7a28c8f1b2143d8dd50",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-25T12:59:35.735Z",
+      "end_utc": "2026-11-25T12:59:40.616Z",
+      "source": {
+        "sha256": "75bd3a4179d4cf998f896c567807f9333fa1237b8344a49a5fd6a2c9b5a47794"
+      }
+    }
+  ]
+}

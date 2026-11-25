@@ -10,12 +10,12 @@ children: []
 blocking: [439, 440, 441]
 blocked-by: [436, 437]
 created: "2026-11-25T03:17:24Z"
-updated: "2026-11-25T04:33:52Z"
+updated: "2026-11-25T13:10:41.926Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 2.5, "size": "M"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/trusted-pr-447.json", "attachments/pr-447-test-mix.json", "attachments/pr-447-source-review.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/trusted-pr-447.json", "attachments/pr-447-test-mix.json", "attachments/pr-447-source-review.md", "attachments/timing/435-native-engagement-backfill-20261125-438.json"]}
 expansions: []
 trips: []
 ---
@@ -42,3 +42,7 @@ Expose a bounded Python interface around already-installed provider harnesses an
 ## Delivery
 
 [PR #447](https://github.com/kburson/aitm/pull/447) merged to `trunk`. GitHub closed #438 and Project 24 read back Done. [Delivery sign-off](retro/2026-11-24-delivery-sign-off.md).
+
+## Refinement
+
+**Size M. Estimate 2.5 agent-hours.** [Sizing basis and evidence](<../435/plan/2026-11-25-refinement-and-engagement-backfill.md>). [Partial engagement receipt](attachments/timing/435-native-engagement-backfill-20261125-438.json).

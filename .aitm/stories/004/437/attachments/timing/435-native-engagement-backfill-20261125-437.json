@@ -1,0 +1,27 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 437,
+  "batch": "435-native-engagement-backfill-20261125",
+  "recorded_at_utc": "2026-11-25T13:10:41.926Z",
+  "source": {
+    "ref": "codex:completed-progress"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.bea75aefd7661adefe23b24e",
+      "actor": "codex.6ea4afe19ea1e2019f39fcc2",
+      "turn": "codex.turn.9c56cfecba3eb629000c2364",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-25T03:19:11.154Z",
+      "end_utc": "2026-11-25T03:19:11.455Z",
+      "source": {
+        "sha256": "3e2849747166a925ed001b31bf2b5d697b52cf34d0180bd337f4b7b6481c8321"
+      }
+    }
+  ]
+}

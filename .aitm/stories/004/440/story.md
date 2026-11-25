@@ -10,12 +10,12 @@ children: []
 blocking: [444, 445]
 blocked-by: [438]
 created: "2026-11-25T03:17:28Z"
-updated: "2026-11-25T12:44:02Z"
+updated: "2026-11-25T13:10:41.926Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 2.5, "size": "M"}
 priority: null
 origin: ".aitm/stories/004/426/plan/2026-11-24-agent-effort-cost-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/trusted-pr-449.json", "attachments/pr-449-test-mix.json", "attachments/pr-449-source-review.md", "attachments/claude-native-qualification.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/trusted-pr-449.json", "attachments/pr-449-test-mix.json", "attachments/pr-449-source-review.md", "attachments/claude-native-qualification.json", "attachments/timing/435-native-engagement-backfill-20261125-440.json"]}
 expansions: []
 trips: []
 ---
@@ -41,3 +41,7 @@ Normalize per-result usage, deduplicated finalized requests, cache fields and pa
 ## Delivery
 
 [PR #449](https://github.com/kburson/aitm/pull/449) merged to `trunk`. GitHub closed #440 and Project 24 read back Done. [Delivery sign-off](retro/2026-11-25-delivery-sign-off.md).
+
+## Refinement
+
+**Size M. Estimate 2.5 agent-hours.** [Sizing basis and evidence](<../435/plan/2026-11-25-refinement-and-engagement-backfill.md>). [Partial engagement receipt](attachments/timing/435-native-engagement-backfill-20261125-440.json).
