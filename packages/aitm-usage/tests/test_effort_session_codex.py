@@ -1,5 +1,6 @@
 import json
 from hashlib import sha256
+from pathlib import Path
 from uuid import UUID
 
 import pytest
@@ -16,7 +17,7 @@ def uid(value):
 
 SESSION, TURN, CHILD, CHILD_TURN, OTHER = map(uid, range(1, 6))
 BUILD = "0.171.0-alpha.13.2"
-MODEL = "synthetic"
+MODEL = "gpt-6.2-sol"
 ENROLLMENT = Enrollment(
     UUID(int=10), UUID(int=11), UUID(int=12), Role.ORCHESTRATOR, 457
 )
@@ -137,14 +138,16 @@ def recover(path, **kwargs):
 
 def test_hook_extracts_exact_private_binding_without_retaining_payload():
     secret = "a-private-prompt"
+    exact = str(Path.cwd() / "private-exact.jsonl")
+    parent = str(Path.cwd() / "private-parent.jsonl")
     raw = json.dumps(
         {
             "hook_event_name": "SubagentStop",
             "session_id": SESSION,
             "turn_id": TURN,
             "agent_id": CHILD,
-            "agent_transcript_path": "/private/exact.jsonl",
-            "transcript_path": "/private/parent.jsonl",
+            "agent_transcript_path": exact,
+            "transcript_path": parent,
             "model": MODEL,
             "last_assistant_message": secret,
         }
@@ -156,7 +159,7 @@ def test_hook_extracts_exact_private_binding_without_retaining_payload():
         TURN,
         CHILD,
     )
-    assert hook.transcript_path == "/private/exact.jsonl"
+    assert hook.transcript_path == exact
     assert secret not in repr(hook) and "private" not in repr(hook)
     with pytest.raises(ValueError, match="Invalid"):
         parse_codex_hook(raw.replace(b'"turn_id":', b'"turn_id":null,"turn_id":'))
@@ -165,8 +168,8 @@ def test_hook_extracts_exact_private_binding_without_retaining_payload():
 
 
 def test_subagent_start_and_stop_expose_the_same_child_path():
-    owner = "/private/owner.jsonl"
-    child = "/private/child.jsonl"
+    owner = str(Path.cwd() / "private-owner.jsonl")
+    child = str(Path.cwd() / "private-child.jsonl")
     common = {"session_id": SESSION, "turn_id": CHILD_TURN, "agent_id": CHILD}
     start = dict(common, hook_event_name="SubagentStart", transcript_path=child)
     stop = dict(
@@ -361,9 +364,9 @@ def test_cli_callbacks_keep_dispatch_story_and_can_replay_after_restart(
         return main(args)
 
     assert hook("UserPromptSubmit") == 0
+    store.select(session, 458, remote)
     assert hook("SubagentStart", child=True) == 0
     assert set(store.status(session).values()) == {"pending-binding"}
-    store.select(session, 458, remote)
     child_evidence = child_path.read_bytes()
     child_path.unlink()
     assert hook("SubagentStop", child=True, path=child_path) == 3

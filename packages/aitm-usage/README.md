@@ -301,5 +301,7 @@ subcommand below.
   lifecycle trust and dispatch behavior as part of route qualification.
 - `session-publish SESSION REPOSITORY` publishes the sanitized immutable bytes
   to that project's existing `origin/planning`. When permissions refuse a
-  push, retain the private batch for the existing authorized publisher.
+  push, use `session-export-batch SESSION STORY` to freeze the sanitized story batch.
+  The existing authorized writer can use `session-publish-batch STORY REPOSITORY BATCH`
+  against its independently configured planning remote.
   A separately configured database cannot establish the same native identity.

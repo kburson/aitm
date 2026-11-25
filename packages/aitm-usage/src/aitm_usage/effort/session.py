@@ -7,12 +7,13 @@ import json
 import os
 import re
 import secrets
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
 from ..types import Availability, SourceRef, TokenCounts, _decode, _encode
+from .assignments import ScopeMarker
 from .capture import (
     CaptureAdapter,
     CaptureLimits,
@@ -34,10 +35,28 @@ from .receipts import (
     require_digest,
     require_item,
 )
+from .review_receipts import (
+    ReviewAttempt,
+    ReviewCompanion,
+    SealedDecision,
+    reconcile_review_receipts,
+)
 from .store import Disposition, EffortError, EffortStore
 
 _SCHEMA = "aitm.session-turn/v1"
-_PROVIDERS = {"codex", "claude", "grok"}
+_ROUTES = {
+    "codex": {
+        "0.171.0-alpha.13": {"exec", "cli"},
+        "0.171.0-alpha.13.2": {"exec", "cli", "desktop", "desktop-subagent"},
+    },
+    "claude": {"2.1.331": {"print", "cli"}},
+    "grok": {"1.0.92": {"usage"}},
+}
+_MODELS = {
+    "codex": {"gpt-6.2-sol", "gpt-6.2-astra", "gpt-6.1-sol", "gpt-6-astra"},
+    "claude": {"claude-sonnet-5-5", "claude-opus-5-5"},
+    "grok": {"grok-4.7-build-fast"},
+}
 _MAX_PUBLIC_BYTES = 2 << 20
 _STATEMENTS = (
     """CREATE TABLE IF NOT EXISTS session_project (
@@ -121,7 +140,7 @@ class PublicReceipt:
     grok_cache_creation_tokens: int | None
 
     def __post_init__(self):
-        if self.schema != _SCHEMA or self.provider not in _PROVIDERS:
+        if self.schema != _SCHEMA or self.provider not in _ROUTES:
             raise EffortError("Unexpected publication receipt schema or provider")
         if type(self.story) is not int or self.story < 1 or self.revision < 1:
             raise EffortError("Expected a positive story and revision")
@@ -131,12 +150,15 @@ class PublicReceipt:
             raise EffortError("Missing publication revision lineage")
         if self.previous_receipt_sha256 is not None:
             require_digest(self.previous_receipt_sha256)
-        for label in (self.version, self.surface):
-            _label(label)
+        if self.surface not in _ROUTES[self.provider].get(self.version, ()):
+            raise EffortError("Unrecognized public provider route")
         if self.model is not None:
-            _label(self.model)
+            if self.model not in _MODELS[self.provider]:
+                raise EffortError("Unrecognized public provider model")
         elif self.rate_inputs is not None:
             raise EffortError("Request rate inputs require a verified model")
+        if self.usage_scope not in (UsageScope.BOUNDED, UsageScope.INCLUSIVE):
+            raise EffortError("Unattributed usage cannot be published under a story")
         if self.started_at and self.ended_at and self.ended_at < self.started_at:
             raise EffortError("Invalid observation interval")
         if self.time_basis == TimeBasis.UNKNOWN and (self.started_at or self.ended_at):
@@ -228,7 +250,12 @@ class SessionStore(EffortStore):
         *,
         parent: UUID | None = None,
         review: ReviewBinding | None = None,
+        defer_story: bool = False,
     ) -> Expectation:
+        if defer_story and (
+            role != Role.WORKER or parent is not None or review is not None
+        ):
+            raise EffortError("Only a verified desktop child may defer its story")
         with self._transaction(write=True) as db:
             selection = db.execute(
                 "SELECT story, epic FROM session_selections WHERE session=?",
@@ -248,13 +275,14 @@ class SessionStore(EffortStore):
                     old_session != str(session)
                     or old_launch != launch.value
                     or enrolled.role != role
-                    or enrolled.parent_attempt_id != parent
+                    or (not defer_story and enrolled.parent_attempt_id != parent)
                     or enrolled.review != review
                 ):
                     raise EffortError("Conflicting attempt enrollment")
                 return expected
+            story, epic = (None, None) if defer_story else selection
             enrollment = Enrollment(
-                self.project_id, session, attempt, role, *selection, parent, review
+                self.project_id, session, attempt, role, story, epic, parent, review
             )
             if self._enroll(db, enrollment) is not Disposition.INSERTED:
                 raise EffortError("Attempt already belongs to another enrollment")
@@ -290,7 +318,9 @@ class SessionStore(EffortStore):
             if (
                 child_enrollment.role != Role.WORKER
                 or owner.role != Role.ORCHESTRATOR
+                or owner.story is None
                 or child_enrollment.parent_attempt_id not in (None, parent)
+                or child_enrollment.story not in (None, owner.story)
             ):
                 raise EffortError("Native parent does not match the enrolled role")
             old = db.execute(
@@ -298,6 +328,18 @@ class SessionStore(EffortStore):
             ).fetchone()
             if old is not None and old[0] != str(parent):
                 raise EffortError("Conflicting native parent")
+            if child_enrollment.story is None:
+                enrollment = replace(
+                    child_enrollment,
+                    story=owner.story,
+                    epic=owner.epic,
+                    parent_attempt_id=parent,
+                )
+                db.execute(
+                    "UPDATE enrollments SET payload=? WHERE attempt=?",
+                    (_encode(enrollment, Enrollment), str(child)),
+                )
+                self._advance_generation(db)
             db.execute(
                 "INSERT OR IGNORE INTO session_parent_links VALUES (?, ?)",
                 (str(child), str(parent)),
@@ -307,10 +349,12 @@ class SessionStore(EffortStore):
         self, session: UUID, attempt: UUID, launch: SourceRef, turn: NativeTurn
     ) -> None:
         """Attach the exact reference verified by the authorized caller."""
-        if turn.provider not in _PROVIDERS:
+        if turn.provider not in _ROUTES:
             raise EffortError("Unsupported provider binding")
         with self._transaction(write=True) as db:
             expected = self._expected(db, session, attempt)
+            if expected.enrollment.story is None:
+                raise EffortError("Attempt has no verified story assignment")
             if not hmac.compare_digest(expected.launch.value, launch.value):
                 raise EffortError("Native reference does not match the launch binding")
             if expected.native is not None:
@@ -388,8 +432,12 @@ class SessionStore(EffortStore):
         adapter: CaptureAdapter,
         command: HarnessCommand,
         limits: CaptureLimits = CaptureLimits(),
+        *,
+        expected_turn: NativeTurn | None = None,
     ) -> CaptureResult:
         """Launch an already enrolled attempt at most once and bind its native result."""
+        if expected_turn is not None:
+            self.bind(session, attempt, launch, expected_turn)
         with self._transaction(write=True) as db:
             expected = self._expected(db, session, attempt)
             if not hmac.compare_digest(expected.launch.value, launch.value):
@@ -428,6 +476,24 @@ class SessionStore(EffortStore):
             self.accept(session, observation.receipt)
         return observation
 
+    def review_companion(
+        self, session: UUID, attempt: ReviewAttempt, decision: SealedDecision | None
+    ) -> ReviewCompanion:
+        """Reconcile already-authenticated AIPR evidence without changing its authority."""
+        expected = self.expected(session, attempt.identity.enrollment.attempt_id)
+        if attempt.identity.enrollment != expected.enrollment or (
+            attempt.observation_id is not None
+            and (
+                expected.native is None
+                or attempt.observation_id != expected.native.identity
+            )
+        ):
+            raise EffortError("Review attempt does not match the exact session binding")
+        (companion,) = reconcile_review_receipts(
+            self.snapshot(), (attempt,), () if decision is None else (decision,)
+        )
+        return companion
+
     def status(self, session: UUID) -> dict[UUID, str]:
         with self._transaction() as db:
             result = {}
@@ -454,6 +520,14 @@ class SessionStore(EffortStore):
         with self._transaction() as db:
             results = []
             previous = {}
+            withheld = set()
+            markers = {}
+            for observation, kind, payload in db.execute(
+                "SELECT observation, kind, payload FROM scope_markers"
+            ):
+                markers.setdefault(observation, {})[kind] = _decode(
+                    payload, ScopeMarker
+                )
             for payload, enrollment, rate_payload in db.execute(
                 """SELECT r.payload, a.payload, v.payload FROM revisions r
                    JOIN session_expectations s ON s.attempt=r.attempt
@@ -469,6 +543,25 @@ class SessionStore(EffortStore):
                     if rate_payload is None
                     else _decode(rate_payload, RateEvidence)
                 )
+                scope = markers.get(native.observation_id, {})
+                start, end = scope.get("start"), scope.get("end")
+                outside = start is not None and (
+                    end is None
+                    or any(
+                        point is not None and not start.at <= point <= end.at
+                        for point in (native.started_at, native.ended_at)
+                    )
+                )
+                if (
+                    native.observation_id in withheld
+                    or assignment.story is None
+                    or native.scope not in (UsageScope.BOUNDED, UsageScope.INCLUSIVE)
+                    or outside
+                ):
+                    withheld.add(native.observation_id)
+                    continue
+                if rate is not None and rate.model not in _MODELS[native.turn.provider]:
+                    rate = None
                 identity = self._pseudonym("publication", native.observation_id)
                 public = PublicReceipt(
                     _SCHEMA,

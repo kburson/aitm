@@ -3,11 +3,10 @@
 import json
 import sys
 from argparse import Namespace, _SubParsersAction
-from dataclasses import replace
 from pathlib import Path
 from uuid import UUID
 
-from ..types import _decode
+from ..types import _decode, _unique_fields
 from .receipts import NativeTurn, ReviewBinding, Role, UsageReceipt
 from .session import RateEvidence, SessionStore, validate_public_receipt
 from .session_codex import (
@@ -55,6 +54,17 @@ def add_session_commands(commands: _SubParsersAction) -> None:
     )
     publish.add_argument("session", type=UUID)
     publish.add_argument("repository", type=Path)
+    export = commands.add_parser(
+        "session-export-batch", help="freeze one sanitized story batch"
+    )
+    export.add_argument("session", type=UUID)
+    export.add_argument("story", type=int)
+    import_batch = commands.add_parser(
+        "session-publish-batch", help="publish the exact handed-off batch"
+    )
+    import_batch.add_argument("story", type=int)
+    import_batch.add_argument("repository", type=Path)
+    import_batch.add_argument("batch", type=Path)
     hook = commands.add_parser(
         "session-codex-hook", help="handle one authorized Codex lifecycle event"
     )
@@ -71,6 +81,55 @@ def _read(path: Path, limit: int = 2 << 20) -> bytes:
     if len(content) > limit:
         raise EffortError("Private input exceeds its byte limit")
     return content
+
+
+def _entries(payloads, *, story=None):
+    from .session_publication import PublicationEntry
+
+    entries = []
+    for payload in payloads:
+        row = validate_public_receipt(payload)
+        if story is not None and row["story"] != story:
+            raise EffortError("Frozen batch includes a different story")
+        entries.append(
+            PublicationEntry(row["story"], row["identity"], row["revision"], payload)
+        )
+    return entries
+
+
+def _canonical(value: object) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+
+
+def _batch(store: SessionStore, session: UUID, story: int) -> bytes:
+    rows = [
+        validate_public_receipt(payload) for payload in store.public_receipts(session)
+    ]
+    return _canonical(
+        {
+            "schema": "aitm.session-batch/v1",
+            "story": story,
+            "project": str(store.project_id),
+            "receipts": [row for row in rows if row["story"] == story],
+        }
+    )
+
+
+def _read_batch(path: Path, store: SessionStore, story: int):
+    data = _read(path, 8 << 20)
+    value = json.loads(data, object_pairs_hook=_unique_fields)
+    if (
+        type(value) is not dict
+        or set(value) != {"schema", "story", "project", "receipts"}
+        or value["schema"] != "aitm.session-batch/v1"
+        or type(value["story"]) is not int
+        or value["story"] != story
+        or value["project"] != str(store.project_id)
+        or type(value["receipts"]) is not list
+        or data != _canonical(value)
+    ):
+        raise EffortError("Invalid frozen session publication batch")
+    return _entries((_canonical(row) for row in value["receipts"]), story=story)
 
 
 def _codex_hook(args: Namespace, store: SessionStore) -> int:
@@ -97,6 +156,7 @@ def _codex_hook(args: Namespace, store: SessionStore) -> int:
             attempt,
             Role.ORCHESTRATOR if child is None else Role.WORKER,
             launch,
+            defer_story=child is not None,
         )
         return 0
     if event.event not in {"Stop", "Interrupt", "SubagentStop"}:
@@ -138,7 +198,7 @@ def _codex_hook(args: Namespace, store: SessionStore) -> int:
             ).value[-64:-32]
         )
         store.attach_parent(args.session, attempt, parent_attempt)
-        enrollment = replace(enrollment, parent_attempt_id=parent_attempt)
+        enrollment = store.expected(args.session, attempt).enrollment
     result = recover_codex_desktop(
         enrollment,
         account=store.reference("codex-account", args.account),
@@ -202,17 +262,16 @@ def run_session_command(args: Namespace) -> int:
                     sort_keys=True,
                 )
             )
-        case "session-publish":
-            from .session_publication import PublicationEntry, publish_receipts
+        case "session-export-batch":
+            sys.stdout.write(_batch(store, args.session, args.story).decode())
+        case "session-publish" | "session-publish-batch":
+            from .session_publication import publish_receipts
 
-            entries = []
-            for payload in store.public_receipts(args.session):
-                row = validate_public_receipt(payload)
-                entries.append(
-                    PublicationEntry(
-                        row["story"], row["identity"], row["revision"], payload
-                    )
-                )
+            entries = (
+                _read_batch(args.batch, store, args.story)
+                if args.command == "session-publish-batch"
+                else _entries(store.public_receipts(args.session))
+            )
             print(
                 publish_receipts(
                     args.repository, store.remote(), store.project_id, entries

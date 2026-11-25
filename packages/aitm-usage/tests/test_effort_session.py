@@ -35,7 +35,7 @@ def layout(session_api, path):
     launch = store.reference("launch", "private-canary")
     turn = NativeTurn(
         "codex",
-        "1.0",
+        "0.171.0-alpha.13.2",
         "desktop",
         *(store.reference("test", item) for item in ("account", "session", "turn")),
     )
@@ -177,7 +177,7 @@ def test_supervised_launch_settles_automatically_and_will_not_repeat(
 
     class Observes:
         def observe(self, event):
-            assert event.stdout == b"finished\n"
+            assert event.stdout.splitlines() == [b"finished"]
             assert store.status(SESSION)[CHILD] == "pending-binding"
             return Observation(
                 Outcome.COMPLETED,
@@ -202,3 +202,115 @@ def test_supervised_launch_settles_automatically_and_will_not_repeat(
     assert store.status(SESSION)[CHILD] == "observed"
     with pytest.raises(EffortError, match="already dispatched"):
         asyncio.run(store.run_owned(SESSION, CHILD, launch, Observes(), command))
+
+
+def test_unknown_scope_and_open_markers_withhold_publication(session_api, tmp_path):
+    from aitm_usage.effort.assignments import MarkerKind, ScopeMarker
+
+    store, launch, turn = layout(session_api, tmp_path / "effort.db")
+    store.bind(SESSION, CHILD, launch, turn)
+    unknown = UsageReceipt(
+        PROJECT,
+        CHILD,
+        turn,
+        "e" * 64,
+        STAMP,
+        1,
+        Availability.PARTIAL,
+        Outcome.COMPLETED,
+        TokenCounts(input_tokens=12),
+    )
+    store.accept(SESSION, unknown)
+    assert store.public_receipts(SESSION) == ()
+    assert store.snapshot().attributed[0].story is None
+    owner_turn = replace(turn, turn=launch)
+    store.bind(SESSION, OWNER, launch, owner_turn)
+    start = ScopeMarker(
+        PROJECT, OWNER, owner_turn, MarkerKind.START, launch, STAMP, turn.account
+    )
+    store.mark_scope(start)
+    bounded = replace(
+        unknown, attempt_id=OWNER, turn=owner_turn, scope=UsageScope.BOUNDED
+    )
+    store.accept(SESSION, bounded)
+    assert store.public_receipts(SESSION) == ()
+    store.mark_scope(replace(start, kind=MarkerKind.END))
+    (payload,) = store.public_receipts(SESSION)
+    for value in ("desktop", "0.171.0-alpha.13.2"):
+        with pytest.raises(ValueError):
+            session_api.validate_public_receipt(
+                payload.replace(value.encode(), b"CANARY_PRIVATE_VALUE")
+            )
+
+
+def test_frozen_batch_survives_story_and_revision_changes(session_api, tmp_path):
+    from aitm_usage.effort.session_cli import _batch, _read_batch
+
+    store, launch, turn = layout(session_api, tmp_path / "effort.db")
+    store.bind(SESSION, CHILD, launch, turn)
+    first = UsageReceipt(
+        PROJECT,
+        CHILD,
+        turn,
+        "a" * 64,
+        STAMP,
+        1,
+        Availability.PARTIAL,
+        Outcome.COMPLETED,
+        TokenCounts(input_tokens=12),
+        scope=UsageScope.BOUNDED,
+    )
+    store.accept(SESSION, first)
+    handoff = tmp_path / "batch.json"
+    handoff.write_bytes(_batch(store, SESSION, 457))
+    store.select(SESSION, 458, REMOTE)
+    store.accept(SESSION, replace(first, revision=2, previous_digest=first.digest))
+    other_writer = session_api.SessionStore(tmp_path / "other-writer.db", PROJECT)
+    other_writer.select(SESSION, 457, REMOTE)
+    (entry,) = _read_batch(handoff, other_writer, 457)
+    assert entry.revision == 1
+    assert entry.data == store.public_receipts(SESSION)[0]
+    with pytest.raises(EffortError, match="batch"):
+        _read_batch(handoff, other_writer, 458)
+
+
+def test_review_companion_keeps_sealed_decision_independent(session_api, tmp_path):
+    from aitm_usage.effort.receipts import ReviewBinding
+    from aitm_usage.effort.review_receipts import (
+        ReviewAttempt,
+        ReviewIdentity,
+        SealedDecision,
+        Verdict,
+    )
+
+    store, launch, turn = layout(session_api, tmp_path / "effort.db")
+    attempt_id = UUID(int=7)
+    expected = store.expect(
+        SESSION,
+        attempt_id,
+        Role.REVIEWER,
+        launch,
+        review=ReviewBinding(turn.account, 1),
+    )
+    store.bind(SESSION, attempt_id, launch, turn)
+    identity = ReviewIdentity(expected.enrollment, turn.session, "a" * 64)
+    attempt = ReviewAttempt(identity, turn.identity)
+    decision = SealedDecision(identity, Verdict.ACCEPTED, "b" * 64, turn.turn)
+    assert store.review_companion(SESSION, attempt, decision).usage is None
+    usage = UsageReceipt(
+        PROJECT,
+        attempt_id,
+        turn,
+        "c" * 64,
+        STAMP,
+        1,
+        Availability.COMPLETE,
+        Outcome.COMPLETED,
+        TokenCounts(total_tokens=12),
+        scope=UsageScope.BOUNDED,
+    )
+    store.accept(SESSION, usage)
+    result = store.review_companion(SESSION, attempt, decision)
+    assert result.decision == decision and result.usage == usage
+    with pytest.raises(EffortError, match="exact session"):
+        store.review_companion(SESSION, replace(attempt, observation_id="e" * 64), None)
