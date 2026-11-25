@@ -1,0 +1,76 @@
+{
+  "schema": "aitm.claude-effort-qualification/v1",
+  "source_head": "1b0613b26c91fa7239887d79b085bf4701cb76c2",
+  "platform": "macOS",
+  "harness_version": "2.1.331",
+  "native_authentication_indicators": [
+    "none"
+  ],
+  "cases": {
+    "headless_fresh": {
+      "outcome": "completed",
+      "gap": null,
+      "coverage": "complete",
+      "tokens": {
+        "input_tokens": 13894,
+        "cached_input_tokens": 13892,
+        "cache_write_5m_tokens": 0,
+        "cache_write_1h_tokens": 2869,
+        "output_tokens": 4,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 16767
+      },
+      "matches_exact_delayed_recovery": true
+    },
+    "headless_resume": {
+      "outcome": "completed",
+      "gap": null,
+      "coverage": "complete",
+      "tokens": {
+        "input_tokens": 34383,
+        "cached_input_tokens": 34379,
+        "cache_write_5m_tokens": 0,
+        "cache_write_1h_tokens": 2366,
+        "output_tokens": 169,
+        "reasoning_output_tokens": 80,
+        "total_tokens": 36918
+      },
+      "matches_exact_delayed_recovery": true
+    },
+    "headless_cancelled": {
+      "outcome": "interrupted",
+      "gap": null,
+      "coverage": "partial",
+      "tokens": {
+        "input_tokens": 651,
+        "cached_input_tokens": 649,
+        "cache_write_5m_tokens": 0,
+        "cache_write_1h_tokens": 3188,
+        "output_tokens": 50,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 3889
+      },
+      "matches_exact_delayed_recovery": false
+    },
+    "configured_stop": {
+      "outcome": "completed",
+      "gap": null,
+      "coverage": "complete",
+      "tokens": {
+        "input_tokens": 13737,
+        "cached_input_tokens": 13735,
+        "cache_write_5m_tokens": 0,
+        "cache_write_1h_tokens": 2799,
+        "output_tokens": 6,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 16542
+      },
+      "matches_exact_delayed_recovery": true
+    }
+  },
+  "wrong_stop_turn_refused": true,
+  "replay_did_not_duplicate_attribution": true,
+  "billed_charge_verified": false,
+  "current_harness_sign_in_readback": "claude.ai (verified; no API key reported in print fixtures)",
+  "fresh_and_resume_same_native_session": true
+}
