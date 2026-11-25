@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 438
 title: "Session-scoped capture and exact-recovery interface"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/438"
 parent: 435
 children: []
 blocking: [439, 440, 441]
 blocked-by: [436, 437]
 created: "2026-11-25T03:17:24Z"
-updated: "2026-11-25T03:22:27Z"
+updated: "2026-11-25T04:27:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -34,3 +34,7 @@ Expose a bounded Python interface around already-installed provider harnesses an
 
 - #436
 - #437
+
+## Implementation
+
+[PR #447](https://github.com/kburson/aitm/pull/447) contains the shared capture and exact-recovery interface. Provider-specific adapters remain in #439–#441.
