@@ -10,12 +10,12 @@ children: []
 blocking: [458]
 blocked-by: []
 created: "2026-11-25T16:06:16Z"
-updated: "2026-11-25T19:55:32.964Z"
+updated: "2026-11-25T20:27:18.623Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/455/attachments/455-findings.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md", "attachments/timing/457-delivery-refresh-engagement-20261125-457.json", "attachments/timing/457-delivery-refresh-usage-20261125.json", "attachments/qualification/457-aipr-qualification.json", "attachments/qualification/457-grok-desktop-plan-review.md", "attachments/timing/457-grok-plan-review-usage-20261125.json", "attachments/timing/457-grok-plan-review-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-setup.md", "attachments/timing/457-desktop-scratch-setup-usage-20261125.json", "attachments/timing/457-desktop-scratch-setup-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-readback.md", "attachments/timing/457-desktop-scratch-readback-usage-20261125.json", "attachments/timing/457-desktop-scratch-readback-engagement-20261125-457.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md", "attachments/timing/457-delivery-refresh-engagement-20261125-457.json", "attachments/timing/457-delivery-refresh-usage-20261125.json", "attachments/qualification/457-aipr-qualification.json", "attachments/qualification/457-grok-desktop-plan-review.md", "attachments/timing/457-grok-plan-review-usage-20261125.json", "attachments/timing/457-grok-plan-review-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-setup.md", "attachments/timing/457-desktop-scratch-setup-usage-20261125.json", "attachments/timing/457-desktop-scratch-setup-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-readback.md", "attachments/timing/457-desktop-scratch-readback-usage-20261125.json", "attachments/timing/457-desktop-scratch-readback-engagement-20261125-457.json", "attachments/qualification/457-disposable-desktop-retry-verification.md", "attachments/timing/457-desktop-scratch-retry-usage-20261125.json", "attachments/timing/457-desktop-scratch-retry-engagement-20261125-457.json"]}
 expansions: []
 trips: []
 ---
@@ -49,9 +49,11 @@ The disposable Desktop chat and standalone repository are staged for the live ch
 
 The owner reported running the disposable test. Desktop and scratch readback did not expose the test turn or callbacks. [Readback checkpoint](attachments/qualification/457-disposable-desktop-readback.md).
 
+The authorized scratch retry completed the owner and supervised subagent turns. Callback evidence was absent, and the candidate rejected both retained reads. [Retry verification](attachments/qualification/457-disposable-desktop-retry-verification.md).
+
 ## Actual agent engagement
 
-**63m 56.303s observed (1.0656 agent-hours), partial coverage.** The readback turn is measured through 2026-11-25T19:55:32.719Z. Usage for the user-reported scratch test is unavailable because the test turn was absent from the accessible history. Independent engagement is summed including overlap. [Timing receipt](attachments/timing/457-desktop-scratch-readback-engagement-20261125-457.json).
+**67m 26.040s observed (1.1239 agent-hours), partial coverage.** The verification turn is measured through 2026-11-25T20:27:18.394Z. The disposable owner and subagent test rows use native turn and usage metadata. The hook reported no callbacks. The original user-reported test remains outside the observed subtotal. Independent engagement is summed including overlap. [Timing receipt](attachments/timing/457-desktop-scratch-retry-engagement-20261125-457.json).
 
 ## Agent activity and cost
 
@@ -78,7 +80,10 @@ The owner reported running the disposable test. Desktop and scratch readback did
 | Grok Desktop qualification plan review | Unknown | 8,832 | 10,571 | 5,350 | — | $0.039207 | — |
 | Codex scratch Desktop setup | 3m 25.547s | 5,591,552 | 21,378 | 7,785 | $1.320597 | — | — |
 | Codex disposable Desktop chat bootstrap | 0m 12.641s | 69,248 | 14,528 | 329 | $0.039271 | — | — |
-| Codex scratch Desktop evidence readback | 1m 01.688s | 2,161,664 | 5,890 | 2,289 | $0.490228 | — | — |
-| **Observed subtotal** | **63m 56.303s** | 77,368,106 | 733,983 | 160,441 | $14.129922 | $0.055636 | $0.613878 |
+| Codex scratch Desktop evidence readback | 1m 38.768s | 3,620,608 | 9,174 | 3,545 | $0.813993 | — | — |
+| Codex coordination and retry verification | 2m 40.383s | 5,172,736 | 11,330 | 6,476 | $1.177007 | — | — |
+| Codex disposable Desktop owner test | 0m 08.504s | 87,936 | 957 | 95 | $0.011658 | — | — |
+| Codex disposable Desktop subagent test | 0m 03.770s | 29,568 | 779 | 10 | $0.004615 | — | — |
+| **Observed subtotal** | **67m 26.040s** | 84,117,290 | 750,333 | 168,278 | $15.646967 | $0.055636 | $0.613878 |
 
-**Combined cost reference for the observed work $14.799437.** Codex uses GPT-6.2 Sol Standard API rates. Grok values are provider-reported. Claude qualification values are provider list equivalents and Claude review values use Standard API list rates. New input includes cache writes where reported. **Verified billed cost is unknown.** [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Claude model rates](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Sanitized usage evidence](attachments/timing/457-desktop-scratch-readback-usage-20261125.json).
+**Combined cost reference for the observed work $16.316481.** Codex uses GPT-6.2 Sol Standard API rates. Grok values are provider-reported. Claude qualification values are provider list equivalents and Claude review values use Standard API list rates. New input includes cache writes where reported. **Verified billed cost is unknown.** [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Claude model rates](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Sanitized usage evidence](attachments/timing/457-desktop-scratch-retry-usage-20261125.json).
