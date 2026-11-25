@@ -10,12 +10,12 @@ children: []
 blocking: [458]
 blocked-by: []
 created: "2026-11-25T16:06:16Z"
-updated: "2026-11-25T18:39:15.715Z"
+updated: "2026-11-25T19:24:49.970Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/455/attachments/455-findings.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md", "attachments/timing/457-delivery-refresh-engagement-20261125-457.json", "attachments/timing/457-delivery-refresh-usage-20261125.json", "attachments/qualification/457-aipr-qualification.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-25-session-owned-turn-capture.md"], "plan": ["plan/2026-11-25-session-owned-turn-capture-plan.md"], "attachments": ["attachments/timing/457-kickoff-native-engagement-20261125-457.json", "attachments/timing/457-kickoff-native-usage-20261125.json", "attachments/timing/457-delivery-native-engagement-20261125-457.json", "attachments/timing/457-delivery-native-usage-20261125.json", "attachments/qualification/457-provider-qualification.json", "attachments/qualification/457-remote-publication.json", "attachments/qualification/457-route-readback.md", "attachments/timing/457-delivery-refresh-engagement-20261125-457.json", "attachments/timing/457-delivery-refresh-usage-20261125.json", "attachments/qualification/457-aipr-qualification.json", "attachments/qualification/457-grok-desktop-plan-review.md", "attachments/timing/457-grok-plan-review-usage-20261125.json", "attachments/timing/457-grok-plan-review-engagement-20261125-457.json"]}
 expansions: []
 trips: []
 ---
@@ -43,9 +43,11 @@ Drafted the [session capture design](design/2026-11-25-session-owned-turn-captur
 
 [Draft PR #460](https://github.com/kburson/aitm/pull/460) carries the implementation. [Qualification checkpoint](attachments/qualification/457-route-readback.md).
 
+Grok recommends qualifying first in an isolated Desktop chat and scratch repository. The original approval request is on hold. [Independent second opinion](attachments/qualification/457-grok-desktop-plan-review.md).
+
 ## Actual agent engagement
 
-**54m 33.235s observed (0.9092 agent-hours), partial coverage.** The current turn is measured through 2026-11-25T18:39:15.548Z. Independent engagement is summed including overlap. Provider launches with no exact start are listed as Unknown. [Timing receipt](attachments/timing/457-delivery-refresh-engagement-20261125-457.json).
+**58m 33.519s observed (0.9760 agent-hours), partial coverage.** The coordinator turn is measured through 2026-11-25T19:24:49.883Z. Independent engagement is summed including overlap. Grok's plan review wrapper elapsed 76.049s. Its exact native start is unavailable, so that interval is excluded from engagement. [Timing receipt](attachments/timing/457-grok-plan-review-engagement-20261125-457.json).
 
 ## Agent activity and cost
 
@@ -53,7 +55,7 @@ Drafted the [session capture design](design/2026-11-25-session-owned-turn-captur
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Codex kickoff | 4m 10.569s | 2,786,176 | 45,583 | 10,240 | $0.472184 | — | — |
 | Codex kickoff builder check | 0m 23.331s | 494,336 | 4,151 | 797 | $0.065706 | — | — |
-| Codex implementation and qualification | 29m 36.941s | 39,700,992 | 203,309 | 68,043 | $7.054224 | — | — |
+| Codex implementation and qualification | 30m 49.771s | 42,264,832 | 210,129 | 70,114 | $7.625337 | — | — |
 | Codex provider adapter and live probes | 8m 19.312s | 10,718,976 | 119,127 | 19,730 | $1.507452 | — | — |
 | Codex publication and plan review | 5m 42.520s | 4,089,344 | 32,583 | 14,835 | $0.622450 | — | — |
 | Codex headless probe 1 | 0m 02.803s | 15,232 | 8,715 | 5 | $0.019003 | — | — |
@@ -68,6 +70,8 @@ Drafted the [session capture design](design/2026-11-25-session-owned-turn-captur
 | Claude Code qualification 3 | 0m 00.554s | 649 | 2,245 | 4 | — | — | $0.009081 |
 | Claude AIPR review 1 (no seal) | 0m 37.161s | 260,227 | 45,301 | 4,622 | — | — | $0.253419 |
 | Claude AIPR review 2 (sealed) | 0m 38.676s | 262,677 | 43,393 | 4,543 | — | — | $0.245242 |
-| **Observed subtotal** | **54m 33.235s** | 61,332,138 | 656,785 | 134,965 | $10.393723 | $0.016429 | $0.613878 |
+| Codex coordination of Grok second opinion | 2m 47.454s | 4,289,408 | 14,392 | 6,137 | $1.007505 | — | — |
+| Grok Desktop qualification plan review | Unknown | 8,832 | 10,571 | 5,350 | — | $0.039207 | — |
+| **Observed subtotal** | **58m 33.519s** | 68,194,218 | 688,568 | 148,523 | $11.972340 | $0.055636 | $0.613878 |
 
-**Combined cost reference for the observed work $11.024030.** Codex values use GPT-6.2 Sol Standard API rates applied to native requests. Grok values are provider-reported. Claude qualification values are provider list equivalents, and Claude review values use Standard API list rates. New input includes cache writes where reported. **Verified billed cost is unknown.** [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Claude model rates](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Sanitized usage evidence](attachments/timing/457-delivery-refresh-usage-20261125.json).
+**Combined cost reference for the observed work $12.641855.** Codex uses GPT-6.2 Sol Standard API rates. Grok values are provider-reported. Claude qualification values are provider list equivalents and Claude review values use Standard API list rates. New input includes cache writes where reported. **Verified billed cost is unknown.** [OpenAI model rates](https://developers.openai.com/api/docs/models/gpt-6.2-sol) · [Claude model rates](https://platform.claude.com/docs/en/models/sonnet-5-5/overview) · [Sanitized usage evidence](attachments/timing/457-grok-plan-review-usage-20261125.json).

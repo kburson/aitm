@@ -1,0 +1,42 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 457,
+  "batch": "457-grok-plan-review-engagement-20261125",
+  "recorded_at_utc": "2026-11-25T19:24:49.970Z",
+  "source": {
+    "ref": "manual:native-457-grok-plan-review-boundaries"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.engagement.4a2c177adf62250dac605876.refresh.close",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.4a2c177adf62250dac605876",
+      "phase": null,
+      "role": "implementer",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-through-observed-frame-continuation",
+      "start_utc": "2026-11-25T18:39:15.548Z",
+      "end_utc": "2026-11-25T18:40:28.378Z",
+      "source": {
+        "sha256": "97e13415eb0ca596d8ea7dbb42f418ded1e1807048cfd4482e39ca7087e49d40"
+      }
+    },
+    {
+      "observation_id": "codex.engagement.70e89f4bfa0e4c89550eefee",
+      "actor": "codex.actor.0186c67f5864e843f23f0a7c",
+      "turn": "codex.turn.70e89f4bfa0e4c89550eefee",
+      "role": "orchestrator",
+      "phase": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-native-turn-through-observed-frame",
+      "start_utc": "2026-11-25T19:22:02.429Z",
+      "end_utc": "2026-11-25T19:24:49.883Z",
+      "source": {
+        "sha256": "79014e6cca5970eea12b861fd838a2896d76224044b489bfec2cc8744a1d92a6"
+      }
+    }
+  ]
+}

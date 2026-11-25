@@ -15,4 +15,6 @@ The Codex live desktop readbacks took 40.821 ms for the owner and 4.383 ms for t
 
 ## Remaining live Desktop gate
 
+The original test in the long-lived chat is on hold. [Grok’s independent second opinion](457-grok-desktop-plan-review.md) recommends a separate scratch repository and a disposable Desktop chat.
+
 Run one fresh Codex Desktop turn after the app has loaded and approved the project-local capture hooks for the enrolled thread. The parent must start and complete through installed lifecycle callbacks, and it must dispatch a real supervised app subagent with the corresponding child callbacks. Verify that the two receipts retain their pre-dispatch assignment after a later story selection and that delayed native replay leaves the bytes unchanged. The live kickoff readback and callback fixtures do not establish that dispatch path. Keep PR #460 in draft and #457 in Test until the live readback exists.
