@@ -78,8 +78,7 @@ def _instant(value: object) -> datetime:
 class _Usage:
     tokens: GrokTokenCounts
     ticks: int
-    calls: int
-    models: frozenset[str]
+    breakdown: tuple[tuple[str, int, int, int, int, int], ...]
 
     @classmethod
     def decode(cls, row: dict, *, stored: bool) -> "_Usage":
@@ -88,11 +87,21 @@ class _Usage:
             not isinstance(model, str) or not 0 < len(model) <= 128 for model in models
         ):
             raise _Invalid()
-        calls = sum(
-            _count(_object(detail).get("modelCalls")) for detail in models.values()
-        )
-        if calls == 0:
-            raise _Invalid()
+        breakdown = []
+        read_key = "cachedReadTokens" if stored else "cacheReadInputTokens"
+        creation_key = "cacheCreationTokens" if stored else "cacheCreationInputTokens"
+        for model, value in sorted(models.items()):
+            detail = _object(value)
+            gross = _count(detail.get("inputTokens"))
+            read = _count(detail.get(read_key))
+            created = _count(detail.get(creation_key))
+            uncached = _count(gross - read - created) if stored else gross
+            output = _count(detail.get("outputTokens"))
+            calls = _count(detail.get("modelCalls"))
+            if calls == 0:
+                raise _Invalid()
+            breakdown.append((model, uncached, read, created, output, calls))
+        calls = sum(model[-1] for model in breakdown)
         if stored:
             gross = _count(row.get("inputTokens"))
             cached = _count(row.get("cachedReadTokens"))
@@ -158,7 +167,7 @@ class _Usage:
             ):
                 raise _Invalid()
             ticks = _count(row.get("total_cost_usd_ticks"))
-        return cls(usage, ticks, calls, frozenset(models))
+        return cls(usage, ticks, tuple(breakdown))
 
 
 @dataclass(frozen=True, slots=True)
@@ -225,11 +234,11 @@ class GrokAdapter:
     account: SourceRef
     pseudonymize: Callable[[str, str], SourceRef] = field(repr=False)
     session: str = field(repr=False)
+    harness_version: str
     open_usage: Callable[[str], BinaryIO] | None = field(default=None, repr=False)
     baseline: bytes | None = field(default=None, repr=False)
     max_bytes: int = 1 << 20
     scope: UsageScope = UsageScope.UNKNOWN
-    harness_version: str = _VERSION
 
     def __post_init__(self) -> None:
         _uuid(self.session)
@@ -311,12 +320,15 @@ class GrokAdapter:
             if len(event.stdout) > self.max_bytes or 1 in event.truncated_streams:
                 raise _Invalid(CaptureGap.EVIDENCE_LIMIT)
             terminal = _end(event.stdout, self.session)
+            incomplete = terminal.get("usage_is_incomplete", False)
+            if type(incomplete) is not bool:
+                raise _Invalid()
             if terminal.get("stopReason") == "cancelled":
                 return Observation(Outcome.INTERRUPTED, gap=CaptureGap.MISSING)
             if terminal.get("stopReason") != "end_turn":
                 raise _Invalid()
             outcome = Outcome.COMPLETED
-            if terminal.get("usage_is_incomplete") is True:
+            if incomplete:
                 raise _Invalid(CaptureGap.MISSING)
             if _count(terminal.get("num_turns")) != 1:
                 raise _Invalid()

@@ -91,6 +91,7 @@ def adapter(current, *, baseline=None):
         ref("account", "fixture"),
         ref,
         SESSION,
+        "1.0.92",
         open_usage=lambda _: BytesIO(current),
         baseline=baseline,
     )
@@ -201,3 +202,41 @@ def test_headless_rejects_conflicting_model_breakdown():
         observe(adapter(retained(row())), json.dumps(document).encode() + b"\n").gap
         is CaptureGap.MALFORMED
     )
+
+
+def test_matching_aggregates_do_not_hide_conflicting_per_model_usage():
+    another = "grok-fixture-second"
+    stored = row()
+    original = stored["modelUsage"][MODEL]
+    stored["modelCalls"] = 2
+    stored["modelUsage"] = {
+        MODEL: dict(original, outputTokens=100, reasoningTokens=98, totalTokens=18739),
+        another: dict.fromkeys(original, 0)
+        | {
+            "outputTokens": 75,
+            "reasoningTokens": 70,
+            "totalTokens": 75,
+            "modelCalls": 1,
+        },
+    }
+    stdout = json.loads(terminal())
+    first = stdout["modelUsage"][MODEL]
+    stdout["modelUsage"] = {
+        MODEL: dict(first, outputTokens=75),
+        another: dict.fromkeys(first, 0) | {"outputTokens": 100, "modelCalls": 1},
+    }
+
+    result = observe(adapter(retained(stored)), json.dumps(stdout).encode() + b"\n")
+
+    assert result.gap is CaptureGap.MALFORMED
+    assert result.receipt is None
+
+
+def test_malformed_completeness_flag_cannot_settle_usage():
+    document = json.loads(terminal())
+    document["usage_is_incomplete"] = "true"
+
+    result = observe(adapter(retained(row())), json.dumps(document).encode() + b"\n")
+
+    assert result.gap is CaptureGap.MALFORMED
+    assert result.receipt is None
