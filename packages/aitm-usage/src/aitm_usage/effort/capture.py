@@ -42,6 +42,11 @@ class ProcessState(StrEnum):
     TIMED_OUT = "timed-out"
 
 
+class DescendantState(StrEnum):
+    NOT_STARTED = "not-started"
+    UNKNOWN = "unknown"
+
+
 class CaptureGap(StrEnum):
     MISSING = "missing"
     MALFORMED = "malformed"
@@ -124,8 +129,11 @@ class CaptureAdapter(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class ProcessStatus:
+    """Status of the directly launched child. Descendants are unverified."""
+
     state: ProcessState
     returncode: int | None
+    descendants: DescendantState
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +145,7 @@ class CaptureResult:
 class _BoundedPipes(asyncio.SubprocessProtocol):
     def __init__(self, limits: CaptureLimits) -> None:
         self.done = asyncio.Event()
+        self.stop = asyncio.Event()
         self.buffers = {1: bytearray(), 2: bytearray()}
         self.limits = {1: limits.stdout_bytes, 2: limits.stderr_bytes}
         self.truncated_streams: set[int] = set()
@@ -149,17 +158,12 @@ class _BoundedPipes(asyncio.SubprocessProtocol):
         remaining = self.limits[fd] - len(buffer)
         buffer.extend(data[:remaining])
         if len(data) > remaining:
-            first_overflow = not self.truncated_streams
             self.truncated_streams.add(fd)
-            self.transport.get_pipe_transport(fd).close()
-            if first_overflow and self.transport.get_returncode() is None:
-                try:
-                    self.transport.kill()
-                except ProcessLookupError:
-                    pass
+            self.stop.set()
 
     def connection_lost(self, exc: Exception | None) -> None:
         self.done.set()
+        self.stop.set()
 
 
 def _checked_observation(
@@ -177,6 +181,8 @@ def _checked_observation(
         return Observation(gap=CaptureGap.WRONG_ATTEMPT)
     if expected_turn is not None and receipt.turn.identity != expected_turn.identity:
         return Observation(gap=CaptureGap.WRONG_TURN)
+    if expected_turn is not None and receipt.turn.version != expected_turn.version:
+        return Observation(gap=CaptureGap.UNEXPECTED_HARNESS)
     if receipt.outcome != observation.outcome:
         return Observation(gap=CaptureGap.MALFORMED)
     return observation
@@ -190,6 +196,9 @@ async def capture(
     limits: CaptureLimits = CaptureLimits(),
 ) -> CaptureResult:
     """Run one configured harness in its normal sign-in and sandbox context.
+
+    Timeout or overflow closes the pipes and stops the directly launched
+    process. This interface does not verify or terminate descendants.
 
     The adapter derives terminal outcome solely from provider evidence. Raw bytes
     stay in memory and are passed only to the adapter.
@@ -211,28 +220,30 @@ async def capture(
         )
     except OSError:
         return CaptureResult(
-            ProcessStatus(ProcessState.LAUNCH_FAILED, None),
+            ProcessStatus(
+                ProcessState.LAUNCH_FAILED, None, DescendantState.NOT_STARTED
+            ),
             Observation(gap=CaptureGap.MISSING),
         )
 
     state = ProcessState.EXITED
     try:
         async with asyncio.timeout(limits.timeout_seconds):
-            await pipes.done.wait()
+            await pipes.stop.wait()
     except TimeoutError:
         state = ProcessState.TIMED_OUT
     finally:
+        # A descendant can retain the write handles after the owned process exits.
+        # Close those reads and reap the directly launched process on cancellation too.
         transport.close()
+        if not pipes.done.is_set():
+            try:
+                await asyncio.wait_for(pipes.done.wait(), timeout=_REAP_TIMEOUT_SECONDS)
+            except TimeoutError:
+                pass
 
     if pipes.truncated_streams:
         state = ProcessState.OUTPUT_LIMIT
-    if not pipes.done.is_set():
-        # A descendant can retain the write handles after the owned process exits.
-        # Closing the transport stops reading them and lets the owned child reap.
-        try:
-            await asyncio.wait_for(pipes.done.wait(), timeout=_REAP_TIMEOUT_SECONDS)
-        except TimeoutError:
-            pass
 
     event = CaptureEvent(
         enrollment,
@@ -241,7 +252,7 @@ async def capture(
         frozenset(pipes.truncated_streams),
     )
     return CaptureResult(
-        ProcessStatus(state, transport.get_returncode()),
+        ProcessStatus(state, transport.get_returncode(), DescendantState.UNKNOWN),
         _checked_observation(adapter.observe(event), enrollment),
     )
 
@@ -254,15 +265,22 @@ def recover(
     evidence: BinaryIO,
     max_bytes: int = _DEFAULT_EVIDENCE_BYTES,
 ) -> Observation:
-    """Read a caller-authorized evidence stream for one exact turn."""
+    """Read completed, caller-authorized local evidence for one exact turn."""
     _validate_byte_limit(max_bytes)
+    payload = bytearray()
     try:
-        payload = evidence.read(max_bytes + 1)
+        while len(payload) <= max_bytes:
+            chunk = evidence.read(max_bytes + 1 - len(payload))
+            if chunk is None:
+                return Observation(gap=CaptureGap.MISSING)
+            if not chunk:
+                break
+            payload.extend(chunk)
     except OSError:
         return Observation(gap=CaptureGap.MISSING)
     if not payload:
         return Observation(gap=CaptureGap.MISSING)
     if len(payload) > max_bytes:
         return Observation(gap=CaptureGap.EVIDENCE_LIMIT)
-    reference = ExactReference(enrollment, expected_turn, payload)
+    reference = ExactReference(enrollment, expected_turn, bytes(payload))
     return _checked_observation(adapter.recover(reference), enrollment, expected_turn)

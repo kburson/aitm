@@ -110,6 +110,7 @@ def test_timeout_is_independent_of_unobserved_terminal_outcome(tmp_path):
 
     assert result.process.state is effort_capture.ProcessState.TIMED_OUT
     assert result.process.returncode is not None
+    assert result.process.descendants == "unknown"
     assert result.observation.outcome is Outcome.UNKNOWN
     assert result.observation.gap is effort_capture.CaptureGap.MISSING
 
@@ -182,3 +183,90 @@ def test_recovery_reads_only_up_to_evidence_limit():
 
     assert evidence.tell() == 9
     assert result.gap is effort_capture.CaptureGap.EVIDENCE_LIMIT
+
+
+def test_output_limit_returns_before_inherited_pipe_closes(tmp_path):
+    marker = tmp_path / "descendant-finished"
+    descendant = (
+        "import time; from pathlib import Path; "
+        f"time.sleep(2); Path({str(marker)!r}).touch()"
+    )
+    result = launch(
+        tmp_path,
+        "import subprocess, sys; "
+        f"subprocess.Popen([sys.executable, '-c', {descendant!r}], "
+        "stdout=subprocess.DEVNULL); "
+        'print(\'{"terminal":"failed","tokens":12}\', flush=True); '
+        "sys.stdout.buffer.write(b'x' * 16384); sys.stdout.flush()",
+        limits=effort_capture.CaptureLimits(timeout_seconds=4, stdout_bytes=64),
+    )
+
+    assert result.process.state is effort_capture.ProcessState.OUTPUT_LIMIT
+    assert not marker.exists()
+    assert result.process.descendants == "unknown"
+
+
+def test_caller_cancellation_reaps_direct_child_before_return(tmp_path, monkeypatch):
+    pid = tmp_path / "child-ready"
+    reaped = []
+    original = effort_capture._BoundedPipes.connection_lost
+
+    def observe_reap(self, exc):
+        reaped.append(self.transport.get_returncode())
+        original(self, exc)
+
+    monkeypatch.setattr(effort_capture._BoundedPipes, "connection_lost", observe_reap)
+
+    async def exercise():
+        task = asyncio.create_task(
+            effort_capture.capture(
+                FixtureAdapter(),
+                enrollment=ENROLLMENT,
+                command=effort_capture.HarnessCommand(
+                    (
+                        sys.executable,
+                        "-c",
+                        f"from pathlib import Path; import time; Path({str(pid)!r}).touch(); time.sleep(10)",
+                    ),
+                    cwd=tmp_path,
+                ),
+            )
+        )
+        async with asyncio.timeout(3):
+            while not pid.exists():
+                await asyncio.sleep(0.01)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert len(reaped) == 1 and reaped[0] is not None
+
+    asyncio.run(exercise())
+
+
+def test_recovery_rejects_trailing_evidence_across_short_reads():
+    class ShortReader(BytesIO):
+        def read(self, size):
+            return super().read(min(size, 36))
+
+    payload = b'{"terminal":"completed","tokens":23}' + b"x" * 500
+    with ShortReader(payload) as evidence:
+        result = effort_capture.recover(
+            FixtureAdapter(),
+            enrollment=ENROLLMENT,
+            expected_turn=TURN,
+            evidence=evidence,
+            max_bytes=64,
+        )
+        assert evidence.tell() == 65
+        assert result.gap is effort_capture.CaptureGap.EVIDENCE_LIMIT
+
+
+def test_recovery_rejects_wrong_harness_version():
+    result = effort_capture.recover(
+        FixtureAdapter(),
+        enrollment=ENROLLMENT,
+        expected_turn=replace(TURN, version="999"),
+        evidence=BytesIO(b'{"terminal":"completed","tokens":23}'),
+    )
+    assert result.gap is effort_capture.CaptureGap.UNEXPECTED_HARNESS
+    assert result.receipt is None
