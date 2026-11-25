@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 426
 title: "[Research Epic] Session-scoped agent cost for story runs"
 kind: "epic"
-state: "backlog"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/426"
 parent: null
 children: [427, 428, 429, 430, 431, 432, 433, 434]
 blocking: []
 blocked-by: []
 created: "2026-11-24T15:08:19Z"
-updated: "2026-11-25T02:03:25Z"
+updated: "2026-11-25T12:32:59Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: null
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/cost-management-master-plan.md", "plan/2026-11-24-agent-effort-cost-implementation-plan.md"], "attachments": ["attachments/native-harness-cost-findings.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/cost-management-master-plan.md", "plan/2026-11-24-agent-effort-cost-implementation-plan.md", "plan/2026-11-25-research-closeout.md"], "attachments": ["attachments/native-harness-cost-findings.md", "attachments/2026-11-25-independent-closeout-review.md"]}
 expansions: []
 trips: []
 ---
@@ -75,3 +75,7 @@ The [agent effort and cost management implementation plan](plan/2026-11-24-agent
 - For the later AIPR redesign, test a smaller reviewer interaction with an immutable attempt envelope, scoped join and submit authority, and independently settled usage receipts. Preserve native reviewer identity, ownership checks and fail-closed handling of ambiguity. Keep this qualification separate from the first cost-management slice.
 
 Use this recommendation to reconcile scope with #100’s accepted plan. The research update changes no delivery commitments in #100.
+
+## Research closeout
+
+[Verified research closeout](plan/2026-11-25-research-closeout.md) · [Independent evidence review](attachments/2026-11-25-independent-closeout-review.md).
