@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 426
 title: "[Research Epic] Session-scoped agent cost for story runs"
 kind: "epic"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/426"
 parent: null
 children: [427, 428, 429, 430, 431, 432, 433, 434]
 blocking: []
 blocked-by: []
 created: "2026-11-24T15:08:19Z"
-updated: "2026-11-25T12:32:59Z"
+updated: "2026-11-25T12:33:39Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -78,4 +78,4 @@ Use this recommendation to reconcile scope with #100’s accepted plan. The rese
 
 ## Research closeout
 
-[Verified research closeout](plan/2026-11-25-research-closeout.md) · [Independent evidence review](attachments/2026-11-25-independent-closeout-review.md).
+[Verified research closeout](plan/2026-11-25-research-closeout.md) · [Independent evidence review](attachments/2026-11-25-independent-closeout-review.md) · [Sign-off](retro/sign-off.md).
