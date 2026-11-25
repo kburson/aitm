@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 434
 title: "[Spike] Qualify the Codex headless AIPR review-lock path"
 kind: "spike"
-state: "backlog"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/434"
 parent: 426
 children: []
 blocking: []
 blocked-by: [431]
 created: "2026-11-24T20:29:15Z"
-updated: "2026-11-24T20:29:15Z"
+updated: "2026-11-25T00:25:55Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: null
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/codex-review-lock-results.md", "attachments/codex-review-lock-receipt.json", "attachments/independent-evidence-review.md"]}
 expansions: []
 trips: []
 ---
@@ -38,3 +38,7 @@ Can a real Codex headless AIPR reviewer join and submit under a supported macOS 
 - If no path passes, document the precise blocker, any verified supported control, the smallest candidate change, and the missing proof. Keep the lightweight native Codex comparator separate from AIPR review authority.
 
 Deliver a sanitized provider/host matrix and evidence-backed recommendation for #426. This spike does not change #100.
+
+## Results
+
+[Research findings](attachments/codex-review-lock-results.md) · [Sanitized receipt](attachments/codex-review-lock-receipt.json) · [Independent evidence review](attachments/independent-evidence-review.md).

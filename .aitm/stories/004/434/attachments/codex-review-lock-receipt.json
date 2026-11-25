@@ -1,0 +1,272 @@
+{
+  "schema": "aitm.spike-434.review-lock-evidence/v1",
+  "local_date": "2026-11-24",
+  "runtime": {
+    "aipr": "0.4.1",
+    "codex": "0.171.0-alpha.13",
+    "codex_authentication": "ChatGPT",
+    "darwin_arch": "arm64",
+    "darwin_node": "26.8.1",
+    "claude_code": "2.1.331",
+    "linux_arch": "arm64",
+    "linux_node": "24.20.0",
+    "docker_engine": "29.7.2"
+  },
+  "disposition": "no-tested-route-passed-admission",
+  "macos_identity_probes": {
+    "host": {
+      "uptime": {
+        "name": "node-uptime",
+        "ok": true
+      },
+      "boot_query": {
+        "name": "sysctl",
+        "ok": true
+      },
+      "distinct_process_identity": "live",
+      "reason": null
+    },
+    "workspace": {
+      "uptime": {
+        "name": "node-uptime",
+        "ok": false,
+        "code": "ERR_SYSTEM_ERROR",
+        "syscall": "uv_uptime",
+        "cause_code": "EPERM",
+        "status": null
+      },
+      "boot_query": {
+        "name": "sysctl",
+        "ok": false,
+        "syscall": null,
+        "cause_code": null,
+        "status": 1
+      },
+      "distinct_process_identity": "unknown",
+      "reason": "identity-unavailable"
+    },
+    "read-only": {
+      "uptime": {
+        "name": "node-uptime",
+        "ok": false,
+        "code": "ERR_SYSTEM_ERROR",
+        "syscall": "uv_uptime",
+        "cause_code": "EPERM",
+        "status": null
+      },
+      "boot_query": {
+        "name": "sysctl",
+        "ok": false,
+        "syscall": null,
+        "cause_code": null,
+        "status": 1
+      },
+      "distinct_process_identity": "unknown",
+      "reason": "identity-unavailable"
+    },
+    "custom-profile": {
+      "uptime": {
+        "name": "node-uptime",
+        "ok": false,
+        "code": "ERR_SYSTEM_ERROR",
+        "syscall": "uv_uptime",
+        "cause_code": "EPERM",
+        "status": null
+      },
+      "boot_query": {
+        "name": "sysctl",
+        "ok": false,
+        "syscall": null,
+        "cause_code": null,
+        "status": 1
+      },
+      "distinct_process_identity": "unknown",
+      "reason": "identity-unavailable"
+    },
+    "workspace-exact-socket": {
+      "uptime": {
+        "name": "node-uptime",
+        "ok": false,
+        "code": "ERR_SYSTEM_ERROR",
+        "syscall": "uv_uptime",
+        "cause_code": "EPERM",
+        "status": null
+      },
+      "boot_query": {
+        "name": "sysctl",
+        "ok": false,
+        "syscall": null,
+        "cause_code": null,
+        "status": 1
+      },
+      "distinct_process_identity": "unknown",
+      "reason": "identity-unavailable"
+    },
+    "workspace-lock": {
+      "code": "ERR_SYSTEM_ERROR",
+      "syscall": "uv_uptime",
+      "cause_code": "EPERM"
+    }
+  },
+  "macos_host_lock_control": {
+    "live": {
+      "status": "live",
+      "reason": "identity-match"
+    },
+    "contender": {
+      "code": "APR_REVIEW_LOCKED",
+      "syscall": null,
+      "cause_code": null
+    },
+    "stale": {
+      "status": "unknown",
+      "reason": "identity-unavailable"
+    },
+    "reacquire": {
+      "code": "APR_REVIEW_LOCK_LIVENESS_UNKNOWN",
+      "syscall": null,
+      "cause_code": null
+    },
+    "after": {
+      "status": "unknown",
+      "reason": "identity-unavailable"
+    },
+    "reacquire_repeat": {
+      "code": "APR_REVIEW_LOCK_LIVENESS_UNKNOWN",
+      "syscall": null,
+      "cause_code": null
+    }
+  },
+  "control_scope": {
+    "macos_workspace_lock": "direct installed lock call on a disposable lock target under :workspace",
+    "macos_host_lock": "disposable lock owner and contender outside the reviewer sandbox",
+    "billed_charges": "not-measured"
+  },
+  "stock_headless_refusal": {
+    "classification": "XPR",
+    "author_provider": "anthropic",
+    "reviewer_provider": "openai",
+    "ownership": "broker",
+    "transport": "manual",
+    "approval_policy": "never",
+    "native_thread_and_turn_verified": true,
+    "terminal_usage_matches_native_rollout": true,
+    "duration_ms": 12019,
+    "usage": {
+      "input_tokens": 60458,
+      "cached_input_tokens": 48768,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 349,
+      "reasoning_output_tokens": 0
+    },
+    "retained_rollout_terminal_usage": {
+      "input_tokens": 60458,
+      "cached_input_tokens": 48768,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 349,
+      "reasoning_output_tokens": 0
+    },
+    "native_stream_sha256": "6e05d8b6f8a9563e10a3ca1f0dfc8fa2bcd817be2488ca9a04fc1271b7e09963",
+    "private_rollout_sha256": "279cef8f64ebddba4ba6302815691917ec14020c57de4d820867e7b0c73eebac",
+    "aipr_events_sha256": "3418ded9173cfa594392b6915b76d370835536850bf9ed736baed47225b5904f",
+    "native_sandbox_readback": {
+      "policy": "workspace-write",
+      "profile_id": null
+    },
+    "final_readback": {
+      "review": "awaiting-reviewer",
+      "broker": "offline"
+    },
+    "aipr_events": [
+      "review-created",
+      "compatibility-declared",
+      "identity-changed"
+    ],
+    "reviewer_joined": false,
+    "sealed_decisions": 0,
+    "permission_profile": "workspace-write",
+    "join_error": "APR_INTERNAL / uv_uptime EPERM",
+    "sanitized_tool_observation": "APR_INTERNAL: uv_uptime returned EPERM"
+  },
+  "scoped_headless_refusal": {
+    "classification": "XPR",
+    "author_provider": "anthropic",
+    "reviewer_provider": "openai",
+    "ownership": "broker",
+    "transport": "manual",
+    "approval_policy": "never",
+    "native_thread_and_turn_verified": true,
+    "terminal_usage_matches_native_rollout": true,
+    "duration_ms": 18215,
+    "usage": {
+      "input_tokens": 93157,
+      "cached_input_tokens": 82816,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 430,
+      "reasoning_output_tokens": 24
+    },
+    "retained_rollout_terminal_usage": {
+      "input_tokens": 93157,
+      "cached_input_tokens": 82816,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 430,
+      "reasoning_output_tokens": 24
+    },
+    "native_stream_sha256": "98f488be3110bc4123f291198d617d82b4cba0b39f7f42ea0f5d6f9e0ba5aa35",
+    "private_rollout_sha256": "4a7ab6fa336e202ee9ae35214bdebd6ed391291e4c5a99955f6fed51937a1086",
+    "aipr_events_sha256": "06dbc346363cf6dc8b68eb72cc9467dc6dfddb791177799b5e6d6b812e16fbf2",
+    "native_sandbox_readback": {
+      "policy": "workspace-write",
+      "profile_id": "fixture-review"
+    },
+    "final_readback": {
+      "review": "awaiting-reviewer",
+      "broker": "offline"
+    },
+    "aipr_events": [
+      "review-created",
+      "compatibility-declared",
+      "identity-changed"
+    ],
+    "reviewer_joined": false,
+    "sealed_decisions": 0,
+    "checkout_gate_passed_before_audit_error": true,
+    "invitation_digest_gate_passed_before_audit_error": true,
+    "join_wrapper_sha256": "df9a1267eefeaefc62a33aaeb54c3217e1c3c45c214c9b24436671d435c7d108",
+    "permission_profile": "fixture-review",
+    "rule_matched": true,
+    "exact_native_thread_binding": true,
+    "extra_argument_refused": true,
+    "missing_and_wrong_identity_refused": true,
+    "credential_access_probe": "EPERM",
+    "unlisted_write_and_uptime_denied": true,
+    "wrapper_blocker": "host audit path write denied by active sandbox",
+    "host_audit_created": false,
+    "invoked_aipr_join": false,
+    "sanitized_tool_observations": [
+      "unexpected arguments: exit 77",
+      "PermissionError: Operation not permitted [private host audit path]",
+      "uv_uptime EPERM; touch: Operation not permitted"
+    ]
+  },
+  "linux_container": {
+    "policy": "default seccomp, non-root native sandbox attempt, network disabled, no provider sign-in",
+    "namespace_creation": "EPERM",
+    "bubblewrap_exit": 1,
+    "codex_sandbox_exit": 1,
+    "lock_control_outside_nested_codex_sandbox": {
+      "live_owner": "identity-match",
+      "live_contender": "APR_REVIEW_LOCKED",
+      "terminated_owner": "stale / process-dead",
+      "reacquired": true,
+      "retained_stale_evidence": true,
+      "lock_after_release": "absent"
+    }
+  },
+  "conditional_qualification": {
+    "sealed_rounds": 0,
+    "interruption": "not-run",
+    "replay": "not-run",
+    "reason": "no-admitted-route"
+  }
+}
