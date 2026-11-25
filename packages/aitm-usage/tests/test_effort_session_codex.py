@@ -48,7 +48,7 @@ def frame(kind, **payload):
     return {"type": kind, "timestamp": "2026-11-25T18:00:00Z", "payload": payload}
 
 
-def metadata(thread=SESSION, parent=None):
+def metadata(thread=SESSION, parent=None, *, root_source="user"):
     source = (
         "vscode"
         if parent is None
@@ -59,7 +59,7 @@ def metadata(thread=SESSION, parent=None):
         id=thread,
         session_id=thread if parent is None else parent,
         source=source,
-        thread_source="user" if parent is None else "subagent",
+        thread_source=root_source if parent is None else "subagent",
         cli_version=BUILD,
         originator="Codex Desktop",
     )
@@ -77,11 +77,20 @@ def tokens(multiplier):
 
 
 def turn(
-    id=TURN, thread=SESSION, parent=SESSION, root=None, *, terminal="task_complete"
+    id=TURN,
+    thread=SESSION,
+    parent=SESSION,
+    root=None,
+    *,
+    terminal="task_complete",
+    trigger="composer",
+    parent_turn=None,
 ):
     root_id = root or id
     identity = {"turn_id": id, "root_turn_id": root_id}
-    attribution = dict(identity, parent_turn_id=root, turn_trigger="composer")
+    attribution = dict(
+        identity, parent_turn_id=parent_turn or root, turn_trigger=trigger
+    )
     start = event("task_started", **identity, turn_attribution=attribution)
     start["timestamp"] = "2026-11-25T18:00:00Z"
     first = frame(
@@ -334,13 +343,24 @@ def test_cli_callbacks_keep_dispatch_story_and_can_replay_after_restart(
         "configured",
         str(tmp_path.resolve()),
     ]
-    owner_path = save(tmp_path, metadata(), *turn())
+    owner_path = save(
+        tmp_path,
+        metadata(root_source="agent_created_thread"),
+        *turn(root=OTHER, trigger="app_tool_send_message"),
+    )
     child_path = tmp_path / "child.jsonl"
     child_rows = [
         metadata(CHILD, SESSION),
-        metadata(),
-        *turn(),
-        *turn(CHILD_TURN, CHILD, SESSION, TURN),
+        metadata(root_source="agent_created_thread"),
+        *turn(root=OTHER, trigger="app_tool_send_message"),
+        *turn(
+            CHILD_TURN,
+            CHILD,
+            SESSION,
+            OTHER,
+            trigger="app_tool_send_message",
+            parent_turn=TURN,
+        ),
     ]
     child_path.write_bytes(
         b"".join(json.dumps(row).encode() + b"\n" for row in child_rows)

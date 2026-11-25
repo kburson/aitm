@@ -169,7 +169,10 @@ def _check_metadata(row: dict, thread: str, parent: str | None) -> None:
         raise _Invalid(CaptureGap.WRONG_TURN)
     source = metadata.get("source")
     if parent is None:
-        if source != "vscode" or metadata.get("thread_source") != "user":
+        if source != "vscode" or metadata.get("thread_source") not in (
+            "user",
+            "agent_created_thread",
+        ):
             raise _Invalid(CaptureGap.UNEXPECTED_HARNESS)
     else:
         if metadata.get("thread_source") != "subagent":
@@ -183,12 +186,24 @@ def _match_start(
     payload: dict,
     turn_id: str | None,
     parent_turn_id: str | None,
+    *,
+    agent_created_owner: bool = False,
 ) -> tuple[str, str] | None:
     candidate = _id(payload.get("turn_id"))
     if turn_id is not None and candidate != turn_id:
         return None
     attribution = _object(payload.get("turn_attribution"))
-    if attribution.get("parent_turn_id") != parent_turn_id:
+    declared_parent = attribution.get("parent_turn_id")
+    # App-tool follow-ups in an agent-created Desktop chat carry the sending
+    # turn's lineage. Their native owner thread and per-turn usage IDs are
+    # still checked against the caller's exact enrolled reference.
+    forwarded_owner = (
+        agent_created_owner
+        and attribution.get("turn_trigger") == "app_tool_send_message"
+        and declared_parent is not None
+        and _id(declared_parent) != candidate
+    )
+    if declared_parent != parent_turn_id and not forwarded_owner:
         if turn_id is not None:
             raise _Invalid(CaptureGap.WRONG_TURN)
         return None
@@ -196,8 +211,8 @@ def _match_start(
     if (
         attribution.get("turn_id") != candidate
         or attribution.get("root_turn_id") != root_id
-        or (parent_turn_id is None and root_id != candidate)
-        or (parent_turn_id is not None and candidate == root_id)
+        or (parent_turn_id is None and not forwarded_owner and root_id != candidate)
+        or ((parent_turn_id is not None or forwarded_owner) and candidate == root_id)
     ):
         raise _Invalid(CaptureGap.WRONG_TURN)
     return candidate, root_id
@@ -272,6 +287,11 @@ def _desktop_turn(
     rows = _rows(evidence)
     _, _, metadata = next(rows, (0, 0, {}))
     _check_metadata(metadata, thread, parent)
+    agent_created_owner = (
+        parent is None
+        and turn_id is not None
+        and metadata["payload"].get("thread_source") == "agent_created_thread"
+    )
 
     active = None
     finished = None
@@ -293,7 +313,9 @@ def _desktop_turn(
         elif event == "task_started":
             if active is not None:
                 raise _Invalid(CaptureGap.WRONG_TURN)
-            match = _match_start(payload, turn_id, parent_turn)
+            match = _match_start(
+                payload, turn_id, parent_turn, agent_created_owner=agent_created_owner
+            )
             if match is not None:
                 if finished is not None:
                     raise _Invalid(CaptureGap.WRONG_TURN)
