@@ -383,7 +383,8 @@ packages/aitm-usage/tests/test_effort_grok.py::test_exact_ordinal_refuses_a_diff
 packages/aitm-usage/tests/test_effort_grok.py::test_fresh_and_configured_exact_recovery_preserve_native_units	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_grok.py::test_headless_rejects_conflicting_model_breakdown	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_grok.py::test_malformed_completeness_flag_cannot_settle_usage	fast-unit	yes	yes
-packages/aitm-usage/tests/test_effort_grok.py::test_matching_aggregates_do_not_hide_conflicting_per_model_usage	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_matching_aggregates_do_not_hide_conflicting_per_model_usage[invalid-retained]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_grok.py::test_matching_aggregates_do_not_hide_conflicting_per_model_usage[swapped]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_grok.py::test_reopening_store_preserves_native_ticks_and_refuses_changed_settled_ticks	local-integration	yes	yes
 packages/aitm-usage/tests/test_effort_grok.py::test_resume_uses_the_only_new_opaque_ordinal_even_with_identical_usage	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_store.py::test_conflicting_incomplete_chain_records_gap_without_replacing_prior_usage	local-integration	yes	yes

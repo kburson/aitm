@@ -97,6 +97,15 @@ class _Usage:
             created = _count(detail.get(creation_key))
             uncached = _count(gross - read - created) if stored else gross
             output = _count(detail.get("outputTokens"))
+            if stored:
+                GrokTokenCounts(
+                    uncached,
+                    read,
+                    created,
+                    output,
+                    _count(detail.get("reasoningTokens")),
+                    _count(detail.get("totalTokens")),
+                )
             calls = _count(detail.get("modelCalls"))
             if calls == 0:
                 raise _Invalid()

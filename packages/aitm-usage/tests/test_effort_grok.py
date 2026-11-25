@@ -204,7 +204,8 @@ def test_headless_rejects_conflicting_model_breakdown():
     )
 
 
-def test_matching_aggregates_do_not_hide_conflicting_per_model_usage():
+@pytest.mark.parametrize("conflict", ["swapped", "invalid-retained"])
+def test_matching_aggregates_do_not_hide_conflicting_per_model_usage(conflict):
     another = "grok-fixture-second"
     stored = row()
     original = stored["modelUsage"][MODEL]
@@ -226,6 +227,11 @@ def test_matching_aggregates_do_not_hide_conflicting_per_model_usage():
         another: dict.fromkeys(first, 0) | {"outputTokens": 100, "modelCalls": 1},
     }
 
+    if conflict == "invalid-retained":
+        stdout["modelUsage"][MODEL]["outputTokens"] = 100
+        stdout["modelUsage"][another]["outputTokens"] = 75
+        stored["modelUsage"][MODEL]["reasoningTokens"] = 101
+        stored["modelUsage"][another]["reasoningTokens"] = 67
     result = observe(adapter(retained(stored)), json.dumps(stdout).encode() + b"\n")
 
     assert result.gap is CaptureGap.MALFORMED
