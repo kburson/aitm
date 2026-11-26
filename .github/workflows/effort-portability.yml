@@ -20,13 +20,9 @@ concurrency:
 
 jobs:
   fixtures:
-    name: Effort fixtures (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    name: Effort fixtures (ubuntu-24.04)
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        runner: [ubuntu-24.04, macos-15, windows-2025]
     defaults:
       run:
         shell: bash
@@ -72,6 +68,6 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
-          name: effort-portability-${{ matrix.runner }}-a${{ github.run_attempt }}
+          name: effort-portability-ubuntu-24.04-a${{ github.run_attempt }}
           path: packages/aitm-usage/effort-evidence/
           if-no-files-found: ignore

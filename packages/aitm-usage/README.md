@@ -347,3 +347,30 @@ to reopen. Later receipts, cutoff changes, and new rate cards produce separate
 IDs. A known subtotal can exist while Cost is held. Verified billed cost and
 Actual require their own evidence. An eligible output enters the existing
 dashboard Cost verification path as a scoped candidate.
+
+### Core usage fixture export
+
+Use `story-core-export` on an authorized frozen report and its original
+reviewed rate card. The exporter reopens the exact report and reproduces it
+from the pinned planning inputs before rendering the receiver files.
+
+```sh
+aitm-effort --project "$PROJECT_UUID" story-core-export "$STORY" "$REPORT_ID" \
+  --repository "$REPOSITORY" --artifact-commit "$ARTIFACT_SHA" \
+  --rate-card "$RATE_CARD" --scope-key "$PRIVATE_SCOPE_KEY" > core-bundle.json
+```
+
+The scope key is a private file of exactly 32 bytes. Use the same key for a
+project, story and occurrence window across corrections and repricing.
+The bundle's `files` object contains three UTF-8 strings. Write the decoded
+strings as bytes to preserve their exact line endings. The v1 receiver fixture
+reads `manifest.json` and `usage.jsonl`. Retain `provenance.json` alongside them
+for the pinned source digests, coverage gaps and separate story Cost decision.
+
+The fixture uses a per-lane integer cutoff in UTC microseconds from the Unix
+epoch. A later cutoff advances that lane. A rate-only update at the same
+cutoff can queue a price change while preserving the original accepted row.
+Missing actor or phase can leave a row pending. Unsupported providers and
+report-excluded evidence remain visible in provenance. A disputed omission
+leaves earlier accepted rows in the fixture. Live receiver delivery and
+reconciliation are qualified separately in #230.

@@ -1,8 +1,6 @@
 name: Scheduled full suite shadow
 
 on:
-  schedule:
-    - cron: '47 3 * * *'
   workflow_dispatch:
 
 permissions:

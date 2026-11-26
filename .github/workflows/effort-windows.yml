@@ -1,0 +1,58 @@
+name: Windows effort wheel checks
+
+on:
+  pull_request:
+    paths:
+      - '.gitattributes'
+      - '.github/workflows/effort-windows.yml'
+      - 'packages/aitm-usage/pyproject.toml'
+      - 'packages/aitm-usage/uv.lock'
+      - 'packages/aitm-usage/src/aitm_usage/effort/cli.py'
+      - 'packages/aitm-usage/src/aitm_usage/effort/core_export.py'
+      - 'packages/aitm-usage/src/aitm_usage/effort/export.py'
+      - 'packages/aitm-usage/src/aitm_usage/effort/pinned_amounts.py'
+      - 'packages/aitm-usage/src/aitm_usage/effort/pinned_inputs.py'
+      - 'packages/aitm-usage/src/aitm_usage/effort/pinned_report.py'
+      - 'packages/aitm-usage/src/aitm_usage/effort/pinned_cli.py'
+      - 'packages/aitm-usage/src/aitm_usage/rates/effort/**'
+      - 'packages/aitm-usage/tests/test_effort_pinned_amounts.py'
+      - 'packages/aitm-usage/tests/test_effort_pinned_report.py'
+      - 'packages/aitm-usage/tests/test_effort_core_export.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: effort-windows-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  wheel:
+    name: Windows wheel and canonical bytes
+    runs-on: windows-2025
+    timeout-minutes: 8
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/aitm-usage
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.10.6'
+          python-version: '3.13.9'
+          enable-cache: false
+      - name: Verify the installed command and exact output bytes
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          uv sync --locked --only-group dev
+          uv build --wheel --out-dir effort-wheel
+          uv pip install --no-deps effort-wheel/*.whl
+          uv run --no-sync aitm-effort --help
+          uv run --no-sync python -m pytest -q \
+            tests/test_effort_pinned_amounts.py::test_pinned_card_requires_expected_digest_and_canonical_bytes \
+            tests/test_effort_pinned_report.py::test_public_cli_redirects_canonical_bytes_in_fresh_process \
+            tests/test_effort_core_export.py::test_core_export_cli_emits_exact_files_and_sanitizes_key_errors
