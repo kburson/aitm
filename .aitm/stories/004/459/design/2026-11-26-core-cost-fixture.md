@@ -1,0 +1,25 @@
+# Core Cost producer fixture qualification
+
+#459 carries forward the producer and reconciliation outcome of M14 from #124. It consumes the delivered #458 pinned artifact. #230 qualifies live integration after #51 and remains the owner of receiver activation and live authorization.
+
+## Receiver and authority
+
+Use the SQLite `Receiver` fixture in `packages/aitm-usage/tests/fixtures/receiver.py` from trunk `0f8c6ff70b5112bd3a17af3a2ab5665e347a416c`. Its Git blob is `9257c7ec948468e8251dcc987ae89bea52f495f5`, SHA-256 `eb1da4e1441bdad0d436b9282d5b67e1e6b3dad8e3215e77443de5e211b91c74`. It implements `aitm.usage.export/v1` snapshot import and the immutable `ingest_usage(source, payload)` seam. The accepted M14 plan names this fixture path. Execute it unchanged. #459 will neither extend the receiver's wire enums nor depend on a #51 source change.
+
+The caller supplies an authorized Git repository and exact artifact commit, project, story and report ID. Reopen the exact #458 envelope. Re-read the envelope's planning inputs and reviewed rate card and require the reconstructed envelope to match the stored bytes exactly. This proves pinned Git content and derivation. The caller owns authorization of those Git pins. #230 owns authenticated live receipt and transport verification.
+
+## Export and completeness
+
+Emit canonical `manifest.json` and `usage.jsonl` bytes for v1 and separate versioned provenance bytes. An outer portable CLI bundle carries the three exact UTF-8 files. The provenance carries the report and artifact identities, planning pin, window and rate digest, source/revision/content digests, provider labels, typed gaps, known subtotal and story Cost disposition. Fixture v1 uses an integer cutoff, so this isolated planning stream uses microseconds since the Unix epoch derived from the pinned UTC cutoff. Its receiver state is dedicated to one project, story and occurrence window. Rate-only changes at the same cutoff retain the usage projection. Corrections with a later cutoff preserve stable identities and follow the fixture reconciliation policy. Existing same-cutoff conflicts are explicit.
+
+Use the published receipt's opaque HMAC identity as the v1 source, independent of cutoff, rate and revision. Carry exact allowed tokens and observation revision with canonical UTC and v1 boundary `turn`. Reuse the shipped wire enums. Unsupported model and client values become Unknown with original allowlisted labels in provenance. Grok and report-excluded disputed/withdrawn rows remain visible in provenance and have no v1 wire row. Keep bounded partial or scope-unknown observations pending under the fixture. Inclusive observations have Unknown v1 scope. Show unresolved coverage without fabricating rows.
+
+Complete v1 scope requires a verified timing join from the same #458 inputs with a recognized phase and actor. Map the existing `implement` phase to v1 `development` and accept the v1 phase enum directly. Pseudonymize the actor and scope assertion with one caller-provided dedicated 32-byte key, using separate HMAC domains and project binding. The original attempt supplies the opaque attempt reference. No raw actor, path, key, session ID, or timing intervals enter the emitted files. If the approved pin does not establish phase and actor, the scope stays Unknown. Verify native complete scope using a controlled fixture; #461 demonstrates the real held/open case.
+
+Use report-derived per-row Standard API-equivalent comparison where exact request pricing is available on complete, bounded usage. An individual comparison and accepted immutable row do not authorize aggregate story Cost. The provenance carries the separate report eligibility and coverage, and no code writes Project Cost or changes independent Actual. v1 amount precision beyond its accepted scale is held Unknown. Missing precision and unsupported values remain visible.
+
+## Fixture delivery and reconciliation
+
+An unchanged snapshot is identical. Replaying an already accepted keyed row returns duplicate. Clearing ambiguous delivery requires reading the exact persisted receiver state after closing the original fixture client. A matching accepted key and payload SHA proves receipt, an absent key after controlled transaction rollback permits one identical retry, and a different digest or unproven readback holds. Execute both ambiguity branches through SQLite and record them. Corrections and repricing after acceptance go to fixture reconciliation without a new charge. Contradictory bytes for identical observation provenance are refused. #230 gets exact parity results and documented compatibility limits.
+
+[Accepted M14](https://github.com/kburson/aitm/blob/be326aa06bbf0180969ecadb8df74cf4a37a62c4/.aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md#m14-versioned-exports-and-immutable-receiver-compatibility) · [#458 delivery](../../458/attachments/qualification/458-delivery.md).
