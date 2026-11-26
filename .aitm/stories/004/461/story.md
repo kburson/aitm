@@ -15,7 +15,7 @@ last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/457/attachments/qualification/457-desktop-forwarded-route.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-agent-owned-closeout.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-agent-owned-closeout.md", "plan/2026-11-25-forwarded-route-addendum.md"], "attachments": ["attachments/qualification/461-forwarded-capture.md", "attachments/qualification/461-forwarded-capture.json"]}
 expansions: []
 trips: []
 ---
@@ -45,3 +45,5 @@ Follow-up to #457 in Epic #456. Validate whether the chat agent can settle and p
 [Qualification plan](plan/2026-11-25-agent-owned-closeout.md)
 
 Claude Sonnet 5.5 accepted the revised plan in the brokered XPR. The exact accepted artifact and review rounds are pinned in the [XPR manifest](../../../../docs/peer-reviews/plan/2026-11-26-2026-11-25-agent-owned-closeout-review-6917279c6cb365288f72331515479504/review-6917279c6cb365288f72331515479504-review-manifest.md).
+
+The direct-forwarded capture reproduced the owner-start gap. The retained child stayed unassigned after exact retry in the separate control. [Forwarded capture checkpoint](attachments/qualification/461-forwarded-capture.md).

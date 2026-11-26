@@ -1,0 +1,46 @@
+{
+  "schema": "aitm.461-forwarded-capture/v1",
+  "story": 461,
+  "comparison_story": 458,
+  "source_commit": "87bc3d8a2875884014b59281117f68b9d63fabee",
+  "route": "app-tool-forwarded",
+  "app_elapsed_ms": 8242,
+  "capture_app_hook_adapter_statuses": [
+    {
+      "event": "SubagentStart",
+      "status": 0
+    },
+    {
+      "event": "SubagentStop",
+      "status": 2
+    },
+    {
+      "event": "Stop",
+      "status": 2
+    }
+  ],
+  "owner_start_at_wrapper": false,
+  "live_export_count": 0,
+  "hook_config_sha256": "fd9845409a60f527af70089eb94847ee9d9f23c74eea4d6b73bff4ec97291446",
+  "wrapper_sha256": "4462efa23fe69e1a8a177925b8e7836a53e91337f3a1bf02c89af84982aa348f",
+  "wheel_sha256": "77ef65b805bc3174a8cb5b5da8e1496d6c301bfe54b2260feafed9787604dd17",
+  "separate_cli_control": {
+    "input_route": "exact retained #461 child; owner start withheld",
+    "terminal_exit": 2,
+    "retry_exit": 2,
+    "coverage": [
+      "pending-binding"
+    ],
+    "retained_callback": true,
+    "story": null,
+    "parent": null,
+    "exports": {
+      "461": 0,
+      "458": 0
+    }
+  },
+  "focused_fixtures": {
+    "passed": 19,
+    "elapsed_seconds": 7.5
+  }
+}
