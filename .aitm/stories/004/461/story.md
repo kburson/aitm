@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 461
 title: "[Spike] Validate agent-owned settlement and publication at story closeout"
 kind: "spike"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/461"
 parent: 456
 children: []
 blocking: []
 blocked-by: [457]
 created: "2026-11-26T00:04:56Z"
-updated: "2026-11-26T00:25:05.359Z"
+updated: "2026-11-26T00:30:58.044Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -43,3 +43,5 @@ Follow-up to #457 in Epic #456. Validate whether the chat agent can settle and p
 - Deliver sanitized results, independently reviewed plan and evidence, elapsed time and turn usage where observed, publication authority, human actions, and a recommendation. Keep closeout turn coverage and unknown costs visible. The spike permits an evidence-backed negative result and owns no product changes.
 
 [Qualification plan](plan/2026-11-25-agent-owned-closeout.md)
+
+Claude Sonnet 5.5 accepted the revised plan in the brokered XPR. The exact accepted artifact and review rounds are pinned in the [XPR manifest](../../../../docs/peer-reviews/plan/2026-11-26-2026-11-25-agent-owned-closeout-review-6917279c6cb365288f72331515479504/review-6917279c6cb365288f72331515479504-review-manifest.md).
