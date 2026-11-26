@@ -1,0 +1,95 @@
+{
+  "schema": "aitm.458-agent-cost/v1",
+  "story": 458,
+  "observations": [
+    {
+      "turn": "Design XPR",
+      "cached_input_tokens": null,
+      "new_input_tokens": null,
+      "output_tokens": null,
+      "cost_reference_usd": null,
+      "reference_basis": "Sealed review verdict, usage split unavailable",
+      "wall_ms": null
+    },
+    {
+      "turn": "Plan XPR",
+      "cached_input_tokens": null,
+      "new_input_tokens": null,
+      "output_tokens": null,
+      "cost_reference_usd": null,
+      "reference_basis": "Sealed review verdict, usage split unavailable",
+      "wall_ms": null
+    },
+    {
+      "turn": "Coverage and pinned reader implementer",
+      "cached_input_tokens": null,
+      "new_input_tokens": null,
+      "output_tokens": null,
+      "cost_reference_usd": null,
+      "reference_basis": "Native subagent usage not reconciled",
+      "wall_ms": null
+    },
+    {
+      "turn": "Report pricing implementer and slice review",
+      "cached_input_tokens": null,
+      "new_input_tokens": null,
+      "output_tokens": null,
+      "cost_reference_usd": null,
+      "reference_basis": "Native subagent usage not reconciled",
+      "wall_ms": null
+    },
+    {
+      "turn": "Protected publication and Cost adapter implementer",
+      "cached_input_tokens": null,
+      "new_input_tokens": null,
+      "output_tokens": null,
+      "cost_reference_usd": null,
+      "reference_basis": "Native subagent usage not reconciled",
+      "wall_ms": null
+    },
+    {
+      "turn": "Grok preliminary source review",
+      "cached_input_tokens": 168064,
+      "new_input_tokens": 79258,
+      "output_tokens": 70141,
+      "cost_reference_usd": "0.45110792",
+      "reference_basis": "Grok CLI usage and provider reference",
+      "wall_ms": null
+    },
+    {
+      "turn": "Claude exact-head source review",
+      "cached_input_tokens": 658,
+      "new_input_tokens": 88948,
+      "output_tokens": 31478,
+      "cost_reference_usd": "0.6706338",
+      "reference_basis": "Claude CLI usage and provider reference",
+      "wall_ms": 232442
+    },
+    {
+      "turn": "Claude hosted gate confirmation",
+      "cached_input_tokens": 89604,
+      "new_input_tokens": 32631,
+      "output_tokens": 529,
+      "cost_reference_usd": "0.8154042",
+      "reference_basis": "Claude CLI usage and provider reference",
+      "wall_ms": 6333
+    },
+    {
+      "turn": "Codex implementation and delivery (partial turn)",
+      "cached_input_tokens": 33609472,
+      "new_input_tokens": 623513,
+      "output_tokens": 74298,
+      "cost_reference_usd": null,
+      "reference_basis": "Native response-deduplicated counters through 2026-11-26T04:20:34.058Z",
+      "wall_ms": null
+    }
+  ],
+  "known_tokens": {
+    "cached_input_tokens": 33867798,
+    "new_input_tokens": 824350,
+    "output_tokens": 176446
+  },
+  "known_provider_reference_usd": "1.93714592",
+  "verified_billed_usd": null,
+  "controller_cutoff_utc": "2026-11-26T04:20:34.058Z"
+}

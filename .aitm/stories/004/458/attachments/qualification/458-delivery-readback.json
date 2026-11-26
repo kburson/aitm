@@ -1,0 +1,56 @@
+{
+  "schema": "aitm.458-delivery-readback/v1",
+  "story": 458,
+  "verified_at_utc": "2026-11-26T04:20:35.061Z",
+  "pr": "https://github.com/kburson/aitm/pull/462",
+  "source_base": "87bc3d8a2875884014b59281117f68b9d63fabee",
+  "reviewed_head": "f709813b81fbe3b63329baa4e3d86b72081dd04e",
+  "reviewed_tree": "b58f4d3caa071255d4a1b9d4210ebfc330bef15d",
+  "merge_commit": "0f8c6ff70b5112bd3a17af3a2ab5665e347a416c",
+  "merged_at_utc": "2026-11-26T04:18:41Z",
+  "demo_story": 461,
+  "coverage_admission": "open",
+  "coverage_sha256": "b22bacadb82b2ce44bc20fd04ec873cfd70583db85573037ed096a06784100e6",
+  "demo": {
+    "artifact_commit": "52e57ed3c7ea54c473fe6b223d09000269856f2e",
+    "envelope_sha256": "5aa9e19e38a94db902f0ff7f8ffee9b277230c49a7560ffa6a836cfdbed81649",
+    "planning_pin": "b17d26a9e1336bd51d239ae3c02b5906c74e3c69",
+    "report_id": "0feeb1478d08640faee709e4fff72b4e60d5cf39191eba36a9ca99baa0f0c40e",
+    "report_json_sha256": "913a2029161b97a9b475d0f640cd588ecf9fcc4647853362cebd70eed33c8287",
+    "report_text_sha256": "5c05210b3dad7ea152487e5027e48c331407755f83fc9f6ff4aac99fb614b759",
+    "registration_commit": "0d6bc6ca35ac51c5de3b15caaf8a3a94ec3ce16d",
+    "fresh_process_reopen": [
+      "json",
+      "text"
+    ],
+    "report_replay": "same-artifact-no-planning-write",
+    "registration_replay": "no-event",
+    "cost_disposition": "held",
+    "verified_billed_usd": null,
+    "engagement_us": null,
+    "per_turn_usd": [
+      "0.0071156",
+      "0.0964632",
+      "0.0718296"
+    ],
+    "total_usd": "0.1754084",
+    "price_basis": "standard-api-equivalent",
+    "cost_hold_reasons": [
+      "incomplete-pricing",
+      "incomplete-usage",
+      "open-admission",
+      "unknown-unattributed-coverage"
+    ],
+    "tokens": {
+      "cached_input": 679424,
+      "new_input": 46988,
+      "output": 1349
+    }
+  },
+  "synthetic_cost": {
+    "fixture": "pinned-read-build-publish-cost-dashboard",
+    "cost_usd": "0.54481",
+    "actual_ms": 60000,
+    "coverage": "complete"
+  }
+}

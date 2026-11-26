@@ -10,7 +10,7 @@ children: []
 blocking: [459]
 blocked-by: [457]
 created: "2026-11-25T16:06:40Z"
-updated: "2026-11-26T04:13:45.905Z"
+updated: "2026-11-26T04:20:35.061Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -49,3 +49,26 @@ The Windows checkout converted the reviewed rate card to CRLF on candidate `5886
 Replacement head `f709813b81fbe3b63329baa4e3d86b72081dd04e` preserves the two reviewed rate digests with checkout conversion enabled. Fresh CI and exact review are required for this head.
 
 All nine hosted checks passed on the replacement head. All three installed-wheel artifacts report 220 passing fixtures each from the same tested merge tree. The trusted verifier requires the exact independently reviewed tree because the test inventory changed. [CI](https://github.com/kburson/aitm/actions/runs/45753366160) · [Portability](https://github.com/kburson/aitm/actions/runs/45753366161).
+
+## Delivery
+
+[Linked PR #462](https://github.com/kburson/aitm/pull/462) merged to protected trunk at `0f8c6ff70b5112bd3a17af3a2ab5665e347a416c`. The reviewed source, hosted CI, installed-wheel validation and exact delivered tree passed. The live #461 report is registered, reopens byte-for-byte, and reports the known **$0.1754084 Standard API-equivalent subtotal** for three turns. Project Cost is held for open admission and verified billed cost is Unknown. [Delivery evidence](attachments/qualification/458-delivery.md) · [Implementer sign-off](retro/2026-11-25-delivery-sign-off.md) · [Frozen #461 report](https://github.com/kburson/aitm/blob/52e57ed3c7ea54c473fe6b223d09000269856f2e/.aitm/stories/004/461/attachments/effort/reports/0feeb1478d08640faee709e4fff72b4e60d5cf39191eba36a9ca99baa0f0c40e.json).
+
+## Agent Cost
+
+| Agent turn or activity | Cached input tokens | New input tokens | Output tokens | Cost reference USD |
+| --- | ---: | ---: | ---: | ---: |
+| Design XPR | Unknown | Unknown | Unknown | Unknown |
+| Plan XPR | Unknown | Unknown | Unknown | Unknown |
+| Coverage and pinned reader implementer | Unknown | Unknown | Unknown | Unknown |
+| Report pricing implementer and slice review | Unknown | Unknown | Unknown | Unknown |
+| Protected publication and Cost adapter implementer | Unknown | Unknown | Unknown | Unknown |
+| Grok preliminary source review | 168,064 | 79,258 | 70,141 | $0.451108 |
+| Claude exact-head source review | 658 | 88,948 | 31,478 | $0.670634 |
+| Claude hosted gate confirmation | 89,604 | 32,631 | 529 | $0.815404 |
+| Codex implementation and delivery (partial turn) | 33,609,472 | 623,513 | 74,298 | Unknown |
+| **Known subtotal** | 33,867,798 | 824,350 | 176,446 | $1.937146 |
+
+The implementing turn was active at cutoff `2026-11-26T04:20:34.058Z`. New input includes cache creation where the provider reports it. Cost references come from provider CLI output. Verified billed cost is Unknown.
+
+[Agent Cost evidence](attachments/qualification/458-agent-cost.json).
