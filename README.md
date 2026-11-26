@@ -14,3 +14,5 @@ Both branches are protected: no deletion, no force-push, no history rewrite.
 Start at [`.aitm/README.md`](.aitm/README.md) for the folder layout.
 
 For backlog work, use the [Local Blocked-By sync guide](https://github.com/kburson/aitm/blob/trunk/docs/blocked-by.md) to reconcile GitHub relationships and planning before reading or updating dependencies.
+
+For archived review collateral and experiment checkouts, use the [private review archive restore guide](docs/private-review-archive-restore.md).
