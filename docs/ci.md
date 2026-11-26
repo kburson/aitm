@@ -22,6 +22,14 @@ To verify a hosted PR run, read the authenticated PR, workflow, latest attempt a
 
 The isolated Ubuntu base lane uses the delivered observer and policy from the exact target. It uses a private scratch directory under the sticky system temporary directory for custody fixtures and their pinned interpreter. The [hosted base qualification](https://github.com/kburson/aitm/actions/runs/43726916730) compares serial and parallel outcomes from the same source and runner image. On initial bootstrap it uses the independently reviewed and digest-pinned standalone blobs. The signer downloads only the exact collector archive, verifies the raw digest and allowed member, and signs the fixed evidence file without candidate checkout or executable input.
 
+## Platform lanes
+
+Ubuntu runs the signed PR gate and the shared installed-wheel effort suite.
+The path-triggered macOS and Windows workflows cover specific platform behavior.
+They can also be dispatched manually for platform and release qualification.
+See [AITM Usage platform requirements](platform-requirements.md) for the user
+requirements behind these checks and the supported package boundaries.
+
 ## Verify a pull request from the target
 
 Run the delivered verifier from a clean checkout of the current declared target with GitHub CLI 2.97.0.
