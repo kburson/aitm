@@ -4,8 +4,8 @@ AITM separates portable effort reporting from the native usage monitor. The
 package ships one pure-Python wheel. Building a report, reopening an immutable
 artifact, exporting a Core fixture, and parsing saved provider records use
 standard Python, SQLite where needed, and Git. Ubuntu runs the default signed
-PR gate and the installed-wheel effort suite. This covers the full report
-and export behavior for ordinary changes.
+PR gate and the installed-wheel effort suite. This covers portable report and
+export logic. The focused Windows lane checks Windows checkout and CLI bytes.
 
 ## Native requirements and their checks
 
@@ -20,13 +20,15 @@ and export behavior for ordinary changes.
 
 The macOS and Windows workflows run on PRs that touch the implementation or
 tests behind their specific checks. They also support manual dispatch for a
-change in a shared dependency or for release qualification. Apply native
+change in a shared dependency or for release qualification. Workflow-only
+macOS edits receive Linux workflow validation and can be dispatched manually.
+Apply native
 evidence to the feature being qualified. For an ordinary portable change, the
 Linux gate supplies the delivery evidence.
 
 The daily hosted category sweep assigns shared cases to Linux and retains
-Darwin for native and Darwin-only cases. The APFS shadow workflows are manual
-diagnostics for historical comparisons, separate from the PR delivery gate.
+Darwin for native and Darwin-only cases. The APFS shadow workflows, including **Scheduled full suite shadow**, are
+manual diagnostics for historical comparisons outside the PR delivery gate.
 The hosted macOS filesystem job covers filesystem behavior. Live Desktop
 qualification needs an app-enabled host.
 

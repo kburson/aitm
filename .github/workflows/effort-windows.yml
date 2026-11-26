@@ -4,9 +4,15 @@ on:
   pull_request:
     paths:
       - '.gitattributes'
+      - '.github/workflows/effort-windows.yml'
       - 'packages/aitm-usage/pyproject.toml'
       - 'packages/aitm-usage/uv.lock'
       - 'packages/aitm-usage/src/aitm_usage/effort/cli.py'
+      - 'packages/aitm-usage/src/aitm_usage/effort/core_export.py'
+      - 'packages/aitm-usage/src/aitm_usage/effort/export.py'
+      - 'packages/aitm-usage/src/aitm_usage/effort/pinned_amounts.py'
+      - 'packages/aitm-usage/src/aitm_usage/effort/pinned_inputs.py'
+      - 'packages/aitm-usage/src/aitm_usage/effort/pinned_report.py'
       - 'packages/aitm-usage/src/aitm_usage/effort/pinned_cli.py'
       - 'packages/aitm-usage/src/aitm_usage/rates/effort/**'
       - 'packages/aitm-usage/tests/test_effort_pinned_amounts.py'
