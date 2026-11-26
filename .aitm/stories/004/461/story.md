@@ -100,3 +100,9 @@ The automated run published three new receipts. The recorded evidence separates 
 | **Measured subtotal** | **191.336** | **17,406,371** | **490,976** | **74,588** | **$1.021194** |
 
 These durations sum separate observations and can overlap. The controller remains active and is measured through 2026-11-26T01:59:22.368Z. New input includes cache creation. Cost references distinguish published API list estimates from provider-reported reference costs. Verified billed charges are Unknown. [Automated-run cost evidence](attachments/qualification/461-automated-agent-cost.json).
+
+## Pinned effort and cost report
+
+The automated solo and orchestrator sample has three measured turns. Its known Sol Standard API-equivalent subtotal is **$0.1754084**. The enrolled cohort has open coverage, so Project Cost is held. Billed cost and additive engagement are Unknown.
+
+Reopen report ID `0feeb1478d08640faee709e4fff72b4e60d5cf39191eba36a9ca99baa0f0c40e` at artifact commit `52e57ed3c7ea54c473fe6b223d09000269856f2e`. [Frozen report](https://github.com/kburson/aitm/blob/52e57ed3c7ea54c473fe6b223d09000269856f2e/.aitm/stories/004/461/attachments/effort/reports/0feeb1478d08640faee709e4fff72b4e60d5cf39191eba36a9ca99baa0f0c40e.json).
