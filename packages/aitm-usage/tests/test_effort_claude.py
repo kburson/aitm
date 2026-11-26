@@ -162,6 +162,8 @@ def test_headless_per_result_and_exact_recovery_are_identical():
     )
 
     assert completed == replay
+    assert completed.model == MODEL
+    assert completed.request_usage == (completed.receipt.tokens,)
     assert completed.outcome is Outcome.COMPLETED
     assert completed.gap is None
     assert completed.receipt.coverage is Availability.COMPLETE

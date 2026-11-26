@@ -197,26 +197,29 @@ class EffortStore:
         connection.execute("UPDATE metadata SET generation = generation + 1")
 
     def enroll(self, enrollment: Enrollment) -> Disposition:
+        with self._transaction(write=True) as db:
+            return self._enroll(db, enrollment)
+
+    def _enroll(self, db: sqlite3.Connection, enrollment: Enrollment) -> Disposition:
         self._require_project(enrollment.project_id)
         attempt = str(enrollment.attempt_id)
         payload = _encode(enrollment, Enrollment)
-        with self._transaction(write=True) as db:
-            existing = db.execute(
-                "SELECT payload FROM enrollments WHERE attempt=?", (attempt,)
-            ).fetchone()
-            if existing:
-                return (
-                    Disposition.REPLAYED
-                    if existing[0] == payload
-                    else Disposition.CONFLICTED
-                )
-            if enrollment.parent_attempt_id is not None:
-                parent = self._enrollment(db, str(enrollment.parent_attempt_id))
-                if parent.run_id != enrollment.run_id:
-                    raise EffortError("Parent attempt belongs to a different run")
-            db.execute("INSERT INTO enrollments VALUES (?, ?)", (attempt, payload))
-            self._advance_generation(db)
-            return Disposition.INSERTED
+        existing = db.execute(
+            "SELECT payload FROM enrollments WHERE attempt=?", (attempt,)
+        ).fetchone()
+        if existing:
+            return (
+                Disposition.REPLAYED
+                if existing[0] == payload
+                else Disposition.CONFLICTED
+            )
+        if enrollment.parent_attempt_id is not None:
+            parent = self._enrollment(db, str(enrollment.parent_attempt_id))
+            if parent.run_id != enrollment.run_id:
+                raise EffortError("Parent attempt belongs to a different run")
+        db.execute("INSERT INTO enrollments VALUES (?, ?)", (attempt, payload))
+        self._advance_generation(db)
+        return Disposition.INSERTED
 
     @staticmethod
     def _enrollment(db: sqlite3.Connection, attempt: str) -> Enrollment:
@@ -431,64 +434,65 @@ class EffortStore:
             return Disposition.INSERTED
 
     def ingest(self, receipt: UsageReceipt) -> Disposition:
+        with self._transaction(write=True) as db:
+            return self._ingest(db, receipt)
+
+    def _ingest(self, db: sqlite3.Connection, receipt: UsageReceipt) -> Disposition:
         self._require_project(receipt.project_id)
         attempt = str(receipt.attempt_id)
         observation = receipt.observation_id
         payload, digest = receipt.to_json(), receipt.digest
-        with self._transaction(write=True) as db:
-            self._enrollment(db, attempt)
-            if db.execute(
+        self._enrollment(db, attempt)
+        if db.execute("SELECT 1 FROM conflicts WHERE digest=?", (digest,)).fetchone():
+            return Disposition.REPLAYED
+        if db.execute("SELECT 1 FROM pending WHERE digest=?", (digest,)).fetchone():
+            return Disposition.REPLAYED
+        occupied = db.execute(
+            "SELECT digest FROM revisions WHERE observation=? AND revision=?",
+            (observation, receipt.revision),
+        ).fetchone()
+        if occupied and occupied[0] == digest:
+            return Disposition.REPLAYED
+
+        active = self._effective(db, observation)
+        other = db.execute(
+            "SELECT observation FROM effective WHERE attempt=? AND observation<>?",
+            (attempt, observation),
+        ).fetchone()
+        wrong_marker = db.execute(
+            """SELECT 1 FROM scope_markers
+               WHERE (observation=? AND attempt<>?) OR (attempt=? AND observation<>?)""",
+            (observation, attempt, attempt, observation),
+        ).fetchone()
+        if wrong_marker:
+            reason = "turn-marker"
+        elif (active and active.attempt_id != receipt.attempt_id) or other:
+            reason = "turn-attempt"
+        elif occupied:
+            reason = "revision-conflict"
+        else:
+            reason = None
+
+        self._advance_generation(db)
+        if reason:
+            self._conflict(db, receipt, reason)
+            return Disposition.CONFLICTED
+
+        db.execute(
+            "INSERT INTO pending VALUES (?, ?, ?, ?, ?)",
+            (digest, observation, receipt.revision, attempt, payload),
+        )
+        selected = self._advance(db, observation, active)
+        if not selected or selected.revision < receipt.revision:
+            rejected = db.execute(
                 "SELECT 1 FROM conflicts WHERE digest=?", (digest,)
-            ).fetchone():
-                return Disposition.REPLAYED
-            if db.execute("SELECT 1 FROM pending WHERE digest=?", (digest,)).fetchone():
-                return Disposition.REPLAYED
-            occupied = db.execute(
-                "SELECT digest FROM revisions WHERE observation=? AND revision=?",
-                (observation, receipt.revision),
             ).fetchone()
-            if occupied and occupied[0] == digest:
-                return Disposition.REPLAYED
-
-            active = self._effective(db, observation)
-            other = db.execute(
-                "SELECT observation FROM effective WHERE attempt=? AND observation<>?",
-                (attempt, observation),
-            ).fetchone()
-            wrong_marker = db.execute(
-                """SELECT 1 FROM scope_markers
-                   WHERE (observation=? AND attempt<>?) OR (attempt=? AND observation<>?)""",
-                (observation, attempt, attempt, observation),
-            ).fetchone()
-            if wrong_marker:
-                reason = "turn-marker"
-            elif (active and active.attempt_id != receipt.attempt_id) or other:
-                reason = "turn-attempt"
-            elif occupied:
-                reason = "revision-conflict"
-            else:
-                reason = None
-
-            self._advance_generation(db)
-            if reason:
-                self._conflict(db, receipt, reason)
-                return Disposition.CONFLICTED
-
-            db.execute(
-                "INSERT INTO pending VALUES (?, ?, ?, ?, ?)",
-                (digest, observation, receipt.revision, attempt, payload),
-            )
-            selected = self._advance(db, observation, active)
-            if not selected or selected.revision < receipt.revision:
-                rejected = db.execute(
-                    "SELECT 1 FROM conflicts WHERE digest=?", (digest,)
-                ).fetchone()
-                return Disposition.CONFLICTED if rejected else Disposition.PENDING
-            if active is None:
-                self._reject_incompatible_pending(db, observation, attempt)
-            if selected.revision > 1:
-                return Disposition.REFINED
-            return Disposition.INSERTED
+            return Disposition.CONFLICTED if rejected else Disposition.PENDING
+        if active is None:
+            self._reject_incompatible_pending(db, observation, attempt)
+        if selected.revision > 1:
+            return Disposition.REFINED
+        return Disposition.INSERTED
 
     def attribute(self, link: Attribution) -> Disposition:
         self._require_project(link.project_id)

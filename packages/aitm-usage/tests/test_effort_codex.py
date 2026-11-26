@@ -152,6 +152,8 @@ def test_fresh_headless_and_retrospective_receipt_are_identical():
     replay = exact(codex, evidence + turn(SECOND, TOTAL_USE, SECOND_USE), FIRST)
 
     assert observation == replay
+    assert observation.model == "synthetic"
+    assert observation.request_usage == (tokens(FIRST_USE),)
     assert observation.gap is None
     assert observation.outcome is Outcome.COMPLETED
     assert observation.receipt.coverage is Availability.COMPLETE
@@ -480,3 +482,20 @@ def test_bounded_capture_and_exact_file_recovery_agree(tmp_path):
         )
     assert result.observation == recovered
     assert result.observation.receipt.tokens == tokens(FIRST_USE)
+
+
+def test_installed_patch_build_preserves_exact_receipt_identity():
+    build = "0.171.0-alpha.13.2"
+    evidence = header(version=build) + turn(FIRST, FIRST_USE, FIRST_USE)
+    codex = adapter(evidence)
+    observed = observe(codex, stream())
+    assert observed.receipt.turn.version == build
+    assert (
+        recover(
+            codex,
+            enrollment=ENROLLMENT,
+            expected_turn=observed.receipt.turn,
+            evidence=BytesIO(evidence),
+        )
+        == observed
+    )

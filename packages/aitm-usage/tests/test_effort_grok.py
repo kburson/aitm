@@ -116,6 +116,8 @@ def test_fresh_and_configured_exact_recovery_preserve_native_units():
     live = observe(grok, terminal())
 
     assert live == exact(grok, 17, source)
+    assert live.model == MODEL
+    assert live.request_usage == (live.receipt.tokens,)
     assert live.outcome is Outcome.COMPLETED
     assert live.receipt.coverage is Availability.COMPLETE
     assert live.receipt.tokens.input_tokens == 18639

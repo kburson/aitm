@@ -27,6 +27,7 @@ from ..receipts import (
 )
 
 _VERSION = "0.171.0-alpha.13"
+_VERSIONS = frozenset({_VERSION, "0.171.0-alpha.13.2"})
 _SURFACES = frozenset({"exec", "cli"})
 _TERMINAL = {"task_complete": Outcome.COMPLETED, "turn_aborted": Outcome.INTERRUPTED}
 
@@ -156,6 +157,8 @@ class _Turn:
     outcome: Outcome
     counts: _Counts | None
     cumulative: _Counts | None
+    models: frozenset[str | None]
+    requests: tuple[TokenCounts, ...]
 
 
 @dataclass(slots=True)
@@ -168,6 +171,9 @@ class _ActiveTurn:
     cumulative: _Counts | None = None
     pending_counter: tuple[_Counts, _Counts] | None = None
     context: bool = False
+    model: str | None = None
+    models: set[str | None] = field(default_factory=set)
+    requests: list[TokenCounts] = field(default_factory=list)
 
     def bind(self, payload: dict) -> None:
         if (
@@ -219,6 +225,8 @@ class _ActiveTurn:
             raise _Invalid()
         self.cumulative = after
         self.last = last
+        self.models.add(self.model)
+        self.requests.append(last.tokens())
 
     def finish(self, offset: int, row: dict, outcome: Outcome) -> _Turn:
         ended = _moment(row)
@@ -233,12 +241,15 @@ class _ActiveTurn:
             outcome,
             None if self.cumulative is None else self.cumulative.since(self.before),
             self.cumulative,
+            frozenset(self.models),
+            tuple(self.requests),
         )
 
 
 @dataclass(frozen=True, slots=True)
 class _Rollout:
     session: str
+    version: str
     surface: str
     turns: tuple[_Turn, ...]
     active: str | None
@@ -254,8 +265,10 @@ def _rollout(evidence: bytes) -> _Rollout:
     if payload.get("session_id", session) != session:
         raise _Invalid(CaptureGap.WRONG_TURN)
     surface = payload.get("source")
+    version = payload.get("cli_version")
     if (
-        payload.get("cli_version") != _VERSION
+        not isinstance(version, str)
+        or version not in _VERSIONS
         or not isinstance(surface, str)
         or surface not in _SURFACES
     ):
@@ -283,6 +296,8 @@ def _rollout(evidence: bytes) -> _Rollout:
         elif kind == "turn_context" and active is not None:
             active.bind(payload)
             active.context = True
+            model = payload.get("model")
+            active.model = model if isinstance(model, str) else None
         elif kind == "token_usage_record":
             if active is None:
                 raise _Invalid(CaptureGap.WRONG_TURN)
@@ -307,7 +322,11 @@ def _rollout(evidence: bytes) -> _Rollout:
             last = active.last
             active = None
     return _Rollout(
-        session, surface, tuple(turns), None if active is None else active.identifier
+        session,
+        version,
+        surface,
+        tuple(turns),
+        None if active is None else active.identifier,
     )
 
 
@@ -380,12 +399,14 @@ class CodexAdapter:
         if not isinstance(self.scope, UsageScope):
             raise ValueError("Expected a caller-authorized usage scope")
 
-    def native_turn(self, session: str, turn: str, *, surface: str) -> NativeTurn:
+    def native_turn(
+        self, session: str, turn: str, *, surface: str, version: str = _VERSION
+    ) -> NativeTurn:
         session = _id(session)
         turn = _id(turn)
         return NativeTurn(
             "codex",
-            _VERSION,
+            version,
             surface,
             self.account,
             self.pseudonymize("codex-session", session),
@@ -421,7 +442,12 @@ class CodexAdapter:
         receipt = UsageReceipt(
             enrollment.project_id,
             enrollment.attempt_id,
-            self.native_turn(rollout.session, turn.identifier, surface=rollout.surface),
+            self.native_turn(
+                rollout.session,
+                turn.identifier,
+                surface=rollout.surface,
+                version=rollout.version,
+            ),
             sha256(evidence[turn.start : turn.end]).hexdigest(),
             turn.ended,
             1,
@@ -434,8 +460,13 @@ class CodexAdapter:
             ended_at=turn.ended,
             time_basis=TimeBasis.NATIVE,
         )
+        model = next(iter(turn.models)) if len(turn.models) == 1 else None
         return Observation(
-            turn.outcome, receipt, CaptureGap.MISSING if counts is None else None
+            turn.outcome,
+            receipt,
+            CaptureGap.MISSING if counts is None else None,
+            model=model,
+            request_usage=turn.requests if model else None,
         )
 
     def observe(self, event: CaptureEvent) -> Observation:
@@ -501,7 +532,12 @@ class CodexAdapter:
                 raise _Invalid()
             session = _id(event.get("thread-id"))
             turn = _id(event.get("turn-id"))
-            if self.native_turn(session, turn, surface="cli") != expected_turn:
+            if (
+                self.native_turn(
+                    session, turn, surface="cli", version=expected_turn.version
+                )
+                != expected_turn
+            ):
                 raise _Invalid(CaptureGap.WRONG_TURN)
             result = self.recover(
                 ExactReference(enrollment, expected_turn, self._lookup(session))
@@ -516,26 +552,32 @@ class CodexAdapter:
         try:
             self._check_project(exact_ref.enrollment)
             wanted = exact_ref.turn
-            if wanted.provider != "codex" or wanted.version != _VERSION:
+            if wanted.provider != "codex" or wanted.version not in _VERSIONS:
                 raise _Invalid(CaptureGap.UNEXPECTED_HARNESS)
             if wanted.account != self.account:
                 raise _Invalid(CaptureGap.WRONG_TURN)
             if len(exact_ref.evidence) > self.max_bytes:
                 raise _Invalid(CaptureGap.EVIDENCE_LIMIT)
             rollout = _rollout(exact_ref.evidence)
-            if wanted.surface != rollout.surface:
+            if (wanted.surface, wanted.version) != (rollout.surface, rollout.version):
                 raise _Invalid(CaptureGap.UNEXPECTED_HARNESS)
             if wanted.session != self.pseudonymize("codex-session", rollout.session):
                 raise _Invalid(CaptureGap.WRONG_TURN)
             for turn in rollout.turns:
                 if wanted == self.native_turn(
-                    rollout.session, turn.identifier, surface=rollout.surface
+                    rollout.session,
+                    turn.identifier,
+                    surface=rollout.surface,
+                    version=rollout.version,
                 ):
                     return self._observation(
                         exact_ref.enrollment, rollout, turn, exact_ref.evidence
                     )
             if rollout.active is not None and wanted == self.native_turn(
-                rollout.session, rollout.active, surface=rollout.surface
+                rollout.session,
+                rollout.active,
+                surface=rollout.surface,
+                version=rollout.version,
             ):
                 raise _Invalid(CaptureGap.MISSING)
             raise _Invalid(CaptureGap.WRONG_TURN)
