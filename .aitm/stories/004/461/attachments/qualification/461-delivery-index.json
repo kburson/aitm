@@ -1,0 +1,30 @@
+{
+  "schema": "aitm.spike-delivery-index/v1",
+  "story": 461,
+  "original_target": "planning",
+  "publication_commit": "e09eb4de39630e184d3c1adb90d0f00045e24e9b",
+  "verified_against_planning_commit": "3cecf701b3527b5bd07e556736c1d3025821cf84",
+  "plan_review_commit": "33e159c5e1d36cab8d0e035db6f5dd988f0c0d29",
+  "signed_evidence_commit": "a965cfe1cfbfeb0a111fffd1a7590f73c2fe3775",
+  "receipts": [
+    {
+      "path": "attachments/effort/session/021bb7a2cbf10b0c5d4fcea597fb9313b7da20e0b6376f454a56adbc3b1162e6-r1.json",
+      "sha256": "7ce52e598d950a679e00a09bbec08b5fcb062f4a3b41bf5bb920622228aaaf47",
+      "role": "worker",
+      "surface": "desktop-subagent"
+    },
+    {
+      "path": "attachments/effort/session/050aa872027a25f581359b152a473f9cecb7bb6a76a00db58e8e45ff11030030-r1.json",
+      "sha256": "78a262d4abf868374c53a146e1a6aa51743d2502f5b13c530d0bdcdd58a03d10",
+      "role": "orchestrator",
+      "surface": "desktop"
+    },
+    {
+      "path": "attachments/effort/session/e2cea13ef9809b3842d51403b68271d1c72965a2841a6c18dafc90f6c5b81c96-r1.json",
+      "sha256": "3a5e2ae4aa1d10f71f200f3801e6d1e1f6c7816c176db9d14ae0c04dccca8b0b",
+      "role": "orchestrator",
+      "surface": "desktop"
+    }
+  ],
+  "earlier_fallback_receipts_preserved": 2
+}

@@ -106,3 +106,7 @@ These durations sum separate observations and can overlap. The controller remain
 The automated solo and orchestrator sample has three measured turns. Its known Sol Standard API-equivalent subtotal is **$0.1754084**. The enrolled cohort has open coverage, so Project Cost is held. Billed cost and additive engagement are Unknown.
 
 Reopen report ID `0feeb1478d08640faee709e4fff72b4e60d5cf39191eba36a9ca99baa0f0c40e` at artifact commit `52e57ed3c7ea54c473fe6b223d09000269856f2e`. [Frozen report](https://github.com/kburson/aitm/blob/52e57ed3c7ea54c473fe6b223d09000269856f2e/.aitm/stories/004/461/attachments/effort/reports/0feeb1478d08640faee709e4fff72b4e60d5cf39191eba36a9ca99baa0f0c40e.json).
+
+## Delivery record
+
+The automated spike published its verified receipts directly to protected planning. The planning pull request adds an index of that original publication and its signed evidence. [Delivery index](attachments/qualification/461-delivery-index.json) · [Original receipt publication](https://github.com/kburson/aitm/commit/e09eb4de39630e184d3c1adb90d0f00045e24e9b).
