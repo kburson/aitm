@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 270
 title: "[M08b5 prerequisite] Admit Claude foreground Agent source spans in the writer"
 kind: "story"
-state: "refine"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/270"
 parent: 297
 children: [271, 272, 273]
 blocking: [204]
 blocked-by: [269, 273]
 created: "2026-11-13T04:01:54Z"
-updated: "2026-11-13T04:04:57Z"
+updated: "2026-11-26T14:48:38.047Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -41,3 +41,9 @@ The native sequence is #269 → [#271 closure evidence](../271/story.md) → [#2
 ## Current epic
 
 [Epic #297](https://github.com/kburson/aitm/issues/297) owns this open folded-usage work under the accepted qualified-release scope amendment. Current native prerequisites and dependent edges are preserved.
+
+## Disposition
+
+**Not delivered.** The legacy monitor writer-admission contract was superseded by session-owned capture. Completed native closure evidence remains under #271. The live parent and child attribution proof carries forward in [#467](https://github.com/kburson/aitm/issues/467).
+
+GitHub records the closure as Not planned. Project 24 records the terminal state as Done.

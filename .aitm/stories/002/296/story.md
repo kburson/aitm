@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 296
 title: "[M09-Folded] Qualify atomic Claude Agent replacement delivery"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/296"
 parent: 297
 children: []
 blocking: []
 blocked-by: [119, 204]
 created: "2026-11-14T13:12:02Z"
-updated: "2026-11-14T13:12:44Z"
+updated: "2026-11-26T14:48:38.047Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -38,3 +38,9 @@ A future end-to-end support claim separately requires the established recovery f
 ## Current epic
 
 [Epic #297](https://github.com/kburson/aitm/issues/297) owns this open folded-usage work under the accepted qualified-release scope amendment. Current native prerequisites and dependent edges are preserved.
+
+## Disposition
+
+**Not delivered.** The legacy monitor's guarded replacement and project-write acknowledgement contract was superseded by session-owned receipts. Protected publication, readback and no-duplicate replay carry forward in [#467](https://github.com/kburson/aitm/issues/467).
+
+GitHub records the closure as Not planned. Project 24 records the terminal state as Done.

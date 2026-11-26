@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 297
 title: "Qualified Claude foreground Agent accounting"
 kind: "epic"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/297"
 parent: null
 children: [204, 270, 296]
 blocking: []
 blocked-by: []
 created: "2026-11-15T00:08:43Z"
-updated: "2026-11-15T00:09:15Z"
+updated: "2026-11-26T14:48:38.047Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: null
@@ -32,3 +32,9 @@ Preserve the original capture eligibility proof for both spans, exact terminal c
 [Independently accepted qualification scope](https://github.com/kburson/aitm/blob/d752e212895e3dd879d2653defa38bba157de329/.aitm/stories/001/100/plan/2026-11-14-100-qualified-monitor-completion-proposal.md) · [Activation and exact graph conditions](https://github.com/kburson/aitm/blob/d752e212895e3dd879d2653defa38bba157de329/.aitm/stories/001/100/plan/2026-11-14-100-qualified-monitor-activation.md).
 
 Epic #2, C01 and production cutover are excluded.
+
+## Disposition
+
+**Not delivered.** The legacy Claude foreground Agent monitor epic was superseded by session-owned accounting. Its open legacy work in #204, #270, #272, #273 and #296 was not delivered. #271 remains completed for the native closure proof. The remaining live Claude parent and child attribution, accounting and publication proof carries forward in [#467](https://github.com/kburson/aitm/issues/467).
+
+GitHub records the closure as Not planned. Project 24 records the terminal state as Done.

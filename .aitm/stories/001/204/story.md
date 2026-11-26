@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 204
 title: "[M08b5] Qualified folded usage intent"
 kind: "story"
-state: "refine"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/204"
 parent: 297
 children: []
 blocking: [296]
 blocked-by: [203, 210, 270]
 created: "2026-11-10T23:50:22Z"
-updated: "2026-11-12T16:22:28+00:00"
+updated: "2026-11-26T14:48:38.047Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -69,3 +69,9 @@ This story remains open for original ownership and folded intent. [Independently
 ## Current epic
 
 [Epic #297](https://github.com/kburson/aitm/issues/297) owns this open folded-usage work under the accepted qualified-release scope amendment. Current native prerequisites and dependent edges are preserved.
+
+## Disposition
+
+**Not delivered.** The legacy folded journal intent was superseded by session-owned capture. The [native membership proof](https://github.com/kburson/aitm/blob/planning/.aitm/stories/001/204/plan/2026-11-12-204-folded-membership-refine-pass.md) remains evidence for [#467](https://github.com/kburson/aitm/issues/467).
+
+GitHub records the closure as Not planned. Project 24 records the terminal state as Done.

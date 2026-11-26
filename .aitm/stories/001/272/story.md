@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 272
 title: "[#270 B] Qualify Claude writer admission and original ownership"
 kind: "story"
-state: "refine"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/272"
 parent: 270
 children: []
 blocking: [273]
 blocked-by: [271]
 created: "2026-11-13T04:32:20Z"
-updated: "2026-11-13T04:40:10Z"
+updated: "2026-11-26T14:48:38.047Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -37,3 +37,9 @@ The amended admission plan passed independent re-acceptance under the existing g
 ## Buffered transcript timing controls
 
 Both a directory notification and a tight reader saw the first API request in the first complete child prefix in two live trials. The pinned transcript writer can publish the initial rows and first request together. [Native timing findings](plan/2026-11-13-272-native-buffered-prefix-findings.md).
+
+## Disposition
+
+**Not delivered.** The legacy monitor writer-admission and original-owner contract was superseded by session-owned capture. The buffered-prefix and pre-request arm findings remain available. The live attribution proof carries forward in [#467](https://github.com/kburson/aitm/issues/467).
+
+GitHub records the closure as Not planned. Project 24 records the terminal state as Done.
