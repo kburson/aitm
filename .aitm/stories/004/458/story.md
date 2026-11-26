@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 458
 title: "Publish pinned story effort and cost reports"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/458"
 parent: 456
 children: []
 blocking: [459]
 blocked-by: [457]
 created: "2026-11-25T16:06:40Z"
-updated: "2026-11-26T04:09:26.737Z"
+updated: "2026-11-26T04:13:45.905Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -47,3 +47,5 @@ Implementation pickup verified on protected trunk `87bc3d8a` after plan XPR `3b8
 The Windows checkout converted the reviewed rate card to CRLF on candidate `5886ddd5`. The reproduced hash matched the hosted failure. Returned to Develop for an LF checkout rule that preserves the exact reviewed digests. [Superseded Windows run](https://github.com/kburson/aitm/actions/runs/45753000200/job/139684959255).
 
 Replacement head `f709813b81fbe3b63329baa4e3d86b72081dd04e` preserves the two reviewed rate digests with checkout conversion enabled. Fresh CI and exact review are required for this head.
+
+All nine hosted checks passed on the replacement head. All three installed-wheel artifacts report 220 passing fixtures each from the same tested merge tree. The trusted verifier requires the exact independently reviewed tree because the test inventory changed. [CI](https://github.com/kburson/aitm/actions/runs/45753366160) · [Portability](https://github.com/kburson/aitm/actions/runs/45753366161).
