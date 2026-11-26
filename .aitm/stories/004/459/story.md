@@ -3,16 +3,16 @@ schema: "aitm.story/v0"
 id: 459
 title: "Qualify Core Cost export from planning"
 kind: "story"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/459"
 parent: 456
 children: []
 blocking: [230]
 blocked-by: [458]
 created: "2026-11-25T16:08:08Z"
-updated: "2026-11-26T13:05:50.467Z"
+updated: "2026-11-26T13:12:32.345Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 3.5, "size": "S"}
 priority: null
 origin: ".aitm/stories/004/455/attachments/455-findings.md"
 files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-26-core-cost-fixture.md"], "plan": ["plan/2026-11-26-core-cost-fixture-plan.md"], "attachments": []}
@@ -37,3 +37,5 @@ Preserve the useful producer outcome from #124 with a deterministic planning exp
 ## Refinement and plan
 
 The #458 predecessor is delivered. This story adapts its exact report inputs to the existing M14 receiver fixture. The planning estimate is 3.5 implementation agent-hours, size S. It includes local and hosted qualification and independent source review. [Design](design/2026-11-26-core-cost-fixture.md) · [Plan](plan/2026-11-26-core-cost-fixture-plan.md).
+
+Claude Sonnet 5.5 accepted the revised plan in the sealed XPR. Pickup is pinned to trunk `0f8c6ff70b5112bd3a17af3a2ab5665e347a416c`. [XPR consensus](https://github.com/kburson/aitm/blob/e2478a2815c28c75a529dc0c20151ef484ebbf69/docs/peer-reviews/plan/2026-11-26-2026-11-26-core-cost-fixture-plan-review-267e823be939722787b850589663a74b/review-267e823be939722787b850589663a74b-review-manifest.md).
