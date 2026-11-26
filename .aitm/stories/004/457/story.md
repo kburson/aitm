@@ -7,7 +7,7 @@ state: "test"
 issue: "https://github.com/kburson/aitm/issues/457"
 parent: 456
 children: []
-blocking: [458]
+blocking: [458, 461]
 blocked-by: []
 created: "2026-11-25T16:06:16Z"
 updated: "2026-11-25T23:56:36.251Z"

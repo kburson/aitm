@@ -6,11 +6,11 @@ kind: "epic"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/456"
 parent: null
-children: [457, 458, 459]
+children: [457, 458, 459, 461]
 blocking: [100]
 blocked-by: []
 created: "2026-11-25T16:06:13Z"
-updated: "2026-11-25T18:03:41.017Z"
+updated: "2026-11-26T00:07:17.678Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -37,3 +37,5 @@ Use the shipped #435 portable assets and the narrow validated #100 components. N
 ## Kickoff
 
 First delivery story [#457](../457/story.md) has started design. Its story holds the engagement and cost records.
+
+[Spike #461](https://github.com/kburson/aitm/issues/461) validates agent-owned settlement and publication at story closeout after #457.
