@@ -10,7 +10,7 @@ children: [457, 458, 459, 461]
 blocking: [100]
 blocked-by: []
 created: "2026-11-25T16:06:13Z"
-updated: "2026-11-26T00:07:17.678Z"
+updated: "2026-11-26T14:32:33.934Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -39,3 +39,7 @@ Use the shipped #435 portable assets and the narrow validated #100 components. N
 First delivery story [#457](../457/story.md) has started design. Its story holds the engagement and cost records.
 
 [Spike #461](https://github.com/kburson/aitm/issues/461) validates agent-owned settlement and publication at story closeout after #457.
+
+## Aggregate delivery
+
+All four children delivered the approved scope. The epic qualification passed 54 focused tests on the delivered trunk. [Acceptance mapping, sign-off, and Agent Cost](retro/2026-11-26-delivery-sign-off.md).
