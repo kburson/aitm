@@ -1,0 +1,32 @@
+{
+  "effort-portability-macos-15-a1": {
+    "tests": 220,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "tested": "b277bf3d7fecaac18baf57646dcd1c6944222475",
+    "base": "87bc3d8a2875884014b59281117f68b9d63fabee",
+    "head": "f709813b81fbe3b63329baa4e3d86b72081dd04e",
+    "tree": "b58f4d3caa071255d4a1b9d4210ebfc330bef15d"
+  },
+  "effort-portability-ubuntu-24.04-a1": {
+    "tests": 220,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "tested": "b277bf3d7fecaac18baf57646dcd1c6944222475",
+    "base": "87bc3d8a2875884014b59281117f68b9d63fabee",
+    "head": "f709813b81fbe3b63329baa4e3d86b72081dd04e",
+    "tree": "b58f4d3caa071255d4a1b9d4210ebfc330bef15d"
+  },
+  "effort-portability-windows-2025-a1": {
+    "tests": 220,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "tested": "b277bf3d7fecaac18baf57646dcd1c6944222475",
+    "base": "87bc3d8a2875884014b59281117f68b9d63fabee",
+    "head": "f709813b81fbe3b63329baa4e3d86b72081dd04e",
+    "tree": "b58f4d3caa071255d4a1b9d4210ebfc330bef15d"
+  }
+}
