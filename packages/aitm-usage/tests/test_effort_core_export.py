@@ -5,6 +5,7 @@ import subprocess
 import sys
 from hashlib import sha256
 from importlib.resources import files
+from uuid import UUID
 
 import pytest
 from fixtures.receiver import ImportInterrupted, Receiver, ReceiverConflict
@@ -87,6 +88,7 @@ def roster(
     admission="closed",
     supersedes=None,
     additional=(),
+    ambiguous=False,
 ):
     scope = {"project": str(PROJECT), "story": STORY_ID}
     record = {
@@ -143,6 +145,8 @@ def roster(
                 "waits": [],
             }
         ]
+    if ambiguous:
+        record["timing"].append(record["timing"][0] | {"clock": "c" * 64})
     payload = canonical_record(record)
     digest = sha256(payload).hexdigest()
     registration(
@@ -215,7 +219,7 @@ def test_core_export_derives_pinned_rows_and_provenance(repo_pair, tmp_path):
     snapshot = materialize(tmp_path / "snapshot", out)
     with Receiver(tmp_path / "receiver.db", PROJECT) as receiver:
         assert receiver.import_snapshot(snapshot) == "imported"
-        assert receiver.accepted.keys() == {SOURCE}
+        assert receiver.accepted == {SOURCE: proof["rows"][0]["row_sha256"]}
         assert receiver.import_snapshot(snapshot) == "duplicate"
 
 
@@ -224,6 +228,7 @@ def test_core_export_derives_pinned_rows_and_provenance(repo_pair, tmp_path):
     [
         "unscoped",
         "unknown-phase",
+        "ambiguous-scope",
         "partial",
         "inclusive",
         "grok",
@@ -258,6 +263,7 @@ def test_core_export_preserves_held_evidence(repo_pair, tmp_path, mode):
         else "implement",
         state="disputed" if mode == "disputed" else "observed",
         admission="open" if mode == "unscoped" else "closed",
+        ambiguous=mode == "ambiguous-scope",
     )
     if mode == "duplicate":
         with pytest.raises(EffortError, match="Multiple pinned receipt identities"):
@@ -271,7 +277,7 @@ def test_core_export_preserves_held_evidence(repo_pair, tmp_path, mode):
             == "imported"
         )
         assert not receiver.accepted
-        if mode in ("disputed", "grok", "duplicate"):
+        if mode in ("disputed", "grok"):
             assert not receiver.pending and not out["usage.jsonl"]
             assert proof["rows"][0]["status"] == "held"
         else:
@@ -286,6 +292,12 @@ def test_core_export_refuses_foreign_forged_and_wrong_rate(repo_pair, tmp_path):
     pair = artifact(repo)
     with pytest.raises(EffortError, match="report"):
         export(repo, (pair[0], "b" * 64, pair[2]))
+    from aitm_usage.effort.core_export import build_core_export
+
+    with pytest.raises(EffortError, match="report unavailable"):
+        build_core_export(repo, pair[0], UUID(int=99), STORY_ID, pair[1], CARD, SECRET)
+    with pytest.raises(EffortError, match="report unavailable"):
+        build_core_export(repo, pair[0], PROJECT, STORY_ID + 1, pair[1], CARD, SECRET)
     with pytest.raises(EffortError, match="reproduce"):
         export(
             repo,
@@ -400,6 +412,17 @@ def test_fixture_reconciles_correction_and_retains_acceptance_after_dispute(
         assert receiver.accepted == accepted and receiver.reconciliation == {SOURCE: 1}
 
 
+def _fixture_readback(reader, source, expected_digest, *, controlled_rollback=False):
+    if reader is None:
+        return "held"
+    accepted = reader.accepted
+    if accepted.get(source) == expected_digest:
+        return "accepted"
+    if controlled_rollback and source not in accepted and source not in reader.pending:
+        return "retry-eligible"
+    return "held"
+
+
 def test_fixture_proves_ambiguous_acceptance_or_absence_before_identical_retry(
     repo_pair, tmp_path
 ):
@@ -416,7 +439,9 @@ def test_fixture_proves_ambiguous_acceptance_or_absence_before_identical_retry(
         receiver.import_snapshot(snapshot)
         # Simulate losing the response after the receiver committed.
     with Receiver(landed, PROJECT) as reopened:
-        assert reopened.accepted[SOURCE] == original_digest
+        assert _fixture_readback(reopened, SOURCE, original_digest) == "accepted"
+        assert _fixture_readback(None, SOURCE, original_digest) == "held"
+        assert _fixture_readback(reopened, SOURCE, "9" * 64) == "held"
         assert reopened.ingest_usage(SOURCE, row) == "duplicate"
         altered = json.loads(row)
         altered["tokens"]["input_tokens"] += 1
@@ -429,7 +454,13 @@ def test_fixture_proves_ambiguous_acceptance_or_absence_before_identical_retry(
         with pytest.raises(ImportInterrupted):
             receiver.import_snapshot(snapshot, interrupt_after=1)
     with Receiver(rolled_back, PROJECT) as reopened:
-        assert SOURCE not in reopened.accepted and SOURCE not in reopened.pending
+        assert _fixture_readback(reopened, SOURCE, original_digest) == "held"
+        assert (
+            _fixture_readback(
+                reopened, SOURCE, original_digest, controlled_rollback=True
+            )
+            == "retry-eligible"
+        )
         assert reopened.watermark is None
         assert (retry := export(repo, pair)) == original
         assert (
@@ -502,3 +533,48 @@ def test_oversized_cli_bundle_writes_no_stdout(
     assert main(core_cli(repo, pair, key)) == 2
     output = capsys.readouterr()
     assert not output.out and "Core export bundle exceeds its byte limit" in output.err
+
+
+def test_fixture_keeps_unpriced_complete_usage_and_partial_usage_separate(
+    repo_pair, tmp_path
+):
+    repo, _ = repo_pair
+    exact_receipt(repo, model="gpt-6.2-astra")
+    attempt = "6" * 64
+    add_receipt(
+        repo,
+        "b" * 64,
+        attempt=attempt,
+        coverage=Availability.PARTIAL,
+        outcome=Outcome.INTERRUPTED,
+        tokens=TokenCounts(input_tokens=7),
+    )
+    roster(repo, additional=({"attempt": attempt, "state": "observed"},))
+    packet = export(repo, artifact(repo))
+    first, second = [json.loads(value) for value in packet["usage.jsonl"].splitlines()]
+    assert (
+        first["availability"] == "complete"
+        and first["scope_availability"] == "complete"
+    )
+    assert first["price"]["availability"] == "unknown" and first["price"]["usd"] is None
+    assert second["availability"] == "partial" and second["tokens"]["input_tokens"] == 7
+    proof = json.loads(packet["provenance.json"])
+    assert proof["api_estimate_usd"] is None and proof["cost_eligible"] is False
+    assert proof["rows"][0]["price_gap"] == "unsupported-rate-model"
+    pending = "hmac-sha256:" + "b" * 64
+    with Receiver(tmp_path / "receiver.db", PROJECT) as receiver:
+        assert (
+            receiver.import_snapshot(materialize(tmp_path / "snapshot", packet))
+            == "imported"
+        )
+        assert receiver.accepted == {SOURCE: proof["rows"][0]["row_sha256"]}
+        assert receiver.pending == {pending}
+        assert (
+            _fixture_readback(
+                receiver,
+                pending,
+                proof["rows"][1]["row_sha256"],
+                controlled_rollback=True,
+            )
+            == "held"
+        )
