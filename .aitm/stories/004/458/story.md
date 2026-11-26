@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 458
 title: "Publish pinned story effort and cost reports"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/458"
 parent: 456
 children: []
 blocking: [459]
 blocked-by: [457]
 created: "2026-11-25T16:06:40Z"
-updated: "2026-11-26T04:08:59.569Z"
+updated: "2026-11-26T04:09:26.737Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -45,3 +45,5 @@ Implementation pickup verified on protected trunk `87bc3d8a` after plan XPR `3b8
 [PR #462](https://github.com/kburson/aitm/pull/462) is in Test at head `5886ddd5de0c614af22138da94cef2ac898ae4e5` against trunk `87bc3d8a2875884014b59281117f68b9d63fabee`. The local focused effort and dashboard checks passed. Hosted CI and exact independent review are pending.
 
 The Windows checkout converted the reviewed rate card to CRLF on candidate `5886ddd5`. The reproduced hash matched the hosted failure. Returned to Develop for an LF checkout rule that preserves the exact reviewed digests. [Superseded Windows run](https://github.com/kburson/aitm/actions/runs/45753000200/job/139684959255).
+
+Replacement head `f709813b81fbe3b63329baa4e3d86b72081dd04e` preserves the two reviewed rate digests with checkout conversion enabled. Fresh CI and exact review are required for this head.
