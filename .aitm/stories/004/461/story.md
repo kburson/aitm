@@ -10,12 +10,12 @@ children: []
 blocking: []
 blocked-by: [457]
 created: "2026-11-26T00:04:56Z"
-updated: "2026-11-26T01:28:17.329Z"
+updated: "2026-11-26T01:52:48.380Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/457/attachments/qualification/457-desktop-forwarded-route.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-agent-owned-closeout.md", "plan/2026-11-25-forwarded-route-addendum.md"], "attachments": ["attachments/qualification/461-forwarded-capture.md", "attachments/qualification/461-forwarded-capture.json", "attachments/qualification/461-closeout-findings.md", "attachments/qualification/461-closeout-readback.json", "attachments/effort/session/2033d1a0782e55bba0b7bad845bb36106ab6ad725d74e5bcbc4cda04c9119d04-r1.json", "attachments/effort/session/f16038236a38d5aaaa636948e9cb9467a6c61e5e6ef029c765ccd9e0dcf2c858-r1.json", "attachments/qualification/461-closeout-usage.json", "attachments/qualification/461-independent-delivery-review.md", "attachments/qualification/461-agent-cost.json"], "retro": ["retro/2026-11-25-delivery-sign-off.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-agent-owned-closeout.md", "plan/2026-11-25-forwarded-route-addendum.md", "plan/2026-11-25-automated-solo-and-orchestrator.md"], "attachments": ["attachments/qualification/461-forwarded-capture.md", "attachments/qualification/461-forwarded-capture.json", "attachments/qualification/461-closeout-findings.md", "attachments/qualification/461-closeout-readback.json", "attachments/effort/session/2033d1a0782e55bba0b7bad845bb36106ab6ad725d74e5bcbc4cda04c9119d04-r1.json", "attachments/effort/session/f16038236a38d5aaaa636948e9cb9467a6c61e5e6ef029c765ccd9e0dcf2c858-r1.json", "attachments/qualification/461-closeout-usage.json", "attachments/qualification/461-independent-delivery-review.md", "attachments/qualification/461-agent-cost.json"], "retro": ["retro/2026-11-25-delivery-sign-off.md"]}
 expansions: []
 trips: []
 ---
@@ -75,3 +75,7 @@ Recorded time sums separate observations, including overlap. Desktop and brokere
 ## Reopened qualification
 
 The owner asked Grok to reopen #461 and finish the accepted composer test. The forwarded experiment verified exact recovery and publication for that route. The original composer delayed-settlement criterion remains open. The previous receipt identities are retained with their fallback provenance.
+
+## Automated qualification
+
+Grok drafted the revised solo and orchestrator qualification at the owner’s direction. Claude accepted the exact revised plan in brokered XPR. The controller runs both routes from the owning chat. Composer input is a historical control. [Accepted automated plan](plan/2026-11-25-automated-solo-and-orchestrator.md) · [XPR manifest](../../../../docs/peer-reviews/plan/2026-11-26-2026-11-25-automated-solo-and-orchestrator-review-5e4ffbe5200ec0c4dab1e749914830f7/review-5e4ffbe5200ec0c4dab1e749914830f7-review-manifest.md).
