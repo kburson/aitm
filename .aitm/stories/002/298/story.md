@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 298
 title: "Qualify supervised ordinary Claude CLI cursor evidence"
 kind: "story"
-state: "refine"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/298"
 parent: 301
 children: []
 blocking: [295]
 blocked-by: [210]
 created: "2026-11-15T00:11:20Z"
-updated: "2026-11-15T00:11:36Z"
+updated: "2026-11-26T14:43:42.024Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -38,3 +38,9 @@ Project 24 Rank 229.05. [Independent Refine input](plan/2026-11-14-298-claude-ca
 ## Current enhancement scope
 
 This work stays open under [#301](https://github.com/kburson/aitm/issues/301). The qualified-cost first release excludes live Claude. Current native parent and dependencies supersede earlier delivery links.
+
+## Disposition
+
+**Not delivered.** The durable cursor through the legacy monitor journal was not delivered. The session-owned workflow already qualified supervised Claude capture and recovery on macOS. Live Linux qualification is tracked in [#466](https://github.com/kburson/aitm/issues/466).
+
+GitHub records the closure as Not planned. Project 24 records the terminal state as Done. [Session-owned scope decision](https://github.com/kburson/aitm/blob/planning/.aitm/stories/001/100/plan/2026-11-25-100-session-owned-scope-disposition.md).

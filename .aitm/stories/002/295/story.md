@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 295
 title: "[M08b6] Contain unqualified Claude Agent overlap at the routing journal"
 kind: "story"
-state: "refine"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/295"
 parent: 301
 children: []
 blocking: []
 blocked-by: [210, 298]
 created: "2026-11-14T13:11:34Z"
-updated: "2026-11-14T13:13:56Z"
+updated: "2026-11-26T14:43:42.024Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -70,3 +70,9 @@ The [verified native prerequisite #298](../298/story.md) owns the ordinary curso
 ## Current enhancement scope
 
 This work stays open under [#301](https://github.com/kburson/aitm/issues/301). The qualified-cost first release excludes live Claude. Current native parent and dependencies supersede earlier delivery links.
+
+## Disposition
+
+**Not delivered.** The legacy routing journal's overlap hold and expiry contract was not delivered. The accepted session-owned workflow supersedes that monitor path. Folded foreground Claude Agent accounting remains separately tracked in [#297](https://github.com/kburson/aitm/issues/297).
+
+GitHub records the closure as Not planned. Project 24 records the terminal state as Done. [Session-owned scope decision](https://github.com/kburson/aitm/blob/planning/.aitm/stories/001/100/plan/2026-11-25-100-session-owned-scope-disposition.md).

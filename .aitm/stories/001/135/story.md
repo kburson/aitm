@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 135
 title: "[M04-LA] Linux Claude Code linked request and adapter bridge"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/135"
 parent: 301
 children: []
 blocking: []
 blocked-by: [114]
 created: "2026-11-10T15:38:59Z"
-updated: "2026-11-10T15:46:34+00:00"
+updated: "2026-11-26T14:43:42.024Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -42,3 +42,9 @@ Partial Actual is 0.0381 hours from the assigned Codex worker’s bounded Refine
 ## Current enhancement scope
 
 This work stays open under [#301](https://github.com/kburson/aitm/issues/301). The qualified-cost first release excludes live Claude. Current native parent and dependencies supersede earlier delivery links.
+
+## Disposition
+
+**Not delivered.** The legacy monitor adapter bridge was not delivered. The live Linux proof carries forward in [#466](https://github.com/kburson/aitm/issues/466) through the shipped session-owned accounting path.
+
+GitHub records the closure as Not planned. Project 24 records the terminal state as Done. [Session-owned scope decision](https://github.com/kburson/aitm/blob/planning/.aitm/stories/001/100/plan/2026-11-25-100-session-owned-scope-disposition.md).

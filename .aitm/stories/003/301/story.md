@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 301
 title: "Qualify live Claude Code accounting across supported hosts"
 kind: "epic"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/301"
 parent: null
 children: [135, 295, 298]
 blocking: []
 blocked-by: []
 created: "2026-11-15T02:19:07Z"
-updated: "2026-11-15T02:19:53Z"
+updated: "2026-11-26T14:43:42.024Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: null
@@ -32,3 +32,9 @@ Preserve #135's Linux linked-request/adapter contract, #298's approved carrier a
 [Exact qualified-cost R2 scope](https://github.com/kburson/aitm/blob/planning/.aitm/stories/001/100/plan/2026-11-14-100-qualified-cost-acceptance-r2.md). Epic #2, C01 and production cutover are excluded.
 
 Project 24 Rank 362.
+
+## Disposition
+
+**Not delivered.** The legacy monitor qualification epic is superseded by the session-owned accounting direction. The child monitor contracts #135, #295, and #298 were not delivered. Live Linux Claude Code capture and recovery carry forward in the standalone [#466](https://github.com/kburson/aitm/issues/466). Folded foreground Agent accounting remains scoped to #297.
+
+GitHub records the closure as Not planned. Project 24 records the terminal state as Done. [Session-owned scope decision](https://github.com/kburson/aitm/blob/planning/.aitm/stories/001/100/plan/2026-11-25-100-session-owned-scope-disposition.md).
