@@ -1,0 +1,2 @@
+# Preserve the canonical bytes of reviewed rate cards and their source extracts.
+/packages/aitm-usage/src/aitm_usage/rates/effort/*.json text eol=lf

@@ -307,3 +307,43 @@ subcommand below.
   The existing authorized writer can use `session-publish-batch STORY REPOSITORY BATCH`
   against its independently configured planning remote.
   A separately configured database cannot establish the same native identity.
+
+### Pinned story reports
+
+The pinned CLI reads a full planning commit and produces a canonical report
+envelope. Use the explicit authorized project UUID, story, occurrence window,
+observation cutoff and SHA-256 of a reviewed Standard USD comparison rate card.
+
+Export the sanitized roster from the private store before choosing the planning
+commit. Use `--admission open` when custody is partial. Closed admission needs
+an explicit evidence file for the exact story, window and selected sessions.
+Register the exported bytes as `story-effort-coverage` in the same planning
+checkpoint that contains the coverage file.
+
+```sh
+aitm-effort --project "$PROJECT_UUID" --database "$DATABASE" \
+  session-export-coverage "$STORY" --session "$SESSION_UUID" \
+  --window-start "$START_UTC" --window-end "$END_UTC" --cutoff "$CUTOFF_UTC" \
+  --admission open > coverage.json
+
+aitm-effort --project "$PROJECT_UUID" story-report-build "$STORY" \
+  --repository "$REPOSITORY" --planning-commit "$PLANNING_SHA" \
+  --window-start "$START_UTC" --window-end "$END_UTC" --cutoff "$CUTOFF_UTC" \
+  --rate-card "$RATE_CARD" --rate-sha256 "$RATE_SHA256" > report.json
+
+aitm-effort --project "$PROJECT_UUID" story-report-open "$STORY" "$REPORT_ID" \
+  --repository "$REPOSITORY" --artifact-commit "$ARTIFACT_SHA" --format text
+```
+
+Use `--format json` for the frozen structured report. A valid request with an
+unavailable pinned artifact exits 3. Invalid input exits 2. Existing private
+effort commands still require `--database`.
+
+Publish the canonical envelope using `publish_pinned_report` with the exact
+authorized planning origin. After independent protected readback, prepare the
+discovery fact with `prepare_report_registration` and register the verified
+report-ID and containing-commit pair in the story record. Use that exact pair
+to reopen. Later receipts, cutoff changes, and new rate cards produce separate
+IDs. A known subtotal can exist while Cost is held. Verified billed cost and
+Actual require their own evidence. An eligible output enters the existing
+dashboard Cost verification path as a scoped candidate.
