@@ -109,4 +109,4 @@ Reopen report ID `0feeb1478d08640faee709e4fff72b4e60d5cf39191eba36a9ca99baa0f0c4
 
 ## Delivery record
 
-The automated spike published its verified receipts directly to protected planning. The planning pull request adds an index of that original publication and its signed evidence. [Delivery index](attachments/qualification/461-delivery-index.json) · [Original receipt publication](https://github.com/kburson/aitm/commit/e09eb4de39630e184d3c1adb90d0f00045e24e9b).
+The automated spike published its verified receipts directly to protected planning. [Planning PR #464](https://github.com/kburson/aitm/pull/464) adds an index of that original publication and its signed evidence. [Delivery index](attachments/qualification/461-delivery-index.json) · [Original receipt publication](https://github.com/kburson/aitm/commit/e09eb4de39630e184d3c1adb90d0f00045e24e9b).
