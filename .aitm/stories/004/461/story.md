@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 461
 title: "[Spike] Validate agent-owned settlement and publication at story closeout"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/461"
 parent: 456
 children: []
 blocking: []
 blocked-by: [457]
 created: "2026-11-26T00:04:56Z"
-updated: "2026-11-26T01:59:22.552Z"
+updated: "2026-11-26T01:59:53.876Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
