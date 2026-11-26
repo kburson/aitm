@@ -1,0 +1,17 @@
+{
+  "head": "47d82b1c038fd24bc2350dad073e86dbb35f9dbc",
+  "tree": "a7c0e6b8cc2e7e2f253967616a0bbe5307275665",
+  "tested": "d48225442d0fd969acff9d2d12131adc0ebbc3c8",
+  "ubuntu": {
+    "tests": 236,
+    "failures": 0,
+    "run": "https://github.com/kburson/aitm/actions/runs/45836772339"
+  },
+  "windows": {
+    "tests": 3,
+    "failures": 0,
+    "run": "https://github.com/kburson/aitm/actions/runs/45836772534"
+  },
+  "hosted_macos": "not-selected",
+  "local_macos_native_tests": 39
+}

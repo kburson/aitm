@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 459
 title: "Qualify Core Cost export from planning"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/459"
 parent: 456
 children: []
 blocking: [230]
 blocked-by: [458]
 created: "2026-11-25T16:08:08Z"
-updated: "2026-11-26T13:23:25.014Z"
+updated: "2026-11-26T14:17:41.872Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: null
@@ -43,3 +43,5 @@ Claude Sonnet 5.5 accepted the revised plan in the sealed XPR. Pickup is pinned 
 [PR #463](https://github.com/kburson/aitm/pull/463) entered Test at head `51d19ac11c8c515abf95664058b577e5bc2a7452` against trunk `0f8c6ff70b5112bd3a17af3a2ab5665e347a416c`. Focused tests, Ruff and wheel smoke passed. Hosted verification and replacement source disposition are pending.
 
 The replacement source has independent approval. GitHub cancelled both hosted macOS opportunities before assigning a runner. The story remains in Test with the authenticated CI pass, the local installed-wheel results, and the provisional #461 fixture evidence recorded. [Source approval and verification hold](attachments/qualification/459-independent-source-review.md).
+
+The owner-directed Linux-first checks passed. The exact CI and documentation delta received independent approval. [Combined review and verification](attachments/qualification/459-linux-first-source-review.md).
