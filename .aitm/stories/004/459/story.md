@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 459
 title: "Qualify Core Cost export from planning"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/459"
 parent: 456
 children: []
 blocking: [230]
 blocked-by: [458]
 created: "2026-11-25T16:08:08Z"
-updated: "2026-11-26T14:18:31.506Z"
+updated: "2026-11-26T14:19:03.903Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: null
@@ -68,3 +68,5 @@ The owner-directed Linux-first checks passed. The exact CI and documentation del
 The coordinating turn was active at cutoff `2026-11-26T14:18:30.656Z`. Provider-reported cache creation is included in new input. CLI reference amounts and verified billing are distinct. Verified billed cost is Unknown.
 
 [Agent Cost evidence](attachments/qualification/459-agent-cost.json).
+
+GitHub closed #459 at `2026-11-26T14:18:36Z`. Project 24 read back **Done** with merged [PR #463](https://github.com/kburson/aitm/pull/463) in Linked pull requests.
