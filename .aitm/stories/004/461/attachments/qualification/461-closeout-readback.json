@@ -1,0 +1,119 @@
+{
+  "route": "app-tool-forwarded",
+  "app_elapsed_ms": 8242,
+  "events": [
+    {
+      "event": "SubagentStart",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": null
+    },
+    {
+      "event": "SubagentStart",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": 0
+    },
+    {
+      "event": "SubagentStop",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": null
+    },
+    {
+      "event": "SubagentStop",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": 2
+    },
+    {
+      "event": "Stop",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": null
+    },
+    {
+      "event": "Stop",
+      "thread_match": true,
+      "turn_id_present": true,
+      "capture_status": 2
+    }
+  ],
+  "native_parent_verified": true,
+  "timing_ms": {
+    "select_458_capture": 163.11,
+    "retry_unbound_child": 169.38,
+    "select_461_exact_recovery": 164.31,
+    "exact_recover_orchestrator": 11.87,
+    "exact_recover_worker": 6.61,
+    "select_458_exact_recovery": 162.99,
+    "freeze": 159.92,
+    "origin_hold": 197.77,
+    "publish": 3847.94,
+    "replay": 1008.59
+  },
+  "original_child_control": {
+    "coverage": "pending-binding",
+    "terminal_exit": 2,
+    "retry_exit": 2,
+    "retained_callback": true,
+    "story": null,
+    "parent": null,
+    "exports": {
+      "461": 0,
+      "458": 0
+    }
+  },
+  "fresh_process_readback": true,
+  "recovery": "explicit enrollment and exact retained recovery in separate private store",
+  "batch_sha256": "65a59c0451da0658632f4b09d77f7ab9452ff8a124f8089c93a58610cfcc28e4",
+  "remote_before": "73f7fddadef726274c8b4dee9ab1542cde0dcd95",
+  "remote_after_origin_hold": "73f7fddadef726274c8b4dee9ab1542cde0dcd95",
+  "origin_hold": true,
+  "writer_first_tip": "af046d26d724e1effca8df302d2baff4001cb5d5",
+  "readback_tip": "af046d26d724e1effca8df302d2baff4001cb5d5",
+  "receipts": {
+    ".aitm/stories/004/461/attachments/effort/session/f16038236a38d5aaaa636948e9cb9467a6c61e5e6ef029c765ccd9e0dcf2c858-r1.json": "e19d4803d369f1a5727030e6c35e595c39461df78c2ab50fa7572f9ad1a4ea18",
+    ".aitm/stories/004/461/attachments/effort/session/2033d1a0782e55bba0b7bad845bb36106ab6ad725d74e5bcbc4cda04c9119d04-r1.json": "f64fe88983e3e1230f12c52be424dcd41e1588a17bf17e3aabd3c31c64d50998"
+  },
+  "writer_replay_tip": "af046d26d724e1effca8df302d2baff4001cb5d5",
+  "replay_readback_tip": "af046d26d724e1effca8df302d2baff4001cb5d5",
+  "exact_replay": true,
+  "independent_github_readback": {
+    "protected": true,
+    "tip": "af046d26d724e1effca8df302d2baff4001cb5d5",
+    "records": [
+      {
+        "role": "worker",
+        "path": ".aitm/stories/004/461/attachments/effort/session/f16038236a38d5aaaa636948e9cb9467a6c61e5e6ef029c765ccd9e0dcf2c858-r1.json",
+        "sha256": "e19d4803d369f1a5727030e6c35e595c39461df78c2ab50fa7572f9ad1a4ea18",
+        "revision": 1,
+        "mode": "100644",
+        "story": 461
+      },
+      {
+        "role": "orchestrator",
+        "path": ".aitm/stories/004/461/attachments/effort/session/2033d1a0782e55bba0b7bad845bb36106ab6ad725d74e5bcbc4cda04c9119d04-r1.json",
+        "sha256": "f64fe88983e3e1230f12c52be424dcd41e1588a17bf17e3aabd3c31c64d50998",
+        "revision": 1,
+        "mode": "100644",
+        "story": 461
+      }
+    ],
+    "publication_commit_paths": 2
+  },
+  "schema": "aitm.461-agent-closeout/v1",
+  "story": 461,
+  "shipped_source": "87bc3d8a2875884014b59281117f68b9d63fabee",
+  "approved_scope": "two sanitized receipts from the exact retained forwarded owner/child pair",
+  "writer": {
+    "caller": "same disposable Desktop chat",
+    "git_authority": "existing GitHub SSH principal kburson",
+    "protected_ref": "refs/heads/planning",
+    "handoff": "separate writer context, same agent invocation"
+  },
+  "capture_selection_restored": 457,
+  "hooks_unchanged": true,
+  "extra_desktop_turns": 3,
+  "published_closeout_turn_receipt": false
+}

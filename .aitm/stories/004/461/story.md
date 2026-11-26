@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 461
 title: "[Spike] Validate agent-owned settlement and publication at story closeout"
 kind: "spike"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/461"
 parent: 456
 children: []
 blocking: []
 blocked-by: [457]
 created: "2026-11-26T00:04:56Z"
-updated: "2026-11-26T00:30:58.044Z"
+updated: "2026-11-26T00:42:31.540Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/004/457/attachments/qualification/457-desktop-forwarded-route.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-agent-owned-closeout.md", "plan/2026-11-25-forwarded-route-addendum.md"], "attachments": ["attachments/qualification/461-forwarded-capture.md", "attachments/qualification/461-forwarded-capture.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-25-agent-owned-closeout.md", "plan/2026-11-25-forwarded-route-addendum.md"], "attachments": ["attachments/qualification/461-forwarded-capture.md", "attachments/qualification/461-forwarded-capture.json", "attachments/qualification/461-closeout-findings.md", "attachments/qualification/461-closeout-readback.json", "attachments/effort/session/2033d1a0782e55bba0b7bad845bb36106ab6ad725d74e5bcbc4cda04c9119d04-r1.json", "attachments/effort/session/f16038236a38d5aaaa636948e9cb9467a6c61e5e6ef029c765ccd9e0dcf2c858-r1.json"]}
 expansions: []
 trips: []
 ---
@@ -47,3 +47,5 @@ Follow-up to #457 in Epic #456. Validate whether the chat agent can settle and p
 Claude Sonnet 5.5 accepted the revised plan in the brokered XPR. The exact accepted artifact and review rounds are pinned in the [XPR manifest](../../../../docs/peer-reviews/plan/2026-11-26-2026-11-25-agent-owned-closeout-review-6917279c6cb365288f72331515479504/review-6917279c6cb365288f72331515479504-review-manifest.md).
 
 The direct-forwarded capture reproduced the owner-start gap. The retained child stayed unassigned after exact retry in the separate control. [Forwarded capture checkpoint](attachments/qualification/461-forwarded-capture.md).
+
+The disposable agent recovered and published the two exact forwarded turns through the authorized writer. GitHub independently confirmed both bytes and replay remained at the same commit. The composer qualification remains outside the observed #461 result. [Closeout findings](attachments/qualification/461-closeout-findings.md).
