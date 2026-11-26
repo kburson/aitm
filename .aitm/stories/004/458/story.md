@@ -10,7 +10,7 @@ children: []
 blocking: [459]
 blocked-by: [457]
 created: "2026-11-25T16:06:40Z"
-updated: "2026-11-26T02:13:05.873Z"
+updated: "2026-11-26T02:16:04.093Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -38,4 +38,4 @@ Preserve the useful report outcome from #123 using #435's portable store and rol
 
 The builder check and Claude brokered XPR are complete. The design uses #461 as the real example and the existing #181 Cost intake for eligible results. The owner directed continuation and questioned the duplicate design-approval request. The coordinator accepted the sealed XPR disposition for the existing story scope and advanced the record to planning. [Reviewed design](design/2026-11-25-pinned-story-effort-cost.md) · [XPR manifest](../../../../docs/peer-reviews/spec/2026-11-26-2026-11-25-pinned-story-effort-cost-review-619e5e7edf5b675344a5e085d33d265d/review-619e5e7edf5b675344a5e085d33d265d-review-manifest.md).
 
-[Implementation plan](plan/2026-11-25-pinned-story-effort-cost-plan.md) is ready for plan XPR. The planning baseline is the verified #457 merge. The #461 sample and existing #181 path remain the proposed qualification targets.
+[Implementation plan](plan/2026-11-25-pinned-story-effort-cost-plan.md) passed brokered plan XPR. [Plan review](../../../../docs/peer-reviews/plan/2026-11-26-2026-11-25-pinned-story-effort-cost-plan-review-844ccd1b697dc6e97c24b0bfb13a62fd/review-844ccd1b697dc6e97c24b0bfb13a62fd-review-manifest.md). The planning baseline is the verified #457 merge. The #461 sample and existing #181 path remain the proposed qualification targets.
