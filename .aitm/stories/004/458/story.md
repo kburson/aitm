@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 458
 title: "Publish pinned story effort and cost reports"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/458"
 parent: 456
 children: []
 blocking: [459]
 blocked-by: [457]
 created: "2026-11-25T16:06:40Z"
-updated: "2026-11-26T03:48:46.128Z"
+updated: "2026-11-26T04:06:05.503Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -41,3 +41,5 @@ The builder check and Claude brokered XPR are complete. The design uses #461 as 
 [Implementation plan](plan/2026-11-25-pinned-story-effort-cost-plan.md) passed brokered plan XPR. [Plan review](../../../../docs/peer-reviews/plan/2026-11-26-2026-11-25-pinned-story-effort-cost-plan-review-844ccd1b697dc6e97c24b0bfb13a62fd/review-844ccd1b697dc6e97c24b0bfb13a62fd-review-manifest.md). The planning baseline is the verified #457 merge. The #461 sample and existing #181 path remain the proposed qualification targets.
 
 Implementation pickup verified on protected trunk `87bc3d8a` after plan XPR `3b821b73`. The delivery target is trunk via `codex/458-pinned-story-reports`, with exact-head source review, authenticated CI and portable fixture checks.
+
+[PR #462](https://github.com/kburson/aitm/pull/462) is in Test at head `5886ddd5de0c614af22138da94cef2ac898ae4e5` against trunk `87bc3d8a2875884014b59281117f68b9d63fabee`. The local focused effort and dashboard checks passed. Hosted CI and exact independent review are pending.
