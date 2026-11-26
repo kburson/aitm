@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 100
 title: "Multi-project agent usage monitor"
 kind: "epic"
-state: "planning"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
 children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300, 303, 304, 310, 320, 325, 326, 329, 330, 331, 335]
-blocking: [2]
+blocking: []
 blocked-by: [101, 102, 456]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-25T16:19:55.570Z"
+updated: "2026-11-26T15:06:19.931Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -21,6 +21,12 @@ trips: []
 ---
 
 # Multi-project agent usage monitor
+
+## Closeout
+
+**Superseded.** The original global-monitor epic was not delivered. All 42 direct children are closed, with 32 Completed and 10 Not planned. The accepted replacement [#456](https://github.com/kburson/aitm/issues/456) shipped session-owned capture, pinned reports and the fixture-qualified Core producer. Completed #456 now directly satisfies the producer prerequisite for Core #2. Live Core receiver qualification remains in #230 after #51, using the completed #459 producer.
+
+Standalone follow-ons are #468 for routine chat capture and closeout, #469 for pinned Claude pricing, #466 for ordinary Claude CLI on Linux, and #467 for live Claude parent and child accounting. [Successor delivery evidence](https://github.com/kburson/aitm/blob/2ec8bca0934c62bbb44866ea57fb5c2776960c0c/.aitm/stories/004/456/retro/2026-11-26-delivery-sign-off.md).
 
 [GitHub issue #100](https://github.com/kburson/aitm/issues/100)
 

@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/259"
 parent: 247
 children: []
 blocking: [260]
-blocked-by: [252, 258]
+blocked-by: [230, 252, 258]
 created: "2026-11-12T00:33:03Z"
-updated: "2026-11-12T00:35:22Z"
+updated: "2026-11-26T15:06:19.931Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": null, "scope": "proposed implementation estimate"}
 priority: null
@@ -26,7 +26,7 @@ trips: []
 
 Proposed implementation estimate **3.5 agent-hours**. Internal predecessors: #252, #258.
 
-Qualified #230, including #123/#124 and Core #51, plus M2 Cost field/readback contract and authorized scope. [The reviewed replan](../230/plan/2026-11-11-230-cost-dependency-replan.md) resolves the former completion-accounting hold. #230 now belongs to Core #2 and still waits for #51, #123 and #124.
+Native prerequisites are #252, #258 and live Core Cost receiver qualification #230. #230 uses the delivered #459 producer and awaits Core #51. The M2 Cost field/readback contract and authorized scope remain required.
 
 ## Acceptance criteria
 

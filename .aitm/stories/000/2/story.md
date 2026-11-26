@@ -8,9 +8,9 @@ issue: https://github.com/kburson/aitm/issues/2
 parent: 1
 children: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 74, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 75, 37, 76, 38, 39, 40, 41, 42, 77, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 78, 53, 54, 55, 56, 57, 58, 59, 60, 63, 64, 79, 80, 61, 62, 81, 65, 82, 66, 67, 68, 69, 70, 71, 72, 228, 229, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 230]
 blocking: [247]
-blocked-by: [100]
+blocked-by: [456]
 created: 2026-11-08T19:24:20Z
-updated: "2026-11-16T06:43:16Z"
+updated: "2026-11-26T15:06:19.931Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: { agent-hours: 297.25, size: XL }
@@ -48,7 +48,7 @@ So that state, timing and evidence are recorded by the tool, never repaired by h
 
 ## Dependencies
 
-- **Parent:** [#1](../1/story.md) · **Blocking:** [#247 M6 Viewer](../../002/247/story.md) · **Blocked by:** [#100](../../001/100/story.md), [#133](../../001/133/story.md)
+- **Parent:** [#1](../1/story.md) · **Blocking:** [#247 M6 Viewer](../../002/247/story.md) · **Producer prerequisite:** [#456](../../004/456/story.md), Completed
 
 <details><summary>State history (generated from events.jsonl)</summary>
 
@@ -89,7 +89,7 @@ The Core implementation estimate is **297.25 h across 89 bounded leaves**. #228 
 
 ## Usage Monitor Cost integration
 
-[#230](../../002/230/story.md) qualifies the delivered #123/#124 monitor producer against the Core #51 receiver. It carries a separate preliminary 3.25 h estimate outside the existing M1 release scope. The existing #100 and #133 blockers apply to every Core child. [Dependency replan](../../002/230/plan/2026-11-11-230-cost-dependency-replan.md).
+Completed [#456](https://github.com/kburson/aitm/issues/456) satisfies the Core producer prerequisite and replaces the retired #100 edge. #230 remains the Core child for live qualification of the #459 planning usage producer against #51. #230 has a separate preliminary estimate and lies outside the accepted M1 release scope. [Producer delivery sign-off](https://github.com/kburson/aitm/blob/2ec8bca0934c62bbb44866ea57fb5c2776960c0c/.aitm/stories/004/456/retro/2026-11-26-delivery-sign-off.md) · [Reviewed dependency replan](https://github.com/kburson/aitm/blob/3e43229baecb7d1d3346df9d3012f1eacf821b39/.aitm/stories/002/230/plan/2026-11-11-230-cost-dependency-replan.md).
 
 ## Behavior-driven testing
 
@@ -97,4 +97,4 @@ Use the independently reviewed [Core testing standard](../../002/286/plan/2026-1
 
 ## #133 no longer blocks Core
 
-On 2026-11-16 the owner removed #133 from this epic's blockers. #100 remains. The test-feedback replacement is [#340](../../003/340/story.md) and [#341](../../003/341/story.md).
+On 2026-11-16 the owner removed #133 from this epic's blockers. The test-feedback replacement is [#340](../../003/340/story.md) and [#341](../../003/341/story.md).

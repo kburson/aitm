@@ -7,10 +7,10 @@ state: "done"
 issue: "https://github.com/kburson/aitm/issues/456"
 parent: null
 children: [457, 458, 459, 461]
-blocking: [100]
+blocking: [2, 100]
 blocked-by: []
 created: "2026-11-25T16:06:13Z"
-updated: "2026-11-26T14:33:34.891Z"
+updated: "2026-11-26T15:06:19.931Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -45,3 +45,7 @@ First delivery story [#457](../457/story.md) has started design. Its story holds
 All four children delivered the approved scope. The epic qualification passed 54 focused tests on the delivered trunk. [Acceptance mapping, sign-off, and Agent Cost](retro/2026-11-26-delivery-sign-off.md).
 
 GitHub issue closed at `2026-11-26T14:33:12Z`. Project 24 read back **Done** with [closeout PR #465](https://github.com/kburson/aitm/pull/465) linked.
+
+## Core producer prerequisite
+
+The completed #456 delivery directly satisfies the Core #2 producer prerequisite. The former gate through #100 was retired when #100 closed as superseded. #230 retains live receiver qualification.
