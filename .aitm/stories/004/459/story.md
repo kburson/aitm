@@ -10,7 +10,7 @@ children: []
 blocking: [230]
 blocked-by: [458]
 created: "2026-11-25T16:08:08Z"
-updated: "2026-11-26T14:17:41.872Z"
+updated: "2026-11-26T14:18:31.506Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: null
@@ -45,3 +45,26 @@ Claude Sonnet 5.5 accepted the revised plan in the sealed XPR. Pickup is pinned 
 The replacement source has independent approval. GitHub cancelled both hosted macOS opportunities before assigning a runner. The story remains in Test with the authenticated CI pass, the local installed-wheel results, and the provisional #461 fixture evidence recorded. [Source approval and verification hold](attachments/qualification/459-independent-source-review.md).
 
 The owner-directed Linux-first checks passed. The exact CI and documentation delta received independent approval. [Combined review and verification](attachments/qualification/459-linux-first-source-review.md).
+
+## Delivery
+
+[Linked PR #463](https://github.com/kburson/aitm/pull/463) merged to protected trunk at `a5ad6965c1c5b8817c0503dedbf55f576b5ddc67`. The reviewed producer and unchanged fixture passed local, hosted and portable-wheel verification. The delivered wheel generated identical #461 bundles on replay. The fixture recorded three pending rows and zero accepted scoped rows. Story Cost remained held with a known **$0.1754084 Standard API-equivalent subtotal**. [Parity and handoff](attachments/qualification/459-delivery.md) · [Sign-off](retro/2026-11-26-delivery-sign-off.md).
+
+## Agent Cost
+
+| Agent turn or activity | Cached input tokens | New input tokens | Output tokens | Cost reference USD |
+| --- | ---: | ---: | ---: | ---: |
+| Codex design builder check | Unknown | Unknown | Unknown | Unknown |
+| Claude plan XPR initial review | 288,822 | 49,065 | 5,488 | Unknown |
+| Claude plan XPR consensus review | 263,897 | 9,013 | 1,936 | Unknown |
+| Claude exact-source review | 658 | 32,098 | 17,288 | $0.301334 |
+| Claude replacement source review | 32,754 | 25,564 | 2,553 | $0.432391 |
+| Claude Linux-first CI review | 658 | 8,949 | 4,383 | $0.079688 |
+| Claude replacement CI and documentation review | 9,605 | 6,083 | 845 | $0.113426 |
+| Codex refinement and exporter implementation | 53,058,176 | 388,481 | 72,997 | Unknown |
+| Codex CI policy and delivery through cutoff | 17,827,968 | 48,525 | 17,529 | Unknown |
+| **Known subtotal** | 71,482,538 | 567,778 | 123,019 | $0.926839 |
+
+The coordinating turn was active at cutoff `2026-11-26T14:18:30.656Z`. Provider-reported cache creation is included in new input. CLI reference amounts and verified billing are distinct. Verified billed cost is Unknown.
+
+[Agent Cost evidence](attachments/qualification/459-agent-cost.json).

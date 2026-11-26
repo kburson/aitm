@@ -1,0 +1,86 @@
+{
+  "schema": "aitm.459-agent-cost/v1",
+  "story": 459,
+  "observations": [
+    {
+      "turn": "Codex design builder check",
+      "cached_input_tokens": null,
+      "new_input_tokens": null,
+      "output_tokens": null,
+      "reference_usd": null,
+      "source": "Native subagent usage unavailable"
+    },
+    {
+      "turn": "Claude plan XPR initial review",
+      "cached_input_tokens": 288822,
+      "new_input_tokens": 49065,
+      "output_tokens": 5488,
+      "reference_usd": null,
+      "source": "Exact retained Claude terminal request counters"
+    },
+    {
+      "turn": "Claude plan XPR consensus review",
+      "cached_input_tokens": 263897,
+      "new_input_tokens": 9013,
+      "output_tokens": 1936,
+      "reference_usd": null,
+      "source": "Exact retained Claude terminal request counters"
+    },
+    {
+      "turn": "Claude exact-source review",
+      "cached_input_tokens": 658,
+      "new_input_tokens": 32098,
+      "output_tokens": 17288,
+      "reference_usd": "0.3013338",
+      "source": "Claude CLI cost reference"
+    },
+    {
+      "turn": "Claude replacement source review",
+      "cached_input_tokens": 32754,
+      "new_input_tokens": 25564,
+      "output_tokens": 2553,
+      "reference_usd": "0.4323912",
+      "source": "Claude CLI cost reference"
+    },
+    {
+      "turn": "Claude Linux-first CI review",
+      "cached_input_tokens": 658,
+      "new_input_tokens": 8949,
+      "output_tokens": 4383,
+      "reference_usd": "0.0796878",
+      "source": "Claude CLI cost reference"
+    },
+    {
+      "turn": "Claude replacement CI and documentation review",
+      "cached_input_tokens": 9605,
+      "new_input_tokens": 6083,
+      "output_tokens": 845,
+      "reference_usd": "0.1134263",
+      "source": "Claude CLI cost reference"
+    },
+    {
+      "turn": "Codex refinement and exporter implementation",
+      "cached_input_tokens": 53058176,
+      "new_input_tokens": 388481,
+      "output_tokens": 72997,
+      "reference_usd": null,
+      "source": "Deduplicated exact native request counters through 2026-11-26T13:56:30.389Z"
+    },
+    {
+      "turn": "Codex CI policy and delivery through cutoff",
+      "cached_input_tokens": 17827968,
+      "new_input_tokens": 48525,
+      "output_tokens": 17529,
+      "reference_usd": null,
+      "source": "Deduplicated exact native request counters through 2026-11-26T14:18:30.656Z"
+    }
+  ],
+  "known_tokens": {
+    "cached_input_tokens": 71482538,
+    "new_input_tokens": 567778,
+    "output_tokens": 123019
+  },
+  "known_reference_usd": "0.9268391",
+  "verified_billed_usd": null,
+  "controller_cutoff_utc": "2026-11-26T14:18:30.656Z"
+}

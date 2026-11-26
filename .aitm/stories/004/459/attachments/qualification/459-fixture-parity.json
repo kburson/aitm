@@ -1,0 +1,30 @@
+{
+  "schema": "aitm.459-fixture-parity/v1",
+  "story": 459,
+  "demo_story": 461,
+  "fixture_blob": "9257c7ec948468e8251dcc987ae89bea52f495f5",
+  "fixture_sha256": "eb1da4e1441bdad0d436b9282d5b67e1e6b3dad8e3215e77443de5e211b91c74",
+  "bundle_sha256": "c61182659749a3e3095e49bce99f87e6e43c4791447db8210c307a5025ca30ef",
+  "report_id": "0feeb1478d08640faee709e4fff72b4e60d5cf39191eba36a9ca99baa0f0c40e",
+  "report_sha256": "5aa9e19e38a94db902f0ff7f8ffee9b277230c49a7560ffa6a836cfdbed81649",
+  "artifact_commit": "52e57ed3c7ea54c473fe6b223d09000269856f2e",
+  "planning_commit": "b17d26a9e1336bd51d239ae3c02b5906c74e3c69",
+  "rate_sha256": "b342d7526c6d8d54702aed62425ee69e4ccced34e6f9992518d044e1af81b84c",
+  "wire_sha256": {
+    "manifest.json": "81d8ffa78a15a01ffc46aad048dad6a901d6935631d13f2fe453692ddbcc0301",
+    "usage.jsonl": "f4be758e00acdef7e031a26f80869405fbf8a314cdc8df2ca4114e524158f2ec"
+  },
+  "coverage_admission": "open",
+  "accepted": 0,
+  "pending": 3,
+  "replay": "duplicate",
+  "byte_replay": "identical",
+  "api_estimate_usd": "0.1754084",
+  "story_cost": "held",
+  "hold_reasons": [
+    "incomplete-pricing",
+    "incomplete-usage",
+    "open-admission",
+    "unknown-unattributed-coverage"
+  ]
+}
