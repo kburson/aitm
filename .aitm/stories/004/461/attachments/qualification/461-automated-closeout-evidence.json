@@ -1,0 +1,325 @@
+{
+  "schema": "aitm.461-automated-closeout/v1",
+  "shipped_source": "87bc3d8a2875884014b59281117f68b9d63fabee",
+  "plan_xpr": "33e159c5",
+  "preflight": {
+    "native_hooks": [
+      {
+        "eventName": "userPromptSubmit",
+        "enabled": true,
+        "trustStatus": "trusted"
+      },
+      {
+        "eventName": "subagentStart",
+        "enabled": true,
+        "trustStatus": "trusted"
+      },
+      {
+        "eventName": "subagentStop",
+        "enabled": true,
+        "trustStatus": "trusted"
+      },
+      {
+        "eventName": "stop",
+        "enabled": true,
+        "trustStatus": "trusted"
+      },
+      {
+        "eventName": "interrupt",
+        "enabled": true,
+        "trustStatus": "trusted"
+      }
+    ],
+    "matching_wheel_modules": 57,
+    "wheel_sha256": "77ef65b805bc3174a8cb5b5da8e1496d6c301bfe54b2260feafed9787604dd17",
+    "wrapper_sha256": "4462efa23fe69e1a8a177925b8e7836a53e91337f3a1bf02c89af84982aa348f",
+    "hook_config_sha256": "fd9845409a60f527af70089eb94847ee9d9f23c74eea4d6b73bff4ec97291446",
+    "prior_composer_selection_restored": 457,
+    "prior_composer_new_callbacks": 0,
+    "zero_new_receipt_baseline": true,
+    "distinct_controller_and_target": true,
+    "controller_binding": "hmac-sha256:b8c86913db08981f39e3561b82ed5f395a748914cb8da049ffbcfdbf0fe3180c:d63453dd5fe85455f8193a6e74b5a31c27ce0239774ec1c59f7d84232cda679e",
+    "target_binding": "hmac-sha256:b8c86913db08981f39e3561b82ed5f395a748914cb8da049ffbcfdbf0fe3180c:6205b0bfe24253f1131b89c6d230f6b34d8078dd405113090b7588be660b61bf",
+    "story_files_checked": [
+      461,
+      458
+    ],
+    "baseline_protected_tip": "064f36c1408beef54cd8fd01ba6442584fbfcbc6",
+    "exact_approved_origin": "git@github.com:kburson/aitm.git",
+    "existing_writer_authority": "GitHub SSH principal kburson",
+    "protected_branch_rules": [
+      "deletion",
+      "non_fast_forward",
+      "required_linear_history"
+    ]
+  },
+  "run_from_owning_chat": true,
+  "manual_handoffs": 0,
+  "new_hook_approvals": 0,
+  "delegated_prompt_count": 1,
+  "native_children": 1,
+  "dispatch_verification": {
+    "ack_used_only_to_check_send": true,
+    "independent_app_completion_observed": true,
+    "native_marker_echo": true,
+    "exact_controller_parent_and_root": true,
+    "exact_native_child_parent": true,
+    "enrolled_before_delegated_start": true,
+    "expectations_recorded_utc": "2026-11-26T01:53:10.177797+00:00",
+    "pending_before_dispatch": 3,
+    "solo_scope_sha256": "c27111c3695401806c0fda633ad9988c86ad81c33d5d1fa722e871be2dda1efd",
+    "elapsed_from_enrollment_s": 17.116203,
+    "pre_send_status_result_utc": "2026-11-26T01:53:10.191Z",
+    "pre_send_pending_count": 3,
+    "pre_send_new_receipt_count": 0,
+    "send_call_recorded_utc": "2026-11-26T01:53:17.730Z",
+    "private_marker_sha256": "da0f7fbd6a383c2e987751dc19863de38afe9219dfedd8587124b0cf5f363e1f",
+    "enrollment_time_basis": "Durable upper bound recorded after all three enrollment transactions and before send. Individual transaction times were not recorded."
+  },
+  "story_before_dispatch": 461,
+  "story_at_settlement": 458,
+  "selection_switch_ms": 164.06,
+  "fresh_process_export_ms": 161.47,
+  "unbound_control": {
+    "status": "pending-binding",
+    "story": null,
+    "parent": null,
+    "exports": {
+      "461": 0,
+      "458": 0
+    },
+    "retry_exit": 2,
+    "separate_private_store": true,
+    "owner_enrollment_omitted": true,
+    "selected_story_at_retry": 458
+  },
+  "retention_observation": {
+    "solo": "prior_completed_retained",
+    "owner": "read_deferred_until_after_completion",
+    "child": "read_deferred_until_after_completion"
+  },
+  "active_closeout_excluded": true,
+  "solo_enrollment_after_native_end": true,
+  "cohorts": {
+    "child": {
+      "role": "worker",
+      "story": 461,
+      "revision": 1,
+      "coverage": "complete",
+      "started_at": "2026-11-26T01:53:21.860000+00:00",
+      "ended_at": "2026-11-26T01:53:25.104000+00:00",
+      "elapsed_native_s": 3.244,
+      "private_recovery_ms": 6.79,
+      "store_disposition": "inserted",
+      "path": ".aitm/stories/004/461/attachments/effort/session/021bb7a2cbf10b0c5d4fcea597fb9313b7da20e0b6376f454a56adbc3b1162e6-r1.json",
+      "sha256": "7ce52e598d950a679e00a09bbec08b5fcb062f4a3b41bf5bb920622228aaaf47",
+      "source_sha256": "cd944e1819e04684b42538823c66c0f2d576b5d8542c62859382ca6a11f7e065",
+      "model": "gpt-6.2-sol",
+      "tokens": {
+        "cache_write_1h_tokens": null,
+        "cache_write_5m_tokens": null,
+        "cached_input_tokens": 55936,
+        "input_tokens": 56672,
+        "output_tokens": 5,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 56677
+      },
+      "rate_inputs": [
+        {
+          "cache_write_1h_tokens": null,
+          "cache_write_5m_tokens": null,
+          "cached_input_tokens": 55936,
+          "input_tokens": 56672,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 56677
+        }
+      ],
+      "mode": "100644"
+    },
+    "solo": {
+      "role": "orchestrator",
+      "story": 461,
+      "revision": 1,
+      "coverage": "complete",
+      "started_at": "2026-11-26T01:39:00.973000+00:00",
+      "ended_at": "2026-11-26T01:39:29.755000+00:00",
+      "elapsed_native_s": 28.782,
+      "private_recovery_ms": 26.34,
+      "store_disposition": "inserted",
+      "path": ".aitm/stories/004/461/attachments/effort/session/e2cea13ef9809b3842d51403b68271d1c72965a2841a6c18dafc90f6c5b81c96-r1.json",
+      "sha256": "3a5e2ae4aa1d10f71f200f3801e6d1e1f6c7816c176db9d14ae0c04dccca8b0b",
+      "source_sha256": "1484672d6a7b8d49443423da8f001f3cfe20555f6d65f4d1506e6163db5cde9f",
+      "model": "gpt-6.2-sol",
+      "tokens": {
+        "cache_write_1h_tokens": null,
+        "cache_write_5m_tokens": null,
+        "cached_input_tokens": 496896,
+        "input_tokens": 501776,
+        "output_tokens": 1238,
+        "reasoning_output_tokens": 353,
+        "total_tokens": 503014
+      },
+      "rate_inputs": [
+        {
+          "cache_write_1h_tokens": null,
+          "cache_write_5m_tokens": null,
+          "cached_input_tokens": 248192,
+          "input_tokens": 248838,
+          "output_tokens": 482,
+          "reasoning_output_tokens": 125,
+          "total_tokens": 249320
+        },
+        {
+          "cache_write_1h_tokens": null,
+          "cache_write_5m_tokens": null,
+          "cached_input_tokens": 248704,
+          "input_tokens": 252938,
+          "output_tokens": 756,
+          "reasoning_output_tokens": 228,
+          "total_tokens": 253694
+        }
+      ],
+      "mode": "100644",
+      "cohort_label": "solo self-closeout",
+      "role_note": "Receipt schema uses orchestrator for an owner. This turn supervised no child."
+    },
+    "owner": {
+      "role": "orchestrator",
+      "story": 461,
+      "revision": 1,
+      "coverage": "complete",
+      "started_at": "2026-11-26T01:53:17.825000+00:00",
+      "ended_at": "2026-11-26T01:53:27.294000+00:00",
+      "elapsed_native_s": 9.469,
+      "private_recovery_ms": 9.9,
+      "store_disposition": "inserted",
+      "path": ".aitm/stories/004/461/attachments/effort/session/050aa872027a25f581359b152a473f9cecb7bb6a76a00db58e8e45ff11030030-r1.json",
+      "sha256": "78a262d4abf868374c53a146e1a6aa51743d2502f5b13c530d0bdcdd58a03d10",
+      "source_sha256": "c548e139fb9a999d8cc9cb55941326c80ea696ce2c35dd3713ea3b14afa1a8e9",
+      "model": "gpt-6.2-sol",
+      "tokens": {
+        "cache_write_1h_tokens": null,
+        "cache_write_5m_tokens": null,
+        "cached_input_tokens": 126592,
+        "input_tokens": 167964,
+        "output_tokens": 106,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 168070
+      },
+      "rate_inputs": [
+        {
+          "cache_write_1h_tokens": null,
+          "cache_write_5m_tokens": null,
+          "cached_input_tokens": 14976,
+          "input_tokens": 55896,
+          "output_tokens": 60,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 55956
+        },
+        {
+          "cache_write_1h_tokens": null,
+          "cache_write_5m_tokens": null,
+          "cached_input_tokens": 55680,
+          "input_tokens": 55985,
+          "output_tokens": 21,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 56006
+        },
+        {
+          "cache_write_1h_tokens": null,
+          "cache_write_5m_tokens": null,
+          "cached_input_tokens": 55936,
+          "input_tokens": 56083,
+          "output_tokens": 25,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 56108
+        }
+      ],
+      "mode": "100644"
+    }
+  },
+  "publication": {
+    "before": "064f36c1408beef54cd8fd01ba6442584fbfcbc6",
+    "after_origin_hold": "064f36c1408beef54cd8fd01ba6442584fbfcbc6",
+    "origin_hold_ms": 184.25,
+    "matched_local_refusal": {
+      "matched_local_origin": true,
+      "rejected_pushes": 3,
+      "ref_unchanged": true,
+      "frozen_bytes_unchanged": true,
+      "elapsed_ms": 3625.99,
+      "classification": "controlled refusal"
+    },
+    "publication_commit": "e09eb4de39630e184d3c1adb90d0f00045e24e9b",
+    "first_readback": "e09eb4de39630e184d3c1adb90d0f00045e24e9b",
+    "replay_writer_tip": "e09eb4de39630e184d3c1adb90d0f00045e24e9b",
+    "replay_readback": "e09eb4de39630e184d3c1adb90d0f00045e24e9b",
+    "sha256_by_path": {
+      ".aitm/stories/004/461/attachments/effort/session/021bb7a2cbf10b0c5d4fcea597fb9313b7da20e0b6376f454a56adbc3b1162e6-r1.json": "7ce52e598d950a679e00a09bbec08b5fcb062f4a3b41bf5bb920622228aaaf47",
+      ".aitm/stories/004/461/attachments/effort/session/e2cea13ef9809b3842d51403b68271d1c72965a2841a6c18dafc90f6c5b81c96-r1.json": "3a5e2ae4aa1d10f71f200f3801e6d1e1f6c7816c176db9d14ae0c04dccca8b0b",
+      ".aitm/stories/004/461/attachments/effort/session/050aa872027a25f581359b152a473f9cecb7bb6a76a00db58e8e45ff11030030-r1.json": "78a262d4abf868374c53a146e1a6aa51743d2502f5b13c530d0bdcdd58a03d10"
+    },
+    "receipt_count": 3,
+    "assigned_to_458": 0,
+    "replay_path_changes": 0,
+    "fallback_paths_unchanged": true,
+    "publish_ms": 3957.78,
+    "replay_ms": 1085.07,
+    "batch_sha256": "04ca689a770a2d1d21feb9f3fd6e9619ed9c28ecee2ee8a3f82fef6fbf464168",
+    "commit_parent": "064f36c1408beef54cd8fd01ba6442584fbfcbc6",
+    "exact_changed_paths": [
+      ".aitm/stories/004/461/attachments/effort/session/021bb7a2cbf10b0c5d4fcea597fb9313b7da20e0b6376f454a56adbc3b1162e6-r1.json",
+      ".aitm/stories/004/461/attachments/effort/session/050aa872027a25f581359b152a473f9cecb7bb6a76a00db58e8e45ff11030030-r1.json",
+      ".aitm/stories/004/461/attachments/effort/session/e2cea13ef9809b3842d51403b68271d1c72965a2841a6c18dafc90f6c5b81c96-r1.json"
+    ],
+    "immutable_previous_paths": {
+      ".aitm/stories/004/461/attachments/effort/session/2033d1a0782e55bba0b7bad845bb36106ab6ad725d74e5bcbc4cda04c9119d04-r1.json": {
+        "before": "f64fe88983e3e1230f12c52be424dcd41e1588a17bf17e3aabd3c31c64d50998",
+        "after": "f64fe88983e3e1230f12c52be424dcd41e1588a17bf17e3aabd3c31c64d50998"
+      },
+      ".aitm/stories/004/461/attachments/effort/session/f16038236a38d5aaaa636948e9cb9467a6c61e5e6ef029c765ccd9e0dcf2c858-r1.json": {
+        "before": "e19d4803d369f1a5727030e6c35e595c39461df78c2ab50fa7572f9ad1a4ea18",
+        "after": "e19d4803d369f1a5727030e6c35e595c39461df78c2ab50fa7572f9ad1a4ea18"
+      }
+    },
+    "origin_hold_frozen_bytes_unchanged": true
+  },
+  "transport_fixtures": {
+    "passed": 19,
+    "seconds": 8.02
+  },
+  "verified_billed_cost_usd": null,
+  "settlement_order": {
+    "operator_tool_started_utc": "2026-11-26T01:53:32.946000+00:00",
+    "operator_tool_completed_utc": "2026-11-26T01:53:35.037000+00:00",
+    "operator_script_sha256": "b9d7625b1614e7cee88b7483e54932abd79716b72d19b33613066e7d8ef842e2",
+    "serial_steps": [
+      "check all three pending-binding",
+      "run and await successful #458 selection CLI",
+      "check each expected #461 enrollment",
+      "bind exact native evidence, then accept and inspect disposition",
+      "fresh-process status and exact story export"
+    ],
+    "timing_precision": "Tool envelope and individual durations were retained. Individual bind and accept wall-clock timestamps were not logged.",
+    "selected_story_after_all_inserts_before_restoration": 458,
+    "fresh_export_counts": {
+      "461": 3,
+      "458": 0
+    }
+  },
+  "cleanup": {
+    "post_run_hook_config_sha256": "fd9845409a60f527af70089eb94847ee9d9f23c74eea4d6b73bff4ec97291446",
+    "prior_scratch_selection_after_run": 457,
+    "test_store_selection_restored_to": 461,
+    "published_receipts_preserved": true
+  },
+  "model_turns": {
+    "additional_experiment_owner_turns": 1,
+    "additional_native_subagent_turns": 1,
+    "fresh_solo_turns": 0,
+    "additional_manual_prompt_submissions": 0
+  },
+  "rejected_live_candidates": 0,
+  "plan_xpr_artifact_sha256": "61e6fe6eb1813c2f748c97e645f5890d84bacf3904315c9744cd43000598c5ae"
+}
