@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 457
 title: "Capture and publish session-owned agent turn receipts"
 kind: "story"
-state: "test"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/457"
 parent: 456
 children: []
 blocking: [458, 461]
 blocked-by: []
 created: "2026-11-25T16:06:16Z"
-updated: "2026-11-26T00:10:24.912Z"
+updated: "2026-11-26T00:11:37.857Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -68,6 +68,8 @@ The scratch comparison confirmed that the Desktop composer delivered the owner p
 [PR #460](https://github.com/kburson/aitm/pull/460) passed independent exact-head review and merged to `trunk` at `87bc3d8a2875884014b59281117f68b9d63fabee`. The ordered parents and reviewed tree were verified on the remote. [Delivery report](attachments/qualification/457-delivery-report.md) · [Implementer sign-off](retro/2026-11-25-delivery-sign-off.md).
 
 [Spike #461](https://github.com/kburson/aitm/issues/461) owns agent self-publication at story closeout.
+
+GitHub readback confirmed Closed as completed at 2026-11-26T00:11:01Z. Project 24 read back Done with PR #460 linked.
 
 ## Actual agent engagement
 
