@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 458
 title: "Publish pinned story effort and cost reports"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/458"
 parent: 456
 children: []
 blocking: [459]
 blocked-by: [457]
 created: "2026-11-25T16:06:40Z"
-updated: "2026-11-26T04:20:35.061Z"
+updated: "2026-11-26T04:21:29.679Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -72,3 +72,5 @@ All nine hosted checks passed on the replacement head. All three installed-wheel
 The implementing turn was active at cutoff `2026-11-26T04:20:34.058Z`. New input includes cache creation where the provider reports it. Cost references come from provider CLI output. Verified billed cost is Unknown.
 
 [Agent Cost evidence](attachments/qualification/458-agent-cost.json).
+
+GitHub issue closed at `2026-11-26T04:21:00Z`. Project 24 read back **Done** with merged [PR #462](https://github.com/kburson/aitm/pull/462) in Linked pull requests.
