@@ -1,0 +1,99 @@
+{
+  "schema": "aitm.461-automated-agent-cost/v1",
+  "story": 461,
+  "observations": [
+    {
+      "label": "Completed solo turn",
+      "cached_input": 496896,
+      "new_input": 4880,
+      "output": 1238,
+      "seconds": 28.782,
+      "reference_usd": "0.0718296",
+      "source": "OpenAI short-context Standard API list estimate"
+    },
+    {
+      "label": "Delegated owner",
+      "cached_input": 126592,
+      "new_input": 41372,
+      "output": 106,
+      "seconds": 9.469,
+      "reference_usd": "0.0964632",
+      "source": "OpenAI short-context Standard API list estimate"
+    },
+    {
+      "label": "Native subagent",
+      "cached_input": 55936,
+      "new_input": 736,
+      "output": 5,
+      "seconds": 3.244,
+      "reference_usd": "0.0071156",
+      "source": "OpenAI short-context Standard API list estimate"
+    },
+    {
+      "label": "Grok plan revision",
+      "cached_input": 1664,
+      "new_input": 51020,
+      "output": 15888,
+      "seconds": null,
+      "reference_usd": "0.134776",
+      "source": "Grok provider-reported USD"
+    },
+    {
+      "label": "Claude brokered XPR round 1",
+      "cached_input": 206589,
+      "new_input": 35450,
+      "output": 5555,
+      "seconds": 44.799,
+      "reference_usd": "0.2179849",
+      "source": "Claude Standard API list estimate"
+    },
+    {
+      "label": "Claude brokered XPR round 2",
+      "cached_input": 254502,
+      "new_input": 9657,
+      "output": 2829,
+      "seconds": 21.176,
+      "reference_usd": "0.0923482",
+      "source": "Claude Standard API list estimate"
+    },
+    {
+      "label": "Claude delivery evidence review 1",
+      "cached_input": 658,
+      "new_input": 13278,
+      "output": 9869,
+      "seconds": 69.204,
+      "reference_usd": "0.1518638",
+      "source": "Claude provider CLI list equivalent and wrapper elapsed"
+    },
+    {
+      "label": "Claude delivery evidence review 2",
+      "cached_input": 13934,
+      "new_input": 18865,
+      "output": 2010,
+      "seconds": 14.662,
+      "reference_usd": "0.2488132",
+      "source": "Claude provider CLI list equivalent and wrapper elapsed"
+    },
+    {
+      "label": "Active controller, partial cutoff",
+      "cached_input": 16249600,
+      "new_input": 315718,
+      "output": 37088,
+      "seconds": null,
+      "reference_usd": null,
+      "source": "Native request counters through 2026-11-26T01:59:22.368Z"
+    }
+  ],
+  "known_token_subtotal": {
+    "cached_input": 17406371,
+    "new_input": 490976,
+    "output": 74588
+  },
+  "known_cost_reference_usd": "1.0211945",
+  "controller_cutoff_utc": "2026-11-26T01:59:22.368Z",
+  "billed_usd": null,
+  "price_references": [
+    "https://developers.openai.com/api/docs/pricing",
+    "https://platform.claude.com/docs/en/models/sonnet-5-5/overview"
+  ]
+}
