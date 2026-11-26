@@ -2,6 +2,7 @@
 
 import json
 import subprocess
+from hashlib import sha256
 from pathlib import Path
 from uuid import UUID
 
@@ -10,6 +11,7 @@ import pytest
 from aitm_usage.effort.cli import main
 from aitm_usage.effort.pinned_report import (
     ReportUnavailable,
+    canonical,
     freeze_report,
     reopen_pinned_report,
     report_path,
@@ -185,3 +187,38 @@ def test_validation_rejects_noncanonical_bytes_and_external_paths(target):
     manifest["inputs"] = {"path": str(Path("/Users/private/session.jsonl"))}
     with pytest.raises(ValueError):
         freeze_report(manifest, _report())
+
+
+def test_publisher_refuses_rehashed_text_outside_its_renderer(target):
+    _, pin = target
+    envelope = json.loads(freeze_report(_manifest(pin), _report()))
+    envelope.pop("report_id")
+    envelope["text"] = "Unexpected unreviewed text\n"
+    envelope["digests"]["text"] = sha256(envelope["text"].encode()).hexdigest()
+    envelope["report_id"] = sha256(canonical(envelope)).hexdigest()
+    candidate = canonical(envelope)
+    assert validate_envelope(candidate)["text"] == envelope["text"]
+    with pytest.raises(ValueError, match="producer renderer"):
+        validate_envelope(candidate, for_publication=True)
+
+
+def test_reopen_rejects_report_path_with_special_mode(target):
+    repo, pin = target
+    raw = freeze_report(_manifest(pin), _report())
+    report_id, path, first = _publish(repo, raw)
+    external = repo / "external.json"
+    external.write_bytes(raw)
+    blob = _git(repo, "hash-object", "-w", str(external))
+    _git(
+        repo,
+        "update-index",
+        "--cacheinfo",
+        f"120000,{blob},{path.relative_to(repo).as_posix()}",
+    )
+    _git(repo, "commit", "-qm", "replace report with symlink")
+    replaced = _git(repo, "rev-parse", "HEAD")
+    with pytest.raises(ReportUnavailable, match="mode"):
+        reopen_pinned_report(repo, replaced, PROJECT, STORY, report_id)
+    assert reopen_pinned_report(repo, first, PROJECT, STORY, report_id) == json.loads(
+        raw
+    )
