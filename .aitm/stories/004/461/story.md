@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 461
 title: "[Spike] Validate agent-owned settlement and publication at story closeout"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/461"
 parent: 456
 children: []
 blocking: []
 blocked-by: [457]
 created: "2026-11-26T00:04:56Z"
-updated: "2026-11-26T00:46:07.649Z"
+updated: "2026-11-26T00:46:47.427Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -68,6 +68,6 @@ The disposable agent recovered and published the two exact forwarded turns throu
 | Claude delivery evidence review 2 | 36.598 | 12,720 | 12,326 | 4,839 | $0.200190 |
 | Claude delivery evidence review 3 | 7.453 | 25,044 | 9,899 | 1,043 | $0.252716 |
 | Coordinator turn through native frame | Unknown | 18,585,472 | 338,094 | 48,236 | Unknown |
-| **Measured subtotal** | **256.638** | **20,300,295 | 462,606 | 70,554** | **$1.158110** |
+| **Measured subtotal** | **256.638** | **20,300,295** | **462,606** | **70,554** | **$1.158110** |
 
 Recorded time sums separate observations, including overlap. Desktop and brokered review rows use native boundaries. The delivery review rows use Claude CLI elapsed. New input includes cache writes. The coordinator usage covers native request frames through 2026-11-26T00:46:07.451Z and is partial. Coordinator engagement and cost are Unknown at this cutoff. Verified billed charges are Unknown. [Usage and cost evidence](attachments/qualification/461-agent-cost.json).
