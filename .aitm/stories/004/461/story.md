@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 461
 title: "[Spike] Validate agent-owned settlement and publication at story closeout"
 kind: "spike"
-state: "done"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/461"
 parent: 456
 children: []
 blocking: []
 blocked-by: [457]
 created: "2026-11-26T00:04:56Z"
-updated: "2026-11-26T00:46:47.427Z"
+updated: "2026-11-26T01:28:17.329Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -71,3 +71,7 @@ The disposable agent recovered and published the two exact forwarded turns throu
 | **Measured subtotal** | **256.638** | **20,300,295** | **462,606** | **70,554** | **$1.158110** |
 
 Recorded time sums separate observations, including overlap. Desktop and brokered review rows use native boundaries. The delivery review rows use Claude CLI elapsed. New input includes cache writes. The coordinator usage covers native request frames through 2026-11-26T00:46:07.451Z and is partial. Coordinator engagement and cost are Unknown at this cutoff. Verified billed charges are Unknown. [Usage and cost evidence](attachments/qualification/461-agent-cost.json).
+
+## Reopened qualification
+
+The owner asked Grok to reopen #461 and finish the accepted composer test. The forwarded experiment verified exact recovery and publication for that route. The original composer delayed-settlement criterion remains open. The previous receipt identities are retained with their fallback provenance.
