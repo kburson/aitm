@@ -183,6 +183,7 @@ class PinnedInputs:
     gaps: tuple[str, ...]
     manifest: dict
     timing: tuple[dict, ...] = ()
+    scope_authority: tuple[tuple[str, str, str], ...] = ()
 
 
 def _digest(path: str, raw: bytes) -> dict:
@@ -492,9 +493,10 @@ def _timing_rows(source: dict, recorded_at) -> dict:
 
 def _registered_timing(tree, events, root, story, coverage, receipts, cutoff, gaps):
     if not coverage or not coverage.get("timing"):
-        return (), []
+        return (), [], ()
     by_attempt = {row["attempt"]: row for row in receipts}
     timing = []
+    scope_authority = []
     sources = {}
     joins = coverage["timing"]
     target_keys = ("path", "sha256", "observation")
@@ -593,9 +595,15 @@ def _registered_timing(tree, events, root, story, coverage, receipts, cutoff, ga
                     "owner_waits": waits,
                 }
             )
+            if _matches(turn.get("phase"), _LABEL):
+                scope_authority.append((join["attempt"], turn["phase"], turn["actor"]))
         except (TypeError, ValueError, KeyError, RecursionError):
             gaps.add("timing-evidence-invalid")
-    return tuple(timing), [value[1] for value in sources.values()]
+    return (
+        tuple(timing),
+        [value[1] for value in sources.values()],
+        tuple(scope_authority),
+    )
 
 
 def read_inputs(
@@ -637,7 +645,7 @@ def read_inputs(
     eligible = _select_scope(selected, excluded, coverage, start, end, gaps)
     eligible.sort(key=lambda pair: pair[1]["path"])
     rows = tuple(row for row, _ in eligible)
-    timing, timing_files = _registered_timing(
+    timing, timing_files, scope_authority = _registered_timing(
         tree, events, root, story, coverage, rows, cutoff, gaps
     )
     manifest = {
@@ -657,4 +665,5 @@ def read_inputs(
         tuple(sorted(gaps)),
         manifest,
         timing,
+        scope_authority,
     )

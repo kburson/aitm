@@ -8,7 +8,7 @@ from pathlib import Path
 from uuid import UUID
 
 from .export import read_legacy, render_export
-from .pinned_cli import add_pinned_commands, run_pinned_command
+from .pinned_cli import PINNED_COMMANDS, add_pinned_commands, run_pinned_command
 from .pinned_report import ReportUnavailable
 from .report import build_report, render_text
 from .rollup import RollupTarget
@@ -35,10 +35,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     add_session_commands(commands)
     add_pinned_commands(commands)
     args = parser.parse_args(argv)
-    if args.database is None and not args.command.startswith("story-report-"):
+    if args.database is None and args.command not in PINNED_COMMANDS:
         parser.error("--database is required for this command")
     try:
-        if args.command.startswith("story-report-"):
+        if args.command in PINNED_COMMANDS:
             return run_pinned_command(args)
         if args.command.startswith("session-"):
             return run_session_command(args)

@@ -2633,3 +2633,17 @@ packages/aitm-usage/tests/test_effort_pinned_report.py::test_publisher_refuses_r
 packages/aitm-usage/tests/test_effort_pinned_report.py::test_reopen_refuses_corrupt_artifact_and_scope_mismatch	systems-integration	yes	yes
 packages/aitm-usage/tests/test_effort_pinned_report.py::test_reopen_rejects_report_path_with_special_mode	systems-integration	yes	yes
 packages/aitm-usage/tests/test_effort_pinned_report.py::test_validation_rejects_noncanonical_bytes_and_external_paths	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_core_export_cli_emits_exact_files_and_sanitizes_key_errors	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_core_export_derives_pinned_rows_and_provenance	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_core_export_preserves_held_evidence[disputed]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_core_export_preserves_held_evidence[duplicate]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_core_export_preserves_held_evidence[grok]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_core_export_preserves_held_evidence[inclusive]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_core_export_preserves_held_evidence[partial]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_core_export_preserves_held_evidence[unknown-phase]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_core_export_preserves_held_evidence[unscoped]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_core_export_refuses_foreign_forged_and_wrong_rate	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_fixture_proves_ambiguous_acceptance_or_absence_before_identical_retry	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_fixture_reconciles_correction_and_retains_acceptance_after_dispute	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_fixture_reprices_and_refuses_scope_key_change_at_same_cutoff	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_core_export.py::test_oversized_cli_bundle_writes_no_stdout	systems-integration	yes	yes

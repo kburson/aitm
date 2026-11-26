@@ -8,6 +8,11 @@ from .pinned_report import (
     canonical,
     reopen_pinned_report,
 )
+from .store import EffortError
+
+PINNED_COMMANDS = frozenset(
+    {"story-report-build", "story-report-open", "story-core-export"}
+)
 
 
 def add_pinned_commands(commands):
@@ -28,6 +33,35 @@ def add_pinned_commands(commands):
     reopen.add_argument("--repository", required=True, type=Path)
     reopen.add_argument("--artifact-commit", required=True)
     reopen.add_argument("--format", required=True, choices=("json", "text"))
+    export = commands.add_parser(
+        "story-core-export", help="produce a pinned Core fixture bundle"
+    )
+    export.add_argument("story", type=int)
+    export.add_argument("report_id")
+    export.add_argument("--repository", required=True, type=Path)
+    export.add_argument("--artifact-commit", required=True)
+    export.add_argument("--rate-card", required=True, type=Path)
+    export.add_argument("--scope-key", required=True, type=Path)
+
+
+def _core_bundle(args) -> bytes:
+    from .core_export import build_core_export, render_core_bundle
+
+    try:
+        with args.scope_key.open("rb") as stream:
+            scope_key = stream.read(33)
+    except OSError:
+        raise EffortError("Core export scope key is unreadable") from None
+    files = build_core_export(
+        args.repository,
+        args.artifact_commit,
+        args.project,
+        args.story,
+        args.report_id,
+        args.rate_card,
+        scope_key,
+    )
+    return render_core_bundle(files)
 
 
 def run_pinned_command(args):
@@ -48,6 +82,8 @@ def run_pinned_command(args):
         )
         rates = load_comparison_rates(args.rate_card, args.rate_sha256)
         result = build_pinned_report(inputs, rates)
+    elif args.command == "story-core-export":
+        result = _core_bundle(args)
     else:
         envelope = reopen_pinned_report(
             args.repository,
