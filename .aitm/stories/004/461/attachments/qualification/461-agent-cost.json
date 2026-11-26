@@ -1,0 +1,167 @@
+{
+  "schema": "aitm.story-cost-snapshot/v1",
+  "story": 461,
+  "observations": [
+    {
+      "label": "Desktop owner capture",
+      "model": "gpt-6.2-sol",
+      "seconds": 8.242,
+      "source_sha256": "25fbaaebcae5b5703e8273364e6d555b1eaf10434d843a0ab6ffd37f80ca0a7a",
+      "cached_input": 125568,
+      "new_input": 912,
+      "output": 86,
+      "estimated_api_usd": "0.0152408",
+      "cost_basis": "OpenAI short-context Standard list estimate",
+      "cost_reference_usd": "0.0152408"
+    },
+    {
+      "label": "Desktop supervised child",
+      "model": "gpt-6.2-sol",
+      "seconds": 2.943,
+      "source_sha256": "9e2005b4b63c763f8d17d14a6f30abf6794107db9bee0831ca561f3e0671ab99",
+      "cached_input": 42112,
+      "new_input": 728,
+      "output": 5,
+      "estimated_api_usd": "0.0057172",
+      "cost_basis": "OpenAI short-context Standard list estimate",
+      "cost_reference_usd": "0.0057172"
+    },
+    {
+      "label": "Desktop closeout authority refusal",
+      "model": "gpt-6.2-sol",
+      "seconds": 16.899,
+      "source_sha256": "9a8cb9441f5b4ce0ea8262626da5def91f056895fa5dad1f25645abbc5693f85",
+      "cached_input": 127872,
+      "new_input": 5585,
+      "output": 610,
+      "estimated_api_usd": "0.0300572",
+      "cost_basis": "OpenAI short-context Standard list estimate",
+      "cost_reference_usd": "0.0300572"
+    },
+    {
+      "label": "Desktop authority readback",
+      "model": "gpt-6.2-sol",
+      "seconds": 26.447,
+      "source_sha256": "6e4b45dd7ae10b05b68258bb4853cd0929183ef2bf266518df225a9186734634",
+      "cached_input": 244864,
+      "new_input": 6010,
+      "output": 976,
+      "estimated_api_usd": "0.0462664",
+      "cost_basis": "OpenAI short-context Standard list estimate",
+      "cost_reference_usd": "0.0462664"
+    },
+    {
+      "label": "Desktop publication turn",
+      "model": "gpt-6.2-sol",
+      "seconds": 51.433,
+      "source_sha256": "927067e7be0145c36da245da2ef3ef7fd03f4aab6aa3b814992c7c29e2c2fea8",
+      "cached_input": 433408,
+      "new_input": 4732,
+      "output": 1800,
+      "estimated_api_usd": "0.0708048",
+      "cost_basis": "OpenAI short-context Standard list estimate",
+      "cost_reference_usd": "0.0708048"
+    },
+    {
+      "label": "Claude plan XPR round 1",
+      "model": "claude-sonnet-5-5",
+      "seconds": 33.759,
+      "source_sha256": "b48a3c59633867b9a0d543d59d16232bfbfc2d6eff8f86c4763c1880508a2a54",
+      "cached_input": 289646,
+      "new_input": 35345,
+      "output": 4044,
+      "estimated_api_usd": "0.2107526",
+      "cost_basis": "Claude Standard list estimate",
+      "uncached_input": 16,
+      "cache_write_5m": 0,
+      "cache_write_1h": 35329,
+      "cost_reference_usd": "0.2107526"
+    },
+    {
+      "label": "Claude plan XPR round 2",
+      "model": "claude-sonnet-5-5",
+      "seconds": 15.863,
+      "source_sha256": "45f1711296a61fbf84931c994a5a87eef5d139555eebd5a88ec64b5fbb1bc514",
+      "cached_input": 251553,
+      "new_input": 8260,
+      "output": 1930,
+      "estimated_api_usd": "0.0774753",
+      "cost_basis": "Claude Standard list estimate",
+      "uncached_input": 10,
+      "cache_write_5m": 0,
+      "cache_write_1h": 8250,
+      "cost_reference_usd": "0.0774753"
+    },
+    {
+      "label": "Claude addendum XPR attempt, unsealed",
+      "model": "claude-sonnet-5-5",
+      "seconds": 15.657,
+      "source_sha256": "dd477178c3e005317afd5d02e88b1306df5fa75f96de25962e1203eb4fde6e82",
+      "cached_input": 161378,
+      "new_input": 28651,
+      "output": 1694,
+      "cost_reference_usd": "0.1476618",
+      "cost_basis": "Claude Standard list estimate"
+    },
+    {
+      "label": "Claude delivery evidence review 1",
+      "model": "claude-sonnet-5-5",
+      "seconds": 41.344,
+      "time_basis": "provider CLI elapsed",
+      "cached_input": 658,
+      "new_input": 12064,
+      "output": 5291,
+      "cost_reference_usd": "0.1012278",
+      "cost_basis": "provider-reported list equivalent"
+    },
+    {
+      "label": "Claude delivery evidence review 2",
+      "model": "claude-sonnet-5-5",
+      "seconds": 36.598,
+      "time_basis": "provider CLI elapsed",
+      "cached_input": 12720,
+      "new_input": 12326,
+      "output": 4839,
+      "cost_reference_usd": "0.2001898",
+      "cost_basis": "provider-reported list equivalent"
+    },
+    {
+      "label": "Claude delivery evidence review 3",
+      "model": "claude-sonnet-5-5",
+      "seconds": 7.453,
+      "time_basis": "provider CLI elapsed",
+      "cached_input": 25044,
+      "new_input": 9899,
+      "output": 1043,
+      "cost_reference_usd": "0.2527162",
+      "cost_basis": "provider-reported list equivalent"
+    },
+    {
+      "label": "Coordinator turn through native frame",
+      "model": "gpt-6.2-sol",
+      "cached_input": 18585472,
+      "new_input": 338094,
+      "output": 48236,
+      "start_utc": "2026-11-26T00:22:49.024Z",
+      "covered_through_utc": "2026-11-26T00:46:07.451Z",
+      "coverage": "partial",
+      "verified_billed_usd": null,
+      "seconds": null,
+      "cost_reference_usd": null,
+      "time_basis": "active turn partial cutoff, engagement excluding owner wait unavailable"
+    }
+  ],
+  "coordinator_coverage_cutoff": "2026-11-26T00:46:07.451Z",
+  "verified_billed_usd": null,
+  "known_token_subtotal": {
+    "cached_input": 20300295,
+    "new_input": 462606,
+    "output": 70554
+  },
+  "known_cost_reference_subtotal_usd": "1.1581099",
+  "reported_duration_subtotal_seconds": 256.638,
+  "prices": [
+    "https://developers.openai.com/api/docs/pricing",
+    "https://platform.claude.com/docs/en/models/sonnet-5-5/overview"
+  ]
+}

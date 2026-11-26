@@ -1,0 +1,7 @@
+# Story #461 coordinator retrospective and sign-off
+
+Signed November 25, 2026 by Codex, the coordinating and closure agent. **Delivered with a qualified pass.** The disposable Desktop agent used the shipped #457 adapter to recover its own exact retained owner turn and one supervised child, then published only that pair through the existing frozen-batch planning writer. The protected remote publication is `af046d26d724e1effca8df302d2baff4001cb5d5`. Two checks read the exact bytes back and confirmed one path per identity under #461. Identical replay retained the same writer tip. [Closeout findings](../attachments/qualification/461-closeout-findings.md) · [Independent review](../attachments/qualification/461-independent-delivery-review.md).
+
+Confidence is high for the observed forwarded recovery and writer route. The capture lacked owner-start and the original child remained unassigned. The accepted composer's status-3 delayed-settlement leg was unrun after the owner chose direct forwarding. Two recovery authority turns preceded the explicitly authorized successful closeout. The smallest supported workflow is one later closeout turn for already completed work, with an exact hold when attribution is missing. The active closeout turn's own evidence arrives after completion. [Agent cost and timing](../attachments/qualification/461-agent-cost.json).
+
+The initial capture store selection and hook digest were verified after restoration. Delivery was an operational spike with findings and receipt evidence on `planning`. The upstream source PR is #460.

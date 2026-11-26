@@ -115,5 +115,66 @@
   "capture_selection_restored": 457,
   "hooks_unchanged": true,
   "extra_desktop_turns": 3,
-  "published_closeout_turn_receipt": false
+  "published_closeout_turn_receipt": false,
+  "preflight": {
+    "matching_wheel_python_modules": 57,
+    "shipped_source": "87bc3d8a2875884014b59281117f68b9d63fabee",
+    "trusted_hook_discovery": {
+      "project_layer": [
+        {
+          "kind": "project",
+          "disabled": false
+        }
+      ],
+      "scratch_hooks": [
+        {
+          "eventName": "userPromptSubmit",
+          "enabled": true,
+          "trustStatus": "trusted"
+        },
+        {
+          "eventName": "subagentStart",
+          "enabled": true,
+          "trustStatus": "trusted"
+        },
+        {
+          "eventName": "subagentStop",
+          "enabled": true,
+          "trustStatus": "trusted"
+        },
+        {
+          "eventName": "stop",
+          "enabled": true,
+          "trustStatus": "trusted"
+        },
+        {
+          "eventName": "interrupt",
+          "enabled": true,
+          "trustStatus": "trusted"
+        }
+      ]
+    }
+  },
+  "origin_hold_verification": {
+    "missing_receipt_paths_before": 2,
+    "missing_receipt_paths_after": 2,
+    "frozen_batch_compared_byte_for_byte_after_hold": true,
+    "original_and_final_frozen_batch_sha256": "65a59c0451da0658632f4b09d77f7ab9452ff8a124f8089c93a58610cfcc28e4"
+  },
+  "replay_independent_verification": {
+    "count": 2,
+    "sha256_by_path": {
+      ".aitm/stories/004/461/attachments/effort/session/f16038236a38d5aaaa636948e9cb9467a6c61e5e6ef029c765ccd9e0dcf2c858-r1.json": "e19d4803d369f1a5727030e6c35e595c39461df78c2ab50fa7572f9ad1a4ea18",
+      ".aitm/stories/004/461/attachments/effort/session/2033d1a0782e55bba0b7bad845bb36106ab6ad725d74e5bcbc4cda04c9119d04-r1.json": "f64fe88983e3e1230f12c52be424dcd41e1588a17bf17e3aabd3c31c64d50998"
+    },
+    "receipt_path_changes": 0,
+    "assigned_to_458": 0
+  },
+  "capture_exit3_observed": false,
+  "operator_interventions": [
+    "coordinator forwarded the capture prompt and obtained exact completed owner turn",
+    "coordinator sent two closeout prompts to resolve authority",
+    "owner explicitly authorized exact forwarded recovery and publication in coordinating chat",
+    "coordinator sent authorized closeout prompt and independently verified protected readback"
+  ]
 }
