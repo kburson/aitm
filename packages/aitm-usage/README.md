@@ -314,7 +314,18 @@ The pinned CLI reads a full planning commit and produces a canonical report
 envelope. Use the explicit authorized project UUID, story, occurrence window,
 observation cutoff and SHA-256 of a reviewed Standard USD comparison rate card.
 
+Export the sanitized roster from the private store before choosing the planning
+commit. Use `--admission open` when custody is partial. Closed admission needs
+an explicit evidence file for the exact story, window and selected sessions.
+Register the exported bytes as `story-effort-coverage` in the same planning
+checkpoint that contains the coverage file.
+
 ```sh
+aitm-effort --project "$PROJECT_UUID" --database "$DATABASE" \
+  session-export-coverage "$STORY" --session "$SESSION_UUID" \
+  --window-start "$START_UTC" --window-end "$END_UTC" --cutoff "$CUTOFF_UTC" \
+  --admission open > coverage.json
+
 aitm-effort --project "$PROJECT_UUID" story-report-build "$STORY" \
   --repository "$REPOSITORY" --planning-commit "$PLANNING_SHA" \
   --window-start "$START_UTC" --window-end "$END_UTC" --cutoff "$CUTOFF_UTC" \

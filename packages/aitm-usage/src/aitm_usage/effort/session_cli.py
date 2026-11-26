@@ -59,6 +59,17 @@ def add_session_commands(commands: _SubParsersAction) -> None:
     )
     export.add_argument("session", type=UUID)
     export.add_argument("story", type=int)
+    coverage = commands.add_parser(
+        "session-export-coverage", help="freeze an explicit story coverage roster"
+    )
+    coverage.add_argument("story", type=int)
+    coverage.add_argument("--session", type=UUID, action="append", required=True)
+    coverage.add_argument("--window-start", required=True)
+    coverage.add_argument("--window-end", required=True)
+    coverage.add_argument("--cutoff", required=True)
+    coverage.add_argument("--admission", choices=("open", "closed"), required=True)
+    coverage.add_argument("--admission-evidence", type=Path)
+    coverage.add_argument("--supersedes")
     import_batch = commands.add_parser(
         "session-publish-batch", help="publish the exact handed-off batch"
     )
@@ -264,6 +275,31 @@ def run_session_command(args: Namespace) -> int:
             )
         case "session-export-batch":
             sys.stdout.write(_batch(store, args.session, args.story).decode())
+        case "session-export-coverage":
+            from .pinned_coverage import export_coverage
+
+            evidence = (
+                None
+                if args.admission_evidence is None
+                else json.loads(
+                    _read(args.admission_evidence), object_pairs_hook=_unique_fields
+                )
+            )
+            window = {
+                "window_start_utc": args.window_start,
+                "window_end_utc": args.window_end,
+                "cutoff_utc": args.cutoff,
+            }
+            raw = export_coverage(
+                store,
+                args.session,
+                args.story,
+                window,
+                args.admission,
+                evidence,
+                args.supersedes,
+            )
+            sys.stdout.write(raw.decode())
         case "session-publish" | "session-publish-batch":
             from .session_publication import publish_receipts
 

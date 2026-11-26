@@ -47,7 +47,7 @@ def run_pinned_command(args):
             },
         )
         rates = load_comparison_rates(args.rate_card, args.rate_sha256)
-        result = build_pinned_report(inputs, rates).decode("ascii")
+        result = build_pinned_report(inputs, rates)
     else:
         envelope = reopen_pinned_report(
             args.repository,
@@ -57,9 +57,9 @@ def run_pinned_command(args):
             args.report_id,
         )
         result = (
-            envelope["text"]
+            envelope["text"].encode("ascii")
             if args.format == "text"
-            else canonical(envelope["report"]).decode("ascii")
+            else canonical(envelope["report"])
         )
-    sys.stdout.write(result)
+    sys.stdout.buffer.write(result)
     return 0

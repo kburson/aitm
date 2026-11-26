@@ -7,6 +7,7 @@ import json
 import os
 import re
 import secrets
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
@@ -199,6 +200,45 @@ def _outside_markers(
     )
 
 
+def _coverage_state(db, attempt, native, receipt, cutoff) -> str:
+    def eligible(rows):
+        return any(
+            cutoff is None or UsageReceipt.from_json(payload).observed_at <= cutoff
+            for (payload,) in rows
+        )
+
+    if eligible(
+        db.execute(
+            "SELECT payload FROM conflicts WHERE json_extract(payload, '$.attempt_id')=?",
+            (attempt,),
+        )
+    ):
+        return "disputed"
+    if eligible(db.execute("SELECT payload FROM pending WHERE attempt=?", (attempt,))):
+        return "pending-evidence"
+    if receipt is None:
+        callback = db.execute(
+            "SELECT 1 FROM session_codex_callbacks WHERE attempt=?", (attempt,)
+        ).fetchone()
+        return (
+            "pending-binding"
+            if native is None and callback is None
+            else "pending-evidence"
+        )
+    markers = {
+        kind: _decode(payload, ScopeMarker)
+        for kind, payload in db.execute(
+            "SELECT kind,payload FROM scope_markers WHERE attempt=?", (attempt,)
+        )
+    }
+    if receipt.scope not in (
+        UsageScope.BOUNDED,
+        UsageScope.INCLUSIVE,
+    ) or _outside_markers(receipt, markers.get("start"), markers.get("end")):
+        return "withdrawn"
+    return "unavailable" if receipt.coverage is Availability.UNKNOWN else "observed"
+
+
 class SessionStore(EffortStore):
     """One private effort database and planning remote per project."""
 
@@ -221,6 +261,10 @@ class SessionStore(EffortStore):
     def _pseudonym(self, namespace: str, raw: str) -> str:
         data = json.dumps([str(self.project_id), namespace, raw], separators=(",", ":"))
         return hmac.new(self._secret, data.encode(), "sha256").hexdigest()
+
+    def public_attempt(self, attempt: UUID) -> str:
+        """Return the same opaque attempt identity used by published revisions."""
+        return self._pseudonym("attempt", str(attempt))
 
     def reference(self, namespace: str, raw: str) -> SourceRef:
         return SourceRef(
@@ -551,6 +595,86 @@ class SessionStore(EffortStore):
                 result[UUID(attempt)] = state
             return result
 
+    def coverage_snapshot(
+        self,
+        sessions: Sequence[UUID],
+        story: int,
+        window: Mapping[str, str] | None = None,
+    ) -> tuple[dict[UUID, str], int]:
+        """Read exact enrolled scope and gaps under one transaction."""
+        from .pinned_coverage import WINDOW_FIELDS, canonical_window, utc_stamp
+
+        require_item(story)
+        if (
+            story is None
+            or not sessions
+            or len(sessions) > 1024
+            or any(type(value) is not UUID for value in sessions)
+            or len(set(sessions)) != len(sessions)
+        ):
+            raise EffortError(
+                "Expected distinct explicit coverage sessions and one story"
+            )
+        start = end = cutoff = None
+        if window is not None:
+            bounds = canonical_window(window)
+            start, end, cutoff = (utc_stamp(bounds[key]) for key in WINDOW_FIELDS)
+        with self._transaction() as db:
+            states: dict[UUID, str] = {}
+            unresolved = 0
+            seen = 0
+            for session in sessions:
+                if not db.execute(
+                    "SELECT 1 FROM session_selections WHERE session=?", (str(session),)
+                ).fetchone():
+                    raise EffortError("Unenrolled coverage session")
+                for attempt, native, enrollment in db.execute(
+                    """SELECT s.attempt, s.native, a.payload FROM session_expectations s
+                       JOIN enrollments a ON a.attempt=s.attempt WHERE s.session=?""",
+                    (str(session),),
+                ):
+                    seen += 1
+                    if seen > 10000:
+                        raise EffortError("Coverage attempt limit exceeded")
+                    assignment = _decode(enrollment, Enrollment)
+                    if assignment.story not in (story, None):
+                        continue
+                    revisions = (
+                        UsageReceipt.from_json(row[0])
+                        for row in db.execute(
+                            "SELECT payload FROM revisions WHERE attempt=? ORDER BY revision DESC",
+                            (attempt,),
+                        )
+                    )
+                    receipt = next(
+                        (
+                            candidate
+                            for candidate in revisions
+                            if cutoff is None or candidate.observed_at <= cutoff
+                        ),
+                        None,
+                    )
+                    if receipt is not None and (
+                        start is not None
+                        and receipt.ended_at is not None
+                        and (
+                            receipt.ended_at < start
+                            or receipt.ended_at == start
+                            and receipt.started_at is not None
+                            and receipt.started_at < start
+                        )
+                        or end is not None
+                        and receipt.started_at is not None
+                        and receipt.started_at >= end
+                    ):
+                        continue
+                    if assignment.story is None:
+                        unresolved += 1
+                        continue
+                    state = _coverage_state(db, attempt, native, receipt, cutoff)
+                    states[UUID(attempt)] = state
+            return states, unresolved
+
     def public_receipts(self, session: UUID) -> tuple[bytes, ...]:
         with self._transaction() as db:
             results = []
@@ -604,7 +728,7 @@ class SessionStore(EffortStore):
                     assignment.story,
                     identity,
                     native.revision,
-                    self._pseudonym("attempt", str(native.attempt_id)),
+                    self.public_attempt(native.attempt_id),
                     assignment.role,
                     native.turn.provider,
                     native.turn.version,

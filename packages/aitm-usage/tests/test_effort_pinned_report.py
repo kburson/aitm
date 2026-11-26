@@ -2,7 +2,9 @@
 
 import json
 import subprocess
+import sys
 from hashlib import sha256
+from importlib.resources import files
 from pathlib import Path
 from uuid import UUID
 
@@ -58,7 +60,13 @@ def _manifest(pin, rate=RATE):
         "planning_commit": pin,
         "window": WINDOW,
         "rate_sha256": rate,
-        "inputs": {},
+        "inputs": {
+            "receipts": [],
+            "excluded": [],
+            "coverage": [],
+            "timing": [],
+            "registration": None,
+        },
     }
 
 
@@ -222,3 +230,57 @@ def test_reopen_rejects_report_path_with_special_mode(target):
     assert reopen_pinned_report(repo, first, PROJECT, STORY, report_id) == json.loads(
         raw
     )
+
+
+def test_public_cli_redirects_canonical_bytes_in_fresh_process(target):
+    repo, pin = target
+    rate_card = files("aitm_usage").joinpath(
+        "rates/effort/2026-11-25-sol-standard.json"
+    )
+    digest = sha256(rate_card.read_bytes()).hexdigest()
+    command = [sys.executable, "-m", "aitm_usage.effort.cli", "--project", str(PROJECT)]
+    raw = subprocess.check_output(
+        [
+            *command,
+            "story-report-build",
+            str(STORY),
+            "--repository",
+            str(repo),
+            "--planning-commit",
+            pin,
+            "--window-start",
+            WINDOW["window_start_utc"],
+            "--window-end",
+            WINDOW["window_end_utc"],
+            "--cutoff",
+            WINDOW["cutoff_utc"],
+            "--rate-card",
+            str(rate_card),
+            "--rate-sha256",
+            digest,
+        ]
+    )
+    report_id, _, artifact_commit = _publish(repo, raw)
+    report = validate_envelope(raw)
+    assert report["report"]["cost_eligible"] is False
+    for view, expected in (
+        ("json", canonical(report["report"])),
+        ("text", report["text"].encode()),
+    ):
+        assert (
+            subprocess.check_output(
+                [
+                    *command,
+                    "story-report-open",
+                    str(STORY),
+                    report_id,
+                    "--repository",
+                    str(repo),
+                    "--artifact-commit",
+                    artifact_commit,
+                    "--format",
+                    view,
+                ]
+            )
+            == expected
+        )

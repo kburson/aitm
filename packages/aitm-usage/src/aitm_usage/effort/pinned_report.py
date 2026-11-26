@@ -9,7 +9,7 @@ from uuid import UUID
 
 from ..types import _unique_fields
 from .export import render_export
-from .session_publication import PublicationHold, _PlanningTree, _read
+from .session_publication import _RECEIPT_PATH
 from .store import EffortError
 
 _REPORT_SCHEMA = "aitm.story-effort-report/v1"
@@ -106,10 +106,12 @@ def _safe_value(value, story_root: str, depth: int = 0) -> None:
 
 
 def _check_evidence(inputs: dict, story_root: str) -> None:
-    if not inputs:
-        return
     _fields(inputs, {"receipts", "excluded", "coverage", "timing", "registration"})
+    from .pinned_coverage import _TIMING_PATH
+    from .pinned_inputs import _COVERAGE_PATH
+
     for group in ("receipts", "excluded", "coverage", "timing"):
+        paths = set()
         if type(inputs[group]) is not list:
             raise EffortError("Invalid pinned evidence list")
         for row in inputs[group]:
@@ -120,8 +122,21 @@ def _check_evidence(inputs: dict, story_root: str) -> None:
                 names.add("reason")
             _fields(row, names)
             _evidence_blob(row, story_root)
+            path = row["path"]
+            relative = path.removeprefix(story_root + "/")
+            if path in paths:
+                raise EffortError("Duplicate pinned evidence path")
+            paths.add(path)
+            if (
+                group == "coverage"
+                and not _match(_COVERAGE_PATH, relative)
+                or group == "timing"
+                and not _match(_TIMING_PATH, relative)
+            ):
+                raise EffortError("Invalid pinned evidence category path")
             if "identity" in row and (
-                not _match(_DIGEST, row["identity"])
+                _RECEIPT_PATH.fullmatch(path.encode("ascii")) is None
+                or not _match(_DIGEST, row["identity"])
                 or type(row["revision"]) is not int
                 or row["revision"] < 1
                 or not row["path"].endswith(
@@ -135,6 +150,8 @@ def _check_evidence(inputs: dict, story_root: str) -> None:
     if registration is not None:
         _fields(registration, {"path", "sha256"})
         _evidence_blob(registration, story_root)
+        if registration["path"] != story_root + "/events.jsonl":
+            raise EffortError("Invalid pinned story event path")
 
 
 def _evidence_blob(row: dict, story_root: str) -> None:
@@ -168,6 +185,51 @@ def _check_manifest(manifest: dict) -> None:
     _check_evidence(manifest["inputs"], story_root)
 
 
+def _check_measure(value: dict) -> None:
+    _fields(value, {"known_turns", "status"})
+    if (
+        type(value["known_turns"]) is not int
+        or value["known_turns"] < 0
+        or value["status"] not in ("complete", "partial", "unknown")
+    ):
+        raise EffortError("Invalid report measurement coverage")
+
+
+def _check_turn(turn: dict) -> None:
+    _fields(
+        turn,
+        {
+            "attempt",
+            "identity",
+            "revision",
+            "provider",
+            "role",
+            "model",
+            "time_basis",
+            "started_at",
+            "ended_at",
+            "usage_scope",
+            "coverage",
+            "outcome",
+            "native_duration_us",
+            "tokens",
+            "api_estimate_usd",
+            "api_estimate_gap",
+            "exclusion",
+        },
+    )
+    _fields(turn["tokens"], set(_TOKEN_FIELDS))
+    if (
+        not _match(_DIGEST, turn["attempt"])
+        or not _match(_DIGEST, turn["identity"])
+        or type(turn["revision"]) is not int
+        or turn["revision"] < 1
+        or turn["provider"] not in ("codex", "claude", "grok")
+        or turn["role"] not in ("orchestrator", "worker", "reviewer")
+    ):
+        raise EffortError("Invalid report turn identifier or role")
+
+
 def _check_report(report: dict, story: int) -> None:
     required = {"tokens", "api_estimate_usd", "cost_eligible", "cost_hold_reasons"}
     optional = {
@@ -192,6 +254,39 @@ def _check_report(report: dict, story: int) -> None:
         for value in report["tokens"].values()
     ):
         raise EffortError("Invalid report token totals")
+    if "token_coverage" in report:
+        _fields(report["token_coverage"], set(_TOKEN_FIELDS))
+        for coverage in report["token_coverage"].values():
+            _check_measure(coverage)
+    for key in (
+        "api_estimate_coverage",
+        "provider_reported_grok_coverage",
+        "verified_billed_coverage",
+        "engagement_coverage",
+    ):
+        if key in report:
+            _check_measure(report[key])
+    if "coverage" in report:
+        _fields(
+            report["coverage"],
+            {
+                "admission",
+                "expected_turns",
+                "measured_turns",
+                "sampled_attempts",
+                "pending",
+                "missing",
+                "unavailable",
+                "withdrawn",
+                "disputed",
+                "unattributed",
+            },
+        )
+    if "turns" in report:
+        if type(report["turns"]) is not list:
+            raise EffortError("Invalid report turn list")
+        for turn in report["turns"]:
+            _check_turn(turn)
     amount = report["api_estimate_usd"]
     if amount is not None and not _match(
         re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?"), amount
@@ -205,6 +300,19 @@ def _check_report(report: dict, story: int) -> None:
         or (report["cost_eligible"] and (reasons or amount is None))
     ):
         raise EffortError("Invalid report Cost disposition")
+
+
+def _check_report_evidence(manifest: dict, report: dict) -> None:
+    descriptors = manifest["inputs"]["receipts"]
+    pinned = {(row["identity"], row["revision"]) for row in descriptors}
+    turns = report.get("turns", [])
+    measured = {(row["identity"], row["revision"]) for row in turns}
+    if (
+        pinned != measured
+        or len(pinned) != len(descriptors)
+        or len(measured) != len(turns)
+    ):
+        raise EffortError("Report turns differ from the exact receipt pins")
 
 
 def _value(value) -> str:
@@ -264,7 +372,8 @@ def _render_text(manifest: dict, report: dict) -> str:
     for turn in report.get("turns", []):
         lines.append(
             f"Turn {turn['identity']} revision {turn['revision']}: "
-            f"{turn['provider']} {turn['role']}"
+            f"{turn['provider']} {turn['role']}, "
+            f"native duration {_value(turn['native_duration_us'])} microseconds"
         )
     return "\n".join(lines) + "\n"
 
@@ -280,6 +389,7 @@ def _component_digests(manifest: dict, report: dict, text: str) -> dict:
 def freeze_report(manifest: dict, report: dict) -> bytes:
     _check_manifest(manifest)
     _check_report(report, manifest["story"])
+    _check_report_evidence(manifest, report)
     text = _render_text(manifest, report)
     if not _match(_TEXT, text):
         raise EffortError("Invalid frozen report text")
@@ -339,6 +449,7 @@ def validate_envelope(raw: bytes, *, for_publication: bool = False) -> dict:
         )
         _check_manifest(manifest)
         _check_report(report, manifest["story"])
+        _check_report_evidence(manifest, report)
         if not _match(_TEXT, text) or not text.endswith("\n"):
             raise EffortError("Invalid frozen report text")
         if for_publication and text != _render_text(manifest, report):
@@ -362,23 +473,23 @@ def validate_envelope(raw: bytes, *, for_publication: bool = False) -> dict:
 def reopen_pinned_report(
     repo, artifact_commit: str, project: UUID, story: int, report_id: str
 ) -> dict:
+    from .pinned_inputs import PinnedTree
+
     require_commit(artifact_commit)
     path = report_path(story, report_id)
     try:
-        resolved = _read(repo, "rev-parse", "--verify", f"{artifact_commit}^{{commit}}")
-        if resolved.decode("ascii").strip() != artifact_commit:
-            raise ReportUnavailable("Pinned artifact commit unavailable")
-        entry = _PlanningTree(repo, artifact_commit).entry(path)
-        if entry is None:
-            raise ReportUnavailable("Pinned report artifact missing")
-        mode, blob = entry
-        size = int(_read(repo, "cat-file", "-s", blob))
-        if mode != b"100644" or not 0 < size <= MAX_ENVELOPE:
-            raise ReportUnavailable("Pinned report artifact has invalid mode or size")
-        envelope = validate_envelope(_read(repo, "cat-file", "blob", blob))
-    except ReportUnavailable:
-        raise
-    except (PublicationHold, EffortError, ValueError):
+        raw = PinnedTree(repo, artifact_commit).read(
+            path, limit=MAX_ENVELOPE, optional=True
+        )
+    except (OSError, ValueError):
+        raise ReportUnavailable(
+            "Pinned artifact commit, mode or size unavailable"
+        ) from None
+    if raw is None:
+        raise ReportUnavailable("Pinned report artifact missing")
+    try:
+        envelope = validate_envelope(raw)
+    except EffortError:
         raise ReportUnavailable(
             "Pinned report artifact is unavailable or invalid"
         ) from None
