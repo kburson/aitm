@@ -1,0 +1,24 @@
+{
+  "schema": "aitm.459-delivery-gate/v1",
+  "pr": "https://github.com/kburson/aitm/pull/463",
+  "head": "51d19ac11c8c515abf95664058b577e5bc2a7452",
+  "tree": "1fbe3c6012ada44431ea6d6d75646bab9533a1ca",
+  "gate": "hosted-macos-portability",
+  "status": "held",
+  "jobs": [
+    {
+      "attempt": 1,
+      "job": "https://github.com/kburson/aitm/actions/runs/45828575035/job/139939034866",
+      "conclusion": "cancelled",
+      "runner_assigned": false,
+      "completed_at": "2026-11-26T13:37:52Z"
+    },
+    {
+      "attempt": 2,
+      "job": "https://github.com/kburson/aitm/actions/runs/45828575035/job/139948157766",
+      "conclusion": "cancelled",
+      "runner_assigned": false,
+      "completed_at": "2026-11-26T13:54:07Z"
+    }
+  ]
+}

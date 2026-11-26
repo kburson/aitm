@@ -41,3 +41,5 @@ The #458 predecessor is delivered. This story adapts its exact report inputs to 
 Claude Sonnet 5.5 accepted the revised plan in the sealed XPR. Pickup is pinned to trunk `0f8c6ff70b5112bd3a17af3a2ab5665e347a416c`. [XPR consensus](https://github.com/kburson/aitm/blob/e2478a2815c28c75a529dc0c20151ef484ebbf69/docs/peer-reviews/plan/2026-11-26-2026-11-26-core-cost-fixture-plan-review-267e823be939722787b850589663a74b/review-267e823be939722787b850589663a74b-review-manifest.md).
 
 [PR #463](https://github.com/kburson/aitm/pull/463) entered Test at head `51d19ac11c8c515abf95664058b577e5bc2a7452` against trunk `0f8c6ff70b5112bd3a17af3a2ab5665e347a416c`. Focused tests, Ruff and wheel smoke passed. Hosted verification and replacement source disposition are pending.
+
+The replacement source has independent approval. GitHub cancelled both hosted macOS opportunities before assigning a runner. The story remains in Test with the authenticated CI pass, the local installed-wheel results, and the provisional #461 fixture evidence recorded. [Source approval and verification hold](attachments/qualification/459-independent-source-review.md).
