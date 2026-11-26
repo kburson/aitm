@@ -1,0 +1,11 @@
+{
+  "source": "local-installed-wheel",
+  "head": "51d19ac11c8c515abf95664058b577e5bc2a7452",
+  "tree": "1fbe3c6012ada44431ea6d6d75646bab9533a1ca",
+  "os": "macOS",
+  "runtime_version": "26.6.2",
+  "tests": 236,
+  "failures": 0,
+  "skipped": 0,
+  "wheel_sha256": "4da794bc233b25eb7856ba149be9a63a7124f053fa6e5f8d9f3a3153e689d914"
+}
