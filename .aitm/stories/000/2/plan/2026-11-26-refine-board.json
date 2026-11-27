@@ -1,0 +1,60 @@
+{
+  "verified_at": "2026-11-27T05:40:34.192Z",
+  "project": 24,
+  "before": {
+    "id": "I_kwDOVnNyI88AAAABdf6cLA",
+    "number": 2,
+    "state": "OPEN",
+    "parent": 1,
+    "blockedBy": [
+      456
+    ],
+    "blocking": [
+      247
+    ],
+    "subIssues": [
+      228,
+      229
+    ],
+    "project": {
+      "id": "PVTI_lAHOABCEY84Bq1hZzhHL4u0",
+      "values": {
+        "Status": "f75ad846",
+        "Priority": "90b2e477",
+        "Rank": 10.0,
+        "Estimate": 386.5
+      }
+    }
+  },
+  "after": {
+    "id": "I_kwDOVnNyI88AAAABdf6cLA",
+    "number": 2,
+    "state": "OPEN",
+    "parent": 1,
+    "blockedBy": [
+      456
+    ],
+    "blocking": [
+      247
+    ],
+    "subIssues": [
+      228,
+      229
+    ],
+    "project": {
+      "id": "PVTI_lAHOABCEY84Bq1hZzhHL4u0",
+      "values": {
+        "Status": "d220c89a",
+        "Priority": "90b2e477",
+        "Rank": 10.0,
+        "Estimate": 386.5,
+        "Size": "7b141a16"
+      }
+    }
+  },
+  "body_sha256": "795d9541ab8a4f4285badeeec7765053590851aa125ffa0f8e2c5d74ddddc399",
+  "estimate_source": "0945941c",
+  "closed_native_blockers": [
+    456
+  ]
+}

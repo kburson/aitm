@@ -3,14 +3,14 @@ schema: aitm.story/v0
 id: 2
 title: "[Epic] aitm-core: story store, state machine, CLI, extension API"
 kind: epic
-state: backlog
+state: refine
 issue: https://github.com/kburson/aitm/issues/2
 parent: 1
 children: [228, 229]
 blocking: [247]
 blocked-by: [456]
 created: 2026-11-08T19:24:20Z
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T05:40:34.192Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: {"agent-hours": 386.5, "size": "XL"}
@@ -54,7 +54,8 @@ So that state, timing and evidence are recorded by the tool, never repaired by h
 
 ```json
 [
-  { "ts": "2026-11-08T19:24:20Z", "state": "backlog", "from": null }
+  { "ts": "2026-11-08T19:24:20Z", "state": "backlog", "from": null },
+  {"ts": "2026-11-27T05:40:34.192Z", "state": "refine", "from": "backlog"}
 ]
 ```
 
@@ -62,7 +63,9 @@ So that state, timing and evidence are recorded by the tool, never repaired by h
 
 ## Refinement
 
-Initial Refine estimate: **180 implementation agent-hours**, **XL epic**, **P1**. [Rationale and provenance](refinement.md). The [implementation plan](plan/core-implementation-plan.md) completed the authorized SAR → manual SPR → native XPR sequence; historical Backlog state is retained until supported reconciliation. No implementation is authorized.
+Current Refine estimate is **386.5 implementation agent-hours**, size **XL**, at **Rank 10**. It rolls up the accepted 22 Core delivery mini-epics and 110 bounded children. Project #24 has read back Refine and the sizing fields. [Current refinement basis](2026-11-26-refinement-refresh.md).
+
+The original **180 h / XL / P1** Refine estimate and its earlier scope remain historical. [Initial rationale](refinement.md).
 
 ## Accepted implementation decomposition
 
