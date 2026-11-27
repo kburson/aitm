@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 8
 title: "[Core C56] Evidence, action and provenance reducers with composition"
 kind: "story"
-state: review
+state: develop
 issue: "https://github.com/kburson/aitm/issues/8"
 parent: 470
 children: []
 blocking: [9, 29, 77, 472, 473, 474, 477, 478, 482, 483, 486, 491]
 blocked-by: [4, 6, 7]
 created: "2026-11-09T07:59:57Z"
-updated: "2026-11-27T09:57:31.790Z"
+updated: "2026-11-27T10:01:27.727Z"
 last-branch: "codex/core-8-evidence-composition"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 3.5, "size": "S"}
