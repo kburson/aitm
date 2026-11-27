@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 497
 title: "[Core C110] Integrate legacy policy dispositions and proof fixtures"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/497"
 parent: 471
 children: []
 blocking: [12, 37, 80, 241, 472, 479, 484, 489]
 blocked-by: [494, 495, 496]
 created: "2026-11-27T04:49:03Z"
-updated: "2026-11-27T11:43:52.028Z"
+updated: "2026-11-27T11:56:59.282Z"
 last-branch: "codex/core-497-legacy-decisions"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -42,3 +42,7 @@ Parent: #471. Core coordination: #2. State: Ready for Planning.
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **40** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #471 with scope entry **C110**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Done
+
+[PR #536](https://github.com/kburson/aitm/pull/536) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T11:56:56Z. Project #24 read back Done.
