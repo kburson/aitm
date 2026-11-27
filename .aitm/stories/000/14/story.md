@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 14
 title: "[Core C13] Extension and provider registration contracts"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/14"
 parent: 473
 children: []
 blocking: [15, 25, 28, 50, 64, 233, 498, 499, 503, 505]
 blocked-by: [4, 12]
 created: "2026-11-09T08:00:23Z"
-updated: "2026-11-27T16:32:34.219Z"
+updated: "2026-11-27T16:36:10.072Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
