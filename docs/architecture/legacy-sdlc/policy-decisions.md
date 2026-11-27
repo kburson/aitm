@@ -142,7 +142,8 @@ not qualify an implementation, authorize an effect or establish host parity.
       "facts": {
         "accepted_epic_plan": true,
         "designated_integration_owner": true,
-        "sibling_delivery_count": 0
+        "resource_prerequisites_satisfied": true,
+        "outstanding_sibling_deliveries": 3
       },
       "expected": {
         "decision": "accept",
@@ -319,11 +320,11 @@ not qualify an implementation, authorize an effect or establish host parity.
       "operation": "core.dev.review-candidate-current",
       "facts": {
         "hosted_result": "success",
-        "receipt_head_matches": false
+        "local_verification_receipt_head_matches": false
       },
       "expected": {
         "decision": "refuse",
-        "reason": "stale-hosted-result"
+        "reason": "local-verification-receipt-head-mismatch"
       }
     },
     {
