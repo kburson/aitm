@@ -9,6 +9,7 @@ from aitm_core.models.events import EVENT_TYPE_PATTERN
 from aitm_core.models.lifecycle import RepositoryPath, StoryKind, Text
 from aitm_core.providers.backlog import BacklogProvider
 from aitm_core.providers.githost import GitHostProvider
+from aitm_core.providers.managed import ManagedProviderRegistration
 
 Name = Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]*$")]
 Identifier = Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)+$")]
@@ -113,4 +114,5 @@ class Extension(Registration):
     cli_factory: Callable[[], object] | None = None
     backlog_factory: Callable[[], BacklogProvider] | None = None
     githost_factory: Callable[[], GitHostProvider] | None = None
+    managed_provider: ManagedProviderRegistration | None = None
     config_model: type[BaseModel] | None = None
