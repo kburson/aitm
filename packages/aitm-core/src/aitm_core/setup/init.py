@@ -587,11 +587,16 @@ def _assert_original_missing(repo: Repository, original: StoreAnchor) -> None:
             _drop_candidate(repo, observed)
 
 
-def _prepare_worktree(repo: Repository, proposal: BootstrapProposal) -> None:
+def _prepare_worktree(repo: Repository, proposal: BootstrapProposal) -> tuple[str, ...]:
+    from aitm_core.setup.hooks import IGNORE_COMMANDS, prepare_ignore
+
     checked_out = repo._run("symbolic-ref", "-q", "HEAD")
     if checked_out.stdout.strip().decode("utf-8") == proposal.anchor.code_default_ref:
         prepare_file(repo.root / CONFIG_PATH, proposal.config.encode())
         prepare_file(repo.root / WORKFLOW_PATH, proposal.workflow.encode())
+        prepare_ignore(repo)
+        return IGNORE_COMMANDS
+    return ()
 
 
 def _bootstrap_publish(
@@ -665,12 +670,13 @@ def resume_init(
             commit = repo.read_tree(revision)
             committed = repo.read_blobs(commit.tree, (CONFIG_PATH, WORKFLOW_PATH))
             if committed[CONFIG_PATH] is None and proposal.activated_revision is None:
-                _prepare_worktree(repo, proposal)
+                ignore_commands = _prepare_worktree(repo, proposal)
                 return _pending(
                     operation_id,
                     "committed-bootstrap-policy",
                     "Run these commands from the worktree holding the proposed policy.",
                     *LANDING_COMMANDS,
+                    *ignore_commands,
                     "Land that commit on the anchored default through the usual repository workflow.",
                     "aitm init",
                 )
