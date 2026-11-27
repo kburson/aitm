@@ -7,3 +7,7 @@ Attempt 1. Codex is the implementing agent and closure owner. [Accepted pickup](
 - [ ] Check hosted repository CI and compare Core inputs with the passing hosted baseline under the path filter.
 - [ ] Mark ready, obtain Grok 4.7 SAR and run the trusted verifier.
 - [ ] Verify the story landing and the aggregate trunk admission in PR #536, then record sign-off, Agent Cost and Done.
+
+## Hosted verification
+
+[CI run 45991314542](https://github.com/kburson/aitm/actions/runs/45991314542) passed on base `7f5b3fb62a83f3f04fea6c5a5ceb1bdaeb04ef32`, head `a02e7248fd2a88b9e113ddca980607f2f01f746f` and synthetic merge tree `99e589490afe01229f65a3c3f39ebe18355e975f`. The workflow path filter applies hosted repository CI to this Markdown candidate. Core inputs are identical to trunk baseline `8aa608cc1e64ed5986c5b6a8371df5a4c5b3f3e6` with [hosted Core run 45979825833](https://github.com/kburson/aitm/actions/runs/45979825833). The installed local Core suite passed 99 tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
