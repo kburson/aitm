@@ -11,14 +11,14 @@ children: []
 blocking: [476, 477, 478, 479, 480, 481, 482, 483, 485, 486, 487, 488]
 blocked-by: [20, 22]
 created: "2026-11-27T04:49:05Z"
-updated: "2026-11-27T23:07:54.189514+00:00"
+updated: "2026-11-27T23:20:02.793350+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 2.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md"
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C104"}
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md", "plan/2026-11-27-pr-565-594979cb-verification.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md", "plan/2026-11-27-pr-565-594979cb-verification.md", "plan/2026-11-27-pr-566-ef090350-verification.md"], "attachments": []}
 expansions: []
 trips: []
 design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":475,"design_sources":[2],"scope_entry":"C104","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
