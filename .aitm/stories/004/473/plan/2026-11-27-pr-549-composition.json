@@ -1,0 +1,195 @@
+{
+  "pr": 549,
+  "base": "ddaa65b225e54f91a9279fb59976ae6d45ced9df",
+  "head": "e8259e9501387731f4f081ef345c06fdfb26e1c1",
+  "merge": "6cadfe1919fc30b78c030576654c0bbcd4714415",
+  "tree": "15403516ddb0ed9e39fad0455156aabfbd7ca2b3",
+  "prerequisites_on_trunk": [
+    {
+      "issue": 8,
+      "pr": 534,
+      "landing": "8912327b311b66fa2f557fa0e04c34ecf1d5afe1"
+    },
+    {
+      "issue": 13,
+      "pr": 547,
+      "landing": "63f88bc8c244ebe1342a20ee2e51b11dacb8a6e9"
+    }
+  ],
+  "reviewed_first_parent_chain": [
+    {
+      "pr": 548,
+      "base": "ddaa65b225e54f91a9279fb59976ae6d45ced9df",
+      "head": "773beb977883f50fc26020abc43f7ec7287a96f9",
+      "merge": "1c16642b864c68c153d4758d9ccf9a838b6a5418",
+      "tree": "68c24687cd27519b5abfd1a50b10b8246b0ccdf7",
+      "target": "codex/core-473-integration",
+      "draft": false,
+      "merge_state": "CLEAN",
+      "mergeable": "MERGEABLE",
+      "runs": {
+        "repository": {
+          "run": 46036055394,
+          "attempt": 1,
+          "full_collection": "full collection: 1644 unit, 142 integration, 1786 total. Unit floor: 92%."
+        },
+        "core": {
+          "run": 46036055434,
+          "attempt": 1,
+          "full_collection": "full collection: 567 unit, 43 integration, 610 total. Unit floor: 92%."
+        }
+      },
+      "landing": "c2182edb675e2ac12675c360a976a6b5ebd856ed",
+      "observed_target_tip": "c2182edb675e2ac12675c360a976a6b5ebd856ed",
+      "merged_at": "2026-11-27T16:55:16Z",
+      "issue": 14,
+      "sar": "https://github.com/kburson/aitm/pull/548#issuecomment-7223814168",
+      "sar_sha256": "bd7ad77ea2b8727433ac168c3de90b71e2847b7c0ceabb2a567019bbc40032bb"
+    },
+    {
+      "pr": 550,
+      "base": "c2182edb675e2ac12675c360a976a6b5ebd856ed",
+      "head": "1612f88ea901bd96b3e92a2290fb678c840a595a",
+      "merge": "33c89e45d2402372d71fddb4910b2e0eb3aeac3d",
+      "tree": "45b7ab423d5345a002a887f3475a024436c61cdf",
+      "target": "codex/core-473-integration",
+      "draft": false,
+      "merge_state": "CLEAN",
+      "mergeable": "MERGEABLE",
+      "runs": {
+        "repository": {
+          "run": 46038650755,
+          "attempt": 1,
+          "full_collection": "full collection: 1644 unit, 142 integration, 1786 total. Unit floor: 92%."
+        },
+        "core": {
+          "run": 46038650836,
+          "attempt": 1,
+          "full_collection": "full collection: 611 unit, 43 integration, 654 total. Unit floor: 92%."
+        }
+      },
+      "landing": "175eb0cc9154394d70239ab4e5757356bc196b96",
+      "observed_target_tip": "175eb0cc9154394d70239ab4e5757356bc196b96",
+      "merged_at": "2026-11-27T17:12:32Z",
+      "issue": 28,
+      "sar": "https://github.com/kburson/aitm/pull/550#issuecomment-7224141295",
+      "sar_sha256": "b6cd7ee06a3aff4444640b18c82a3e57ef29378a486d443dc717c28c1d6723f4"
+    },
+    {
+      "pr": 551,
+      "base": "175eb0cc9154394d70239ab4e5757356bc196b96",
+      "head": "727284d3fbbe3a847ae78b0df634d33f7af7d340",
+      "merge": "cc20d54991a0c3f21db91a8188885c9103cba700",
+      "tree": "ae2799274829daed21cffb00006b9949d84c8e74",
+      "target": "codex/core-473-integration",
+      "draft": false,
+      "merge_state": "CLEAN",
+      "mergeable": "MERGEABLE",
+      "runs": {
+        "repository": {
+          "run": 46040683255,
+          "attempt": 1,
+          "full_collection": "full collection: 1644 unit, 142 integration, 1786 total. Unit floor: 92%."
+        },
+        "core": {
+          "run": 46040683273,
+          "attempt": 1,
+          "full_collection": "full collection: 648 unit, 43 integration, 691 total. Unit floor: 92%."
+        }
+      },
+      "landing": "7fe2cc7e4b4820f5be6be4c54d619cd7cb22eab5",
+      "observed_target_tip": "7fe2cc7e4b4820f5be6be4c54d619cd7cb22eab5",
+      "merged_at": "2026-11-27T17:26:40Z",
+      "issue": 233,
+      "sar": "https://github.com/kburson/aitm/pull/551#issuecomment-7224404421",
+      "sar_sha256": "f02a56f28feba4a474bc75fe15d5b10835f01dc3acef2d284300b51f651472ea"
+    },
+    {
+      "pr": 552,
+      "base": "7fe2cc7e4b4820f5be6be4c54d619cd7cb22eab5",
+      "head": "7b8a03168a0adbd968c6404d9b231943b4074d23",
+      "merge": "36fb653354a5f4fe820e91bfac20d948fe4cfa2b",
+      "tree": "0932592bb8a4ee94ae60e7b8cc1678738af5ffef",
+      "target": "codex/core-473-integration",
+      "draft": false,
+      "merge_state": "CLEAN",
+      "mergeable": "MERGEABLE",
+      "runs": {
+        "repository": {
+          "run": 46042508046,
+          "attempt": 1,
+          "full_collection": "full collection: 1644 unit, 142 integration, 1786 total. Unit floor: 92%."
+        },
+        "core": {
+          "run": 46042507845,
+          "attempt": 1,
+          "full_collection": "full collection: 664 unit, 46 integration, 710 total. Unit floor: 92%."
+        }
+      },
+      "landing": "d414731544130972b053391ef2988e17b3e1a7fa",
+      "observed_target_tip": "d414731544130972b053391ef2988e17b3e1a7fa",
+      "merged_at": "2026-11-27T17:38:23Z",
+      "issue": 498,
+      "sar": "https://github.com/kburson/aitm/pull/552#issuecomment-7224620060",
+      "sar_sha256": "1271555e02d169691cc40eabed47790e759740fc760e21cc1b565811f3e09ff4"
+    },
+    {
+      "pr": 553,
+      "base": "d414731544130972b053391ef2988e17b3e1a7fa",
+      "head": "244662a96f2f2620927cc60216c1184311873214",
+      "merge": "4138f2dc89d3eb2919e7b8e87a36f649159416cd",
+      "tree": "76fec5fb1c562f24fa04c08415c3a2463de5be67",
+      "target": "codex/core-473-integration",
+      "draft": false,
+      "merge_state": "CLEAN",
+      "mergeable": "MERGEABLE",
+      "runs": {
+        "repository": {
+          "run": 46043922336,
+          "attempt": 1,
+          "full_collection": "full collection: 1644 unit, 142 integration, 1786 total. Unit floor: 92%."
+        },
+        "core": {
+          "run": 46043922254,
+          "attempt": 1,
+          "full_collection": "full collection: 676 unit, 46 integration, 722 total. Unit floor: 92%."
+        }
+      },
+      "landing": "9f9b6a30be1e69b5a1821893afa31f246eb2b53e",
+      "observed_target_tip": "9f9b6a30be1e69b5a1821893afa31f246eb2b53e",
+      "merged_at": "2026-11-27T17:51:40Z",
+      "issue": 499,
+      "sar": "https://github.com/kburson/aitm/pull/553#issuecomment-7224856654",
+      "sar_sha256": "b2c5e4948e93c343605d6253d4adb4496fc9d185e22d038f285f8f6fac3ce36c"
+    },
+    {
+      "pr": 554,
+      "base": "9f9b6a30be1e69b5a1821893afa31f246eb2b53e",
+      "head": "2846fd716b76dd9676d2fba32f49b5b924dc5b85",
+      "merge": "89f95c1d1dcd5e6dd0508e10ec6f755802b2369f",
+      "tree": "15403516ddb0ed9e39fad0455156aabfbd7ca2b3",
+      "target": "codex/core-473-integration",
+      "draft": false,
+      "merge_state": "CLEAN",
+      "mergeable": "MERGEABLE",
+      "runs": {
+        "repository": {
+          "run": 46047499448,
+          "attempt": 1,
+          "full_collection": "full collection: 1644 unit, 142 integration, 1786 total. Unit floor: 92%."
+        },
+        "core": {
+          "run": 46047499505,
+          "attempt": 1,
+          "full_collection": "full collection: 749 unit, 54 integration, 803 total. Unit floor: 92%."
+        }
+      },
+      "landing": "e8259e9501387731f4f081ef345c06fdfb26e1c1",
+      "observed_target_tip": "e8259e9501387731f4f081ef345c06fdfb26e1c1",
+      "merged_at": "2026-11-27T18:21:38Z",
+      "issue": 15,
+      "sar": "https://github.com/kburson/aitm/pull/554#issuecomment-7225399888",
+      "sar_sha256": "476c04e834f5d35ad9bf89622fbd7790258f9fc8fe0f074ecbbb84cd1a9b3816"
+    }
+  ]
+}

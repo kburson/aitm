@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 473
 title: "[Epic] Core — Extension contracts and owned ingress"
 kind: "epic"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/473"
 parent: 1
 children: [14, 15, 28, 233, 498, 499]
 blocking: []
 blocked-by: [8, 13]
 created: "2026-11-27T04:48:40Z"
-updated: "2026-11-27T16:24:38.348Z"
+updated: "2026-11-27T18:22:27.053Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 21.5, "size": "Feature"}
