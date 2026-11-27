@@ -3,20 +3,20 @@ schema: "aitm.story/v0"
 id: 21
 title: "[Core C16] Authoring and implementation bindings"
 kind: "story"
-state: ready-for-plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/21"
 parent: 475
 children: []
 blocking: [22, 30, 36, 41, 52, 57, 74, 77, 234]
 blocked-by: [11, 12, 16]
 created: "2026-11-09T08:00:54Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-27T22:26:20.109540+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c16-authoring-and-implementation-bindings"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C16", "parent": 475}
