@@ -37,7 +37,7 @@ Refine into four to six bounded children for corpus admission, deterministic fea
 
 ## Validated history handoff
 
-Consume the exact [M7 #522 corpus handoff](../522/design/history-import-design.md#handoff-receipts). Pin the manifest location/digest and schema version, scope/cutoff, record dispositions and source digests, validation receipt, and read fixture. Verify replay and compatible schema before training. Admit only records with comparable pre-work estimate and complete qualified Actual tied to the applicable outcome and attempt. A reproducible M7 export can legitimately yield too few qualifying labels. In that case expose the diagnostic or baseline-only path and keep learned calibration unavailable.
+Consume the exact [M7 #522 corpus handoff](../../522/design/history-import-design.md#handoff-receipts). Pin the manifest location/digest and schema version, scope/cutoff, record dispositions and source digests, validation receipt, and read fixture. Verify replay and compatible schema before training. Admit only records with comparable pre-work estimate and complete qualified Actual tied to the applicable outcome and attempt. A reproducible M7 export can legitimately yield too few qualifying labels. In that case expose the diagnostic or baseline-only path and keep learned calibration unavailable.
 
 Native Actual qualification #229 and the released Core #72/#51 records remain independent inputs. Moving the Actual gate to #228 requires the explicit equivalence and native edge reconciliation already specified above.
 
