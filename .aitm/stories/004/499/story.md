@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 499
 title: "[Core C92] Versioned Markdown directive resolution"
 kind: "story"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/499"
 parent: 473
 children: []
 blocking: [37, 65, 81, 242, 514]
 blocked-by: [14, 498]
 created: "2026-11-27T04:49:05Z"
-updated: "2026-11-27T17:39:14.181Z"
+updated: "2026-11-27T17:39:18.868Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
