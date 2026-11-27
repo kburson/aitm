@@ -7,3 +7,7 @@ The test first failed on the absent index builder. Both completed C18 tests pass
 ## Revised candidate
 
 Head `9cc35ed3db22ae9a8a8f421ba0fe23e7a4147453`, synthetic merge `2c81b23945bdb59d3a736e8d0227332b2996e35d`, tree `50b5efcb15a7c0de9db6c7a79bb3ed6f5866c460`. The installed read regression first failed because the result did not identify the validated shared commit separately from the pinned local view. The revised tests pass, including an unpublished local change with verified shared freshness and an explicit mismatch between the commits. First candidate passed 821 locked Core product and tooling tests. New repository run #46059866606 and Core run #46059866630 were triggered for the revised draft.
+
+## WAL recovery candidate
+
+Head `11a8995cbaefcace3f628df1666c15c5b3944289`, synthetic merge `caf26827811b7d31080d31a6c49f28d3c0394eb7`, tree `5261468e349ff0f1005aad0fe868992ef0c7c784`. The strengthened integration test failed on the prior corrupt-main replacement. It now preserves a captured live SQLite WAL byte-for-byte beside the damaged main file, builds the other pinned tree at a fresh physical path, atomically publishes only the locator, and confirms the reader gets the expected tree and FTS rows. Both focused C18 tests and Ruff pass. Repository run #46061095977 and Core run #46061096020 are fresh for the exact draft candidate.
