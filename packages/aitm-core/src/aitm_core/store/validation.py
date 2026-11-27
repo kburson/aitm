@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import sha256
 from pathlib import PurePosixPath
-from typing import Protocol
+from typing import Literal, Protocol
 
 from pydantic import JsonValue
 
@@ -374,6 +374,7 @@ def _walk(
     last_tree: dict[str, _Entry] = {}
     valid_tree: dict[str, _Entry] = {}
     first_invalid = reason = None
+    repair_refused = False
     for commit, *parents in history[1:]:
         if parents != [previous.revision] or _commit_parents(repository, commit) != (
             previous.revision,
@@ -410,16 +411,12 @@ def _walk(
                     or proof.outcome != LocalOutcome.COMPLETED
                     or proof.tip != commit
                 ):
-                    return ValidationReport(
-                        LocalOutcome.INTEGRITY_ERROR,
-                        revision,
-                        "forward-repair-proof-refused",
-                        valid.revision,
-                        first_invalid,
-                    )
-                _check_tree(repository, anchor, valid, candidate, valid_tree, tree)
-                first_invalid = reason = None
-                valid, valid_tree = candidate, tree
+                    repair_refused = True
+                else:
+                    _check_tree(repository, anchor, valid, candidate, valid_tree, tree)
+                    first_invalid = reason = None
+                    repair_refused = False
+                    valid, valid_tree = candidate, tree
         else:
             try:
                 if added_repair:
@@ -437,7 +434,7 @@ def _walk(
         return ValidationReport(
             LocalOutcome.INTEGRITY_ERROR,
             revision,
-            reason,
+            "forward-repair-proof-refused" if repair_refused else reason,
             valid.revision,
             first_invalid,
         )
@@ -451,10 +448,16 @@ def validate_history(
     tip: str,
     *,
     repository: Repository,
-    forward_repair_verifier: ForwardRepairVerifier | None = None,
+    forward_repair_verifier: ForwardRepairVerifier
+    | Literal["default"]
+    | None = "default",
 ) -> ValidationReport:
     """Read and validate without moving refs, checking out trees or editing the index."""
     try:
+        if forward_repair_verifier == "default":
+            from aitm_core.store.repair import repair_verifier
+
+            forward_repair_verifier = repair_verifier(repository)
         return _walk(anchor, tip, repository, forward_repair_verifier)
     except (GitCommandError, OSError, UnavailableReducer) as error:
         return ValidationReport(LocalOutcome.UNAVAILABLE, tip, str(error))
