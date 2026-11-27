@@ -1,12 +1,24 @@
 """Wiring slots for optional implementations of mandatory Core capabilities."""
 
+from __future__ import annotations
+
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal, cast
+
+if TYPE_CHECKING:
+    from aitm_core.models.common import StoreAnchor
+    from aitm_core.store.backend import OperationCategories
+    from aitm_core.store.gate import Gate
+    from aitm_core.store.git_backend import GitBackend
+    from aitm_core.store.objects import Repository
+    from aitm_core.store.validation import ForwardRepairVerifier, ValidationReport
 
 ServicePortName = Literal[
     "policy_resolution",
     "policy_refresh",
     "validation_gate",
+    "forward_repair_verifier",
     "write_authorization",
     "attempt_preflight",
     "init_hooks",
@@ -29,6 +41,7 @@ class ServicePorts:
     policy_resolution: object | None = None
     policy_refresh: object | None = None
     validation_gate: object | None = None
+    forward_repair_verifier: object | None = None
     write_authorization: object | None = None
     attempt_preflight: object | None = None
     init_hooks: object | None = None
@@ -43,3 +56,38 @@ class ServicePorts:
         if implementation is None:
             raise UnavailablePort(port)
         return implementation
+
+
+def backend(
+    repository: Repository,
+    anchor: StoreAnchor,
+    *,
+    ports: ServicePorts | None = None,
+    categories: OperationCategories | None = None,
+) -> GitBackend:
+    """Compose the Git backend with the mandatory anchored planning validator."""
+    from aitm_core.store.gate import RefIdentity, RefMutationKind, ref_gate
+    from aitm_core.store.git_backend import GitBackend
+    from aitm_core.store.validation import validate_history
+
+    services = ports if ports is not None else ServicePorts()
+
+    def check(tip: str) -> ValidationReport:
+        return validate_history(
+            anchor,
+            tip,
+            repository=repository,
+            forward_repair_verifier=cast(
+                "ForwardRepairVerifier | None", services.forward_repair_verifier
+            ),
+        )
+
+    def gate(repo: Repository, target: str) -> AbstractContextManager[Gate]:
+        return ref_gate(
+            repo,
+            RefIdentity(target),
+            RefMutationKind.PLANNING,
+            planning_validation=check,
+        )
+
+    return GitBackend(repository, gate, ports=services, categories=categories)
