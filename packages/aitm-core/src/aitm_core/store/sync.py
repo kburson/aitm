@@ -57,6 +57,11 @@ class SyncResult:
     changed: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True, slots=True)
+class UnbindResult(SyncResult):
+    """Return the sync outcome with the binding's final release disposition."""
+
+
 def _select(binding: Binding, selected: PathSelection) -> tuple[str, ...]:
     if binding.purpose == BindingPurpose.EVIDENCE:
         raise ValueError("Evidence-only bindings have no authored sync authority.")
@@ -511,39 +516,40 @@ def sync(
 def unbind(
     workspace: Workspace,
     binding: Binding,
-    selected: PathSelection,
+    selected: PathSelection = PathSelection(),
     *,
     ports: ServicePorts | None = None,
-) -> SyncResult:
+) -> UnbindResult:
     with workspace.lock():
         result = _sync(
             workspace, _verify(workspace, binding), selected, ports or ServicePorts()
         )
+        outcome = UnbindResult(result.command, result.binding, result.changed)
         if (
-            result.command.local != LocalOutcome.COMPLETED
-            or result.command.publication == PublicationOutcome.PENDING
+            outcome.command.local != LocalOutcome.COMPLETED
+            or outcome.command.publication == PublicationOutcome.PENDING
         ):
-            return result
+            return outcome
         remaining = Path(binding.worktree)
         if any(
             digest(read_workspace(remaining, item.path)) != item.digest
-            for item in result.binding.paths
+            for item in outcome.binding.paths
         ):
             return replace(
-                result,
-                command=result.command.model_copy(
+                outcome,
+                command=outcome.command.model_copy(
                     update={
                         "local": LocalOutcome.CONFLICT,
                         "evidence": (
-                            *result.command.evidence,
+                            *outcome.command.evidence,
                             "Unselected authored changes remain. The binding stays active.",
                         ),
                     }
                 ),
             )
-        closed = result.binding.model_copy(update={"active": False})
+        closed = outcome.binding.model_copy(update={"active": False})
         workspace.persist(closed)
-        return replace(result, binding=closed)
+        return replace(outcome, binding=closed)
 
 
 def reconcile_sync(
