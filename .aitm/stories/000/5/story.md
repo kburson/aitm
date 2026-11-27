@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 5
 title: "[Core C03] Canonical authored content and metadata ownership"
 kind: "story"
-state: test
+state: review
 issue: "https://github.com/kburson/aitm/issues/5"
 parent: 470
 children: []
 blocking: [6, 12, 16, 29, 53, 70, 75, 78]
 blocked-by: [3]
 created: "2026-11-09T07:59:45Z"
-updated: "2026-11-27T08:28:10.362Z"
+updated: "2026-11-27T08:32:02.156Z"
 last-branch: "codex/core-5-authored-content"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
