@@ -7,10 +7,10 @@ state: refine
 issue: "https://github.com/kburson/aitm/issues/229"
 parent: 2
 children: []
-blocking: []
+blocking: [523]
 blocked-by: [23, 28, 34, 36, 72]
 created: "2026-11-11T14:37:28Z"
-updated: "2026-11-27T05:46:53.142Z"
+updated: "2026-11-27T05:59:57.455Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.75, "size": "S", "scope": "post-release qualification"}
 priority: "P1"

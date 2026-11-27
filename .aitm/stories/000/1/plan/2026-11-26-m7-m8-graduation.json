@@ -1,0 +1,282 @@
+{
+  "verified_at": "2026-11-27T05:59:57.455Z",
+  "base": "3bc3dadc847534a72b6a54dbf4c2d9c31a73d415",
+  "identities": {
+    "M7": {
+      "number": 522,
+      "id": 6640946382,
+      "node_id": "I_kwDOVnNyI88AAAABi9TMzg",
+      "html_url": "https://github.com/kburson/aitm/issues/522",
+      "created_at": "2026-11-27T05:59:07Z",
+      "title": "[Epic] M7 History import and validated corpus"
+    },
+    "M8": {
+      "number": 523,
+      "id": 6640946581,
+      "node_id": "I_kwDOVnNyI88AAAABi9TNlQ",
+      "html_url": "https://github.com/kburson/aitm/issues/523",
+      "created_at": "2026-11-27T05:59:08Z",
+      "title": "[Epic] M8 Adaptive agent-effort estimation rubric"
+    }
+  },
+  "graph": {
+    "1": {
+      "id": "I_kwDOVnNyI88AAAABdf6X6g",
+      "number": 1,
+      "state": "OPEN",
+      "parent": null,
+      "blockedBy": [],
+      "blocking": [],
+      "subIssues": [
+        2,
+        247,
+        470,
+        471,
+        472,
+        473,
+        474,
+        475,
+        476,
+        477,
+        478,
+        479,
+        480,
+        481,
+        482,
+        483,
+        484,
+        485,
+        486,
+        487,
+        488,
+        489,
+        490,
+        491,
+        492,
+        493,
+        522,
+        523
+      ],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL4uc",
+        "values": {
+          "Status": "f75ad846",
+          "Priority": "90b2e477",
+          "Rank": 10.0
+        }
+      }
+    },
+    "51": {
+      "id": "I_kwDOVnNyI88AAAABdnPzOw",
+      "number": 51,
+      "state": "OPEN",
+      "parent": 487,
+      "blockedBy": [
+        15,
+        28,
+        36,
+        49
+      ],
+      "blocking": [
+        65,
+        66,
+        230,
+        520,
+        523
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL45w",
+        "values": {
+          "Status": "f75ad846",
+          "Rank": 10.0,
+          "Estimate": 3.0,
+          "Size": "9592a5a3",
+          "Priority": "0a877460"
+        }
+      }
+    },
+    "55": {
+      "id": "I_kwDOVnNyI88AAAABdnQBqA",
+      "number": 55,
+      "state": "OPEN",
+      "parent": 486,
+      "blockedBy": [
+        17,
+        18,
+        22,
+        35,
+        54
+      ],
+      "blocking": [
+        56,
+        65,
+        228,
+        510
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL46o",
+        "values": {
+          "Status": "f75ad846",
+          "Rank": 40.0,
+          "Estimate": 3.5,
+          "Size": "9592a5a3",
+          "Priority": "0a877460"
+        }
+      }
+    },
+    "72": {
+      "id": "I_kwDOVnNyI88AAAABdnRGew",
+      "number": 72,
+      "state": "OPEN",
+      "parent": 491,
+      "blockedBy": [
+        70,
+        71
+      ],
+      "blocking": [
+        228,
+        229,
+        522,
+        523
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL4_I",
+        "values": {
+          "Status": "f75ad846",
+          "Rank": 50.0,
+          "Estimate": 2.5,
+          "Size": "9592a5a3",
+          "Priority": "0a877460"
+        }
+      }
+    },
+    "228": {
+      "id": "I_kwDOVnNyI88AAAABeVdL_g",
+      "number": 228,
+      "state": "OPEN",
+      "parent": 2,
+      "blockedBy": [
+        23,
+        53,
+        54,
+        55,
+        56,
+        72
+      ],
+      "blocking": [],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhH2aJY",
+        "values": {
+          "Status": "d220c89a",
+          "Rank": 10.0,
+          "Estimate": 3.75,
+          "Size": "9592a5a3"
+        }
+      }
+    },
+    "229": {
+      "id": "I_kwDOVnNyI88AAAABeVdS4Q",
+      "number": 229,
+      "state": "OPEN",
+      "parent": 2,
+      "blockedBy": [
+        23,
+        28,
+        34,
+        36,
+        72
+      ],
+      "blocking": [
+        523
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhH2aR8",
+        "values": {
+          "Status": "d220c89a",
+          "Rank": 20.0,
+          "Estimate": 3.75,
+          "Size": "9592a5a3"
+        }
+      }
+    },
+    "522": {
+      "id": "I_kwDOVnNyI88AAAABi9TMzg",
+      "number": 522,
+      "state": "OPEN",
+      "parent": 1,
+      "blockedBy": [
+        72
+      ],
+      "blocking": [
+        523
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTd_I",
+        "values": {
+          "Status": "f75ad846"
+        }
+      }
+    },
+    "523": {
+      "id": "I_kwDOVnNyI88AAAABi9TNlQ",
+      "number": 523,
+      "state": "OPEN",
+      "parent": 1,
+      "blockedBy": [
+        51,
+        72,
+        229,
+        522
+      ],
+      "blocking": [],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTd_g",
+        "values": {
+          "Status": "f75ad846"
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "522": [
+      72
+    ],
+    "523": [
+      51,
+      72,
+      229,
+      522
+    ]
+  },
+  "body_sha256": {
+    "522": "ce8599ce719b70d274dd111ab0afea8f94c07298a20344cc70347ca79dcdc046",
+    "523": "88a962d54b392e4c85a4685790b04a7461004e4f4c347f15c01dc06896ee5478"
+  },
+  "blocked_by_projection": {
+    "522": [
+      72
+    ],
+    "523": [
+      229,
+      522
+    ]
+  },
+  "draft_design_scope": {
+    "M7_source_access": "M2 source access or separately approved scoped equivalent; no owning native issue yet",
+    "M8_actual_native": 229,
+    "M8_actual_alternate": 228,
+    "M7_blocked_by_M8": false,
+    "M8_blocked_by_M7": true
+  },
+  "pre_graduation_draft_sha256": {
+    "M7": "98959bd2d33135b16c34f0864bc82c9998191e55563a8911296064f6e4ea0f91",
+    "M8": "3c6e923e17d439ec3a2eae06dcfd5867539b88d281984065673d4f6bb7314758"
+  }
+}

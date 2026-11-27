@@ -1,36 +1,7 @@
----
-kind: draft
-slug: rubric
-title: aitm-rubric — planning and estimation rubric with ML
-created: 2026-11-08T19:10:12Z
-updated: 2026-11-11T14:41:24Z
-origin: .aitm/drafts/2026-11/20261108-0852-aitm-rewrite-brainstorm/draft.md
-section: rubric
-package: aitm-rubric
-depends-on: [aitm-core]
----
+# M8 graduated
 
-# Draft: aitm-rubric
-
-## Known
-
-- Separately installable plugin. Learns how to design, plan and estimate from every story committed to history.
-- Estimates agent engagement only; leaf stories ≤ 4 h.
-- Training signal: defects after acceptance, expansions, trips (with scrap/refactor decision and its outcome), discovered work, loop-backs, engaged time, tokens/cost, human pivots (recorded separately so planning isn't blamed for direction changes).
-- Reuse ai-task-manager #1821: per-story Refine/Plan/Close records, rebuildable index, only complete triads calibrate, amendments append rather than rewrite.
-- Start with comparable-story retrieval (kNN over compact feature vectors) plus quantile regression (scikit-learn); lessons are retrieved into the planner's context packet.
-- Feeds Refine and Plan exit guards (estimate present, leaf ≤ 4 h).
-
-## Open
-
-- Feature set and units.
-- Minimum corpus before numeric calibration is trusted.
-
+The draft moved to [M8 #523](../../../stories/005/523/story.md).
 
 ## C07 intake from #181
 
-Use qualified Actual from #228 or #229 and the retained estimate and Close outcome from Core #51. Match estimate revision, phase, agent and role scope, attempt and timing basis. Admit only complete, comparable observations. Keep Partial, Unknown and mismatched evidence available for diagnosis outside calibration. Verify a complete pair can qualify without usage.
-
-Preliminary integration estimate 1.50 h. Carry this intake into the milestone's own refinement and JIT when it graduates.
-
-[Reviewed requirements](https://github.com/kburson/aitm/blob/20ae85e8e38fd3417e1ec0acd6e4e9f99b5cb22b/.aitm/stories/001/181/plan/2026-11-11-181-slice-c-implementation-plan.md#c07-verify-estimate-comparability) · [Shared qualification evidence](https://github.com/kburson/aitm/blob/c794b1b0be8b7bb67ba7bb1d530fe8a80296f95b/.aitm/stories/002/227/attachments/qualification.md)
+[Retained intake in the graduated draft](../../../stories/005/523/draft.md#c07-intake-from-181).
