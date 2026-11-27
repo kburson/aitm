@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 5
 title: "[Core C03] Canonical authored content and metadata ownership"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/5"
 parent: 470
 children: []
 blocking: [6, 12, 16, 29, 53, 70, 75, 78]
 blocked-by: [3]
 created: "2026-11-09T07:59:45Z"
-updated: "2026-11-27T08:43:53.669Z"
+updated: "2026-11-27T08:46:28.531Z"
 last-branch: "codex/core-5-authored-content"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -110,3 +110,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 [Accepted pickup review](plan/2026-11-27-pickup-review.md).
 
 [Draft PR #531](https://github.com/kburson/aitm/pull/531) · [Delivery checklist](plan/delivery-checklist.md).
+
+## Done
+
+[PR #531](https://github.com/kburson/aitm/pull/531) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T08:46:25Z. Project #24 read back Done.
