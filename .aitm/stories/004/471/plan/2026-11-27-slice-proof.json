@@ -1,0 +1,39 @@
+{
+  "number": 536,
+  "base": "8aa608cc1e64ed5986c5b6a8371df5a4c5b3f3e6",
+  "head": "98b73279746d0626f4d4faa5dbabe12d75171e61",
+  "tree": "80f3e9a6b602041769fc7b7502ffa357fc9361b2",
+  "test_merge": "b7661314bbe5fceded9a1a3e592a9b82cd37ef02",
+  "paths": [
+    "docs/architecture/legacy-sdlc/action-and-evidence-facts.md",
+    "docs/architecture/legacy-sdlc/authority-facts.md",
+    "docs/architecture/legacy-sdlc/guard-facts.md",
+    "docs/architecture/legacy-sdlc/policy-decisions.md"
+  ],
+  "leaf_deliveries": [
+    {
+      "pr": 535,
+      "merge": "3e08d0b48e884445edee9217b8db9b64cce67afc",
+      "tree": "9c6b257f8a64ebbea34db865c38f7f42eca861ea",
+      "review": ".aitm/stories/004/494/plan/2026-11-27-pr-535-grok-sar.md"
+    },
+    {
+      "pr": 537,
+      "merge": "053a0516b744d898053cee0e0b86c95f6ec605bc",
+      "tree": "7c5d85baaa6ca8fe7a436041648c53fdfdb6ff65",
+      "review": ".aitm/stories/004/495/plan/2026-11-27-pr-537-grok-sar.md"
+    },
+    {
+      "pr": 538,
+      "merge": "7f5b3fb62a83f3f04fea6c5a5ceb1bdaeb04ef32",
+      "tree": "eee5fb74670fa4ca72619c93a37d05cd75298859",
+      "review": ".aitm/stories/004/496/plan/2026-11-27-pr-538-grok-sar.md"
+    },
+    {
+      "pr": 539,
+      "merge": "98b73279746d0626f4d4faa5dbabe12d75171e61",
+      "tree": "80f3e9a6b602041769fc7b7502ffa357fc9361b2",
+      "review": ".aitm/stories/004/497/plan/2026-11-27-pr-539-grok-sar.md"
+    }
+  ]
+}
