@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 15
 title: "[Core C14] Constrained extension writes and retained unknown data"
 kind: "story"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/15"
 parent: 473
 children: []
 blocking: [17, 22, 35, 40, 51, 64, 474, 475, 476, 477, 478, 479, 480, 481, 483, 484, 485, 487, 489, 490]
 blocked-by: [9, 13, 14]
 created: "2026-11-09T08:00:28Z"
-updated: "2026-11-27T17:53:00.230Z"
+updated: "2026-11-27T18:02:47.432Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
