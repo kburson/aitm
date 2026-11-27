@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 14
 title: "[Core C13] Extension and provider registration contracts"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/14"
 parent: 473
 children: []
 blocking: [15, 25, 28, 50, 64, 233, 498, 499, 503, 505]
 blocked-by: [4, 12]
 created: "2026-11-09T08:00:23Z"
-updated: "2026-11-27T16:36:10.072Z"
+updated: "2026-11-27T16:55:35.895Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -113,3 +113,7 @@ New dependent leaves [C80 / #233](../../002/233/story.md).
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **10** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #473 with scope entry **C13**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Verified delivery
+
+[Linked PR #548](https://github.com/kburson/aitm/pull/548) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md).
