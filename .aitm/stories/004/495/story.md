@@ -3,16 +3,16 @@ schema: "aitm.story/v0"
 id: 495
 title: "[Core C108] Inventory resident actions, evidence and restart"
 kind: "story"
-state: plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/495"
 parent: 471
 children: []
 blocking: [497]
 blocked-by: []
 created: "2026-11-27T04:49:01Z"
-updated: "2026-11-27T10:51:52.282Z"
-last-branch: "planning"
-last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
+updated: "2026-11-27T10:53:30.224Z"
+last-branch: "codex/core-495-legacy-resident-actions"
+last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md"
