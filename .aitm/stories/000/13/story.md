@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 13
 title: "[Core C08] Candidate fetch and shared-history continuity"
 kind: "story"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/13"
 parent: 472
 children: []
 blocking: [15, 17, 18, 23, 473, 474, 475, 478, 480, 482, 486]
 blocked-by: [11, 12]
 created: "2026-11-09T08:00:19Z"
-updated: "2026-11-27T15:36:38.561Z"
+updated: "2026-11-27T15:52:05.056Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
