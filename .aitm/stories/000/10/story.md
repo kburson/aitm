@@ -3,16 +3,16 @@ schema: "aitm.story/v0"
 id: 10
 title: "[Core C05] Git snapshot reads and atomic operation commits"
 kind: "story"
-state: plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/10"
 parent: 472
 children: []
 blocking: [11]
 blocked-by: [9]
 created: "2026-11-09T08:00:05Z"
-updated: "2026-11-27T12:24:52.277Z"
-last-branch: "planning"
-last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
+updated: "2026-11-27T12:26:12.285Z"
+last-branch: "codex/core-10-git-backend"
+last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c05-git-snapshot-reads-and-atomic-operation-commits"
