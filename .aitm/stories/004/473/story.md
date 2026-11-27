@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 473
 title: "[Epic] Core — Extension contracts and owned ingress"
 kind: "epic"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/473"
 parent: 1
 children: [14, 15, 28, 233, 498, 499]
 blocking: []
 blocked-by: [8, 13]
 created: "2026-11-27T04:48:40Z"
-updated: "2026-11-27T18:26:00.702Z"
+updated: "2026-11-27T18:32:39.803Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 21.5, "size": "Feature"}
@@ -53,3 +53,7 @@ Estimate: **21.5 implementation agent-hours**, including verification and review
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **40** · **P1/Feature** · **21.5 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **EP04**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Verified delivery
+
+[Linked PR #549](https://github.com/kburson/aitm/pull/549) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md).

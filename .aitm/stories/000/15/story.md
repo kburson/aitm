@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 15
 title: "[Core C14] Constrained extension writes and retained unknown data"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/15"
 parent: 473
 children: []
 blocking: [17, 22, 35, 40, 51, 64, 474, 475, 476, 477, 478, 479, 480, 481, 483, 484, 485, 487, 489, 490]
 blocked-by: [9, 13, 14]
 created: "2026-11-09T08:00:28Z"
-updated: "2026-11-27T18:16:30.402Z"
+updated: "2026-11-27T18:32:39.769Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -106,3 +106,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **60** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #473 with scope entry **C14**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Verified delivery
+
+[Linked PR #554](https://github.com/kburson/aitm/pull/554) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md).
