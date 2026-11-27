@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 10
 title: "[Core C05] Git snapshot reads and atomic operation commits"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/10"
 parent: 472
 children: []
 blocking: [11]
 blocked-by: [9]
 created: "2026-11-09T08:00:05Z"
-updated: "2026-11-27T12:48:15.946Z"
+updated: "2026-11-27T12:51:15.656Z"
 last-branch: "codex/core-10-git-backend"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -102,3 +102,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **20** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #472 with scope entry **C05**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Done
+
+[PR #542](https://github.com/kburson/aitm/pull/542) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T12:51:11Z. Project #24 read back Done.
