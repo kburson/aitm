@@ -1,12 +1,9 @@
 """Exercise GitBackend's transaction decisions across an in-memory repository port."""
 
-from dataclasses import replace
-
 import pytest
 
-from aitm_core.models.common import LocalOutcome
 from aitm_core.store.backend import Snapshot
-from aitm_core.store.git_backend import GitBackend, ValidationRejected
+from aitm_core.store.git_backend import GitBackend
 from aitm_core.store.objects import UnknownTree
 from tests.support.c05 import REF, FixtureGate
 from tests.unit import test_c04 as _contract
@@ -119,70 +116,3 @@ def test_c04_mutation_contract_with_repository_port(backend, name):
 )
 def test_c04_service_contract_with_repository_port(make_backend, name, arguments):
     getattr(_contract, name)(*arguments, backend_factory=make_backend)
-
-
-def test_validation_is_mandatory_and_refusal_preserves_ref(make_backend):
-    class RejectCandidate(FixtureGate):
-        def validate(self, before, candidate):
-            super().validate(before, candidate)
-            if candidate is not None:
-                raise ValidationRejected("scope denied")
-
-    gate = RejectCandidate()
-    backend = make_backend({_contract.BODY: b"old"}, gate=gate)
-    start = backend.snapshot()
-    op = _contract.proposal(backend, start)
-    with pytest.raises(TypeError):
-        GitBackend(backend.repository, None, ports=_contract.PORTS)
-
-    result = backend.transact(op, start)
-    assert result.command.local == LocalOutcome.INTEGRITY_ERROR
-    assert result.reason == "scope denied"
-    assert backend.snapshot() == start
-    assert len(gate.observed) == 2
-
-
-def test_absent_expected_revision_is_an_unknown_snapshot(backend):
-    current = backend.snapshot()
-    request = _contract.proposal(backend, current)
-    unknown = replace(current, revision="missing-revision")
-
-    result = backend.transact(request, unknown)
-
-    assert result.command.local == LocalOutcome.INTEGRITY_ERROR
-    assert result.reason == "unknown-snapshot"
-    assert result.snapshot == current
-    assert backend.snapshot() == current
-
-
-def test_advance_after_successful_cas_retains_committed_snapshot(backend, monkeypatch):
-    repo = backend.repository
-    start = backend.snapshot()
-    request = _contract.proposal(backend, start)
-    request = request.model_copy(update={"pending_actions": ("project.readback",)})
-    update = CommitStore.compare_and_swap
-
-    def advance(repository, new, expected):
-        assert update(repository, new, expected)
-        committed = repository.read_tree(new)
-        later = repository.create_commit(
-            committed, {_contract.RELATED: b"later update"}, "competing"
-        )
-        assert update(repository, later.revision, committed.revision)
-        return True
-
-    with monkeypatch.context() as race:
-        race.setattr(CommitStore, "compare_and_swap", advance)
-        result = backend.transact(request, start)
-
-    observed = backend.snapshot()
-    assert result.command.local == LocalOutcome.CONFLICT
-    assert result.reason == "ref-advanced-after-cas"
-    assert result.command.pending == ()
-    assert repo.parent(observed) == result.snapshot.revision
-    assert backend.read(result.snapshot, (_contract.BODY,))[_contract.BODY] == b"new"
-    reopened = GitBackend(repo, FixtureGate(), ports=_contract.PORTS)
-    retry = reopened.transact(request, observed)
-    assert retry.command.local == LocalOutcome.COMPLETED
-    assert retry.snapshot == result.snapshot
-    assert retry.command.pending == ("project.readback",)

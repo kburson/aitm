@@ -15,6 +15,7 @@ from tests.support.c07 import (
     WORKFLOW_BYTES,
     installation,
     settings_at,
+    updated_effective_settings,
 )
 
 
@@ -23,9 +24,9 @@ def committed_policy():
     genesis = "a" * 40
     snapshots = {}
 
-    def observe(settings):
+    def observe(settings, workflow=WORKFLOW_BYTES):
         revision = f"{len(snapshots) + 1:040x}"
-        snapshots[revision] = {CONFIG_PATH: settings.encode(), WORKFLOW: WORKFLOW_BYTES}
+        snapshots[revision] = {CONFIG_PATH: settings.encode(), WORKFLOW: workflow}
         return RefreshResult(
             local=RefObservation(ref=DEFAULT, observed_commit=revision)
         )
@@ -141,3 +142,49 @@ def test_unknown_top_level_policy_is_unavailable(committed_policy, unsupported):
     observed = observe(unsupported + settings)
     with pytest.raises(PolicyUnavailable, match="unrecognized_"):
         policy(anchor, observed)
+
+
+def test_effective_policy_can_change_without_reconfiguring_store(committed_policy):
+    anchor, settings, observe = committed_policy
+    pinned = policy(anchor, observe(settings))
+    changed = updated_effective_settings(settings)
+    assert pinned.config.enforcement.mode == "enforce"
+    assert pinned.config.limits.leaf_agent_hours == 4
+    latest = policy(anchor, observe(changed, b"new committed workflow"))
+    assert latest.config.enforcement.mode == "advisory"
+    assert latest.config.limits.leaf_agent_hours == 2
+    assert latest.config.providers.githost == "github"
+    assert latest.routing == pinned.routing
+    change = classify_change(pinned, latest)
+    assert change.tip_effective
+    assert not change.requires_reconfigure
+
+
+def test_unanchored_candidate_cannot_act_as_local_observation(committed_policy):
+    anchor, settings, observe = committed_policy
+    local = observe(settings).local
+    candidate = RefObservation(
+        ref="refs/candidates/default",
+        remote="origin",
+        observed_commit=local.observed_commit,
+    )
+    with pytest.raises(PolicyUnavailable, match="anchored local"):
+        policy(anchor, RefreshResult(local=candidate))
+
+
+def test_candidate_cannot_supply_missing_local_commit(committed_policy):
+    anchor, settings, observe = committed_policy
+    local = observe(settings).local
+    candidate = RefObservation(
+        ref="refs/candidates/default",
+        remote="origin",
+        observed_commit=local.observed_commit,
+    )
+    with pytest.raises(PolicyUnavailable, match="anchored local"):
+        policy(
+            anchor,
+            RefreshResult(
+                local=RefObservation(ref=DEFAULT, observed_commit=None),
+                candidate=candidate,
+            ),
+        )

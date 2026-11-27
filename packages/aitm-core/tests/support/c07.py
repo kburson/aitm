@@ -86,3 +86,12 @@ enabled = false
 [workflow]
 file = "{WORKFLOW}"
 """
+
+
+def updated_effective_settings(settings):
+    return (
+        settings.replace('mode = "enforce"', 'mode = "advisory"')
+        .replace("leaf_agent_hours = 4", "leaf_agent_hours = 2")
+        .replace("uv run pytest", "false")
+        .replace('githost = "none"', 'githost = "github"')
+    )

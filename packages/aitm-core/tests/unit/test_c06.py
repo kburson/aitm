@@ -1,18 +1,18 @@
 """Exercise planning decisions on in-memory paths, trees and history."""
 
 import json
-from dataclasses import replace
 from hashlib import sha256
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from aitm_core.models.common import LocalOutcome, StoreAnchor
-from aitm_core.services import ServicePorts
 from aitm_core.store.backend import Snapshot
-from aitm_core.store.gate import Gate, RefIdentity, RefMutationKind
-from aitm_core.store.validation import classify_planning_path, validate_history
+from aitm_core.store.validation import (
+    PlanningPath,
+    classify_planning_path,
+    validate_history,
+)
 from tests.support.c05 import REF
 
 DEFAULT = "refs/heads/trunk"
@@ -100,15 +100,125 @@ def store():
     )
 
 
-def test_layout_rejects_unnormalized_and_undeclared_paths():
-    for path in (
-        "../outside",
-        ".aitm/../outside",
-        ".aitm//README.md",
-        ".aitm/unknown.py",
-    ):
-        with pytest.raises(ValueError):
-            classify_planning_path(path)
+@pytest.mark.parametrize(
+    ("path", "kind"),
+    [
+        pytest.param(".aitm/README.md", PlanningPath.DATA, id="store-readme"),
+        pytest.param(".aitm/store.json", PlanningPath.STORE, id="store-anchor"),
+        pytest.param(
+            ".aitm/operations/create.json",
+            PlanningPath.OPERATION,
+            id="pre-story-operation",
+        ),
+        pytest.param(
+            ".aitm/repairs/restore.json", PlanningPath.REPAIR, id="repair-receipt"
+        ),
+        pytest.param(
+            ".aitm/stories/001/109/events.jsonl", PlanningPath.EVENTS, id="story-events"
+        ),
+        pytest.param(
+            ".aitm/stories/001/109/description.md",
+            PlanningPath.DATA,
+            id="story-description",
+        ),
+        pytest.param(
+            ".aitm/stories/001/109/plan/pickup.md", PlanningPath.DATA, id="story-plan"
+        ),
+        pytest.param(
+            ".aitm/stories/001/109/attachments/quotes/quote.PDF",
+            PlanningPath.DATA,
+            id="story-attachment",
+        ),
+        pytest.param(
+            ".aitm/stories/001/109/operations/change.json",
+            PlanningPath.OPERATION,
+            id="story-operation",
+        ),
+        pytest.param(".aitm/ideas/2026-11/proposal.md", PlanningPath.DATA, id="idea"),
+        pytest.param(
+            ".aitm/drafts/discarded/proposal.json",
+            PlanningPath.DATA,
+            id="discarded-draft",
+        ),
+        pytest.param(
+            ".aitm/drafts/2026-11/proposal/draft.md",
+            PlanningPath.DATA,
+            id="active-draft",
+        ),
+        pytest.param(
+            ".aitm/drafts/2026-11/proposal/attachments/reference.png",
+            PlanningPath.DATA,
+            id="draft-attachment",
+        ),
+    ],
+)
+def test_classifies_declared_planning_paths(path, kind):
+    assert classify_planning_path(path) == kind
+
+
+@pytest.mark.parametrize(
+    ("path", "reason"),
+    [
+        pytest.param(
+            "../outside", "normalized repository-relative", id="parent-traversal"
+        ),
+        pytest.param(
+            ".aitm/../outside", "normalized repository-relative", id="nested-traversal"
+        ),
+        pytest.param(
+            ".aitm//README.md",
+            "normalized repository-relative",
+            id="noncanonical-separator",
+        ),
+        pytest.param(
+            ".aitm/unknown.py", "unauthorized planning data path", id="undeclared-code"
+        ),
+        pytest.param("README.md", "outside planning data paths", id="outside-store"),
+        pytest.param(
+            ".aitm/stories/001/109/attachments/.GiT/config.txt",
+            "outside planning data paths",
+            id="git-directory",
+        ),
+        pytest.param(
+            ".aitm/ideas/2026-13/proposal.md",
+            "unauthorized planning data path",
+            id="invalid-idea-month",
+        ),
+        pytest.param(
+            ".aitm/ideas/2026-11/archive/proposal.md",
+            "unauthorized planning data path",
+            id="nested-idea",
+        ),
+        pytest.param(
+            ".aitm/drafts/2026-11/proposal/notes.txt",
+            "unauthorized planning data path",
+            id="undeclared-draft-content",
+        ),
+        pytest.param(
+            ".aitm/stories/000/109/events.jsonl",
+            "invalid story path identity",
+            id="wrong-story-bucket",
+        ),
+        pytest.param(
+            ".aitm/stories/001/0109/events.jsonl",
+            "invalid story path identity",
+            id="noncanonical-story-number",
+        ),
+        pytest.param(
+            ".aitm/stories/001/109/events.txt",
+            "unauthorized planning data path",
+            id="wrong-event-extension",
+        ),
+        pytest.param(
+            ".aitm/stories/001/109/operations/change.md",
+            "unauthorized planning data path",
+            id="untyped-operation",
+        ),
+    ],
+)
+def test_layout_rejects_unnormalized_and_undeclared_paths(path, reason):
+    with pytest.raises(ValueError, match=reason):
+        classify_planning_path(path)
 
 
 def test_history_rejects_regular_blob_outside_data_policy(store):
@@ -118,74 +228,6 @@ def test_history_rejects_regular_blob_outside_data_policy(store):
     result = validate_history(anchor, candidate.revision, repository=repo)
     assert result.outcome == LocalOutcome.INTEGRITY_ERROR
     assert path in result.reason
-
-
-def test_repair_requires_the_explicit_verifier_slot(store):
-    repo, anchor = store
-    start = repo.tip()
-    bad = repo.create_commit(start, {OUTSIDE: b"invalid"}, "invalid")
-    repaired = repo.create_commit(
-        bad,
-        {
-            OUTSIDE: None,
-            ".aitm/repairs/fixture.json": b'{"schema":"aitm.forward-repair/v1"}',
-        },
-        "repair",
-    )
-
-    def unneeded_verifier(_anchor, _diagnosis, _candidate):
-        pytest.fail("absent repair slot must remain absent")
-
-    explicit = replace(
-        ServicePorts(forward_repair_verifier=unneeded_verifier),
-        forward_repair_verifier=None,
-    )
-    result = validate_history(
-        anchor,
-        repaired.revision,
-        repository=repo,
-        forward_repair_verifier=explicit.forward_repair_verifier,
-    )
-    assert repo.tip() == start
-    assert result.outcome == LocalOutcome.UNAVAILABLE
-    assert result.reason == "forward-repair-verifier-unavailable"
-    assert result.first_invalid == bad.revision
-    assert result.valid_prefix == start.revision
-
-
-def test_delivery_validation_uses_its_own_content_check(store, monkeypatch):
-    repo, _ = store
-    start = repo.tip()
-    ref = "refs/heads/candidate"
-    candidate = repo.create_commit(
-        start, {OUTSIDE: b"ordinary delivery content"}, "source"
-    )
-    checks = []
-
-    def planning_only(_tip):
-        pytest.fail("delivery target must use the content check for its own lane")
-
-    def delivery(before, after):
-        checks.append((before, after))
-
-    observed = []
-
-    def assert_excluded(gate):
-        observed.append(gate.target.name)
-
-    monkeypatch.setattr(Gate, "assert_excluded", assert_excluded)
-    gate = Gate(
-        repo,
-        RefIdentity(ref),
-        RefMutationKind.DELIVERY,
-        Path("."),
-        planning_only,
-        delivery,
-    )
-    gate(start, candidate)
-    assert checks == [(start, candidate)]
-    assert observed == [ref]
-    assert repo.tip() == start
 
 
 def test_core_transaction_record_is_bound_to_its_operation_and_parent(store):

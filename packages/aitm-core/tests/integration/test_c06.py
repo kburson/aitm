@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
 from threading import Event
@@ -163,18 +164,20 @@ def test_store_gate(store, tmp_path):
     assert repo.tip() == good.snapshot
 
 
-def test_tree_rejects_non_data_objects(store):
-    repo, anchor = store
-    start = repo.tip()
-    for mode, path in (
+@pytest.mark.parametrize(
+    ("mode", "path"),
+    [
         ("120000", README),
         ("160000", ".aitm/attachments/submodule"),
         ("100755", README),
-    ):
-        candidate = candidate_with_mode(repo, start, mode, path)
-        result = validate_history(anchor, candidate, repository=repo)
-        assert result.outcome == LocalOutcome.INTEGRITY_ERROR
-        assert path in result.reason
+    ],
+)
+def test_tree_rejects_non_data_objects(store, mode, path):
+    repo, anchor = store
+    candidate = candidate_with_mode(repo, repo.tip(), mode, path)
+    result = validate_history(anchor, candidate, repository=repo)
+    assert result.outcome == LocalOutcome.INTEGRITY_ERROR
+    assert path in result.reason
 
 
 def test_root_lineage_and_code_ancestry_guards(store):
@@ -225,6 +228,59 @@ def test_root_lineage_and_code_ancestry_guards(store):
     )
 
 
+def test_repair_requires_the_explicit_verifier_slot(store):
+    repo, anchor = store
+    start = repo.tip()
+    bad = repo.create_commit(start, {OUTSIDE: b"invalid"}, "invalid")
+    repaired = repo.create_commit(
+        bad,
+        {
+            OUTSIDE: None,
+            ".aitm/repairs/fixture.json": b'{"schema":"aitm.forward-repair/v1"}',
+        },
+        "repair",
+    )
+
+    def unneeded_verifier(_anchor, _diagnosis, _candidate):
+        pytest.fail("absent repair slot must remain absent")
+
+    explicit = replace(
+        ServicePorts(forward_repair_verifier=unneeded_verifier),
+        forward_repair_verifier=None,
+    )
+    view = backend(repo, anchor, ports=explicit)
+    result = validate_history(
+        anchor,
+        repaired.revision,
+        repository=repo,
+        forward_repair_verifier=explicit.forward_repair_verifier,
+    )
+    assert view.snapshot() == start
+    assert result.outcome == LocalOutcome.UNAVAILABLE
+    assert result.reason == "forward-repair-verifier-unavailable"
+    assert result.first_invalid == bad.revision
+    assert result.valid_prefix == start.revision
+
+
+def test_checked_out_target_refuses_writes_but_review_ref_is_distinct(store, tmp_path):
+    repo, anchor = store
+    review = tmp_path / "review"
+    git(repo.root, "worktree", "add", "-qb", "review", str(review), repo.tip().revision)
+    safe = backend(repo, anchor, ports=PORTS)
+    start = safe.snapshot()
+    result = safe.transact(operation(safe, start, README), start)
+    assert result.command.local == LocalOutcome.COMPLETED
+
+    planning = tmp_path / "planning"
+    git(repo.root, "worktree", "add", "-q", str(planning), "planning")
+    locked = safe.snapshot()
+    refused = safe.transact(operation(safe, locked, README, b"retry"), locked)
+    assert refused.command.local == LocalOutcome.INTEGRITY_ERROR
+    assert "checked out" in refused.reason
+    assert COOPERATIVE_LIMIT in refused.reason
+    assert safe.snapshot() == locked
+
+
 def test_clone_lock_serializes_distinct_ref_purposes(store):
     repo, _ = store
     entered = Event()
@@ -243,27 +299,13 @@ def test_clone_lock_serializes_distinct_ref_purposes(store):
         result.result(timeout=5)
 
 
-def test_checkout_exclusion_before_and_during_publication(store, tmp_path, monkeypatch):
+def test_external_checkout_fences_publication_and_preserves_bytes(
+    store, tmp_path, monkeypatch
+):
     repo, anchor = store
     safe = backend(repo, anchor, ports=PORTS)
-    review = tmp_path / "review"
-    git(repo.root, "worktree", "add", "-qb", "review", str(review), repo.tip().revision)
     start = safe.snapshot()
-    result = safe.transact(operation(safe, start, README), start)
-    assert result.command.local == LocalOutcome.COMPLETED
-
-    planning = tmp_path / "planning"
-    git(repo.root, "worktree", "add", "-q", str(planning), "planning")
-    locked = safe.snapshot()
-    refused = safe.transact(operation(safe, locked, README, b"retry"), locked)
-    assert refused.command.local == LocalOutcome.INTEGRITY_ERROR
-    assert "checked out" in refused.reason
-    assert COOPERATIVE_LIMIT in refused.reason
-    assert safe.snapshot() == locked
-    git(repo.root, "worktree", "remove", str(planning))
-
-    start = safe.snapshot()
-    request = operation(safe, start, README, b"checkout race")
+    request = operation(safe, start, README)
     update = Repository.compare_and_swap
     checkout = tmp_path / "external"
     retained = {}
@@ -301,3 +343,32 @@ def test_checkout_exclusion_before_and_during_publication(store, tmp_path, monke
     with pytest.raises(ValidationRejected, match="fenced"):
         with ref_gate(repo, RefIdentity(REF), RefMutationKind.PLANNING):
             pytest.fail("fenced target cannot be admitted")
+
+
+def test_delivery_validation_uses_its_own_content_check(store):
+    repo, _ = store
+    start = repo.tip()
+    ref = "refs/heads/candidate"
+    git(repo.root, "branch", "candidate", start.revision)
+    candidate = repo.create_commit(
+        start, {OUTSIDE: b"ordinary delivery content"}, "source"
+    )
+    checks = []
+
+    def planning_only(_tip):
+        pytest.fail("delivery target must use the content check for its own lane")
+
+    def delivery(before, after):
+        checks.append((before, after))
+
+    with ref_gate(
+        repo,
+        RefIdentity(ref),
+        RefMutationKind.DELIVERY,
+        planning_validation=planning_only,
+        delivery_validation=delivery,
+    ) as guard:
+        guard(start, candidate)
+
+    assert checks == [(start, candidate)]
+    assert repo.tip() == start

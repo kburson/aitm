@@ -46,9 +46,10 @@ jobs:
         run: |
           uv run --locked --no-editable --python "$PYTHON_VERSION" --package aitm-core \
             python -m tools.ci.unit_test_floor aitm-core | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Run locked Core tests and lint
+      - name: Run locked Core product and tooling tests and lint
         shell: bash
         run: |
           uv run --locked --no-editable --python "$PYTHON_VERSION" --package aitm-core pytest packages/aitm-core/tests -q
+          uv run --locked --no-editable --python "$PYTHON_VERSION" --package aitm-core pytest packages/aitm-core/tests_tooling -q
           uv run --locked --no-editable --python "$PYTHON_VERSION" --package aitm-core ruff check packages/aitm-core
           uv run --locked --no-editable --python "$PYTHON_VERSION" --package aitm-core ruff format --check packages/aitm-core
