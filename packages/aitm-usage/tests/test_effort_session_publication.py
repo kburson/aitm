@@ -185,6 +185,22 @@ def test_recovers_remote_acceptance_after_lost_push_ack(repo_pair, monkeypatch):
     assert git(remote, "rev-parse", PLANNING) == tip
     assert git(remote, "show", f"{tip}:{item.path}").encode() == item.data
 
+    # The retry matrix isolates policy. Retain the real remote-tip readback
+    # after all attempted pushes are refused as the complementary Git contract.
+    pushes = []
+
+    def refuse(repo, *args, **kwargs):
+        if args[0] == "push":
+            pushes.append(args)
+            return subprocess.CompletedProcess(args, 1, b"", b"policy refused")
+        return real_run(repo, *args, **kwargs)
+
+    monkeypatch.setattr(publication, "_git", refuse)
+    with pytest.raises(publication.PublicationHold, match="unverified"):
+        publish_receipts(checkout, str(remote), PROJECT, [receipt("b" * 64)])
+    assert len(pushes) == 3
+    assert git(remote, "rev-parse", PLANNING) == tip
+
 
 def test_concurrent_writers_keep_both_disjoint_receipts(repo_pair, monkeypatch):
     checkout, remote = repo_pair

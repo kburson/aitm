@@ -55,6 +55,10 @@ def test_switch_restart_and_replay_keep_the_dispatch_story(session_api, tmp_path
     store, launch, turn = layout(session_api, database)
     store.select(SESSION, 458, REMOTE, epic=456)
     reopened = session_api.SessionStore(database, PROJECT)
+    with pytest.raises(EffortError, match="project"):
+        session_api.SessionStore(database, UUID(int=99))
+    with pytest.raises(EffortError, match="session"):
+        reopened.bind(UUID(int=99), OWNER, launch, turn)
     assert (
         reopened.expect(
             SESSION, CHILD, Role.WORKER, launch, parent=OWNER
@@ -73,6 +77,24 @@ def test_switch_restart_and_replay_keep_the_dispatch_story(session_api, tmp_path
     )
     with pytest.raises(EffortError, match="remote"):
         reopened.select(SESSION, 458, "https://example.invalid/other.git")
+
+    unknown_usage = UsageReceipt(
+        PROJECT,
+        CHILD,
+        turn,
+        "b" * 64,
+        STAMP,
+        1,
+        Availability.UNKNOWN,
+        Outcome.INTERRUPTED,
+        TokenCounts(),
+        scope=UsageScope.BOUNDED,
+    )
+    assert reopened.accept(SESSION, unknown_usage) is Disposition.INSERTED
+    assert reopened.status(SESSION)[CHILD] == "unavailable"
+    (payload,) = reopened.public_receipts(SESSION)
+    data = session_api.validate_public_receipt(payload)
+    assert data["model"] is None and data["rate_inputs"] is None
 
 
 def test_revision_publication_whitelists_and_waits_for_predecessor(
@@ -118,14 +140,21 @@ def test_revision_publication_whitelists_and_waits_for_predecessor(
     assert store.status(SESSION)[OWNER] == "pending-binding"
 
 
-def test_store_refuses_cross_project_and_hides_unknown_usage(session_api, tmp_path):
-    database = tmp_path / "effort.db"
-    store, launch, turn = layout(session_api, database)
-    with pytest.raises(EffortError, match="project"):
-        session_api.SessionStore(database, UUID(int=99))
-    with pytest.raises(EffortError, match="session"):
-        store.bind(UUID(int=99), OWNER, launch, turn)
-    store.bind(SESSION, OWNER, launch, turn)
+def test_store_refuses_cross_project_and_hides_unknown_usage(
+    session_api, public_revisions, monkeypatch
+):
+    from aitm_usage.effort import Enrollment
+
+    store = session_api.SessionStore.__new__(session_api.SessionStore)
+    store.project_id = PROJECT
+    turn = NativeTurn(
+        "codex",
+        "0.171.0-alpha.13.2",
+        "desktop",
+        ref("account"),
+        ref("session"),
+        ref("turn"),
+    )
     receipt = UsageReceipt(
         PROJECT,
         OWNER,
@@ -138,9 +167,35 @@ def test_store_refuses_cross_project_and_hides_unknown_usage(session_api, tmp_pa
         TokenCounts(),
         scope=UsageScope.BOUNDED,
     )
-    store.accept(SESSION, receipt)
+    enrollment = Enrollment(PROJECT, SESSION, OWNER, Role.ORCHESTRATOR, 457)
+
+    def mismatched_project(query):
+        if query == "PRAGMA application_id":
+            from aitm_usage.effort.store import _APPLICATION_ID
+
+            return _QueryRows([(_APPLICATION_ID,)])
+        assert query == "SELECT project, schema_version, generation FROM metadata"
+        return _QueryRows([(str(UUID(int=99)), 1, 0)])
+
+    with pytest.raises(EffortError, match="project"):
+        store._generation(SimpleNamespace(execute=mismatched_project))
+
+    def read_session(query, arguments):
+        if query.startswith("SELECT launch, native"):
+            assert arguments == (str(UUID(int=99)), str(enrollment.attempt_id))
+            return _QueryRows([])
+        assert "FROM session_expectations s" in query and arguments == (str(SESSION),)
+        return [(str(OWNER), turn, receipt.to_json())]
+
+    monkeypatch.setattr(
+        store,
+        "_transaction",
+        lambda **_: nullcontext(SimpleNamespace(execute=read_session)),
+    )
+    with pytest.raises(EffortError, match="session"):
+        store.bind(UUID(int=99), OWNER, ref("launch"), turn)
     assert store.status(SESSION)[OWNER] == "unavailable"
-    (payload,) = store.public_receipts(SESSION)
+    (payload,) = public_revisions([(receipt, receipt)])
     data = session_api.validate_public_receipt(payload)
     assert data["model"] is None and data["rate_inputs"] is None
     with pytest.raises(ValueError):

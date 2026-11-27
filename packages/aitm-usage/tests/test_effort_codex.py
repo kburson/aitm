@@ -1,4 +1,6 @@
+import asyncio
 import json
+import sys
 from dataclasses import replace
 from hashlib import sha256
 from io import BytesIO
@@ -11,6 +13,8 @@ from aitm_usage.effort.adapters.codex import CodexAdapter, CodexResume
 from aitm_usage.effort.capture import (
     CaptureEvent,
     CaptureGap,
+    HarnessCommand,
+    capture,
     recover,
 )
 from aitm_usage.types import Availability, SourceRef, TokenCounts
@@ -448,18 +452,36 @@ def test_scope_comes_from_caller_authority(configuration, scope):
     assert observe(adapter(evidence, **configuration), stream()).receipt.scope is scope
 
 
-def test_bounded_capture_and_exact_file_recovery_agree():
+def test_bounded_capture_and_exact_file_recovery_agree(tmp_path):
+    rollout = tmp_path / "authorized.jsonl"
     evidence = header() + turn(FIRST, FIRST_USE, FIRST_USE)
-    codex = adapter(evidence)
-    observed = observe(codex, stream())
-    recovered = recover(
-        codex,
-        enrollment=ENROLLMENT,
-        expected_turn=codex.native_turn(THREAD, FIRST, surface="exec"),
-        evidence=BytesIO(evidence),
+    script = (
+        "import sys; from pathlib import Path; "
+        f"Path('authorized.jsonl').write_bytes({evidence!r}); "
+        f"sys.stdout.buffer.write({stream()!r})"
     )
-    assert observed == recovered
-    assert observed.receipt.tokens == tokens(FIRST_USE)
+    codex = CodexAdapter(
+        ENROLLMENT.project_id, ACCOUNT, ref, open_rollout=lambda _: rollout.open("rb")
+    )
+
+    result = asyncio.run(
+        capture(
+            codex,
+            enrollment=ENROLLMENT,
+            command=HarnessCommand((sys.executable, "-c", script), tmp_path),
+        )
+    )
+
+    assert result.process.returncode == 0
+    with rollout.open("rb") as selected:
+        recovered = recover(
+            codex,
+            enrollment=ENROLLMENT,
+            expected_turn=codex.native_turn(THREAD, FIRST, surface="exec"),
+            evidence=selected,
+        )
+    assert result.observation == recovered
+    assert result.observation.receipt.tokens == tokens(FIRST_USE)
 
 
 def test_installed_patch_build_preserves_exact_receipt_identity():
