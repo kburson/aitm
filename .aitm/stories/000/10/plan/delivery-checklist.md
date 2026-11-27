@@ -21,3 +21,7 @@ The two regression tests first failed on the reviewed source, then passed at
 head `497ae465839a20c8454c5b794c90d7638de11f91`. The installed suite passed 129 cases with Ruff and formatting
 checks. Fresh repository and separate Core hosted CI apply before ready
 status and the follow-up Grok 4.7 source SAR.
+
+## Hosted verification
+
+[CI run 46001150287](https://github.com/kburson/aitm/actions/runs/46001150287) and [Core CI run 46001150325](https://github.com/kburson/aitm/actions/runs/46001150325) passed on base `48666e85daf2bd3f42a3e09849603d0329e61cf8`, head `497ae465839a20c8454c5b794c90d7638de11f91` and synthetic merge tree `4c98b5507ae46147f606f1b551f6683d8d944dea`. Hosted Core ran 129 passing tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
