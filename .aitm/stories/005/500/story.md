@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 500
 title: "[Core C104] Integrate installed setup and binding on trunk"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/500"
 linked-pr: "https://github.com/kburson/aitm/pull/565"
 parent: 475
@@ -11,7 +11,7 @@ children: []
 blocking: [476, 477, 478, 479, 480, 481, 482, 483, 485, 486, 487, 488]
 blocked-by: [20, 22]
 created: "2026-11-27T04:49:05Z"
-updated: "2026-11-27T23:20:02.793350+00:00"
+updated: "2026-11-27T23:31:22.595073+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 2.0, "size": "S"}
