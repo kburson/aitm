@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 23
 title: "[Core C18] Snapshot index and read-only queries"
 kind: "story"
-state: ready-for-plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/23"
 parent: 474
 children: []
 blocking: [56, 65, 68, 81, 228, 229, 475, 476, 477, 479, 480, 483, 484, 486, 487, 491]
 blocked-by: [4, 13]
 created: "2026-11-09T08:01:02Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-27T19:48:54.735+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -37,7 +37,7 @@ Integration owner. Trunk admission requires verified deliveries: #16, #17, #18.
 
 The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
-**GitHub issue:** [kburson/aitm#23](https://github.com/kburson/aitm/issues/23) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
+**GitHub issue:** [kburson/aitm#23](https://github.com/kburson/aitm/issues/23) · **Parent:** [#2](../2/story.md) · **State:** Dev.
 
 **Separate full-file validation completed:** the core design and parent implementation plan passed separately authorized native XPR, with complete actual input retrieval verified in every round. [Plan validation](../2/plan/reviews/xpr-2026-11-09-core-plan-fullfile/review-manifest.md). The historical procedure limitation is retained in its audit and resolved by these new records. This does not establish leaf Design/Plan/JIT acceptance or implementation authority.
 
