@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 233
 title: "[Core C80] Managed provider contracts and capability results"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/233"
 parent: 473
 children: []
 blocking: [234, 511]
 blocked-by: [14]
 created: "2026-11-11T15:58:14Z"
-updated: "2026-11-27T17:21:50.497Z"
+updated: "2026-11-27T17:26:57.780Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
@@ -60,3 +60,7 @@ The leaf's own applicable Design, Plan, JIT and pickup authority are separate.
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **30** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #473 with scope entry **C80**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Verified delivery
+
+[Linked PR #551](https://github.com/kburson/aitm/pull/551) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md).
