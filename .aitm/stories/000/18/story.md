@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 18
 title: "[Core C10] Forward repair from maximal valid prefix"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/18"
 parent: 474
 children: []
 blocking: [19, 55, 58, 65]
 blocked-by: [11, 13, 17]
 created: "2026-11-09T08:00:40Z"
-updated: "2026-11-27T19:35:43.596+00:00"
+updated: "2026-11-27T19:43:15.925+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -35,7 +35,7 @@ Retain the historical deliverable and proof where they remain applicable. Apply 
 
 The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
-**GitHub issue:** [kburson/aitm#18](https://github.com/kburson/aitm/issues/18) · **Parent:** [#2](../2/story.md) · **State:** In review.
+**GitHub issue:** [kburson/aitm#18](https://github.com/kburson/aitm/issues/18) · **Parent:** [#2](../2/story.md) · **State:** Done.
 
 **Separate full-file validation completed:** the core design and parent implementation plan passed separately authorized native XPR, with complete actual input retrieval verified in every round. [Plan validation](../2/plan/reviews/xpr-2026-11-09-core-plan-fullfile/review-manifest.md). The historical procedure limitation is retained in its audit and resolved by these new records. This does not establish leaf Design/Plan/JIT acceptance or implementation authority.
 
@@ -104,3 +104,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **30** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #474 with scope entry **C10**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Delivery
+
+[Linked PR #558](https://github.com/kburson/aitm/pull/558) · [Verified integration landing, sign-off and Agent Cost](retro/2026-11-27-delivery.md).
