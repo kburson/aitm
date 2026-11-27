@@ -53,3 +53,5 @@ Estimate: **20 implementation agent-hours**, including verification and review. 
 ## Core kickoff — 2026-11-27
 
 **Planning** · rank **10** · **P1/Feature** · **20 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **EP01**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+[Integration pickup and branch](plan/2026-11-27-integration-pickup.md).
