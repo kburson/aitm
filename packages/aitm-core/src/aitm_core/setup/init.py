@@ -27,7 +27,7 @@ from aitm_core.models.common import (
     StoreAnchor,
 )
 from aitm_core.models.config import BacklogIssuer, CommittedConfig
-from aitm_core.providers.githost import ProtectionRules, ProtectResult, RemoteRef
+from aitm_core.providers.githost import ProtectionRules
 from aitm_core.services import (
     ServicePorts,
     _unique_coordinates,
@@ -490,35 +490,30 @@ def _active_installation(repository: Repository) -> tuple[Installation, str]:
 def _readiness(
     installation: Installation, ports: ServicePorts
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    from aitm_core.setup.doctor import (
+        MANUAL_PROTECTION,
+        protection_evidence,
+        protection_target,
+        retain_protection,
+    )
+
     messages = []
     pending = []
-    remote = installation.store.planning_remote
-    if remote is not None:
-        rules = ProtectionRules()
-        target = RemoteRef(
-            repository=installation.planning_repository,
-            ref=RefIdentity(installation.store.planning_ref),
-            remote=remote,
-        )
+    if installation.store.planning_remote is None:
+        messages.append(MANUAL_PROTECTION)
+    else:
         protect = getattr(ports.init_git_host, "protect_branch", None)
-        result = protect(target, rules) if callable(protect) else None
+        result = (
+            protect(protection_target(installation), ProtectionRules())
+            if callable(protect)
+            else None
+        )
         if result is None:
-            messages.append(
-                f"Protect {target.ref.name} on {remote}: block deletion and force pushes, "
-                "require linear history, leave pull requests optional, and disable bypass."
-            )
+            messages.append(MANUAL_PROTECTION)
             pending.append("init_git_host")
-        elif (
-            not isinstance(result, ProtectResult)
-            or result.target != target
-            or result.rules != rules
-        ):
-            raise ValueError("Branch protection returned evidence for another request.")
         else:
-            messages.extend(result.evidence)
-            messages.extend(result.instructions)
-            if result.settings_url:
-                messages.append(result.settings_url)
+            retain_protection(installation, result)
+            messages.extend(protection_evidence(result))
             if result.status not in ("applied", "already-protected"):
                 pending.append("init_git_host")
     for slot, method in (
@@ -588,14 +583,14 @@ def _assert_original_missing(repo: Repository, original: StoreAnchor) -> None:
 
 
 def _prepare_worktree(repo: Repository, proposal: BootstrapProposal) -> tuple[str, ...]:
-    from aitm_core.setup.hooks import IGNORE_COMMANDS, prepare_ignore
+    from aitm_core.setup.hooks import ignore_landing_commands, prepare_ignore
 
     checked_out = repo._run("symbolic-ref", "-q", "HEAD")
     if checked_out.stdout.strip().decode("utf-8") == proposal.anchor.code_default_ref:
         prepare_file(repo.root / CONFIG_PATH, proposal.config.encode())
         prepare_file(repo.root / WORKFLOW_PATH, proposal.workflow.encode())
         prepare_ignore(repo)
-        return IGNORE_COMMANDS
+        return ignore_landing_commands(repo)
     return ()
 
 

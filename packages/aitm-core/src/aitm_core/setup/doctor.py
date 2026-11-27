@@ -1,11 +1,14 @@
 """Read-only installation diagnostics with independent readiness facets."""
 
 from dataclasses import dataclass
+from hashlib import sha256
 
 from aitm_core.models.common import LocalOutcome
+from aitm_core.providers.githost import ProtectionRules, ProtectResult, RemoteRef
 from aitm_core.services import ServicePorts, preflight_policy
 from aitm_core.setup.hooks import NAMES, ROOT_IGNORE, inspect_hooks
-from aitm_core.store.gate import RefIdentity, _worktrees
+from aitm_core.setup.journal import state_directory
+from aitm_core.store.gate import RefIdentity, _atomic_write, _worktrees
 from aitm_core.store.installation import Installation
 from aitm_core.store.validation import validate_history
 
@@ -14,6 +17,69 @@ from aitm_core.store.validation import validate_history
 class ReadinessReport:
     evidence: tuple[str, ...]
     pending: tuple[str, ...]
+
+
+MANUAL_PROTECTION = (
+    "For a shared planning branch, block deletion and force pushes, require linear "
+    "history, leave pull requests optional, and disable bypass."
+)
+
+
+def protection_target(context: Installation) -> RemoteRef:
+    return RemoteRef(
+        repository=context.planning_repository,
+        ref=RefIdentity(context.store.planning_ref),
+        remote=context.store.planning_remote,
+    )
+
+
+def _protection_receipt(context: Installation, target: RemoteRef):
+    route = sha256(target.model_dump_json().encode()).hexdigest()
+    return state_directory(context.repository) / "protection" / f"{route}.json"
+
+
+def retain_protection(context: Installation, result: ProtectResult) -> None:
+    target = protection_target(context)
+    if (
+        not isinstance(result, ProtectResult)
+        or result.target != target
+        or result.rules != ProtectionRules()
+    ):
+        raise ValueError("Branch protection returned evidence for another request.")
+    _atomic_write(_protection_receipt(context, target), result.model_dump(mode="json"))
+
+
+def protection_evidence(result: ProtectResult) -> tuple[str, ...]:
+    return (
+        f"Retained hosted branch protection status is {result.status}.",
+        *result.instructions,
+        *result.evidence,
+        *((result.settings_url,) if result.settings_url else ()),
+    )
+
+
+def _diagnose_protection(context: Installation) -> tuple[tuple[str, ...], bool]:
+    if context.store.planning_remote is None:
+        return (
+            "Hosted publication and protection are not applicable in local mode.",
+            MANUAL_PROTECTION,
+        ), False
+    target = protection_target(context)
+    try:
+        result = ProtectResult.model_validate_json(
+            _protection_receipt(context, target).read_bytes()
+        )
+        if result.target != target or result.rules != ProtectionRules():
+            raise ValueError("Different target or rules.")
+    except (FileNotFoundError, ValueError):
+        return (
+            "Hosted branch protection requires manual confirmation.",
+            MANUAL_PROTECTION,
+        ), True
+    return protection_evidence(result), result.status not in {
+        "applied",
+        "already-protected",
+    }
 
 
 def doctor(context: Installation, ports: ServicePorts | None = None) -> ReadinessReport:
@@ -37,19 +103,15 @@ def doctor(context: Installation, ports: ServicePorts | None = None) -> Readines
         evidence.append("Local planning history is unavailable.")
         pending.append("local-integrity")
     shared = preflight.views.shared
-    if context.store.planning_remote is not None:
-        if shared is None or shared.fences_shared:
-            pending.append("publication")
+    if context.store.planning_remote is not None and (
+        shared is None or shared.fences_shared
+    ):
+        pending.append("publication")
+    protection, uncertain = _diagnose_protection(context)
+    evidence.extend(protection)
+    if uncertain:
         pending.append("protection")
-        evidence.append(
-            "Hosted protection requires independent confirmation. Block deletion and force pushes, "
-            "require linear history, leave pull requests optional, and disable bypass."
-        )
-    else:
-        evidence.append(
-            "Hosted publication and protection are not applicable in local mode."
-        )
-    occupied = _worktrees(repo, RefIdentity(repo.ref))
+    occupied = _worktrees(repo, RefIdentity(context.store.planning_ref))
     if occupied:
         pending.append("checkout")
         evidence.append(

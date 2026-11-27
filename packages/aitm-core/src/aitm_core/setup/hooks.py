@@ -154,6 +154,13 @@ def prepare_ignore(repo: Repository) -> bool:
     return True
 
 
+def ignore_landing_commands(repo: Repository) -> tuple[str, ...]:
+    path = ".gitignore"
+    head = repo._git("rev-parse", "--verify", "HEAD").strip().decode()
+    committed = repo.read_blobs(repo.read_tree(head).tree, (path,))[path]
+    return IGNORE_COMMANDS if (repo.root / path).read_bytes() != committed else ()
+
+
 def push_updates(
     data: bytes, planning_ref: str, oid_length: int
 ) -> tuple[tuple[str, str], ...]:
@@ -218,11 +225,9 @@ class GitHooks:
         report = install_hooks(repo)
         head = repo._run("symbolic-ref", "-q", "HEAD")
         commands = ()
-        if (
-            head.stdout.strip() == context.store.code_default_ref.encode()
-            and prepare_ignore(repo)
-        ):
-            commands = IGNORE_COMMANDS
+        if head.stdout.strip() == context.store.code_default_ref.encode():
+            prepare_ignore(repo)
+            commands = ignore_landing_commands(repo)
         return (
             f"Installed AITM Git hooks in {report.path}.",
             *(f"Chained existing {name} hook." for name in report.chained),
