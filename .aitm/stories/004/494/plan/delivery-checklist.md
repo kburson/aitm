@@ -13,3 +13,9 @@ Attempt 1. Codex is the implementing agent and closure owner. [Accepted pickup](
 ## Hosted verification
 
 [CI run 45982804504](https://github.com/kburson/aitm/actions/runs/45982804504) passed on base `8aa608cc1e64ed5986c5b6a8371df5a4c5b3f3e6`, head `dc3b6a7b7ecf0abfb89908c5ff17aed9cf8dfe56` and synthetic merge tree `42c0a097868132e4ca8db9b019c1ae996095bdfc`. The workflow path filter applies hosted repository CI to this Markdown candidate. Core inputs are identical to trunk baseline `8aa608cc1e64ed5986c5b6a8371df5a4c5b3f3e6` with [hosted Core run 45979825833](https://github.com/kburson/aitm/actions/runs/45979825833). The installed local Core suite passed 99 tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
+
+## Guard interpretation and evidence rework
+
+The [initial SAR](2026-11-27-pr-535-grok-sar-r1.md) requested clearer guard outcomes, exact source branches and direct test evidence. Full files at the pinned commit show accepted typed Test evidence after the no-commit decomposition check in the Code Complete guard, and malformed Test receipt data before the DoD marker in the DoD fallback. The revised inventory identifies both branches and the ordinary WIP warning, names all three resident registrations, and identifies the separate Test-entry applicability. It cites direct Test-exit parity and docs-only completeness tests. The two follow-up files reported 16 passing cases, supplementing the prior 105.
+
+Replacement head `8ec4e6983d866bc9fe2ea1d6e357b9a4a3530603` passed Markdown lint and 99 installed Core tests plus Ruff. The verification checked 97 pinned links, 36 guard exports and all 51 exact ordered registrations. Fresh hosted repository CI follows the documentation path policy.
