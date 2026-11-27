@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 17
 title: "[Core C09] Publication replay and conflict recovery"
 kind: "story"
-state: ready-for-plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/17"
 parent: 474
 children: []
 blocking: [18, 19, 22, 24, 25, 34, 37, 41, 50, 55, 58]
 blocked-by: [9, 13, 15, 16]
 created: "2026-11-09T08:00:36Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-27T18:54:28.680+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -35,7 +35,7 @@ Retain the historical deliverable and proof where they remain applicable. Apply 
 
 The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
-**GitHub issue:** [kburson/aitm#17](https://github.com/kburson/aitm/issues/17) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
+**GitHub issue:** [kburson/aitm#17](https://github.com/kburson/aitm/issues/17) · **Parent:** [#2](../2/story.md) · **State:** Dev.
 
 **Separate full-file validation completed:** the core design and parent implementation plan passed separately authorized native XPR, with complete actual input retrieval verified in every round. [Plan validation](../2/plan/reviews/xpr-2026-11-09-core-plan-fullfile/review-manifest.md). The historical procedure limitation is retained in its audit and resolved by these new records. This does not establish leaf Design/Plan/JIT acceptance or implementation authority.
 
