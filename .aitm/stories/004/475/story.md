@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 475
 title: "[Epic] Core — Installation and worktree binding"
 kind: "epic"
-state: review
+state: develop
 issue: "https://github.com/kburson/aitm/issues/475"
 parent: 1
 children: [19, 20, 21, 22, 500]
 blocking: []
 blocked-by: [13, 15, 23]
 created: "2026-11-27T04:48:43Z"
-updated: "2026-11-27T23:12:38.686774+00:00"
+updated: "2026-11-27T23:13:44.925049+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 17.0, "size": "Feature"}
