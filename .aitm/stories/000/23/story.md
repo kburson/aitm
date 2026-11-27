@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 23
 title: "[Core C18] Snapshot index and read-only queries"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/23"
 parent: 474
 children: []
 blocking: [56, 65, 68, 81, 228, 229, 475, 476, 477, 479, 480, 483, 484, 486, 487, 491]
 blocked-by: [4, 13]
 created: "2026-11-09T08:01:02Z"
-updated: "2026-11-27T20:10:21.798+00:00"
+updated: "2026-11-27T20:32:06.728+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -108,3 +108,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Leaf integration
 
 Linked PR [#559](https://github.com/kburson/aitm/pull/559) landed on the integration branch. #23 remains In review pending verified trunk delivery through [#555](https://github.com/kburson/aitm/pull/555).
+
+## Delivered on November 27, 2026
+
+Linked PR [#559](https://github.com/kburson/aitm/pull/559). Exact reviewed trunk landing `2f5a1f7bf5d33b54cc24dd376d9ee1f377568699`. [Delivery sign-off and Agent Cost](retro/2026-11-27-delivery.md).
