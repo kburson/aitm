@@ -24,6 +24,8 @@ from aitm_core.store.render import ViewState, render
 
 DESCRIPTION = ".aitm/stories/000/16/description.md"
 EVENTS = ".aitm/stories/000/16/events.jsonl"
+VIEW = ".aitm/stories/000/16/story.md"
+PLAN = ".aitm/stories/000/16/plan/accepted.md"
 POLICY = "a" * 64
 OWNER = OperationOwner(actor=EventActor(kind="tool", harness="test"))
 STAMP = "2026-11-27T12:00:00Z"
@@ -77,12 +79,14 @@ def test_render_preserves_author_content_and_projects_label(monkeypatch):
     )
     schema = DocumentSchema(semantic_fields={"approved": "boolean"})
     state = ViewState(
-        metadata=Metadata(updated=STAMP, status="Planning"), worktree_label="story-16"
+        story=fold([graduated()], core_reducers()),
+        metadata=Metadata(updated=STAMP),
+        worktree_label="story-16",
     )
-    first = render(state, {DESCRIPTION: authored}, schema)
+    first = render(state, {PLAN: authored}, schema)
     monkeypatch.setenv("TZ", "Pacific/Auckland")
-    assert render(state, {DESCRIPTION: authored}, schema) == first
-    result = first[DESCRIPTION]
+    assert render(state, {PLAN: authored}, schema) == first
+    result = first[PLAN]
     assert b'"last-worktree": "story-16"' in result
     assert b"/home/private" not in result
     assert result.split(b"---\r\n", 2)[2] == authored.split(b"---\r\n", 2)[2]
@@ -95,7 +99,7 @@ def test_render_preserves_author_content_and_projects_label(monkeypatch):
 @pytest.mark.parametrize("path", ["/tmp/story-16", r"C:\\Users\\private", "../story"])
 def test_view_refuses_physical_worktree_paths(path):
     with pytest.raises(ValueError, match="worktree"):
-        ViewState(worktree_label=path)
+        ViewState(fold([graduated()], core_reducers()), worktree_label=path)
 
 
 def test_describe_records_authoritative_fields_and_document_atomically():
@@ -129,6 +133,18 @@ def test_describe_records_authoritative_fields_and_document_atomically():
         == canonicalize(document, DocumentSchema()).canonical_sha256
     )
     assert b"Show the pinned snapshot.\n" in document
+
+    state = fold(saved[EVENTS].splitlines(keepends=True), core_reducers())
+    projected = render(
+        ViewState(state, metadata=Metadata(updated=STAMP)),
+        {DESCRIPTION: document, VIEW: b"<details>Injected status</details>"},
+        DocumentSchema(),
+    )[VIEW]
+    assert b'"title": "Inspect the store"' in projected
+    assert b'"state": "backlog"' in projected
+    assert b"Show the pinned snapshot." in projected
+    assert b"Injected status" not in projected
+    assert b"<summary>State history</summary>\n\n" in projected
 
     stale_target = DescriptionTarget(16, before, OWNER, POLICY, "stale", STAMP)
     stale_operation = describe(
