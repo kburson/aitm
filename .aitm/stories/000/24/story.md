@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 24
 title: "[Core C19] Ideas, drafts and atomic discard"
 kind: "story"
-state: ready-for-plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/24"
 parent: 476
 children: []
@@ -16,7 +16,7 @@ last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c19-ideas-drafts-and-atomic-discard"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C19", "parent": 476}
@@ -102,3 +102,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **10** · **P1/S** · **2.5 agent-hours**. Design accepted for this manual workflow through issue #476 with scope entry **C19**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Scoped JIT pickup
+
+[Manual bootstrap pickup](plan/2026-11-27-pickup.md) under the owner’s #476 delivery assignment. Develop is a manual projection. No runtime transition or implementation clock was started.
