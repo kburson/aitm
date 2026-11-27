@@ -113,6 +113,12 @@ def test_init_resume_preserves_one_genesis_without_committing_policy(
     assert proposal["local"] == "completed", proposal
     assert proposal["publication"] == "pending"
     assert code_status == 4
+    assert "git add -- .aitm.toml aitm-workflow.toml" in proposal["evidence"]
+    assert (
+        'git commit -m "Configure AITM" -- .aitm.toml aitm-workflow.toml'
+        in proposal["evidence"]
+    )
+    assert "aitm init" in proposal["evidence"]
     tip = git(root, "rev-parse", RECORDS)
     genesis = git(root, "rev-list", "--max-parents=0", tip)
     assert git(root, "show", "-s", "--format=%B", genesis) == "aitm-planning-root: v1"
@@ -227,7 +233,16 @@ def test_hosted_bootstrap_waits_for_landed_policy_and_retained_publication(
     assert published["publication"] == "verified", published
     assert git(shared, "rev-parse", RECORDS) == tip
     _, original_recovered = init(alternate)
-    assert original_recovered["local"] == "integrity-error", original_recovered
+    assert original_recovered["publication"] == "verified", original_recovered
+    assert git(alternate, "rev-parse", RECORDS) == tip
+    assert (
+        json.loads((alternate / ".git/aitm/store-anchor.json").read_bytes())[
+            "planning_ref"
+        ]
+        == RECORDS
+    )
+    assert git(shared, "for-each-ref", "--format=%(refname)") == f"{RECORDS}\n{DEFAULT}"
+    assert git(alternate, "rev-parse", "refs/heads/replacement") != tip
 
     _, adopted = init(fresh)
     assert adopted["publication"] == "verified", adopted

@@ -103,7 +103,7 @@ def handle(_route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult
         if options.reconfigure:
             return reconfigure(AdoptionProposal(request)).command
         existing = adopt_committed(
-            request, check_branch=name is not None and bool(name)
+            request, check_branch=options.planning_branch is not None
         )
         if existing is not None:
             return existing.command

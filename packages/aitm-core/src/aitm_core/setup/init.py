@@ -62,6 +62,10 @@ from aitm_core.store.objects import Repository
 from aitm_core.store.validation import validate_history
 
 WORKFLOW_PATH = "aitm-workflow.toml"
+LANDING_COMMANDS = (
+    f"git add -- {CONFIG_PATH} {WORKFLOW_PATH}",
+    f'git commit -m "Configure AITM" -- {CONFIG_PATH} {WORKFLOW_PATH}',
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -353,14 +357,14 @@ def _check_history(repo: Repository, proposal: BootstrapProposal, tip: str) -> N
         raise ValueError("Planning store identity differs from the retained bootstrap.")
 
 
-def _pending(operation_id: str, step: str, message: str) -> InitResult:
+def _pending(operation_id: str, step: str, *evidence: str) -> InitResult:
     return InitResult(
         CommandResult(
             operation_id=operation_id,
             local=LocalOutcome.COMPLETED,
             publication=PublicationOutcome.PENDING,
             pending=(step,),
-            evidence=(message,),
+            evidence=evidence,
         )
     )
 
@@ -649,7 +653,10 @@ def resume_init(
                     return _pending(
                         operation_id,
                         "committed-bootstrap-policy",
-                        f"Land the proposed files from {stage} on the anchored default, then rerun init.",
+                        f"Copy the proposed files from {stage} into the code worktree.",
+                        *LANDING_COMMANDS,
+                        "Land that commit on the anchored default through the usual repository workflow.",
+                        "aitm init",
                     )
                 if _is_ancestor(repo, basis.revision, revision) is not True:
                     raise ValueError(
@@ -662,7 +669,10 @@ def resume_init(
                 return _pending(
                     operation_id,
                     "committed-bootstrap-policy",
-                    "Land the proposed .aitm.toml and aitm-workflow.toml on the default branch, then rerun init.",
+                    "Run these commands from the worktree holding the proposed policy.",
+                    *LANDING_COMMANDS,
+                    "Land that commit on the anchored default through the usual repository workflow.",
+                    "aitm init",
                 )
             policy = _load_policy(installation, revision, candidate_ref)
             if proposal.activated_revision is None:
@@ -717,7 +727,8 @@ def adopt_committed(
         operation_id = journal.operation_id
     descriptor = state_directory(repo) / "installation.json"
     active = _active_installation(repo) if descriptor.exists() else None
-    if active is None and journal is not None:
+    staged_replacement = journal.replacement if active is None and journal else None
+    if active is None and journal is not None and staged_replacement is None:
         return None
     if active is not None and (
         active[0].store.code_default_ref != code_ref
@@ -760,12 +771,25 @@ def adopt_committed(
                 )
         else:
             installation = _from_config(repo, request, config)
+        if staged_replacement is not None:
+            assert journal is not None
+            if installation.store == journal.anchor:
+                return None
+            if (
+                installation.store != staged_replacement.anchor
+                or _is_ancestor(repo, staged_replacement.revision, revision) is not True
+            ):
+                raise ValueError(
+                    "The committed anchor differs from both retained proposals."
+                )
         repo = installation.repository
         target = repo.ref
         policy = _load_policy(installation, revision, ref)
         if request.code_remote is None:
             tip = _direct_ref(repo, target)
             if tip is None:
+                if staged_replacement is not None:
+                    return None
                 return _pending(
                     operation_id,
                     "bootstrap-history",
@@ -791,6 +815,8 @@ def adopt_committed(
         or shared is None
         or shared.status != ContinuityStatus.VERIFIED
     ):
+        if staged_replacement is not None:
+            return None
         return _pending(
             operation_id,
             "bootstrap-history",
