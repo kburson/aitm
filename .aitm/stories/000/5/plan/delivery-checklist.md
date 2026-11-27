@@ -15,3 +15,5 @@ Attempt 1. Codex is the implementing agent and closure owner. [Accepted pickup](
 ## Numeric-boundary rework
 
 The first [source SAR](2026-11-27-pr-531-grok-sar-r1.md) required a fix for out-of-range integers spelled using decimal points or exponent notation. The new regression failed before the fix. The revised head `860a0705811fe8961ac27aef0910d57459ab1891` passed 49 locked Core tests and Ruff locally. Draft #531 awaits the replacement hosted candidate and follow-up SAR.
+
+The replacement repository CI [45967328793](https://github.com/kburson/aitm/actions/runs/45967328793) and Core CI [45967328884](https://github.com/kburson/aitm/actions/runs/45967328884) passed on base `3ee8b2cbd0aedc0bb9b2fce0f01631ae9730c644`, head `860a0705811fe8961ac27aef0910d57459ab1891` and synthetic merge tree `751e85285229358f5d23041a8411cd4e296d6cb2`. PR #531 left draft again and entered follow-up Grok 4.7 source SAR.
