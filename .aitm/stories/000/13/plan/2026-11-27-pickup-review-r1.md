@@ -1,0 +1,17 @@
+# #13 pickup review round 1
+
+Standalone read-only Grok 4.7 on planning publication `c8e10c1e70afb8b253674b244fce6643d6e77cfb` and pickup SHA-256 `0448ffb40d73e28bd319f4d184d4511f82faa4801e07ab4668b2189f45f99be1`.
+
+CHANGES REQUIRED
+
+The pickup keeps the accepted continuity matrix, the receipt/anchor rule, refresh-before-guard, cached-read silence, stale-versus-unknown authorization, and this order: draft repository CI, draft Core CI, mark ready, independent Grok 4.7 source SAR, trusted verifier, then merge. These gaps still conflict with the accepted C08 contract and design.
+
+1. **Basis and prerequisites.** The claimed integration base `18cddc2f2715cf19a2d27d8a8e78fc00c23f5f5d` (PR #546) is not tied by a stated parent to the #12 landing `8d83fccae4fb101a9740257711588f46575c5b45`. The planning publication `c8e10c1e70afb8b253674b244fce6643d6e77cfb` is not the pickup’s stated basis. C06 and C07 are not named as Depends-on, and the mandatory shared-file predecessor C07 is not carried into the leaf issue graph.
+
+2. **Accepted scope.** Source edits are authorized for a C07 parser extraction and the planning validation CLI. The accepted touched set is `src/aitm_core/store/continuity.py`, `src/aitm_core/store/fetch.py`, `src/aitm_core/services.py`, and `packages/aitm-core/tests/integration/test_c08.py`. The same plan also says C07 committed-policy resolution and the C90 parsing boundary stay in place. The parser extraction has to go. `--refresh` stays a service preflight on the existing validation route, implemented inside those paths.
+
+3. **Anchored code and planning topology.** Distinct remotes are stated. The plan still lacks an admission rule that planning ancestry is isolated from anchored code-default history, and that a familiar trailer does not make an unknown anchor trusted. `observe_shared`’s anchor remains the caller’s trusted genesis or independently supplied checkpoint. The immutable pin set is incomplete: policy commit, code head(s), planning tree, and consulted story/path versions, plus recorded policy revision, settings, and fetch status.
+
+4. **Local mutation boundary.** In-flight refresh retry under the C06 gate is specified. Fetch-view advancement still lacks the design’s clone-common obligations: worktree inventory from the code clone’s Git common directory immediately before and after ref CAS, refusal of a checked-out planning target, retention of both ref versions, and a fence that preserves the worktree, index, and unsynced data. Reconciliation stays explicit, with no reset and no automatic index repair. Supported serialization and the detected out-of-band checkout race are both required proofs for this new ref mutation.
+
+5. **Test-proof coverage.** Rollback, deletion, valid sibling fence, reconcilable unpublished divergence, quarantined invalid descendant, crash/retry, corrupt or partial journal, missing-journal integrity hold, and the first-clone rollback limit are present, as are same-validator mutator and `--refresh` paths, no fetch on cached reads, story-edited policy rejection, and stale remote preflight. Still missing from the visible proof list: separate code and planning remote topology, the out-of-band race, and the accepted command `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c08.py -q`, plus affected contract suites and Ruff. “Two exact contract scenarios” does not cover that test-first list.
