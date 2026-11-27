@@ -107,7 +107,7 @@ def test_publishes_once_without_touching_worktree(repo_pair):
     assert git(remote, "rev-parse", PLANNING) == tip
 
 
-def test_conflict_refuses_the_entire_batch_before_publication(planning_tree):
+def test_conflict_does_not_push_new_files_in_same_batch(planning_tree):
     first = receipt()
     planning_tree.write(first.path, first.data)
     tip = planning_tree.pin()

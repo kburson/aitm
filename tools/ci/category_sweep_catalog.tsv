@@ -395,7 +395,7 @@ packages/aitm-usage/tests/test_effort_session_codex.py::test_refuses_ambiguous_c
 packages/aitm-usage/tests/test_effort_session_codex.py::test_refuses_unsound_usage_and_wrong_exact_file	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_session_codex.py::test_subagent_start_and_stop_expose_the_same_child_path	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_session_publication.py::test_concurrent_writers_keep_both_disjoint_receipts	systems-integration	yes	yes
-packages/aitm-usage/tests/test_effort_session_publication.py::test_conflict_refuses_the_entire_batch_before_publication	fast-unit	yes	yes
+packages/aitm-usage/tests/test_effort_session_publication.py::test_conflict_does_not_push_new_files_in_same_batch	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_session_publication.py::test_observation_cannot_move_to_another_story_in_later_revision	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_session_publication.py::test_policy_refusal_retains_remote_and_bounds_pushes	systems-integration	yes	yes
 packages/aitm-usage/tests/test_effort_session_publication.py::test_publishes_once_without_touching_worktree	systems-integration	yes	yes
@@ -2625,7 +2625,7 @@ packages/aitm-usage/tests/test_effort_pinned_inputs.py::test_pin_refuses_invalid
 packages/aitm-usage/tests/test_effort_pinned_inputs.py::test_pin_refuses_invalid_target_receipt_evidence[placement]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_pinned_inputs.py::test_pin_refuses_invalid_target_receipt_evidence[project]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_pinned_inputs.py::test_pin_refuses_invalid_target_receipt_evidence[size]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_effort_pinned_inputs.py::test_pin_refuses_special_git_mode	systems-integration	yes	yes
+packages/aitm-usage/tests/test_effort_pinned_inputs.py::test_pin_refuses_invalid_target_receipt_evidence[mode]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_effort_pinned_inputs.py::test_pinned_inputs_cutoff_and_window_edges	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_pinned_inputs.py::test_refuses_broken_lineage_and_inexact_commit	fast-unit	yes	yes
 packages/aitm-usage/tests/test_effort_pinned_inputs.py::test_timing_joins_require_registered_actor_and_wait_evidence[None]	fast-unit	yes	yes

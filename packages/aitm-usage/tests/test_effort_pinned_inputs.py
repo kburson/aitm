@@ -200,10 +200,20 @@ def test_refuses_broken_lineage_and_inexact_commit(pinned_evidence):
         read_inputs(repo, PROJECT, 457, "HEAD", WINDOW)
 
 
-@pytest.mark.parametrize("problem", ["path", "size", "project", "placement"])
-def test_pin_refuses_invalid_target_receipt_evidence(pinned_evidence, problem):
-    repo = pinned_evidence(STORY, 457)
+@pytest.mark.parametrize("problem", ["path", "mode", "size", "project", "placement"])
+def test_pin_refuses_invalid_target_receipt_evidence(pinned_evidence, problem, request):
     entry = receipt()
+    if problem == "mode":
+        repo, _ = request.getfixturevalue("repo_pair")
+        link_value = write(repo, "link-fixture", b"private-target")
+        oid = git(repo, "hash-object", "-w", str(link_value))
+        git(repo, "update-index", "--add", "--cacheinfo", f"120000,{oid},{entry.path}")
+        git(repo, "commit", "-m", "pin special mode")
+        with pytest.raises(EffortError, match="normal pinned evidence file"):
+            read_inputs(repo, PROJECT, 457, git(repo, "rev-parse", "HEAD"), WINDOW)
+        return
+
+    repo = pinned_evidence(STORY, 457)
     if problem == "path":
         write(repo, entry.path + "~", b"disallowed")
     elif problem == "size":
@@ -215,17 +225,6 @@ def test_pin_refuses_invalid_target_receipt_evidence(pinned_evidence, problem):
         write(repo, entry.path.replace("/457/", "/458/"), b"unread foreign blob")
     with pytest.raises(EffortError, match="path|normal|limits|scope|another story"):
         read_inputs(repo, PROJECT, 457, pin(repo), WINDOW)
-
-
-def test_pin_refuses_special_git_mode(repo_pair):
-    repo, _ = repo_pair
-    entry = receipt()
-    link_value = write(repo, "link-fixture", b"private-target")
-    oid = git(repo, "hash-object", "-w", str(link_value))
-    git(repo, "update-index", "--add", "--cacheinfo", f"120000,{oid},{entry.path}")
-    git(repo, "commit", "-m", "pin special mode")
-    with pytest.raises(EffortError, match="normal pinned evidence file"):
-        read_inputs(repo, PROJECT, 457, git(repo, "rev-parse", "HEAD"), WINDOW)
 
 
 def test_coverage_fork_and_cutoff_crossing_lineage_remain_explicit(pinned_evidence):
