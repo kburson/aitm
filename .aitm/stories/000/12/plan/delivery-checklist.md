@@ -18,3 +18,13 @@ committed view can remain readable while the checked-out code branch stays
 untouched. All 28 C07 cases and 173 installed Core tests passed again, with
 Ruff lint and format on head `4221091c9ec68c20472d5e351a95cafa13b86e05`. Both hosted workflows are rerun for
 this head while #544 remains draft.
+
+## Repository CI retry
+
+[Repository CI attempt 1](https://github.com/kburson/aitm/actions/runs/46008168418/attempts/1)
+failed in `aitm-usage`'s `test_native_inventory_audits_actual_selected_route`
+with `Native capture position is unavailable`. The exact candidate diff
+leaves `packages/aitm-usage`, `tools/ci` and the workflows untouched.
+[Core CI](https://github.com/kburson/aitm/actions/runs/46008168471) passed.
+Started a full repository CI rerun at the same head. The PR stays draft
+until both required checks pass on the exact candidate.
