@@ -214,14 +214,28 @@ def _check_tree(
                 raise ValueError(
                     f"planning store identity or schema disagrees with its anchor: {path}"
                 )
-        if role == PlanningPath.OPERATION and path.startswith(".aitm/operations/"):
+        if role == PlanningPath.OPERATION:
             if row.get("schema_version") != "aitm.operation-record/v1":
                 raise ValueError(f"unsupported transaction record: {path}")
             command = CommandResult.model_validate(row.get("command"))
             identity = sha256(command.operation_id.encode("utf-8")).hexdigest()
             request = row.get("request_digest")
+            story = story_scope(path)
+            declared_story = row.get("story")
+            if story is None:
+                if declared_story is not None:
+                    raise ValueError(
+                        f"story record requires its owning story path: {path}"
+                    )
+                directory = ".aitm/operations"
+            else:
+                if type(declared_story) is not int or declared_story != story:
+                    raise ValueError(
+                        f"operation record does not match its owning story: {path}"
+                    )
+                directory = f".aitm/stories/{story // 100:03d}/{story}/operations"
             if (
-                path != f".aitm/operations/{identity}.json"
+                path != f"{directory}/{identity}.json"
                 or row.get("base") != before.revision
                 or not isinstance(request, str)
                 or re.fullmatch(r"[0-9a-f]{64}", request) is None

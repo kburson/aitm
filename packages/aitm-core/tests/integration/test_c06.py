@@ -404,3 +404,38 @@ def test_core_transaction_record_is_bound_to_its_operation_and_parent(store):
     assert result.outcome == LocalOutcome.INTEGRITY_ERROR
     assert path in result.reason
     assert result.valid_prefix == start.revision
+
+
+@pytest.mark.parametrize(
+    ("schema", "record_story", "expected"),
+    [
+        ("aitm.operation-record/v1", 9, LocalOutcome.COMPLETED),
+        ("aitm.operation-record/v1", 10, LocalOutcome.INTEGRITY_ERROR),
+        ("aitm.unregistered/v1", 9, LocalOutcome.INTEGRITY_ERROR),
+    ],
+)
+def test_story_owned_operation_requires_a_bound_record(
+    store, schema, record_story, expected
+):
+    repo, anchor = store
+    start = repo.tip()
+    operation_id = "story-fixture"
+    identity = sha256(operation_id.encode()).hexdigest()
+    path = f".aitm/stories/000/9/operations/{identity}.json"
+    content = json.dumps(
+        {
+            "schema_version": schema,
+            "story": record_story,
+            "base": start.revision,
+            "request_digest": "a" * 64,
+            "command": {"operation_id": operation_id, "local": "completed"},
+        }
+    ).encode()
+    candidate = repo.create_commit(start, {path: content}, "story record")
+
+    result = validate_history(anchor, candidate.revision, repository=repo)
+
+    assert result.outcome == expected
+    if expected == LocalOutcome.INTEGRITY_ERROR:
+        assert path in result.reason
+        assert result.valid_prefix == start.revision
