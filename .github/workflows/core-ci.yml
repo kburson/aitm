@@ -3,10 +3,6 @@ name: Core CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - 'packages/aitm-core/**'
-      - 'pyproject.toml'
-      - 'uv.lock'
 
 permissions:
   contents: read
@@ -45,6 +41,11 @@ jobs:
           version: ${{ env.UV_VERSION }}
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: false
+      - name: Enforce Core unit-test floor from full collection
+        shell: bash
+        run: |
+          uv run --locked --no-editable --python "$PYTHON_VERSION" --package aitm-core \
+            python -m tools.ci.unit_test_floor aitm-core | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Run locked Core tests and lint
         shell: bash
         run: |
