@@ -245,14 +245,31 @@ def test_separate_hosted_routes_never_follow_githost_provider(setup):
         .replace('trunk = "trunk"', 'trunk = "origin/trunk"')
         .replace('githost = "none"', 'githost = "github"')
     )
-    resolved = policy(anchor, commit_policy(root, settings))
+    accepted = commit_policy(root, settings)
+    with pytest.raises(PolicyUnavailable, match="anchored"):
+        policy(anchor, accepted)
+    assert anchor.validated_code_ref is not None
+    git(root, "update-ref", anchor.validated_code_ref, accepted.local.observed_commit)
+    accepted = RefreshResult(
+        local=accepted.local.model_copy(update={"remote": "origin"})
+    )
+    resolved = policy(anchor, accepted)
     assert not resolved.writes_fenced
     assert resolved.routing.store.planning_remote == "shared"
     assert resolved.routing.trunk == "origin/trunk"
-    changed = policy(
-        anchor,
-        commit_policy(root, settings.replace('remote = "shared"', 'remote = "origin"')),
+    git(root, "switch", "-qc", "remote-candidate")
+    candidate = commit_policy(
+        root, settings.replace('remote = "shared"', 'remote = "origin"')
     )
+    observed = RefreshResult(
+        local=candidate.local.model_copy(update={"remote": "origin"})
+    )
+    with pytest.raises(PolicyUnavailable, match="anchored code-default history"):
+        policy(anchor, observed)
+    git(root, "update-ref", anchor.validated_code_ref, candidate.local.observed_commit)
+    changed = policy(anchor, observed)
+    assert git(root, "rev-parse", DEFAULT) == accepted.local.observed_commit
+    assert policy(anchor, accepted) == resolved
     assert changed.writes_fenced
     assert changed.routing.store.planning_remote == "shared"
 

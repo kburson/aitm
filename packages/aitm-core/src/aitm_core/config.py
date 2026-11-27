@@ -101,25 +101,22 @@ def _proposed_routing(installation: Installation, config: CommittedConfig) -> Ro
 
 
 def resolve_policy(anchor: Installation, refresh: RefreshResult) -> PolicySnapshot:
-    """Pin the validated local observation. Candidate adoption belongs to refresh."""
+    """Use one admitted local snapshot. Candidate adoption belongs to refresh."""
     local = refresh.local
     revision = local.observed_commit
-    if (
-        local.ref != anchor.store.code_default_ref
-        or local.remote is not None
-        or revision is None
-    ):
+    target = anchor.policy_ref(local)
+    if target is None or revision is None:
         raise PolicyUnavailable(
-            "policy needs an anchored local code-default observation"
+            "policy needs an anchored local or validated hosted observation"
         )
 
     repository = anchor.repository
     try:
         revision = repository._oid(revision)
-        symbolic = repository._run("symbolic-ref", "-q", local.ref)
+        symbolic = repository._run("symbolic-ref", "-q", target)
         if symbolic.returncode != 1:
             raise PolicyUnavailable("policy needs a direct anchored code-default ref")
-        tip = repository._git("show-ref", "--verify", "--hash", local.ref)
+        tip = repository._git("show-ref", "--verify", "--hash", target)
         tip_oid = repository._oid(tip.strip().decode("ascii"))
         if repository._git("cat-file", "-t", revision).strip() != b"commit":
             raise PolicyUnavailable("code-default observation does not name a commit")
