@@ -58,16 +58,42 @@ class PreflightResult(OperationFact):
         return self
 
 
+class ExtensionOwner(OperationFact):
+    name: Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]*$")]
+    version: Nonempty
+
+
 class WriteAuthorization(OperationFact):
     allowed: bool
     origin: AuthorityOrigin
     reason: str | None = None
+    extension: ExtensionOwner | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    owned_paths: tuple[str, ...] = Field(default=(), exclude_if=lambda value: not value)
+
+    @model_validator(mode="after")
+    def check_extension_receipt(self) -> Self:
+        if self.extension is None and self.owned_paths:
+            raise ValueError("owned paths require an extension receipt")
+        if self.extension is not None and (
+            not self.allowed or self.origin is not AuthorityOrigin.REGISTERED
+        ):
+            raise ValueError("extension receipt requires registered write authority")
+        if len(set(self.owned_paths)) != len(self.owned_paths):
+            raise ValueError("extension receipt repeats an owned path")
+        for path in self.owned_paths:
+            repository_path(path)
+        return self
 
 
 class OperationOwner(OperationFact):
     actor: EventActor
     binding: Nonempty | None = None
     generation: Positive | None = None
+    extension: ExtensionOwner | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def check_binding(self) -> Self:

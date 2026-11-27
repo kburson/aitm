@@ -3,6 +3,7 @@
 from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager
 from hashlib import sha256
+from pathlib import PurePosixPath
 from typing import Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict
@@ -127,9 +128,17 @@ class GitBackend:
         current: Snapshot,
         evaluation: OperationEvaluation,
     ) -> _Record:
-        pending = (
-            op.pending_actions if evaluation.outcome == LocalOutcome.COMPLETED else ()
-        )
+        completed = evaluation.outcome is LocalOutcome.COMPLETED
+        pending = op.pending_actions if completed else ()
+        authorization = evaluation.authorization
+        if (
+            not completed
+            and authorization is not None
+            and authorization.extension is not None
+        ):
+            authorization = authorization.model_copy(
+                update={"extension": None, "owned_paths": ()}
+            )
         return _Record(
             request_digest=digest,
             base=current.revision,
@@ -139,7 +148,21 @@ class GitBackend:
             reason=evaluation.reason,
             guards=evaluation.guards,
             preflight=evaluation.preflight,
-            authorization=evaluation.authorization,
+            authorization=authorization,
+        )
+
+    def _extension_path_conflict(self, current: Snapshot, op: Operation) -> bool:
+        from aitm_core.store.validation import _entries
+
+        writes = {item.path for item in op.change.writes}
+        if not writes:
+            return False
+        existing = _entries(self.repository, current)
+        occupied = writes | existing.keys()
+        return any(
+            any(str(parent) in occupied for parent in PurePosixPath(path).parents)
+            or any(other.startswith(path + "/") for other in occupied)
+            for path in writes
         )
 
     def transact(self, op: Operation, expected: Snapshot) -> OperationResult:
@@ -172,6 +195,15 @@ class GitBackend:
                     for item in op.change.writes
                 ):
                     raise ValidationRejected("operation records are owned by the store")
+                if op.owner.extension is not None and self._extension_path_conflict(
+                    current, op
+                ):
+                    return self._failure(
+                        op,
+                        current,
+                        LocalOutcome.REFUSED,
+                        "extension write would change a path type",
+                    )
                 read_paths = tuple(read.path for read in op.change.read_set)
                 evidence = self.repository.read_blobs(current.tree, read_paths)
                 evaluation = evaluate_operation(
