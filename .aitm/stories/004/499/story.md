@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 499
 title: "[Core C92] Versioned Markdown directive resolution"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/499"
 parent: 473
 children: []
 blocking: [37, 65, 81, 242, 514]
 blocked-by: [14, 498]
 created: "2026-11-27T04:49:05Z"
-updated: "2026-11-27T17:46:59.783Z"
+updated: "2026-11-27T17:52:12.029Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -40,3 +40,7 @@ Parent: #473. Core coordination: #2. State: Ready for Planning.
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **50** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #473 with scope entry **C92**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Verified delivery
+
+[Linked PR #553](https://github.com/kburson/aitm/pull/553) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md).
