@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 23
 title: "[Core C18] Snapshot index and read-only queries"
 kind: "story"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/23"
 parent: 474
 children: []
@@ -37,7 +37,7 @@ Integration owner. Trunk admission requires verified deliveries: #16, #17, #18.
 
 The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
-**GitHub issue:** [kburson/aitm#23](https://github.com/kburson/aitm/issues/23) · **Parent:** [#2](../2/story.md) · **State:** Dev.
+**GitHub issue:** [kburson/aitm#23](https://github.com/kburson/aitm/issues/23) · **Parent:** [#2](../2/story.md) · **State:** Test.
 
 **Separate full-file validation completed:** the core design and parent implementation plan passed separately authorized native XPR, with complete actual input retrieval verified in every round. [Plan validation](../2/plan/reviews/xpr-2026-11-09-core-plan-fullfile/review-manifest.md). The historical procedure limitation is retained in its audit and resolved by these new records. This does not establish leaf Design/Plan/JIT acceptance or implementation authority.
 
