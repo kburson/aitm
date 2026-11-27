@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 470
 title: "[Epic] Core — Core records and reducers"
 kind: "epic"
-state: plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/470"
 parent: 1
 children: [3, 4, 5, 6, 7, 8]
 blocking: []
 blocked-by: [83]
 created: "2026-11-27T04:48:37Z"
-updated: "2026-11-27T06:32:21.651Z"
+updated: "2026-11-27T08:05:37.491Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 20.0, "size": "Feature"}
@@ -55,3 +55,5 @@ Estimate: **20 implementation agent-hours**, including verification and review. 
 **Planning** · rank **10** · **P1/Feature** · **20 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **EP01**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
 
 [Integration pickup and branch](plan/2026-11-27-integration-pickup.md).
+
+[Draft slice integration PR #529](https://github.com/kburson/aitm/pull/529) accumulates the independently delivered children. #8 owns trunk admission.
