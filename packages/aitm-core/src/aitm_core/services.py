@@ -13,6 +13,7 @@ from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutc
 
 if TYPE_CHECKING:
     from aitm_core.config import PolicySnapshot
+    from aitm_core.ext.api import Extension
     from aitm_core.models.common import RefreshResult, StoreAnchor
     from aitm_core.models.operations import Operation, ReadExpectation
     from aitm_core.store.backend import OperationCategories, OperationResult, Snapshot
@@ -59,6 +60,7 @@ class ServicePorts:
     kind_requirements: object | None = None
     aggregate_evidence: object | None = None
     story_exit_guards: object | None = None
+    extension_declarations: tuple[Extension, ...] = ()
 
     def require(self, port: ServicePortName) -> object:
         implementation = getattr(self, port)
@@ -278,6 +280,7 @@ def mutate(
     categories: OperationCategories | None = None,
 ) -> OperationResult:
     """Apply a normal local mutation using the same preflight as explicit refresh."""
+    from aitm_core.models.operations import Operation
     from aitm_core.store.backend import OperationResult
 
     prepared = prepare_mutation(anchor, operation, expected, ports=ports)
@@ -292,6 +295,32 @@ def mutate(
             expected,
             prepared.reason,
         )
+    if isinstance(operation, Operation):
+        from aitm_core.ext.ownership import ExtensionWriteAuthorizer
+        from aitm_core.ext.registry import load_extensions
+
+        services = ports if ports is not None else ServicePorts()
+        assert prepared.policy is not None
+        try:
+            registry = load_extensions(prepared.policy, services.extension_declarations)
+            core = services.write_authorization
+            authorizer = ExtensionWriteAuthorizer(
+                registry, core=core if callable(core) else None
+            )
+        except ValueError as error:
+            reason = str(error)
+            return OperationResult(
+                CommandResult(
+                    operation_id=operation.operation_id,
+                    local=LocalOutcome.REFUSED,
+                    publication=prepared.publication,
+                    evidence=(*prepared.evidence, reason),
+                ),
+                expected,
+                reason,
+            )
+        ports = replace(services, write_authorization=authorizer)
+
     admitted = prepared.views.local
     ref = anchor.policy_ref(admitted)
     if ref is None or admitted.observed_commit is None:
