@@ -9,7 +9,8 @@ from uuid import UUID
 
 import pytest
 from fixtures.receiver import ImportInterrupted, Receiver, ReceiverConflict
-from test_effort_pinned_inputs import add_receipt, at, pin, write
+from pinned_evidence_fixture import pinned_evidence as pinned_evidence
+from test_effort_pinned_inputs import add_receipt, append, at, pin, write
 from test_effort_session_publication import PROJECT, STORY
 from test_effort_session_publication import repo_pair as repo_pair
 
@@ -56,8 +57,7 @@ def registration(repo, kind, relative, payload, stamp, **data):
             **data,
         },
     }
-    with (repo / STORY / "events.jsonl").open("ab") as output:
-        output.write(canonical_record(fact) + b"\n")
+    append(repo, f"{STORY}/events.jsonl", canonical_record(fact) + b"\n")
 
 
 def exact_receipt(repo, *, revision=1, previous=None, **overrides):
@@ -236,8 +236,8 @@ def test_core_export_derives_pinned_rows_and_provenance(repo_pair, tmp_path):
         "duplicate",
     ],
 )
-def test_core_export_preserves_held_evidence(repo_pair, tmp_path, mode):
-    repo, _ = repo_pair
+def test_core_export_preserves_held_evidence(pinned_evidence, request, mode):
+    repo = pinned_evidence(STORY, STORY_ID)
     overrides = {}
     if mode == "partial":
         overrides = {"coverage": Availability.PARTIAL, "outcome": Outcome.INTERRUPTED}
@@ -269,6 +269,7 @@ def test_core_export_preserves_held_evidence(repo_pair, tmp_path, mode):
         with pytest.raises(EffortError, match="Multiple pinned receipt identities"):
             artifact(repo)
         return
+    tmp_path = request.getfixturevalue("tmp_path")
     out = export(repo, artifact(repo))
     proof = json.loads(out["provenance.json"])
     with Receiver(tmp_path / "receiver.db", PROJECT) as receiver:
@@ -285,8 +286,8 @@ def test_core_export_preserves_held_evidence(repo_pair, tmp_path, mode):
             assert proof["rows"][0]["status"] == "pending"
 
 
-def test_core_export_refuses_foreign_forged_and_wrong_rate(repo_pair, tmp_path):
-    repo, _ = repo_pair
+def test_core_export_refuses_foreign_forged_and_wrong_rate(pinned_evidence, tmp_path):
+    repo = pinned_evidence(STORY, STORY_ID)
     exact_receipt(repo)
     roster(repo)
     pair = artifact(repo)
@@ -519,11 +520,11 @@ def test_core_export_cli_emits_exact_files_and_sanitizes_key_errors(
 
 
 def test_oversized_cli_bundle_writes_no_stdout(
-    repo_pair, tmp_path, capsys, monkeypatch
+    pinned_evidence, tmp_path, capsys, monkeypatch
 ):
     from aitm_usage.effort import core_export
 
-    repo, _ = repo_pair
+    repo = pinned_evidence(STORY, STORY_ID)
     exact_receipt(repo)
     roster(repo)
     pair = artifact(repo)
@@ -536,9 +537,9 @@ def test_oversized_cli_bundle_writes_no_stdout(
 
 
 def test_fixture_keeps_unpriced_complete_usage_and_partial_usage_separate(
-    repo_pair, tmp_path
+    pinned_evidence, tmp_path
 ):
-    repo, _ = repo_pair
+    repo = pinned_evidence(STORY, STORY_ID)
     exact_receipt(repo, model="gpt-6.2-astra")
     attempt = "6" * 64
     add_receipt(

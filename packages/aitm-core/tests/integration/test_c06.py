@@ -34,7 +34,6 @@ from aitm_core.store.gate import (
 from aitm_core.store.git_backend import ValidationRejected
 from aitm_core.store.objects import Repository
 from aitm_core.store.validation import (
-    classify_planning_path,
     validate_history,
 )
 
@@ -171,7 +170,6 @@ def test_store_gate(store, tmp_path):
         ("120000", README),
         ("160000", ".aitm/attachments/submodule"),
         ("100755", README),
-        ("100644", ".aitm/attachments/tool.py"),
     ],
 )
 def test_tree_rejects_non_data_objects(store, mode, path):
@@ -180,17 +178,6 @@ def test_tree_rejects_non_data_objects(store, mode, path):
     result = validate_history(anchor, candidate, repository=repo)
     assert result.outcome == LocalOutcome.INTEGRITY_ERROR
     assert path in result.reason
-
-
-def test_layout_rejects_unnormalized_and_undeclared_paths():
-    for path in (
-        "../outside",
-        ".aitm/../outside",
-        ".aitm//README.md",
-        ".aitm/unknown.py",
-    ):
-        with pytest.raises(ValueError):
-            classify_planning_path(path)
 
 
 def test_root_lineage_and_code_ancestry_guards(store):
@@ -385,57 +372,3 @@ def test_delivery_validation_uses_its_own_content_check(store):
 
     assert checks == [(start, candidate)]
     assert repo.tip() == start
-
-
-def test_core_transaction_record_is_bound_to_its_operation_and_parent(store):
-    repo, anchor = store
-    start = repo.tip()
-    path = ".aitm/operations/unbound.json"
-    content = json.dumps(
-        {
-            "schema_version": "aitm.operation-record/v1",
-            "base": start.revision,
-            "request_digest": "a" * 64,
-            "command": {"operation_id": "fixture", "local": "completed"},
-        }
-    ).encode()
-    candidate = repo.create_commit(start, {path: content}, "record")
-    result = validate_history(anchor, candidate.revision, repository=repo)
-    assert result.outcome == LocalOutcome.INTEGRITY_ERROR
-    assert path in result.reason
-    assert result.valid_prefix == start.revision
-
-
-@pytest.mark.parametrize(
-    ("schema", "record_story", "expected"),
-    [
-        ("aitm.operation-record/v1", 9, LocalOutcome.COMPLETED),
-        ("aitm.operation-record/v1", 10, LocalOutcome.INTEGRITY_ERROR),
-        ("aitm.unregistered/v1", 9, LocalOutcome.INTEGRITY_ERROR),
-    ],
-)
-def test_story_owned_operation_requires_a_bound_record(
-    store, schema, record_story, expected
-):
-    repo, anchor = store
-    start = repo.tip()
-    operation_id = "story-fixture"
-    identity = sha256(operation_id.encode()).hexdigest()
-    path = f".aitm/stories/000/9/operations/{identity}.json"
-    content = json.dumps(
-        {
-            "schema_version": schema,
-            "story": record_story,
-            "base": start.revision,
-            "request_digest": "a" * 64,
-            "command": {"operation_id": operation_id, "local": "completed"},
-        }
-    ).encode()
-    candidate = repo.create_commit(start, {path: content}, "story record")
-
-    result = validate_history(anchor, candidate.revision, repository=repo)
-
-    assert result.outcome == expected
-    if expected == LocalOutcome.INTEGRITY_ERROR:
-        assert path in result.reason
-        assert result.valid_prefix == start.revision

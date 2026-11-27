@@ -1388,13 +1388,13 @@ def test_receiver_checks_reconciled_observation_after_reopen(
     assert reopened.import_snapshot(repriced) == "imported"
 
 
-def test_portable_report_reads_fixed_export_bytes(
-    export_evidence, reference_rates, tmp_path
-):
+def test_portable_report_reads_fixed_export_bytes(export_evidence, reference_rates):
+    from test_effort_report import ExportDirectory
+    from test_effort_trail import effort_snapshot
+
     from aitm_usage import export
     from aitm_usage.effort import (
         EffortError,
-        EffortStore,
         Enrollment,
         NativeTurn,
         Outcome,
@@ -1421,16 +1421,14 @@ def test_portable_report_reads_fixed_export_bytes(
     )
     _, files = export._render(view, reference_rates)
     manifest, usage = files["manifest.json"], files["usage.jsonl"]
-    (tmp_path / "manifest.json").write_bytes(manifest)
-    (tmp_path / "usage.jsonl").write_bytes(usage)
+    directory = ExportDirectory(files)
     project_id = UUID(json.loads(manifest)["project_id"])
-    snapshot = read_legacy(tmp_path, project_id)
+    snapshot = read_legacy(directory, project_id)
     assert snapshot.cutoff == view.sequence
     assert [row.source for row in snapshot.rows] == [
         json.loads(line)["source"] for line in usage.splitlines()
     ]
 
-    effort = EffortStore(tmp_path / "effort.db", project_id)
     enrollment = Enrollment(project_id, UUID(int=1), UUID(int=2), Role.WORKER, story=91)
     turn = NativeTurn(
         native.boundary.provider.value,
@@ -1452,10 +1450,10 @@ def test_portable_report_reads_fixed_export_bytes(
         native.tokens,
         UsageScope.BOUNDED,
     )
-    effort.enroll(enrollment)
-    effort.ingest(receipt)
     report = build_report(
-        effort.snapshot(), RollupTarget(project_id, story=91), legacy=snapshot
+        effort_snapshot((enrollment, receipt)),
+        RollupTarget(project_id, story=91),
+        legacy=snapshot,
     )
     legacy = next(
         row for row in report["legacy"]["rows"] if row["source"] == _public(first.key)
@@ -1467,11 +1465,11 @@ def test_portable_report_reads_fixed_export_bytes(
     assert legacy["rate_basis"] == reference_rates.basis.identifier
     assert report["attempts"][0]["observation_id"] == turn.identity
     assert report["combined_coverage"] == "unresolved-overlap"
-    assert (tmp_path / "manifest.json").read_bytes() == manifest
-    assert (tmp_path / "usage.jsonl").read_bytes() == usage
+    assert (directory / "manifest.json").read_bytes() == manifest
+    assert (directory / "usage.jsonl").read_bytes() == usage
 
     with pytest.raises(EffortError):
-        read_legacy(tmp_path, UUID(int=0))
-    (tmp_path / "usage.jsonl").write_bytes(usage + b"\n")
+        read_legacy(directory, UUID(int=0))
+    files["usage.jsonl"] = usage + b"\n"
     with pytest.raises(EffortError):
-        read_legacy(tmp_path, project_id)
+        read_legacy(directory, project_id)

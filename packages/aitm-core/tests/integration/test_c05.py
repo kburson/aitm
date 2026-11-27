@@ -1,44 +1,15 @@
 """Run the C04 contract against temporary Git repositories and exercise ref CAS."""
 
-from contextlib import contextmanager
 from dataclasses import replace
-from importlib.util import module_from_spec, spec_from_file_location
-from pathlib import Path
 from subprocess import check_output
-from threading import Lock
 
 import pytest
 
 from aitm_core.models.common import LocalOutcome
 from aitm_core.store.git_backend import GitBackend, ValidationRejected
 from aitm_core.store.objects import Repository
-
-_spec = spec_from_file_location(
-    "aitm_c04_contract", Path(__file__).parents[1] / "unit" / "test_c04.py"
-)
-assert _spec is not None and _spec.loader is not None
-_contract = module_from_spec(_spec)
-_spec.loader.exec_module(_contract)
-
-REF = "refs/heads/planning"
-
-
-class FixtureGate:
-    def __init__(self):
-        self.lock = Lock()
-        self.observed = []
-
-    @contextmanager
-    def __call__(self, repo, target):
-        assert repo.ref == target == REF
-        with self.lock:
-            yield self.validate
-
-    def validate(self, before, candidate):
-        self.observed.append((before, candidate))
-        if candidate is not None:
-            assert before.store == candidate.store
-            assert before.revision != candidate.revision
+from tests.support.c05 import REF, FixtureGate
+from tests.unit import test_c04 as _contract
 
 
 def git(root, *args):
@@ -174,9 +145,8 @@ def test_c04_mutation_contract_on_git(backend, name):
         ),
     ],
 )
-def test_c04_service_contract_on_git(make_backend, monkeypatch, name, arguments):
-    monkeypatch.setattr(_contract, "MemoryBackend", make_backend)
-    getattr(_contract, name)(*arguments)
+def test_c04_service_contract_on_git(make_backend, name, arguments):
+    getattr(_contract, name)(*arguments, backend_factory=make_backend)
 
 
 class Interrupted(RuntimeError):

@@ -234,3 +234,61 @@ def test_supervisor_surfaces_real_pytest_failure(tmp_path):
             cwd=tmp_path,
             environment={**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"},
         )
+
+
+def test_unit_floor_counts_both_unit_lanes_at_exact_boundary():
+    from tools.ci import unit_test_floor as floor
+
+    counts = floor.count_categories(
+        ["fast-unit"] * 22 + ["slow-unit", "local-integration", "systems-integration"]
+    )
+    assert counts == (23, 2)
+    assert floor.meets_floor(*counts)
+    assert not floor.meets_floor(22, 3)
+    assert not floor.meets_floor(0, 0)
+
+
+def test_unit_floor_classifies_exact_core_inventory():
+    from tools.ci import unit_test_floor as floor
+
+    unit = "packages/aitm-core/tests/unit/test_sample.py::test_unit"
+    integration = "packages/aitm-core/tests/integration/test_sample.py::test_real"
+    assert floor.core_categories([unit, integration]) == [
+        "fast-unit",
+        "local-integration",
+    ]
+    for inventory in (
+        [unit, unit],
+        ["packages/aitm-core/tests/test_sample.py::test_unclassified"],
+        ["packages/aitm-core/tests/platform/test_sample.py::test_unclassified"],
+    ):
+        with pytest.raises(sweep.Refusal):
+            floor.core_categories(inventory)
+
+
+def test_unit_floor_checks_usage_catalog_and_explicit_cli_smoke(tmp_path):
+    from tools.ci import unit_test_floor as floor
+
+    catalog = tmp_path / "catalog.tsv"
+    catalog.write_text(
+        "nodeid\tcategory\tdarwin\tlinux\n"
+        f"{UNIT}\tslow-unit\tyes\tyes\n"
+        f"{floor.CLI_SMOKE}\tsystems-integration\tyes\tyes\n"
+        "tools/ci/tests/test_other.py::test_helper\tfast-unit\tyes\tyes\n"
+        "packages/aitm-usage/native-tests/test_other.py::test_native\tfast-unit\tyes\tyes\n",
+        encoding="utf-8",
+    )
+    assert floor.usage_categories([UNIT], catalog, "darwin") == ["slow-unit"]
+    assert floor.usage_categories([UNIT, floor.CLI_SMOKE], catalog, "linux") == [
+        "slow-unit",
+        "systems-integration",
+    ]
+    for inventory in ([UNIT], [UNIT, UNIT], [floor.CLI_SMOKE]):
+        with pytest.raises(sweep.Refusal):
+            floor.usage_categories(inventory, catalog, "linux")
+    catalog.write_text(
+        catalog.read_text(encoding="utf-8") + f"{UNIT}\tlocal-integration\tyes\tyes\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(sweep.Refusal, match="invalid catalog entry"):
+        floor.usage_categories([UNIT], catalog, "darwin")
