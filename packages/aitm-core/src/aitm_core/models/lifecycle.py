@@ -5,6 +5,8 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
+from aitm_core.models.events import EventActor
+
 Text = Annotated[str, Field(min_length=1)]
 Digest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 Commit = Annotated[str, Field(pattern=r"^[0-9a-f]{40}(?:[0-9a-f]{24})?$")]
@@ -146,14 +148,19 @@ class Deliverable(LifecycleFact):
     source_snapshot: Commit
 
 
+class SigningAgent(EventActor):
+    kind: Literal["agent"]
+
+
 class Signoff(LifecycleFact):
     retro: RepositoryPath
     confidence: Annotated[int, Field(ge=1, le=5)]
     verdict: Literal["delivered", "not-delivered"]
-    by: Text
+    by: SigningAgent
 
 
 class LifecycleState(LifecycleFact):
+    story_id: Positive
     graduation: Graduation
     kind: StoryKind
     relationships: Relationships = Field(default_factory=Relationships)

@@ -170,10 +170,6 @@ def _update(
                 }
             )
         case Signoff():
-            if event.actor.kind != "agent":
-                raise LifecycleIntegrityError(
-                    "sign-off requires the recorded agent actor"
-                )
             return state.model_copy(update={"signoffs": (*state.signoffs, fact)})
         case _:
             raise LifecycleIntegrityError("unsupported lifecycle fact")
@@ -200,12 +196,17 @@ def fold_lifecycle(state: StoryState, event: EventEnvelope) -> StoryState:
         relationships = Relationships(parent=fact.parent)
         _relationships(event.story, relationships)
         updated = LifecycleState(
-            graduation=fact, kind=fact.kind, relationships=relationships
+            story_id=event.story,
+            graduation=fact,
+            kind=fact.kind,
+            relationships=relationships,
         )
     else:
         if not isinstance(current, LifecycleState):
             raise LifecycleIntegrityError(
                 "lifecycle fact requires a recorded graduation"
             )
+        if current.story_id != event.story:
+            raise LifecycleIntegrityError("lifecycle event belongs to another story")
         updated = _update(current, fact, event)
     return replace(state, domains={**state.domains, "lifecycle": updated})

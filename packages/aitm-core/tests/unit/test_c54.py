@@ -5,7 +5,8 @@ from json import dumps
 
 import pytest
 
-from aitm_core.events import ReducerRegistry, fold
+from aitm_core.events import ReducerRegistry, StoryState, fold
+from aitm_core.models.events import validate_envelope
 from aitm_core.reducers.lifecycle import (
     LifecycleIntegrityError,
     fold_lifecycle,
@@ -65,27 +66,32 @@ def move(source=INITIAL, target=REFINE, **fields):
     return "core.state.changed", change
 
 
+def wire_fact(fact, sequence=1, digest=None, *, story=6, recording_actor="agent"):
+    event_type, data = fact
+    return dumps(
+        {
+            "v": 1,
+            "id": f"event-{sequence}",
+            "ts": "2026-11-27T08:00:00Z",
+            "type": event_type,
+            "story": story,
+            "operation_id": f"op-{sequence}",
+            "actor": {"kind": recording_actor},
+            "sequence": sequence,
+            "prior_log_digest": digest or sha256().hexdigest(),
+            "data": data,
+        }
+    ).encode()
+
+
 def replay(*facts):
     registry = ReducerRegistry()
     for event_type in lifecycle_schemas():
         registry.register(event_type, fold_lifecycle)
     prior = sha256()
     records = []
-    for sequence, (event_type, data) in enumerate(facts, 1):
-        event = dumps(
-            {
-                "v": 1,
-                "id": f"event-{sequence}",
-                "ts": "2026-11-27T08:00:00Z",
-                "type": event_type,
-                "story": 6,
-                "operation_id": f"op-{sequence}",
-                "actor": {"kind": "agent"},
-                "sequence": sequence,
-                "prior_log_digest": prior.hexdigest(),
-                "data": data,
-            }
-        ).encode()
+    for sequence, fact in enumerate(facts, 1):
+        event = wire_fact(fact, sequence, prior.hexdigest())
         records.append(event)
         prior.update(event + b"\n")
     return fold(records, registry).domains["lifecycle"]
@@ -165,7 +171,7 @@ def test_lifecycle_reducers():
             "retro": "retro/signed.md",
             "confidence": 5,
             "verdict": "delivered",
-            "by": "actor-1",
+            "by": {"kind": "agent", "session": "actor-1"},
         },
     )
     observed = replay(
@@ -318,3 +324,56 @@ def test_terminal_disposition_history_survives_reopen():
                     replacement_story=replacement,
                 ),
             )
+
+
+def test_standalone_replay_pins_the_story_at_graduation():
+    start = fold_lifecycle(StoryState(), validate_envelope(wire_fact(GRADUATION)))
+    assert start.story_id is None
+    with pytest.raises(LifecycleIntegrityError, match="another story"):
+        fold_lifecycle(
+            start, validate_envelope(wire_fact(estimate("refine", 3), story=8))
+        )
+
+
+def test_signer_is_an_agent_separate_from_recording_actor():
+    start = fold_lifecycle(StoryState(), validate_envelope(wire_fact(GRADUATION)))
+    signoff = (
+        "core.signoff.recorded",
+        {
+            "retro": "retro/signed.md",
+            "confidence": 4,
+            "verdict": "delivered",
+            "by": {"kind": "agent", "session": "implementation-session"},
+        },
+    )
+    recorded = validate_envelope(wire_fact(signoff, recording_actor="tool"))
+    lifecycle = fold_lifecycle(start, recorded).domains["lifecycle"]
+    assert lifecycle.signoff.by.session == "implementation-session"
+    invalid = (signoff[0], {**signoff[1], "by": {"kind": "tool"}})
+    with pytest.raises(LifecycleIntegrityError, match="payload"):
+        fold_lifecycle(start, validate_envelope(wire_fact(invalid)))
+
+
+def test_direct_draft_graduation_preserves_origin():
+    source = {**GRADUATION[1], "source_kind": "draft", "source_id": "draft-6"}
+    assert replay((GRADUATION[0], source)).graduation.source_kind == "draft"
+
+
+@pytest.mark.parametrize("changes", [{"plan_digest": DIGEST}, {"plan_generation": 2}])
+def test_jit_checks_both_current_plan_identity_parts(changes):
+    data = {
+        "plan_digest": NEWER,
+        "plan_generation": 1,
+        "attempt": "a1",
+        "code_baseline": COMMIT,
+        "coverage_paths": ["src"],
+        "coverage_status": "complete",
+        "outcome": "accepted",
+        "reviewed_revisions": [COMMIT],
+    }
+    with pytest.raises(LifecycleIntegrityError, match="current accepted plan"):
+        replay(
+            GRADUATION,
+            acceptance("plan", NEWER),
+            ("core.jit.recorded", {**data, **changes}),
+        )
