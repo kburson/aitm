@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 5
 title: "[Core C03] Canonical authored content and metadata ownership"
 kind: "story"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/5"
 parent: 470
 children: []
 blocking: [6, 12, 16, 29, 53, 70, 75, 78]
 blocked-by: [3]
 created: "2026-11-09T07:59:45Z"
-updated: "2026-11-27T08:25:28.326Z"
+updated: "2026-11-27T08:28:10.362Z"
 last-branch: "codex/core-5-authored-content"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -108,3 +108,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 [Rank 30 pickup plan](plan/2026-11-27-pickup.md) addresses the accepted C03 design.
 
 [Accepted pickup review](plan/2026-11-27-pickup-review.md).
+
+[Draft PR #531](https://github.com/kburson/aitm/pull/531) · [Delivery checklist](plan/delivery-checklist.md).
