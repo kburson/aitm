@@ -41,3 +41,7 @@ The revised model refuses any unsupported top-level field or table. The
 accepted design's four-hour and one-expansion ceilings remain explicit;
 added direct tests proving both reject out-of-range values. All 32 C07
 tests, all 177 installed Core tests, and Ruff passed at head `26846c77ade5d1d7e4cd06b3c0c2e2d4bf5c0a57`.
+
+## Hosted verification
+
+[CI run 46010068865](https://github.com/kburson/aitm/actions/runs/46010068865) and [Core CI run 46010068836](https://github.com/kburson/aitm/actions/runs/46010068836) passed on base `cce0cb2b033be027f695e3d8f9896edca40de765`, head `26846c77ade5d1d7e4cd06b3c0c2e2d4bf5c0a57` and synthetic merge tree `97e85346614ea56800f4899996a0e37150a40b37`. Hosted Core ran 177 passing tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
