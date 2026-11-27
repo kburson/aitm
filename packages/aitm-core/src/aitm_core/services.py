@@ -7,10 +7,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, cast
 
 if TYPE_CHECKING:
-    from aitm_core.models.common import StoreAnchor
+    from aitm_core.config import PolicySnapshot
+    from aitm_core.models.common import RefreshResult, StoreAnchor
     from aitm_core.store.backend import OperationCategories
     from aitm_core.store.gate import Gate
     from aitm_core.store.git_backend import GitBackend
+    from aitm_core.store.installation import Installation
     from aitm_core.store.objects import Repository
     from aitm_core.store.validation import ForwardRepairVerifier, ValidationReport
 
@@ -91,3 +93,10 @@ def backend(
         )
 
     return GitBackend(repository, gate, ports=services, categories=categories)
+
+
+def policy(anchor: Installation, refresh: RefreshResult) -> PolicySnapshot:
+    """Resolve effective policy through the committed Core authority."""
+    from aitm_core.config import resolve_policy
+
+    return resolve_policy(anchor, refresh)
