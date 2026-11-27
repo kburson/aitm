@@ -5,8 +5,8 @@
   "aggregate_pr": 560,
   "trunk_base": "2f5a1f7bf5d33b54cc24dd376d9ee1f377568699",
   "provisioning": "8e4def51deb2fa3ba79fdef1671712aec1fb9977",
-  "integration_head": "16560373b2b7056117627d2c23a0f6f5487cd472",
-  "tree": "7df87e1cfaaf9ca742dac2f317847d1472f6ba1f",
+  "integration_head": "a0cf28c88c4315b478343e4b557ee3b21e0771c4",
+  "tree": "d6b2490cefa6f70edbb458564795ab67af3c7ddf",
   "leaves": [
     {
       "story": "19",
@@ -60,6 +60,19 @@
       "head": "594979cb5fcd31bda16ceae0e04b66ca87b5d624",
       "base": "a31e18ff1dd7036d921ce8e6208f3c33b0888bf6",
       "tested": "5273980bb39064c53309e4d64b0891b9660fcb76"
+    }
+  ],
+  "integration_corrections": [
+    {
+      "story": "500",
+      "pr": 566,
+      "landing": "a0cf28c88c4315b478343e4b557ee3b21e0771c4",
+      "landed_at": "2026-11-27T23:21:05Z",
+      "target": "codex/core-475-integration",
+      "tree": "d6b2490cefa6f70edbb458564795ab67af3c7ddf",
+      "head": "ef090350e544c77473bd3949ed35030e5d41230b",
+      "base": "16560373b2b7056117627d2c23a0f6f5487cd472",
+      "tested": "758138ba442597c326e73914e026d29f0360e1d8"
     }
   ]
 }

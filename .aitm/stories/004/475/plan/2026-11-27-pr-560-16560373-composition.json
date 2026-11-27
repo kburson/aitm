@@ -1,0 +1,65 @@
+{
+  "schema": "aitm.core-475-composition/v1",
+  "epic": 475,
+  "integration_owner": 500,
+  "aggregate_pr": 560,
+  "trunk_base": "2f5a1f7bf5d33b54cc24dd376d9ee1f377568699",
+  "provisioning": "8e4def51deb2fa3ba79fdef1671712aec1fb9977",
+  "integration_head": "16560373b2b7056117627d2c23a0f6f5487cd472",
+  "tree": "7df87e1cfaaf9ca742dac2f317847d1472f6ba1f",
+  "leaves": [
+    {
+      "story": "19",
+      "pr": 561,
+      "landing": "0a358173354eee4bb09cc98d2e8cbeb286790c45",
+      "tree": "56939363e076f8dac9c78634a0961b6572dd9df7",
+      "head": "1d5bc94e352aef371e61652456c6df95169d5ef9",
+      "base": "8e4def51deb2fa3ba79fdef1671712aec1fb9977",
+      "tested": "378d450107ec105d154c0c48910a734bcd256b4b"
+    },
+    {
+      "story": "20",
+      "pr": 562,
+      "landing": "d79dae51c3223d90f8c1241c159631c5f0e60cf3",
+      "landed_at": "2026-11-27T22:24:43Z",
+      "target": "codex/core-475-integration",
+      "tree": "8d24a69e25174673324a488eb5aaf4fbef11b14f",
+      "head": "8d0357a4ed3dedfb0e64141e2cc5962b5cf63862",
+      "base": "0a358173354eee4bb09cc98d2e8cbeb286790c45",
+      "tested": "49d010bf4a46a5c174ac2b44e840d5f00badc2b7"
+    },
+    {
+      "story": "21",
+      "pr": 563,
+      "landing": "0d626df2d07572e2d925e8340485485b3b637212",
+      "landed_at": "2026-11-27T22:49:16Z",
+      "target": "codex/core-475-integration",
+      "tree": "d9af931eb9c3f932d6e0809ea9bc5c02ee5516ac",
+      "head": "9979bedf63059ca35e844c1f9404f8864fe9d39f",
+      "base": "d79dae51c3223d90f8c1241c159631c5f0e60cf3",
+      "tested": "414e0698c4148269c040f474a4a9965a6da8c435"
+    },
+    {
+      "story": "22",
+      "pr": 564,
+      "landing": "a31e18ff1dd7036d921ce8e6208f3c33b0888bf6",
+      "landed_at": "2026-11-27T23:01:56Z",
+      "target": "codex/core-475-integration",
+      "tree": "7df87e1cfaaf9ca742dac2f317847d1472f6ba1f",
+      "head": "d788116921d7a647d0fb73c63508fcb445370182",
+      "base": "0d626df2d07572e2d925e8340485485b3b637212",
+      "tested": "20e23c85482201399db14251f2ee05608b08da81"
+    },
+    {
+      "story": "500",
+      "pr": 565,
+      "landing": "16560373b2b7056117627d2c23a0f6f5487cd472",
+      "landed_at": "2026-11-27T23:07:49Z",
+      "target": "codex/core-475-integration",
+      "tree": "7df87e1cfaaf9ca742dac2f317847d1472f6ba1f",
+      "head": "594979cb5fcd31bda16ceae0e04b66ca87b5d624",
+      "base": "a31e18ff1dd7036d921ce8e6208f3c33b0888bf6",
+      "tested": "5273980bb39064c53309e4d64b0891b9660fcb76"
+    }
+  ]
+}
