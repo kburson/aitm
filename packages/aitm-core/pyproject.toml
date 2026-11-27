@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Core records and workflow for AITM"
 requires-python = ">=3.13"
 dependencies = [
+    "packaging>=26,<27",
     "pydantic>=2.13,<3",
     "rfc8785>=0.1,<0.2",
     "ruamel.yaml>=0.18,<0.19",
