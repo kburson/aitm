@@ -7,7 +7,7 @@ The delivery ledger places this epic second. Its verified Project #24 epic rank 
 | 10 | #494 / C107 | Pinned guard triggers, inputs, kind/role and exceptions, broader guards, test evidence and policy recommendations |
 | 20 | #495 / C108 | Resident actions, waiting and recovery, markers, historical schema and review/close evidence |
 | 30 | #496 / C109 | Operation, directive, hook and external rule authority, proof and applicability |
-| 40 | #497 / C110 | Source-backed or explicitly uncertain disposition for each residual choice, accountable owner and earliest gate, plus representative policy decision vectors and exact slice admission |
+| 40 | #497 / C110 | Land pinned legacy findings and typed policy decision fixtures with an explicit disposition for every open item after verified C107, C108 and C109 delivery. Retain the source or explicit uncertainty, accountable owner, earliest gate and representative policy decision vectors. |
 
 Retain the configured-workflow amendment and the accepted legacy crosswalk. The pinned legacy repository source is commit `c8b64b6b2d0e404cbae9a1d5eced7d94c36b4905` and Git tree `844ae26bb169e8618e45fc3b1aedb57f44896fe0`. The crosswalk calls the former a tree identifier. Git and GitHub both resolve it as the commit with the latter tree.
 
@@ -26,6 +26,6 @@ Cover all eight decision sets from the accepted replan.
 - Resident action restart and waiting behavior, evidence authenticity and kind applicability.
 - Verbs, directives, backward parking, hooks, operation/role restrictions and provider policy.
 
-C110 records the decision, source or explicit uncertainty, accountable owner, earliest gate and representative acceptance/refusal vectors. C110 also retains provider handoffs separately from Core admission. The configured profile defines which pending project choices can remain with an owner without holding Core. Project-level equivalence needs the selected rule and bounded proof.
+C110 records the decision, source or explicit uncertainty, accountable owner, earliest gate and representative acceptance/refusal vectors. C110 also retains provider handoffs separately from Core admission. A pending project policy choice holds affected Core pickup when the accepted profile lacks a defined behavior. Where the profile gives a defined behavior, the outstanding legacy exception remains visible with its project owner. Project-level equivalence requires the selected rule and bounded proof.
 
-#12, #37, #80 and #241 require the C110 trunk decision fixture. The other consumers named in the accepted replan cite their corresponding disposition at JIT. All child source citations pin the verified legacy commit and its Git tree above.
+#12, #37, #80 and #241 require the C110 trunk decision fixture. Other named consumers cite the applicable disposition at JIT. These include #53 / C46, #21 / C16, #49 / C42, #42 / C35, #50 / C43, and C93 / C94. All child source citations pin the verified legacy commit and its Git tree above.
