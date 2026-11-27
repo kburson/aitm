@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 3
 title: "[Core C01] Package foundation and command result contract"
 kind: "story"
-state: test
+state: review
 issue: "https://github.com/kburson/aitm/issues/3"
 parent: 470
 children: []
 blocking: [4, 5, 11, 64]
 blocked-by: [83, 527]
 created: "2026-11-09T07:59:36Z"
-updated: "2026-11-27T06:38:08.398Z"
+updated: "2026-11-27T07:58:19Z"
 last-branch: "codex/core-3-foundation"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}

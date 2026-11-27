@@ -20,3 +20,9 @@ PR #526 remains draft and #3 remains in Test. The accepted pickup requires appli
 ## Separate hosted Core prerequisite
 
 The owner authorized [#527](https://github.com/kburson/aitm/issues/527). Its reviewed workflow landed through [PR #528](https://github.com/kburson/aitm/pull/528) in `34fd11588a1fecf3d04f16a311f1be9bd2f33c3b`. The story branch merged that integration base in `9b34623e`. The package and workspace changes are identical to the previous revision. Fresh repository CI and the new Core Python job are required for this updated candidate.
+
+## Refreshed hosted candidate
+
+Repository CI [45961623982](https://github.com/kburson/aitm/actions/runs/45961623982) and Core CI [45961624070](https://github.com/kburson/aitm/actions/runs/45961624070) passed against base `34fd11588a1fecf3d04f16a311f1be9bd2f33c3b`, head `9b34623e22c66c18eb07c0527ab8eba79fcefd18` and merge tree `844a8dd9e652ad4fcc017b6d1e4988fe859cd9f0`. The Core job verified both merge parents, then ran four tests and Ruff on hosted Ubuntu.
+
+The owner-directed prerequisite #527 is Done. PR #526 left draft after both hosted runs completed. Grok 4.7 source SAR was requested on this exact candidate.
