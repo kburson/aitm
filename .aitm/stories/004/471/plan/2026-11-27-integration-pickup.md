@@ -11,7 +11,7 @@ The delivery ledger places this epic second. Its verified Project #24 epic rank 
 
 Retain the configured-workflow amendment and the accepted legacy crosswalk. The pinned legacy repository source is commit `c8b64b6b2d0e404cbae9a1d5eced7d94c36b4905` and Git tree `844ae26bb169e8618e45fc3b1aedb57f44896fe0`. The crosswalk calls the former a tree identifier. Git and GitHub both resolve it as the commit with the latter tree.
 
-Each child is scoped to its own accepted reference document and must cite actual legacy source and tests or identify uncertainty. Separate observed behavior from proposed disposition. Require an authorized policy decision only where the approved profile and existing evidence leave a substantive owner choice. Keep provider-specific obligations visible with their owners. Run the applicable local verification and require both hosted workflows and a fresh Grok 4.7 source SAR on each non-draft story PR and on the final trunk PR.
+Each child is scoped to its own accepted reference document and must cite actual legacy source and tests or identify uncertainty. Separate observed behavior from proposed disposition. Require an authorized policy decision only where the approved profile and existing evidence leave a substantive owner choice. Keep provider-specific obligations visible with their owners. Run the applicable local verification and require applicable hosted workflows and a fresh Grok 4.7 source SAR on each non-draft story PR and on the final trunk PR.
 
 ## Required decision inventory and consumer gates
 
@@ -29,3 +29,5 @@ Cover all eight decision sets from the accepted replan.
 C110 records the decision, source or explicit uncertainty, accountable owner, earliest gate and representative acceptance/refusal vectors. C110 also retains provider handoffs separately from Core admission. A pending project policy choice holds affected Core pickup when the accepted profile lacks a defined behavior. Where the profile gives a defined behavior, the outstanding legacy exception remains visible with its project owner. Project-level equivalence requires the selected rule and bounded proof.
 
 #12, #37, #80 and #241 require the C110 trunk decision fixture. Other named consumers cite the applicable disposition at JIT. These include #53 / C46, #21 / C16, #49 / C42, #42 / C35, #50 / C43, and C93 / C94. All child source citations pin the verified legacy commit and its Git tree above.
+
+For a documentation-only PR, require repository CI on its exact candidate. When the Core CI path filter excludes that PR, compare its Core package, root inputs and workflow bytes with the latest passing hosted Core baseline. Re-evaluate applicability on any changed input.
