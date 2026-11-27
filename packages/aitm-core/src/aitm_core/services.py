@@ -22,7 +22,11 @@ if TYPE_CHECKING:
     from aitm_core.store.git_backend import GitBackend
     from aitm_core.store.installation import Installation
     from aitm_core.store.objects import Repository
-    from aitm_core.store.validation import ForwardRepairVerifier, ValidationReport
+    from aitm_core.store.validation import (
+        DiagnosedHistory,
+        ForwardRepairVerifier,
+        ValidationReport,
+    )
 
 ServicePortName = Literal[
     "policy_resolution",
@@ -51,7 +55,7 @@ class ServicePorts:
     policy_resolution: object | None = None
     policy_refresh: object | None = None
     validation_gate: object | None = None
-    forward_repair_verifier: object | None = None
+    forward_repair_verifier: object | None = "default"
     write_authorization: object | None = None
     attempt_preflight: object | None = None
     init_hooks: object | None = None
@@ -104,7 +108,8 @@ def backend(
             tip,
             repository=repository,
             forward_repair_verifier=cast(
-                "ForwardRepairVerifier | None", services.forward_repair_verifier
+                'ForwardRepairVerifier | Literal["default"] | None',
+                services.forward_repair_verifier,
             ),
         )
 
@@ -167,8 +172,17 @@ def refresh(
         cached_refs,
         refresh_refs,
     )
+    from aitm_core.store.repair import repair_verifier
 
-    verifier = ports.forward_repair_verifier if ports is not None else None
+    verifier = ports.forward_repair_verifier if ports is not None else "default"
+    if verifier == "default":
+
+        def selected_verifier(
+            store: StoreAnchor, diagnosis: DiagnosedHistory, candidate: Snapshot
+        ) -> ValidationReport:
+            return repair_verifier(anchor.repository)(store, diagnosis, candidate)
+
+        verifier = selected_verifier
     request = RefreshPolicy(
         installation=anchor,
         trusted_checkpoint=trusted_checkpoint,
@@ -333,23 +347,77 @@ def mutate(
         categories=categories,
         code_pin=(ref, admitted.observed_commit),
     )
-    result = target.transact(operation, expected)
-    command = result.command
-    publication = (
-        prepared.publication
-        if command.local == LocalOutcome.COMPLETED
-        and command.publication == PublicationOutcome.NOT_APPLICABLE
-        else command.publication
+    return CommandService(anchor, target, ports, categories).execute(
+        operation, expected, prepared
     )
-    return replace(
-        result,
-        command=command.model_copy(
-            update={
-                "publication": publication,
-                "evidence": (*command.evidence, *prepared.evidence),
-            }
-        ),
-    )
+
+
+@dataclass(frozen=True, slots=True)
+class CommandService:
+    installation: Installation
+    target: GitBackend
+    ports: ServicePorts | None = None
+    categories: OperationCategories | None = None
+
+    def execute(
+        self, operation: Operation, expected: Snapshot, prepared: PolicyPreflight
+    ) -> OperationResult:
+        from aitm_core.models.operations import Operation
+        from aitm_core.store.backend import OperationResult
+        from aitm_core.store.objects import GitCommandError
+        from aitm_core.store.publication import PublicationStatus, Publisher
+
+        publisher = None
+        if (
+            isinstance(operation, Operation)
+            and self.installation.store.planning_remote is not None
+        ):
+            publisher = Publisher(self.installation, self.ports, self.categories)
+            try:
+                publisher.retain_request(operation)
+            except (GitCommandError, OSError, ValueError) as error:
+                reason = f"Could not retain the publication request: {error}"
+                return OperationResult(
+                    CommandResult(
+                        operation_id=operation.operation_id,
+                        local=LocalOutcome.UNAVAILABLE,
+                        publication=prepared.publication,
+                        evidence=(*prepared.evidence, reason),
+                    ),
+                    expected,
+                    reason,
+                )
+
+        result = self.target.transact(operation, expected)
+        command = result.command
+        publication = command.publication
+        evidence = (*command.evidence, *prepared.evidence)
+        recovery = command.recovery
+        if command.local == LocalOutcome.COMPLETED and publisher is not None:
+            published = publisher.publish(operation.operation_id)
+            if published.status == PublicationStatus.PUBLISHED:
+                publication = PublicationOutcome.VERIFIED
+            elif published.status != PublicationStatus.NOT_APPLICABLE:
+                publication = PublicationOutcome.PENDING
+                evidence += (f"Publication {published.status}: {published.reason}",)
+                recovery = published.recovery_ref or recovery
+            elif publication == PublicationOutcome.NOT_APPLICABLE:
+                publication = prepared.publication
+        elif (
+            command.local == LocalOutcome.COMPLETED
+            and publication == PublicationOutcome.NOT_APPLICABLE
+        ):
+            publication = prepared.publication
+        return replace(
+            result,
+            command=command.model_copy(
+                update={
+                    "publication": publication,
+                    "evidence": evidence,
+                    "recovery": recovery,
+                }
+            ),
+        )
 
 
 def _unique_coordinates(pairs: list[tuple[str, object]]) -> dict[str, object]:
