@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/522"
 parent: 1
 children: []
 blocking: [523]
-blocked-by: [72]
+blocked-by: [72, 525]
 created: "2026-11-27T05:59:07Z"
-updated: "2026-11-27T05:59:57.455Z"
+updated: "2026-11-27T06:05:49.247Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -30,9 +30,9 @@ Import and validate the legacy history corpus using a released Core data and rea
 
 ## Prerequisites
 
-Native blockers: [#72](https://github.com/kburson/aitm/issues/72).
+Native blockers: [#72](https://github.com/kburson/aitm/issues/72), [#525](https://github.com/kburson/aitm/issues/525).
 
-M2 source access or an explicitly approved equivalent is a required capability gate. Link its native issue when it graduates.
+Source access is gated on the qualified read-only adapter and handoff receipt from [#525](https://github.com/kburson/aitm/issues/525), under M2 [#524](https://github.com/kburson/aitm/issues/524). M7 may start once its own prerequisites are satisfied.
 
 ## Design
 

@@ -1,0 +1,217 @@
+{
+  "base": "650a35342350b0eb6c5c7d43acb25d95c622c921",
+  "verified_at": "2026-11-27T06:05:49.247Z",
+  "identities": {
+    "M2": {
+      "number": 524,
+      "id": 6641030252,
+      "node_id": "I_kwDOVnNyI88AAAABi9YUbA",
+      "html_url": "https://github.com/kburson/aitm/issues/524",
+      "created_at": "2026-11-27T06:05:33Z",
+      "title": "[Epic] M2 GitHub provider and first hosted delivery"
+    },
+    "source": {
+      "number": 525,
+      "id": 6641030413,
+      "node_id": "I_kwDOVnNyI88AAAABi9YVDQ",
+      "html_url": "https://github.com/kburson/aitm/issues/525",
+      "created_at": "2026-11-27T06:05:34Z",
+      "title": "[M2] Qualify read-only legacy source access for M7"
+    }
+  },
+  "graph": {
+    "1": {
+      "id": "I_kwDOVnNyI88AAAABdf6X6g",
+      "number": 1,
+      "state": "OPEN",
+      "parent": null,
+      "blockedBy": [],
+      "blocking": [],
+      "subIssues": [
+        2,
+        247,
+        470,
+        471,
+        472,
+        473,
+        474,
+        475,
+        476,
+        477,
+        478,
+        479,
+        480,
+        481,
+        482,
+        483,
+        484,
+        485,
+        486,
+        487,
+        488,
+        489,
+        490,
+        491,
+        492,
+        493,
+        522,
+        523,
+        524
+      ],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL4uc",
+        "values": {
+          "Status": "f75ad846",
+          "Priority": "90b2e477",
+          "Rank": 10.0
+        }
+      }
+    },
+    "72": {
+      "id": "I_kwDOVnNyI88AAAABdnRGew",
+      "number": 72,
+      "state": "OPEN",
+      "parent": 491,
+      "blockedBy": [
+        70,
+        71
+      ],
+      "blocking": [
+        228,
+        229,
+        522,
+        523,
+        524,
+        525
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL4_I",
+        "values": {
+          "Status": "f75ad846",
+          "Rank": 50.0,
+          "Estimate": 2.5,
+          "Size": "9592a5a3",
+          "Priority": "0a877460"
+        }
+      }
+    },
+    "522": {
+      "id": "I_kwDOVnNyI88AAAABi9TMzg",
+      "number": 522,
+      "state": "OPEN",
+      "parent": 1,
+      "blockedBy": [
+        72,
+        525
+      ],
+      "blocking": [
+        523
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTd_I",
+        "values": {
+          "Status": "f75ad846"
+        }
+      }
+    },
+    "523": {
+      "id": "I_kwDOVnNyI88AAAABi9TNlQ",
+      "number": 523,
+      "state": "OPEN",
+      "parent": 1,
+      "blockedBy": [
+        51,
+        72,
+        229,
+        522
+      ],
+      "blocking": [],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTd_g",
+        "values": {
+          "Status": "f75ad846"
+        }
+      }
+    },
+    "524": {
+      "id": "I_kwDOVnNyI88AAAABi9YUbA",
+      "number": 524,
+      "state": "OPEN",
+      "parent": 1,
+      "blockedBy": [
+        72
+      ],
+      "blocking": [],
+      "subIssues": [
+        525
+      ],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTh8U",
+        "values": {
+          "Status": "f75ad846"
+        }
+      }
+    },
+    "525": {
+      "id": "I_kwDOVnNyI88AAAABi9YVDQ",
+      "number": 525,
+      "state": "OPEN",
+      "parent": 524,
+      "blockedBy": [
+        72
+      ],
+      "blocking": [
+        522
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTh8s",
+        "values": {
+          "Status": "f75ad846",
+          "Size": "9592a5a3",
+          "Estimate": 3.75
+        }
+      }
+    }
+  },
+  "edges": {
+    "524": [
+      72
+    ],
+    "525": [
+      72
+    ],
+    "522": [
+      72,
+      525
+    ]
+  },
+  "body_sha256": {
+    "524": "dac764dda3c39c9bb7f8fe9c1d1d98aa3276b19f74dcf270446400a81bb19e98",
+    "525": "31e2fe03475bcfc020d0994a0de385ff80c608a82dd3808f247b21d9da2fad40",
+    "522": "8b642d1eb9d390b815fd9841498e2c371168932ad42bfc1d8f2032191268121c"
+  },
+  "source_read_only_handoff": {
+    "from": 525,
+    "to": 522,
+    "required_core_release": 72,
+    "full_m2_epic_is_native_blocker": false,
+    "size": "S",
+    "preliminary_agent_hours": 3.75
+  },
+  "blocked_by_projection": {
+    "522": [
+      525
+    ],
+    "524": [
+      72
+    ],
+    "525": [
+      72
+    ]
+  },
+  "original_m2_draft_sha256": "d8f3d42988e12f790a45d2947d7669353932636f63e91502fe0e1fe78abd1a56"
+}

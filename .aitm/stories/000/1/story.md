@@ -6,11 +6,11 @@ kind: epic
 state: backlog
 issue: https://github.com/kburson/aitm/issues/1
 parent: null
-children: [2, 247, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 522, 523]
+children: [2, 247, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 522, 523, 524]
 blocking: []
 blocked-by: []
 created: 2026-11-08T19:24:00Z
-updated: "2026-11-27T05:59:57.455Z"
+updated: "2026-11-27T06:05:49.247Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: { agent-hours: null, size: null }
@@ -66,7 +66,7 @@ Root epic for the aitm product: a Python rewrite of ai-task-manager as a core pl
 
 ## Story dashboard production intake from #181
 
-- M2 owns [C05 board projection](../../../drafts/2026-11/20261108-1310-github-extension/draft.md#c05-intake-from-181).
+- M2 [#524](https://github.com/kburson/aitm/issues/524) owns [C05 board projection](../../005/524/draft.md#c05-intake-from-181).
 - M6 [Viewer #247](../../002/247/story.md) owns [C06 hosted viewer](../../002/247/draft.md#c06-intake-from-181).
 - M8 owns [C07 estimate calibration](../../005/523/draft.md#c07-intake-from-181).
 
@@ -82,3 +82,7 @@ These are backlog inputs to the existing milestone drafts. [#2](../2/story.md) o
 - [M8 Estimation rubric #523](../../005/523/story.md) consumes Core estimate and outcome lineage from [#51](https://github.com/kburson/aitm/issues/51), the qualified release [#72](https://github.com/kburson/aitm/issues/72), qualified Actual from [#229](https://github.com/kburson/aitm/issues/229), and the validated history from [#522](https://github.com/kburson/aitm/issues/522). [#228](https://github.com/kburson/aitm/issues/228) is the alternate measurement route if separately qualified and reconciled.
 
 The dependency direction is M7 to M8. M7 publishes the corpus under a neutral contract and runs independently of the rubric. The linked design specs are drafts. [Graduation readback](plan/2026-11-26-m7-m8-graduation.json).
+
+## M2 graduation and M7 source access
+
+[M2 #524](../../005/524/story.md) is under #1, with a [draft design](../../005/524/design/github-extension-design.md). Its bounded source-access child [#525](https://github.com/kburson/aitm/issues/525) qualifies independently and is the native source-access blocker for M7 [#522](https://github.com/kburson/aitm/issues/522). [#72](https://github.com/kburson/aitm/issues/72) remains the Core release prerequisite. [Graduation and dependency readback](plan/2026-11-27-m2-graduation.json).
