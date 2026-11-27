@@ -1,0 +1,53 @@
+name: Core CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'packages/aitm-core/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  core-python:
+    name: Core Python
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      PYTHON_VERSION: '3.13.9'
+      UV_VERSION: '0.10.6'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify exact merge candidate
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git show -s --format=%P HEAD)" = "$PR_BASE $PR_HEAD"
+          printf 'Base: %s\nHead: %s\nMerge: %s\nTree: %s\n' \
+            "$PR_BASE" "$PR_HEAD" "$GITHUB_SHA" "$(git rev-parse 'HEAD^{tree}')"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: false
+      - name: Run locked Core tests and lint
+        shell: bash
+        run: |
+          uv run --locked --no-editable --python "$PYTHON_VERSION" --package aitm-core pytest packages/aitm-core/tests -q
+          uv run --locked --no-editable --python "$PYTHON_VERSION" --package aitm-core ruff check packages/aitm-core
+          uv run --locked --no-editable --python "$PYTHON_VERSION" --package aitm-core ruff format --check packages/aitm-core
