@@ -67,6 +67,12 @@ def _scalar(node: ScalarNode) -> JsonValue:
         number = float(value)
         if not math.isfinite(number):
             raise DocumentError("nonfinite frontmatter number")
+        # Binary64 values beyond this bound are integral even when the token
+        # used decimal or exponent syntax. Refuse them before hashing.
+        if abs(number) > _MAX_INTEGER:
+            raise DocumentError(
+                "frontmatter integer is outside the interoperable range"
+            )
         return number
     try:
         integer = int(value)

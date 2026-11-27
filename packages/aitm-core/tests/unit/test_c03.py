@@ -18,12 +18,12 @@ def document(header=b"", body=BODY, identity=BASE):
 def test_canonical_vectors():
     raw = document(
         b'title: "quoted \\"value\\""\n'
-        b"decomposition: {z: 1e3, a: [333333333.33333329, 1e30, 4.50, 2e-3, 1e-27]}\n"
+        b"decomposition: {z: 1e3, a: [333333333.33333329, 4.50, 2e-3, 1e-27]}\n"
         b'updated: "yesterday"\n'
     )
     expected = (
         '{"body":"\\r\\nCafe\u0301 ·  \\r\\n","document_schema":"aitm.doc/v1",'
-        '"header":{"decomposition":{"a":[333333333.3333333,1e+30,4.5,0.002,1e-27],"z":1000},'
+        '"header":{"decomposition":{"a":[333333333.3333333,4.5,0.002,1e-27],"z":1000},'
         '"title":"quoted \\"value\\""},"role":"design","schema":"aitm.authored-content/v1","story":5}'
     ).encode()
     result = canonicalize(raw, DocumentSchema())
@@ -105,6 +105,10 @@ def test_json_resolution_and_integer_boundaries():
         b"9007199254740992",
         b"-9007199254740992",
         b"1e999",
+        b"1e16",
+        b"-1e20",
+        b"9007199254740992.0",
+        b"9007199254740991.9",
         b'"3"',
         b"01",
         b".inf",
