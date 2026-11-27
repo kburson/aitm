@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 496
 title: "[Core C109] Inventory operation eligibility, hooks and authority"
 kind: "story"
-state: review
+state: develop
 issue: "https://github.com/kburson/aitm/issues/496"
 parent: 471
 children: []
 blocking: [497]
 blocked-by: []
 created: "2026-11-27T04:49:02Z"
-updated: "2026-11-27T11:13:47.542Z"
+updated: "2026-11-27T11:17:43.065Z"
 last-branch: "codex/core-496-legacy-authority"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 4.0, "size": "S"}
