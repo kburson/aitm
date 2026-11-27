@@ -1,0 +1,88 @@
+{
+  "schema": "aitm.core-aggregate-composition/v1",
+  "verified_at": "2026-11-27T20:16:36.520740+00:00",
+  "pr": 555,
+  "base": "92de6dce1bf3f094004b133a793f8036875b2004",
+  "head": "4b9d66a2f97f1350800847b8c35879949f61c064",
+  "synthetic_merge": "1363cbc6f200ca1181d585a1aea413487079bcd4",
+  "tree": "5261468e349ff0f1005aad0fe868992ef0c7c784",
+  "integration_bootstrap": "74cbd6a9686b630910cc0f6858bbd458014cc182",
+  "prerequisites": [
+    {
+      "story": 8,
+      "pr": 529,
+      "landing": "8aa608cc1e64ed5986c5b6a8371df5a4c5b3f3e6",
+      "tree": "d3cc0f30a7e1483ae16e28c327d48d8a3240c217"
+    },
+    {
+      "story": 13,
+      "pr": 541,
+      "landing": "ddaa65b225e54f91a9279fb59976ae6d45ced9df",
+      "tree": "b64deff54133478d157b7c890cb1efe94576112f"
+    },
+    {
+      "story": 15,
+      "pr": 549,
+      "landing": "92de6dce1bf3f094004b133a793f8036875b2004",
+      "tree": "15403516ddb0ed9e39fad0455156aabfbd7ca2b3"
+    }
+  ],
+  "leaves": [
+    {
+      "story": 16,
+      "pr": 556,
+      "base": "74cbd6a9686b630910cc0f6858bbd458014cc182",
+      "head": "f112ae86e526c67df40890745a0feb7edc61dae5",
+      "synthetic_merge": "ddbe6b85ed99c17e200eb8a2df65a5af96fde986",
+      "reviewed_tree": "4f3d341967e701bcd1a2d9ca9ba88c0900e99c54",
+      "landing": "0438d1fa749ec46b9798f4068bd0e36c548c02ef",
+      "merged_at": "2026-11-27T18:51:03Z",
+      "repository_ci": 46051591543,
+      "core_ci": 46051591564,
+      "sar_path": ".aitm/stories/000/16/plan/2026-11-27-pr-556-source-sar.md",
+      "sar_sha256": "0f8cde33c49954b2b5cc66208db75340fbf9d2ab6ac87d3f42a29b051fd27fad"
+    },
+    {
+      "story": 17,
+      "pr": 557,
+      "base": "0438d1fa749ec46b9798f4068bd0e36c548c02ef",
+      "head": "a15df65a40c543e4d82f0413a492bb577e05290c",
+      "synthetic_merge": "419e056ade08020993bf2263102b5e34e7d34bd3",
+      "reviewed_tree": "36573bd265c210655cfd3f6b7195725976c5b8dc",
+      "landing": "30552dd22c88167887da6b89f0d4b453aba77a37",
+      "merged_at": "2026-11-27T19:21:31Z",
+      "repository_ci": 46055141986,
+      "core_ci": 46055142337,
+      "sar_path": ".aitm/stories/000/17/plan/2026-11-27-pr-557-source-sar.md",
+      "sar_sha256": "7e75b9e94efcc117daf0eb93e263ab352d336c63126b882a8f3e3dec4c19a0d0"
+    },
+    {
+      "story": 18,
+      "pr": 558,
+      "base": "30552dd22c88167887da6b89f0d4b453aba77a37",
+      "head": "ccbe80a8e56af496439d3420cf8aa0f06a0e8358",
+      "synthetic_merge": "b224d54ce787148668abda94f94cb3f52fccf93c",
+      "reviewed_tree": "5fb1586bfe0fe19f5fbb255a3221354a8466873e",
+      "landing": "0be7dd77f6c60e302f2c4dce1279d08f749c5a2b",
+      "merged_at": "2026-11-27T19:42:37Z",
+      "repository_ci": 46057090109,
+      "core_ci": 46057090113,
+      "sar_path": ".aitm/stories/000/18/plan/2026-11-27-pr-558-source-sar.md",
+      "sar_sha256": "55898767a0836bac9388484925e9cd4e4c7abf034fd8a7d240ed38733b9eec85"
+    },
+    {
+      "story": 23,
+      "pr": 559,
+      "base": "0be7dd77f6c60e302f2c4dce1279d08f749c5a2b",
+      "head": "11a8995cbaefcace3f628df1666c15c5b3944289",
+      "synthetic_merge": "caf26827811b7d31080d31a6c49f28d3c0394eb7",
+      "reviewed_tree": "5261468e349ff0f1005aad0fe868992ef0c7c784",
+      "landing": "4b9d66a2f97f1350800847b8c35879949f61c064",
+      "merged_at": "2026-11-27T20:16:16Z",
+      "repository_ci": 46061095977,
+      "core_ci": 46061096020,
+      "sar_path": ".aitm/stories/000/23/plan/2026-11-27-pr-559-source-sar.md",
+      "sar_sha256": "16fb67b35f0d6024b036894af4fe4f2029221caaef8071ba038319282aab69a1"
+    }
+  ]
+}

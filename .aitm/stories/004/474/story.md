@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 474
 title: "[Epic] Core — Store readback and publication recovery"
 kind: "epic"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/474"
 parent: 1
 children: [16, 17, 18, 23]
 blocking: []
 blocked-by: [8, 13, 15]
 created: "2026-11-27T04:48:42Z"
-updated: "2026-11-27T18:44:40.543+00:00"
+updated: "2026-11-27T20:16:45.049+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 14.5, "size": "Feature"}
@@ -31,7 +31,7 @@ design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":1,"desig
 
 Show a deterministic fresh-clone view, lost-publish recovery and forward-only repair.
 
-Parent: #1. Core coordination: #2. State: Dev.
+Parent: #1. Core coordination: #2. State: Test.
 
 ## Delivery
 
