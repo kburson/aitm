@@ -3,16 +3,16 @@ schema: "aitm.story/v0"
 id: 12
 title: "[Core C07] Committed configuration and routing anchors"
 kind: "story"
-state: plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/12"
 parent: 472
 children: []
 blocking: [13, 14, 19, 21, 30, 54, 75, 77, 498]
 blocked-by: [5, 11, 497]
 created: "2026-11-09T08:00:15Z"
-updated: "2026-11-27T13:21:43.926Z"
-last-branch: "planning"
-last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
+updated: "2026-11-27T13:26:46.162Z"
+last-branch: "codex/core-12-committed-policy"
+last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c07-committed-configuration-and-routing-anchors"
