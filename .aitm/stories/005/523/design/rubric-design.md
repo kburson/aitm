@@ -19,21 +19,21 @@ A legacy row may qualify through documented Refine, Plan, and Close equivalents 
 ## Estimation and learning loop
 
 1. Build a rebuildable local index from a pinned Core projection and sealed M7 corpus. Record selected and excluded IDs, source hashes, cutoff, feature version, estimator version, and coverage.
-2. Start with a simple robust baseline by supported story class and retrieve relevant comparable stories. When evidence is sufficient, evaluate quantile regression against that baseline. Generate P50 and, where calibrated, P80 engaged-hours with comparable IDs, model and snapshot version, applicability, and confidence.
-3. Expose a typed proposal at Refine or Plan with evidence and assumptions. An authorized planner records the estimate through Core. Retain a human substitution or decomposition decision and the pre-work evidence that informed it.
+2. Start with a simple robust baseline by supported story class and retrieve relevant comparable stories. For backtests, live proposals, and replay, admit only comparables with a qualifying Close and verified label available before the target estimate’s cutoff. Pin the as-of index for each estimate. Exclude late settlement, corrections and later closes whose evidence was unavailable at that cutoff. When evidence is sufficient, evaluate quantile regression against that baseline. Generate P50 and, where calibrated, P80 engaged-hours with comparable IDs, model and snapshot version, applicability, and confidence.
+3. Expose a typed proposal at Refine or Plan with evidence and assumptions. M8 owns the proposal schema and uses the released Core extension or CLI boundary selected at refinement. Explanations use only permitted identifiers and evidence references from the corpus’s publishable view. An authorized planner records the estimate through Core. Retain a human substitution or decomposition decision and the pre-work evidence that informed it.
 4. As eligible Close outcomes arrive, build a new versioned snapshot. Retrain under a predeclared cadence and sample rule. Compare against the previous model and baseline before promoting a version. Preserve rollback and exact reproduction of earlier proposals.
 5. With sparse or unsuitable data, expose insufficient evidence and return comparable examples or a supported baseline with uncertainty. Keep the existing estimate-entry route usable with the plugin absent.
 
 ## Evaluation and release gates
 
 - Pre-register train and validation cutoffs and a later holdout. Group related stories and repeated attempts to prevent leakage. Report sample counts and failure reasons by provenance and phase.
-- Compare median absolute error and bias with the simple baseline. Measure prediction interval coverage and show results for supported kinds. Establish minimum sample size and promotion thresholds before enabling numeric calibration.
-- Prove deterministic input assembly, stable estimates for identical inputs, incompatible-schema refusal, reproducible retraining and rollback. Prove complete no-Cost pairs qualify, incomplete Actual and late estimate revisions stay out, and sparse data produces explicit fallback.
+- M8 can deliver the installed pipeline with qualifying fixture proofs and an explicit insufficient-evidence result for live data. Exercise quantile evaluation and promotion or refusal using fixtures. Activation of a model trained on live evidence is a separate readiness decision. Compare median absolute error and bias with the simple baseline, measure prediction interval coverage by supported kind, and demonstrate the predeclared minimum sample size and promotion thresholds before enabling a live model.
+- Prove deterministic input assembly, stable estimates for identical inputs, incompatible-schema refusal, reproducible retraining and rollback. Verify a later Close and late-arriving Actual cannot enter an earlier retrieval index and that its original snapshot reproduces. Prove complete no-Cost pairs qualify, incomplete Actual and late estimate revisions stay out, and sparse data produces explicit fallback.
 - Qualify the installed optional package against released Core. Run estimate entry with Core alone and with the plugin enabled.
 
 ## Proposed decomposition and decisions
 
-Refine into four to six bounded children for corpus admission, deterministic feature extraction and index, the baseline and comparable-story retrieval, quantile evaluation, and the installed proposal and retraining loop. Keep each implementation child within four agent-hours. The feature set, source-quality policy, minimum sample size, and promotion thresholds require reviewed refinement and empirical evidence. A dashboard check against planning 3bc3dadc found zero eligible records among 363. This is an observation about that snapshot.
+Refine into four to six bounded children for corpus admission, deterministic feature extraction and index, the baseline and comparable-story retrieval, quantile evaluation, the installed proposal and retraining loop, and packaging and release proof. Keep each implementation child within four agent-hours. The feature set, source-quality policy, minimum sample size, and promotion thresholds require reviewed refinement and empirical evidence. A dashboard check against planning 3bc3dadc found zero eligible records among 363. This is an observation about that snapshot.
 
 ## Validated history handoff
 
@@ -43,11 +43,11 @@ Native Actual qualification #229 and the released Core #72/#51 records remain in
 
 ## Refinement estimate and rank
 
-**Rank 270 · Feature · 21.5 implementation agent-hours.** Scope is one installable estimator and feedback feature. The estimate includes the C07 comparability intake and excludes M7’s import and #229’s qualification. Estimates include verification and review.
+**Rank 270 · Feature · 21.5 implementation agent-hours.** Scope is one installable estimator and feedback feature. The estimate includes the [#181 C07 comparability intake](../draft.md#c07-intake-from-181) and excludes M7’s import and #229’s qualification. Estimates include verification and review.
 
 | Work | Agent-hours |
 | --- | ---: |
-| Evidence admission and diagnostics, including 1.5 h for C07 comparability intake | 3.5 |
+| Evidence admission and diagnostics, including 1.5 h for #181 C07 comparability intake | 3.5 |
 | Versioned feature extraction and reproducible snapshot | 3.5 |
 | Baseline and comparable-story retrieval | 3.5 |
 | Quantile model and held-out evaluation | 4 |
@@ -55,4 +55,4 @@ Native Actual qualification #229 and the released Core #72/#51 records remain in
 | Packaging, compatibility and release proof | 3.5 |
 | **Total** | **21.5** |
 
-This is a six-child-sized initial decomposition. Set the approved sample and evaluation rules before model promotion. Rank follows the validated-history handoff and adds no dependency on unrelated M2 work.
+This is a six-child-sized initial decomposition. Set the approved sample and evaluation rules before model promotion. Retrieval of lessons into planner context is deferred to a later extension. Defects, trips, loops, tokens and Cost can remain diagnostic evidence with scope-specific qualification, while this initial model estimates engaged hours. Rank follows the validated-history handoff and adds no dependency on unrelated M2 work.
