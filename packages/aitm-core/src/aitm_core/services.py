@@ -41,6 +41,7 @@ ServicePortName = Literal[
     "init_git_host",
     "workflow_cutover",
     "action_retry",
+    "entity_sync",
     "lane_selection",
     "kind_requirements",
     "aggregate_evidence",
@@ -73,6 +74,7 @@ class ServicePorts:
     aggregate_evidence: object | None = None
     story_exit_guards: object | None = None
     extension_declarations: tuple[Extension, ...] = ()
+    entity_sync: object | None = None
 
     def require(self, port: ServicePortName) -> object:
         implementation = getattr(self, port)
