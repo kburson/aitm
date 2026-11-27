@@ -1,0 +1,24 @@
+{
+  "status": "pass",
+  "verified_at": "2026-11-27T19:35:46.112733+00:00",
+  "repository": "kburson/aitm",
+  "pr": 558,
+  "target": "codex/core-474-integration",
+  "base": "30552dd22c88167887da6b89f0d4b453aba77a37",
+  "head": "ccbe80a8e56af496439d3420cf8aa0f06a0e8358",
+  "tested": "b224d54ce787148668abda94f94cb3f52fccf93c",
+  "tree": "5fb1586bfe0fe19f5fbb255a3221354a8466873e",
+  "run_id": 46057090109,
+  "run_attempt": 1,
+  "artifact_id": 15226559809,
+  "archive_digest": "sha256:c8c8ae1fa0f4f6362b692edd4829c8eb32cd5e9e5f394ee0be213a5bc705bfc3",
+  "subject_digest": "53514404951f98cc6b5e0ad126e915fbe25e9ff0b998f6051e6adf05a0a6e222",
+  "controls": {
+    "gate": "e3f3c1bf5207cae58aa7445d2362d666a600acd9",
+    "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+    "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+    "policy": "b2bef5b180d17fca3f135c45e2eeb98c64a508db",
+    "verifier": "88603331939ce61557f0abcd93a4df6d5c45ea4f",
+    "workflow": "e7f12ef681b626cd269834d0d3f97343e0c85c58"
+  }
+}
