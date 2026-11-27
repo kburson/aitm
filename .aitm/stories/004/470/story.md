@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 470
 title: "[Epic] Core — Core records and reducers"
 kind: "epic"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/470"
 parent: 1
 children: [3, 4, 5, 6, 7, 8]
 blocking: []
 blocked-by: [83]
 created: "2026-11-27T04:48:37Z"
-updated: "2026-11-27T08:05:37.491Z"
+updated: "2026-11-27T10:10:49.503Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 20.0, "size": "Feature"}
