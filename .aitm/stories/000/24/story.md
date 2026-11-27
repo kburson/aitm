@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 24
 title: "[Core C19] Ideas, drafts and atomic discard"
 kind: "story"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/24"
 parent: 476
 children: []
@@ -106,3 +106,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Scoped JIT pickup
 
 [Manual bootstrap pickup](plan/2026-11-27-pickup.md) under the owner’s #476 delivery assignment. Develop is a manual projection. No runtime transition or implementation clock was started.
+
+## Source candidate
+
+[Draft #568](https://github.com/kburson/aitm/pull/568) targets the #476 integration branch. Both hosted workflows are required before readiness.
