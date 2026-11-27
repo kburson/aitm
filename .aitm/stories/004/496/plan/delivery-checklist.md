@@ -20,3 +20,7 @@ records partial supersession and both resume paths, qualifies the legacy agent,
 project, verb, evidence and hook adapters, and corrects the review source and
 test provenance. Markdown lint, 33 pinned links, 99 installed Core tests and
 Ruff passed. Fresh repository CI and source SAR apply to this candidate.
+
+## Hosted verification
+
+[CI run 45989521667](https://github.com/kburson/aitm/actions/runs/45989521667) passed on base `053a0516b744d898053cee0e0b86c95f6ec605bc`, head `a4526e4e71914d5f589cd14720b42e7b38d6b6d0` and synthetic merge tree `eee5fb74670fa4ca72619c93a37d05cd75298859`. The workflow path filter applies hosted repository CI to this Markdown candidate. Core inputs are identical to trunk baseline `8aa608cc1e64ed5986c5b6a8371df5a4c5b3f3e6` with [hosted Core run 45979825833](https://github.com/kburson/aitm/actions/runs/45979825833). The installed local Core suite passed 99 tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
