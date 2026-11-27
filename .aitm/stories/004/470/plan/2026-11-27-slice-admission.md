@@ -13,3 +13,7 @@ At `2026-11-27T10:10:49.503Z` the six child merges and hosted Core CI prerequisi
 [C56 source SAR](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/8/plan/2026-11-27-pr-534-grok-sar.md) and trusted repository CI verification passed on the #8 child. Its integration merge tree `d3cc0f30a7e1483ae16e28c327d48d8a3240c217` was verified at the head of this slice. The installed Core suite passed 99 tests including deterministic configured-workflow and causal attempt replay, historical state/capability recovery, typed evidence, and opaque extension preservation. The installed CLI entry point and JSON Schema were checked. All five prerequisite story records read back Done.
 
 The slice candidate is in Test while its own repository and Core runs complete. Draft removal, Grok 4.7 aggregate source review, repository verifier and trunk merge require the exact tested tree. #8's final delivery and #470 Done follow the verified trunk landing.
+
+## Hosted verification
+
+[CI run 45979825835](https://github.com/kburson/aitm/actions/runs/45979825835) and [Core CI run 45979825833](https://github.com/kburson/aitm/actions/runs/45979825833) passed on base `a5ad6965c1c5b8817c0503dedbf55f576b5ddc67`, head `8912327b311b66fa2f557fa0e04c34ecf1d5afe1` and synthetic merge tree `d3cc0f30a7e1483ae16e28c327d48d8a3240c217`. Hosted Core ran 99 passing tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
