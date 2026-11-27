@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 18
 title: "[Core C10] Forward repair from maximal valid prefix"
 kind: "story"
-state: test
+state: review
 issue: "https://github.com/kburson/aitm/issues/18"
 parent: 474
 children: []
 blocking: [19, 55, 58, 65]
 blocked-by: [11, 13, 17]
 created: "2026-11-09T08:00:40Z"
-updated: "2026-11-27T19:25:10.556+00:00"
+updated: "2026-11-27T19:35:43.596+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -35,7 +35,7 @@ Retain the historical deliverable and proof where they remain applicable. Apply 
 
 The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
-**GitHub issue:** [kburson/aitm#18](https://github.com/kburson/aitm/issues/18) · **Parent:** [#2](../2/story.md) · **State:** Test.
+**GitHub issue:** [kburson/aitm#18](https://github.com/kburson/aitm/issues/18) · **Parent:** [#2](../2/story.md) · **State:** In review.
 
 **Separate full-file validation completed:** the core design and parent implementation plan passed separately authorized native XPR, with complete actual input retrieval verified in every round. [Plan validation](../2/plan/reviews/xpr-2026-11-09-core-plan-fullfile/review-manifest.md). The historical procedure limitation is retained in its audit and resolved by these new records. This does not establish leaf Design/Plan/JIT acceptance or implementation authority.
 
