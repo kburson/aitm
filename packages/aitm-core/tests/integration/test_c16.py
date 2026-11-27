@@ -37,7 +37,7 @@ def cli(root, *args):
     return json.loads(result.stdout)
 
 
-def test_binding_generation(repository, policy_inputs, tmp_path_factory):
+def test_binding_generation(repository, policy_inputs, tmp_path_factory, monkeypatch):
     root = repository
     _, proposal = init(
         root,
@@ -70,6 +70,12 @@ def test_binding_generation(repository, policy_inputs, tmp_path_factory):
     assert claimed["local"] == "completed", claimed
     receipt = json.loads(claimed["evidence"][0])
     assert receipt["generation"] == 1
+    mirror = author / ".aitm/.state/16.json"
+    original_mirror = mirror.read_bytes()
+    observed = json.loads(original_mirror)
+    assert observed["binding"] == receipt["identity"]
+    assert observed["generation"] == 1
+    assert "active" not in observed
     assert (author / PLAN).read_bytes() == b"Original plan\n"
     (author / PLAN).write_bytes(b"Unsaved plan\n")
     competing = cli(other, "bind", "16", "--session", "beta", "--path", PLAN)
@@ -92,6 +98,8 @@ def test_binding_generation(repository, policy_inputs, tmp_path_factory):
     assert recovered["local"] == "completed", recovered
     receipt2 = json.loads(recovered["evidence"][0])
     assert receipt2["generation"] == 2
+    assert mirror.read_bytes() == original_mirror
+    assert json.loads((other / ".aitm/.state/16.json").read_bytes())["generation"] == 2
     assert (author / PLAN).read_bytes() == b"Unsaved plan\n"
     assert (other / PLAN).read_bytes() == b"Original plan\n"
     assert (Path(recovered["evidence"][1]) / PLAN).read_bytes() == b"Unsaved plan\n"
@@ -246,10 +254,36 @@ def test_binding_generation(repository, policy_inputs, tmp_path_factory):
             retired["identity"],
             retired["generation"],
         )
-    result, _ = workspace.recover_binding(
-        request, retired["identity"], retired["generation"]
+    from aitm_core.cli.bind import handle
+
+    monkeypatch.chdir(other)
+    result = handle(
+        ("bind",),
+        (
+            "16",
+            "--evidence",
+            "--session",
+            "evidence-session",
+            "--attempt",
+            authority.attempt,
+            "--commit",
+            code,
+            "--tree",
+            tree,
+            "--authority",
+            authority.authority_id,
+            "--capability",
+            "managed-verification",
+            "--recover",
+            retired["identity"],
+            "--generation",
+            str(retired["generation"]),
+        ),
+        authority_lookup=request.authority.lookup,
     )
-    assert result.generation == retired["generation"] + 1
-    assert result.paths == ()
-    assert result.branch is None
-    assert result.capabilities == ("managed-verification",)
+    assert result.local == "completed", result.evidence
+    effective = json.loads(result.evidence[0])
+    assert effective["generation"] == retired["generation"] + 1
+    assert effective["paths"] == []
+    assert effective["branch"] is None
+    assert effective["capabilities"] == ["managed-verification"]

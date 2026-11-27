@@ -2,15 +2,22 @@
 
 import argparse
 from pathlib import Path
+from typing import Callable, get_args
 from uuid import uuid4
 
-from aitm_core.models.attempts import BindingPurpose, SourceSnapshot
+from aitm_core.models.attempts import (
+    BindingPurpose,
+    EvidenceOperation,
+    RecoveryAuthority,
+    SourceSnapshot,
+)
 from aitm_core.models.binding import StoryRef
 from aitm_core.models.common import CommandResult, LocalOutcome
 from aitm_core.setup.init import _active_installation
 from aitm_core.store.git_backend import ValidationRejected
 from aitm_core.store.objects import GitCommandError, Repository
 from aitm_core.store.workspace import (
+    AuthorityRef,
     AuthorityUnavailable,
     BindingConflict,
     BindRequest,
@@ -18,7 +25,12 @@ from aitm_core.store.workspace import (
 )
 
 
-def handle(_route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult:
+def handle(
+    _route: tuple[str, ...],
+    arguments: tuple[str, ...],
+    *,
+    authority_lookup: Callable[[str], RecoveryAuthority | None] | None = None,
+) -> CommandResult:
     parser = argparse.ArgumentParser(prog="aitm bind", exit_on_error=False)
     parser.add_argument("story", type=int)
     parser.add_argument("--session", required=True)
@@ -29,6 +41,10 @@ def handle(_route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult
             f"--{option}", action="store_const", const=option, dest="purpose"
         )
     parser.add_argument("--attempt")
+    parser.add_argument("--authority")
+    parser.add_argument(
+        "--capability", action="append", choices=get_args(EvidenceOperation), default=[]
+    )
     parser.add_argument("--branch")
     parser.add_argument(
         "--branch-mode",
@@ -53,6 +69,11 @@ def handle(_route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult
             if options.commit
             else None
         )
+        authority = None
+        if options.authority is not None:
+            if authority_lookup is None:
+                raise AuthorityUnavailable("Evidence authority lookup is unavailable.")
+            authority = AuthorityRef(options.authority, authority_lookup)
         request = BindRequest(
             installation,
             StoryRef(story=options.story),
@@ -63,10 +84,14 @@ def handle(_route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult
             options.branch,
             source,
             options.branch_mode,
+            authority,
+            tuple(options.capability),
         )
         workspace = Workspace(installation)
         if options.recover is None:
-            binding = workspace.bind(request)
+            binding = workspace.bind_purpose(
+                request.purpose, authority, request=request
+            )
             evidence = (binding.model_dump_json(),)
         else:
             binding, export = workspace.recover_binding(

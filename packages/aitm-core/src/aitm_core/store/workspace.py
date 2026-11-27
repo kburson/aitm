@@ -1,9 +1,10 @@
 """Serialize clone-local worktree bindings and recover exact authored bytes."""
 
+import json
 import os
 import stat
-from contextlib import ExitStack, contextmanager
-from dataclasses import dataclass
+from contextlib import ExitStack, contextmanager, suppress
+from dataclasses import dataclass, replace
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
 from typing import Callable, Literal
@@ -107,7 +108,14 @@ def read_workspace(root: Path, path: str) -> bytes | None:
         ) from error
 
 
-def _materialize(root: Path, path: str, data: bytes, mode: int = 0o644) -> None:
+def _materialize(
+    root: Path,
+    path: str,
+    data: bytes,
+    mode: int = 0o644,
+    *,
+    observed: bytes | None = None,
+) -> None:
     if read_workspace(root, path) == data:
         return
     with _parent(root, path, create=True) as (parent, name):
@@ -123,20 +131,26 @@ def _materialize(root: Path, path: str, data: bytes, mode: int = 0o644) -> None:
                 stream.write(data)
                 stream.flush()
                 os.fsync(stream.fileno())
-            try:
-                os.link(
-                    temporary,
-                    name,
-                    src_dir_fd=parent,
-                    dst_dir_fd=parent,
-                    follow_symlinks=False,
-                )
-            except FileExistsError as error:
-                raise BindingConflict(
-                    f"Existing workspace bytes differ at {path}."
-                ) from error
+            if observed is not None:
+                if read_workspace(root, path) != observed:
+                    raise BindingConflict(f"Existing workspace bytes differ at {path}.")
+                os.replace(temporary, name, src_dir_fd=parent, dst_dir_fd=parent)
+            else:
+                try:
+                    os.link(
+                        temporary,
+                        name,
+                        src_dir_fd=parent,
+                        dst_dir_fd=parent,
+                        follow_symlinks=False,
+                    )
+                except FileExistsError as error:
+                    raise BindingConflict(
+                        f"Existing workspace bytes differ at {path}."
+                    ) from error
         finally:
-            os.unlink(temporary, dir_fd=parent)
+            with suppress(FileNotFoundError):
+                os.unlink(temporary, dir_fd=parent)
 
 
 class Workspace:
@@ -465,7 +479,11 @@ class Workspace:
                     "update-ref", "--no-deref", "--stdin", data=updates.encode()
                 )
             value = Binding(
-                identity=previous.identity if previous is not None else uuid4().hex,
+                identity=previous.identity
+                if previous is not None
+                else sha256(
+                    f"{self.repo.identity}\0{self._key(request.scope)}".encode()
+                ).hexdigest(),
                 generation=previous.generation + 1 if previous is not None else 1,
                 anchor=self.installation.store,
                 scope=request.scope,
@@ -483,14 +501,52 @@ class Workspace:
                 else None,
                 capabilities=request.capabilities,
             )
-            manifest = f".aitm/.state/{value.identity}-{value.generation}.json"
-            _materialize(
-                Path(root), manifest, (value.model_dump_json() + "\n").encode()
-            )
+            self._observe(value)
             self.persist(value)
             return value
 
+    def _observe(self, value: Binding) -> None:
+        key = (
+            value.scope.story
+            if isinstance(value.scope, StoryRef)
+            else self._key(value.scope)
+        )
+        path = f".aitm/.state/{key}.json"
+        root = Path(value.worktree)
+        # Resolve the recorded identity and generation through require() before use.
+        observation = value.model_dump(mode="json", exclude={"active", "identity"})
+        observation.update(schema="aitm.binding-observation/v1", binding=value.identity)
+        current = read_workspace(root, path)
+        if current is not None:
+            try:
+                prior = json.loads(current)
+                if (
+                    prior["schema"] != observation["schema"]
+                    or prior["binding"] != value.identity
+                    or prior["worktree"] != value.worktree
+                    or prior["git_directory"] != value.git_directory
+                    or type(prior["generation"]) is not int
+                    or not 0 < prior["generation"] <= value.generation
+                ):
+                    raise ValueError("Unexpected binding observation.")
+            except (KeyError, ValueError, TypeError) as error:
+                raise BindingConflict(
+                    f"Unrecognized binding observation at {path}."
+                ) from error
+        data = (json.dumps(observation, sort_keys=True) + "\n").encode()
+        _materialize(root, path, data, observed=current)
+
     def bind(self, request: BindRequest) -> Binding:
+        return self.bind_purpose(request.purpose, request.authority, request=request)
+
+    def bind_purpose(
+        self,
+        purpose: BindingPurpose,
+        authority: AuthorityRef | None,
+        *,
+        request: BindRequest,
+    ) -> Binding:
+        request = replace(request, purpose=purpose, authority=authority)
         if request.purpose == BindingPurpose.EVIDENCE and request.authority is None:
             raise AuthorityUnavailable(
                 "Evidence binding requires existing recovery authority."
