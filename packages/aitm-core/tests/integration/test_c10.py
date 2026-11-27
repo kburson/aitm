@@ -9,6 +9,7 @@ from subprocess import run
 
 from aitm_core.models.common import LocalOutcome
 from aitm_core.services import refresh
+from aitm_core.store.repair import plan_repair
 from aitm_core.store.validation import validate_history
 from tests.integration.test_c08 import PLANNING, PLANNING_REMOTE, git
 from tests.integration.test_c08 import topology as topology
@@ -150,6 +151,28 @@ def test_maximal_prefix_is_independently_recomputed(topology, tmp_path):
         response = validate_history(installation.store, forged, repository=repo)
         assert response.outcome == LocalOutcome.INTEGRITY_ERROR
         assert response.first_invalid == bad
+
+    next_plan = plan_repair(installation.store, forged, repository=repo)
+    next_restored = repo.create_commit(
+        next_plan.valid_prefix,
+        {next_plan.receipt_path: next_plan.receipt},
+        next_plan.operation_id,
+    )
+    extends_forgery = git(
+        topology.local,
+        "commit-tree",
+        next_restored.tree,
+        "-p",
+        forged,
+        "-m",
+        "Correct forward restoration after forged receipt",
+    )
+    independently_verified = validate_history(
+        installation.store, extends_forgery, repository=repo
+    )
+    assert independently_verified.outcome == LocalOutcome.COMPLETED, (
+        independently_verified
+    )
 
     wrong_ancestry = validate_history(
         installation.store, topology.old_code, repository=repo
