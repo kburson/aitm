@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 498
 title: "[Core C90] Pinned workflow document and ordered graph"
 kind: "story"
-state: ready-for-plan
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/498"
 parent: 473
 children: []
 blocking: [499, 503]
 blocked-by: [12, 14]
 created: "2026-11-27T04:49:04Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-27T17:27:40.041Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
