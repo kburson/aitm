@@ -3,16 +3,16 @@ schema: "aitm.story/v0"
 id: 494
 title: "[Core C107] Inventory legacy guard conditions and exceptions"
 kind: "story"
-state: plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/494"
 parent: 471
 children: []
 blocking: [497]
 blocked-by: []
 created: "2026-11-27T04:49:00Z"
-updated: "2026-11-27T10:24:49.577Z"
-last-branch: "planning"
-last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
+updated: "2026-11-27T10:26:09.640Z"
+last-branch: "codex/core-494-legacy-guard-inventory"
+last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md"
