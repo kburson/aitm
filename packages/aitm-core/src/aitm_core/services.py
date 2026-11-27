@@ -36,7 +36,12 @@ ServicePortName = Literal[
     "write_authorization",
     "attempt_preflight",
     "init_hooks",
+    "init_doctor",
+    "init_provider",
+    "init_git_host",
+    "workflow_cutover",
     "action_retry",
+    "entity_sync",
     "lane_selection",
     "kind_requirements",
     "aggregate_evidence",
@@ -59,12 +64,17 @@ class ServicePorts:
     write_authorization: object | None = None
     attempt_preflight: object | None = None
     init_hooks: object | None = None
+    init_doctor: object | None = None
+    init_provider: object | None = None
+    init_git_host: object | None = None
+    workflow_cutover: object | None = None
     action_retry: object | None = None
     lane_selection: object | None = None
     kind_requirements: object | None = None
     aggregate_evidence: object | None = None
     story_exit_guards: object | None = None
     extension_declarations: tuple[Extension, ...] = ()
+    entity_sync: object | None = None
 
     def require(self, port: ServicePortName) -> object:
         implementation = getattr(self, port)
@@ -446,7 +456,10 @@ def load_installation(
     optional = {"code_remote", "code_remote_ref"}
     if (
         not required.issubset(settings)
-        or settings.keys() - required - optional - {"issuer", "legacy_root"}
+        or settings.keys()
+        - required
+        - optional
+        - {"issuer", "legacy_root", "anchor", "accepted_revision"}
         or any(
             not isinstance(settings[key], str) or not settings[key].strip()
             for key in required
@@ -458,6 +471,19 @@ def load_installation(
         )
     ):
         raise ValueError("Invalid anchored installation coordinates.")
+    from aitm_core.models.common import StoreAnchor
+
+    retained_anchor = settings.pop("anchor", None)
+    accepted_revision = settings.pop("accepted_revision", None)
+    if (
+        retained_anchor is not None
+        and StoreAnchor.model_validate(retained_anchor) != store
+    ):
+        raise ValueError(
+            "The supplied store anchor differs from the installed authority."
+        )
+    if accepted_revision is not None:
+        repository._oid(accepted_revision)
     issuer = BacklogIssuer.model_validate(settings.pop("issuer", None))
     legacy = settings.pop("legacy_root", None)
     return Installation(
