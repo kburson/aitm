@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 472
 title: "[Epic] Core — Trusted Git story store"
 kind: "epic"
-state: ready-for-plan
+state: plan
 issue: "https://github.com/kburson/aitm/issues/472"
 parent: 1
 children: [9, 10, 11, 12, 13]
 blocking: []
 blocked-by: [8, 497]
 created: "2026-11-27T04:48:39Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-27T11:57:15.803Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 19.0, "size": "Feature"}
