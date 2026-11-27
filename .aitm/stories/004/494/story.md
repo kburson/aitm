@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 494
 title: "[Core C107] Inventory legacy guard conditions and exceptions"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/494"
 parent: 471
 children: []
 blocking: [497]
 blocked-by: []
 created: "2026-11-27T04:49:00Z"
-updated: "2026-11-27T10:46:45.317Z"
+updated: "2026-11-27T10:50:34.869Z"
 last-branch: "codex/core-494-legacy-guard-inventory"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -40,3 +40,7 @@ Parent: #471. Core coordination: #2. State: Ready for Planning.
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **10** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #471 with scope entry **C107**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Done
+
+[PR #535](https://github.com/kburson/aitm/pull/535) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T10:50:31Z. Project #24 read back Done.
