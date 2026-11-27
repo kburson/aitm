@@ -3,14 +3,15 @@ schema: "aitm.story/v0"
 id: 22
 title: "[Core C17] Allowlisted sync and authored conflict resolution"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/22"
+linked-pr: "https://github.com/kburson/aitm/pull/564"
 parent: 475
 children: []
 blocking: [27, 35, 37, 40, 50, 55, 60, 74, 500]
 blocked-by: [15, 17, 20, 21]
 created: "2026-11-09T08:00:58Z"
-updated: "2026-11-27T22:59:06.223114+00:00"
+updated: "2026-11-27T23:02:00.673229+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
