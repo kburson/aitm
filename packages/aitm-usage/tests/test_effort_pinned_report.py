@@ -9,6 +9,9 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from pinned_evidence_fixture import pinned_evidence as pinned_evidence
+from test_effort_pinned_inputs import pin as pin_evidence
+from test_effort_pinned_inputs import write
 
 from aitm_usage.effort.cli import main
 from aitm_usage.effort.pinned_report import (
@@ -87,15 +90,23 @@ def _publish(repo, raw):
     return report_id, path, _commit(repo, "frozen report")
 
 
+def _publish_in_memory(repo, raw):
+    report_id = validate_envelope(raw)["report_id"]
+    path = report_path(STORY, report_id)
+    write(repo, path, raw)
+    return report_id, path, pin_evidence(repo)
+
+
 def test_exact_reopen_preserves_both_representations_after_repricing(
-    target, capsys, monkeypatch
+    pinned_evidence, capsys, monkeypatch
 ):
-    repo, pin = target
+    repo = pinned_evidence(".aitm/stories/004/458", STORY)
+    pin = pin_evidence(repo)
     original = freeze_report(_manifest(pin), _report())
     assert original == freeze_report(_manifest(pin), _report())
-    report_id, _, artifact_commit = _publish(repo, original)
+    report_id, _, artifact_commit = _publish_in_memory(repo, original)
     replacement = freeze_report(_manifest(pin, "b" * 64), _report("0.00892"))
-    latest_id, _, latest_commit = _publish(repo, replacement)
+    latest_id, _, latest_commit = _publish_in_memory(repo, replacement)
     assert latest_id != report_id and latest_commit != artifact_commit
 
     def invalid_renderer(*_):
@@ -131,14 +142,15 @@ def test_exact_reopen_preserves_both_representations_after_repricing(
         reopen_pinned_report(repo, artifact_commit, PROJECT, STORY, latest_id)
 
 
-def test_reopen_refuses_corrupt_artifact_and_scope_mismatch(target, capsys):
-    repo, pin = target
+def test_reopen_refuses_corrupt_artifact_and_scope_mismatch(pinned_evidence, capsys):
+    repo = pinned_evidence(".aitm/stories/004/458", STORY)
+    pin = pin_evidence(repo)
     raw = freeze_report(_manifest(pin), _report())
-    report_id, path, artifact_commit = _publish(repo, raw)
+    report_id, path, artifact_commit = _publish_in_memory(repo, raw)
     with pytest.raises(ReportUnavailable, match="scope"):
         reopen_pinned_report(repo, artifact_commit, UUID(int=4), STORY, report_id)
-    path.write_bytes(raw.replace(b"0.00123", b"0.00124"))
-    corrupt_commit = _commit(repo, "corrupt artifact")
+    write(repo, path, raw.replace(b"0.00123", b"0.00124"))
+    corrupt_commit = pin_evidence(repo)
     args = [
         "--project",
         str(PROJECT),
@@ -159,9 +171,12 @@ def test_reopen_refuses_corrupt_artifact_and_scope_mismatch(target, capsys):
     ) == json.loads(raw)
 
 
-def test_cli_requires_exact_pin_database_only_on_private_commands(target, capsys):
-    repo, pin = target
-    report_id, _, _ = _publish(repo, freeze_report(_manifest(pin), _report()))
+def test_cli_requires_exact_pin_database_only_on_private_commands(
+    pinned_evidence, capsys
+):
+    repo = pinned_evidence(".aitm/stories/004/458", STORY)
+    pin = pin_evidence(repo)
+    report_id, _, _ = _publish_in_memory(repo, freeze_report(_manifest(pin), _report()))
     assert (
         main(
             [
@@ -186,8 +201,8 @@ def test_cli_requires_exact_pin_database_only_on_private_commands(target, capsys
     assert "--database" in capsys.readouterr().err
 
 
-def test_validation_rejects_noncanonical_bytes_and_external_paths(target):
-    _, pin = target
+def test_validation_rejects_noncanonical_bytes_and_external_paths():
+    pin = "1" * 40
     raw = freeze_report(_manifest(pin), _report())
     with pytest.raises(ValueError):
         validate_envelope(raw + b" ")
@@ -197,8 +212,8 @@ def test_validation_rejects_noncanonical_bytes_and_external_paths(target):
         freeze_report(manifest, _report())
 
 
-def test_publisher_refuses_rehashed_text_outside_its_renderer(target):
-    _, pin = target
+def test_publisher_refuses_rehashed_text_outside_its_renderer():
+    pin = "1" * 40
     envelope = json.loads(freeze_report(_manifest(pin), _report()))
     envelope.pop("report_id")
     envelope["text"] = "Unexpected unreviewed text\n"

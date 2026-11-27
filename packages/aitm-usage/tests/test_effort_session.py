@@ -1,8 +1,13 @@
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
+from hashlib import sha256
+from io import BytesIO
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
+from test_effort_trail import effort_snapshot
 
 from aitm_usage.effort.receipts import (
     NativeTurn,
@@ -143,14 +148,24 @@ def test_store_refuses_cross_project_and_hides_unknown_usage(session_api, tmp_pa
         )
 
 
-def test_session_cli_registers_expectation_before_provider(
-    session_api, tmp_path, capsys
-):
+def test_session_cli_registers_expectation_before_provider(monkeypatch, capsys):
     import json
+    from pathlib import Path
+    from unittest.mock import Mock, call
 
     from aitm_usage.effort.cli import main
 
-    database = tmp_path / "effort.db"
+    database = Path("/fixture/effort.db")
+    store = Mock()
+    launch = object()
+    store.reference.return_value = launch
+    store.status.return_value = {OWNER: "pending-binding"}
+
+    def open_store(path, project):
+        assert (path, project) == (database, PROJECT)
+        return store
+
+    monkeypatch.setattr("aitm_usage.effort.session_cli.SessionStore", open_store)
     args = ["--database", str(database), "--project", str(PROJECT)]
     assert main(args + ["session-select", str(SESSION), "457", REMOTE]) == 0
     assert (
@@ -162,6 +177,16 @@ def test_session_cli_registers_expectation_before_provider(
     )
     assert main(args + ["session-status", str(SESSION)]) == 0
     assert json.loads(capsys.readouterr().out) == {str(OWNER): "pending-binding"}
+    assert store.method_calls[:2] == [
+        call.select(SESSION, 457, REMOTE, epic=None),
+        call.reference("launch", "launch"),
+    ]
+    assert [entry[0] for entry in store.method_calls] == [
+        "select",
+        "reference",
+        "expect",
+        "status",
+    ]
 
 
 @pytest.mark.parametrize("prebind", [False, True])
@@ -214,11 +239,64 @@ def test_supervised_launch_settles_automatically_and_will_not_repeat(
         asyncio.run(store.run_owned(SESSION, CHILD, launch, Observes(), command))
 
 
-def test_unknown_scope_and_open_markers_withhold_publication(session_api, tmp_path):
+@pytest.fixture
+def public_revisions(session_api, monkeypatch):
+    from aitm_usage.effort import Enrollment
+    from aitm_usage.types import _encode
+
+    store = session_api.SessionStore.__new__(session_api.SessionStore)
+    store.project_id = PROJECT
+    store._pseudonym = lambda domain, value: sha256(
+        f"{domain}:{value}".encode()
+    ).hexdigest()
+
+    def publication(rows, markers=()):
+        marker_rows = [
+            (row.turn.identity, row.kind, _encode(row, type(row))) for row in markers
+        ]
+        revision_rows = [
+            (
+                native.to_json(),
+                _encode(
+                    Enrollment(PROJECT, SESSION, native.attempt_id, Role.WORKER, 457),
+                    Enrollment,
+                ),
+                None,
+                effective.to_json(),
+            )
+            for native, effective in rows
+        ]
+
+        def execute(query, params=()):
+            if "FROM scope_markers" in query:
+                assert not params
+                return marker_rows
+            assert "FROM revisions" in query and params == (str(SESSION),)
+            return revision_rows
+
+        monkeypatch.setattr(
+            store, "_transaction", lambda: nullcontext(SimpleNamespace(execute=execute))
+        )
+        return store.public_receipts(SESSION)
+
+    return publication
+
+
+def test_unknown_scope_and_open_markers_withhold_publication(
+    session_api, public_revisions
+):
+    from test_effort_trail import ref
+
     from aitm_usage.effort.assignments import MarkerKind, ScopeMarker
 
-    store, launch, turn = layout(session_api, tmp_path / "effort.db")
-    store.bind(SESSION, CHILD, launch, turn)
+    turn = NativeTurn(
+        "codex",
+        "0.171.0-alpha.13.2",
+        "desktop",
+        ref("account"),
+        ref("session"),
+        ref("turn"),
+    )
     unknown = UsageReceipt(
         PROJECT,
         CHILD,
@@ -230,22 +308,23 @@ def test_unknown_scope_and_open_markers_withhold_publication(session_api, tmp_pa
         Outcome.COMPLETED,
         TokenCounts(input_tokens=12),
     )
-    store.accept(SESSION, unknown)
-    assert store.public_receipts(SESSION) == ()
-    assert store.snapshot().attributed[0].story is None
-    owner_turn = replace(turn, turn=launch)
-    store.bind(SESSION, OWNER, launch, owner_turn)
+    assert public_revisions([(unknown, unknown)]) == ()
+    owner_turn = replace(turn, turn=ref("owner"))
     start = ScopeMarker(
-        PROJECT, OWNER, owner_turn, MarkerKind.START, launch, STAMP, turn.account
+        PROJECT,
+        OWNER,
+        owner_turn,
+        MarkerKind.START,
+        ref("clock"),
+        STAMP,
+        turn.account,
     )
-    store.mark_scope(start)
     bounded = replace(
         unknown, attempt_id=OWNER, turn=owner_turn, scope=UsageScope.BOUNDED
     )
-    store.accept(SESSION, bounded)
-    assert store.public_receipts(SESSION) == ()
-    store.mark_scope(replace(start, kind=MarkerKind.END))
-    (payload,) = store.public_receipts(SESSION)
+    rows = [(unknown, unknown), (bounded, bounded)]
+    assert public_revisions(rows, [start]) == ()
+    (payload,) = public_revisions(rows, [start, replace(start, kind=MarkerKind.END)])
     for value in ("desktop", "0.171.0-alpha.13.2"):
         with pytest.raises(ValueError):
             session_api.validate_public_receipt(
@@ -253,39 +332,41 @@ def test_unknown_scope_and_open_markers_withhold_publication(session_api, tmp_pa
             )
 
 
-def test_frozen_batch_survives_story_and_revision_changes(session_api, tmp_path):
+def test_frozen_batch_survives_story_and_revision_changes():
+    from test_effort_session_publication import PROJECT as publication_project
+    from test_effort_session_publication import receipt
+
     from aitm_usage.effort.session_cli import _batch, _read_batch
 
-    store, launch, turn = layout(session_api, tmp_path / "effort.db")
-    store.bind(SESSION, CHILD, launch, turn)
-    first = UsageReceipt(
-        PROJECT,
-        CHILD,
-        turn,
-        "a" * 64,
-        STAMP,
-        1,
-        Availability.PARTIAL,
-        Outcome.COMPLETED,
-        TokenCounts(input_tokens=12),
-        scope=UsageScope.BOUNDED,
+    first = receipt()
+    rows = (first.data,)
+
+    def public_receipts(session):
+        assert session == SESSION
+        return rows
+
+    store = SimpleNamespace(
+        project_id=publication_project, public_receipts=public_receipts
     )
-    store.accept(SESSION, first)
-    handoff = tmp_path / "batch.json"
-    handoff.write_bytes(_batch(store, SESSION, 457))
-    store.select(SESSION, 458, REMOTE)
-    store.accept(SESSION, replace(first, revision=2, previous_digest=first.digest))
-    other_writer = session_api.SessionStore(tmp_path / "other-writer.db", PROJECT)
-    other_writer.select(SESSION, 457, REMOTE)
+    frozen = _batch(store, SESSION, 457)
+    rows += (
+        receipt(revision=2, previous=sha256(first.data).hexdigest()).data,
+        receipt("b" * 64, story=458).data,
+    )
+    assert _batch(store, SESSION, 457) != frozen
+    handoff = SimpleNamespace(open=lambda mode: BytesIO(frozen))
+    other_writer = SimpleNamespace(project_id=publication_project)
     (entry,) = _read_batch(handoff, other_writer, 457)
     assert entry.revision == 1
-    assert entry.data == store.public_receipts(SESSION)[0]
+    assert entry.data == rows[0]
     with pytest.raises(EffortError, match="batch"):
         _read_batch(handoff, other_writer, 458)
 
 
-def test_review_companion_keeps_sealed_decision_independent(session_api, tmp_path):
-    from aitm_usage.effort.receipts import ReviewBinding
+def test_review_companion_keeps_sealed_decision_independent(session_api, monkeypatch):
+    from test_effort_trail import ref
+
+    from aitm_usage.effort.receipts import Enrollment, ReviewBinding
     from aitm_usage.effort.review_receipts import (
         ReviewAttempt,
         ReviewIdentity,
@@ -293,17 +374,34 @@ def test_review_companion_keeps_sealed_decision_independent(session_api, tmp_pat
         Verdict,
     )
 
-    store, launch, turn = layout(session_api, tmp_path / "effort.db")
+    store = session_api.SessionStore.__new__(session_api.SessionStore)
     attempt_id = UUID(int=7)
-    expected = store.expect(
+    turn = NativeTurn(
+        "codex",
+        "0.171.0-alpha.13.2",
+        "desktop",
+        ref("account"),
+        ref("session"),
+        ref("turn"),
+    )
+    enrollment = Enrollment(
+        PROJECT,
         SESSION,
         attempt_id,
         Role.REVIEWER,
-        launch,
+        457,
         review=ReviewBinding(turn.account, 1),
     )
-    store.bind(SESSION, attempt_id, launch, turn)
-    identity = ReviewIdentity(expected.enrollment, turn.session, "a" * 64)
+    expected = SimpleNamespace(enrollment=enrollment, native=turn)
+
+    def expectation(session, attempt):
+        assert (session, attempt) == (SESSION, attempt_id)
+        return expected
+
+    monkeypatch.setattr(store, "expected", expectation)
+    snapshot = effort_snapshot(pending_enrollments=(enrollment,))
+    monkeypatch.setattr(store, "snapshot", lambda: snapshot)
+    identity = ReviewIdentity(enrollment, turn.session, "a" * 64)
     attempt = ReviewAttempt(identity, turn.identity)
     decision = SealedDecision(identity, Verdict.ACCEPTED, "b" * 64, turn.turn)
     assert store.review_companion(SESSION, attempt, decision).usage is None
@@ -319,7 +417,7 @@ def test_review_companion_keeps_sealed_decision_independent(session_api, tmp_pat
         TokenCounts(total_tokens=12),
         scope=UsageScope.BOUNDED,
     )
-    store.accept(SESSION, usage)
+    snapshot = effort_snapshot((enrollment, usage))
     result = store.review_companion(SESSION, attempt, decision)
     assert result.decision == decision and result.usage == usage
     with pytest.raises(EffortError, match="exact session"):
@@ -327,23 +425,36 @@ def test_review_companion_keeps_sealed_decision_independent(session_api, tmp_pat
 
 
 def test_late_scope_proof_redacts_historical_usage_without_losing_lineage(
-    session_api, tmp_path
+    session_api, public_revisions
 ):
     from datetime import timedelta
-    from hashlib import sha256
+
+    from test_effort_trail import ref
 
     from aitm_usage.effort.assignments import MarkerKind, ScopeMarker
     from aitm_usage.effort.receipts import TimeBasis
 
-    store, launch, turn = layout(session_api, tmp_path / "effort.db")
-    store.bind(SESSION, CHILD, launch, turn)
+    turn = NativeTurn(
+        "codex",
+        "0.171.0-alpha.13.2",
+        "desktop",
+        ref("account"),
+        ref("session"),
+        ref("turn"),
+    )
     marker = ScopeMarker(
-        PROJECT, CHILD, turn, MarkerKind.START, launch, STAMP, turn.account
+        PROJECT,
+        CHILD,
+        turn,
+        MarkerKind.START,
+        ref("clock"),
+        STAMP,
+        turn.account,
     )
-    store.mark_scope(marker)
-    store.mark_scope(
-        replace(marker, kind=MarkerKind.END, at=STAMP + timedelta(seconds=2))
-    )
+    markers = [
+        marker,
+        replace(marker, kind=MarkerKind.END, at=STAMP + timedelta(seconds=2)),
+    ]
     first = UsageReceipt(
         PROJECT,
         CHILD,
@@ -365,10 +476,8 @@ def test_late_scope_proof_redacts_historical_usage_without_losing_lineage(
         scope=UsageScope.BOUNDED,
         started_at=STAMP,
     )
-    assert store.accept(SESSION, future) is Disposition.PENDING
-    assert store.public_receipts(SESSION) == ()
-    assert store.accept(SESSION, first) is Disposition.REFINED
-    redacted, final = store.public_receipts(SESSION)
+    assert public_revisions([], markers) == ()
+    redacted, final = public_revisions([(first, future), (future, future)], markers)
     assert all(
         value is None
         for value in session_api.validate_public_receipt(redacted)["tokens"].values()

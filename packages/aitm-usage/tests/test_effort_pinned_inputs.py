@@ -5,6 +5,8 @@ from hashlib import sha256
 from pathlib import Path
 
 import pytest
+from pinned_evidence_fixture import PinnedEvidence
+from pinned_evidence_fixture import pinned_evidence as pinned_evidence
 from test_effort_pinned_coverage import WINDOW
 from test_effort_session_publication import PROJECT, STORY, git, receipt
 from test_effort_session_publication import repo_pair as repo_pair
@@ -19,16 +21,29 @@ from aitm_usage.types import _decode, _encode
 
 
 def pin(repo):
+    if isinstance(repo, PinnedEvidence):
+        return repo.pin()
     git(repo, "add", ".aitm")
     git(repo, "commit", "-m", "pin evidence")
     return git(repo, "rev-parse", "HEAD")
 
 
-def write(repo: Path, relative: str, raw: bytes):
+def write(repo: Path | PinnedEvidence, relative: str, raw: bytes):
+    if isinstance(repo, PinnedEvidence):
+        repo.write(relative, raw)
+        return None
     path = repo / relative
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(raw)
     return path
+
+
+def append(repo, relative, raw):
+    if isinstance(repo, PinnedEvidence):
+        repo.append(relative, raw)
+    else:
+        with (repo / relative).open("ab") as target:
+            target.write(raw)
 
 
 def at(hour, minute=0):
@@ -86,7 +101,6 @@ def add_coverage(
     if file:
         write(repo, f"{STORY}/{path}", raw)
     if register:
-        log = repo / STORY / "events.jsonl"
         fact = {
             "v": 0,
             "ts": at(2, 1).isoformat(),
@@ -110,13 +124,12 @@ def add_coverage(
             fact["recorded_at_utc"] = at(2).isoformat()
         elif invalid_fact is not None:
             del fact[invalid_fact]
-        with log.open("a", encoding="utf-8") as target:
-            target.write(json.dumps(fact) + "\n")
+        append(repo, f"{STORY}/events.jsonl", json.dumps(fact).encode() + b"\n")
     return digest
 
 
-def test_pinned_inputs_cutoff_and_window_edges(repo_pair):
-    repo, _ = repo_pair
+def test_pinned_inputs_cutoff_and_window_edges(pinned_evidence):
+    repo = pinned_evidence(STORY, 457)
     older = add_receipt(repo)
     add_receipt(repo, rev=2, prev=older, observed_at=at(2, 1))
     add_receipt(repo, "b" * 64, attempt="6" * 64, started_at=at(1), ended_at=at(1, 5))
@@ -142,9 +155,9 @@ def test_pinned_inputs_cutoff_and_window_edges(repo_pair):
     ],
 )
 def test_coverage_requires_matching_registration(
-    repo_pair, register, file, mismatch, gap
+    pinned_evidence, register, file, mismatch, gap
 ):
-    repo, _ = repo_pair
+    repo = pinned_evidence(STORY, 457)
     add_receipt(repo)
     add_coverage(repo, register=register, file=file, mismatch=mismatch)
     result = read_inputs(repo, PROJECT, 457, pin(repo), WINDOW)
@@ -155,8 +168,8 @@ def test_coverage_requires_matching_registration(
 @pytest.mark.parametrize(
     "invalid", ["v", "ts", "actor", "provenance", "data", "premature", "chronology"]
 )
-def test_closed_coverage_requires_a_typed_evidence_fact(repo_pair, invalid):
-    repo, _ = repo_pair
+def test_closed_coverage_requires_a_typed_evidence_fact(pinned_evidence, invalid):
+    repo = pinned_evidence(STORY, 457)
     add_receipt(repo)
     add_coverage(repo, invalid_fact=invalid)
     result = read_inputs(repo, PROJECT, 457, pin(repo), WINDOW)
@@ -164,8 +177,8 @@ def test_closed_coverage_requires_a_typed_evidence_fact(repo_pair, invalid):
     assert result.gaps == ("coverage-invalid-registration",)
 
 
-def test_new_pin_withdrawal_removes_older_visible_attempt(repo_pair):
-    repo, _ = repo_pair
+def test_new_pin_withdrawal_removes_older_visible_attempt(pinned_evidence):
+    repo = pinned_evidence(STORY, 457)
     add_receipt(repo)
     digest = add_coverage(repo)
     old_pin = pin(repo)
@@ -177,8 +190,8 @@ def test_new_pin_withdrawal_removes_older_visible_attempt(repo_pair):
     assert result.manifest["excluded"][0]["reason"] == "withdrawn"
 
 
-def test_refuses_broken_lineage_and_inexact_commit(repo_pair):
-    repo, _ = repo_pair
+def test_refuses_broken_lineage_and_inexact_commit(pinned_evidence):
+    repo = pinned_evidence(STORY, 457)
     add_receipt(repo, rev=2, prev="f" * 64)
     commit = pin(repo)
     with pytest.raises(EffortError, match="lineage"):
@@ -187,20 +200,12 @@ def test_refuses_broken_lineage_and_inexact_commit(repo_pair):
         read_inputs(repo, PROJECT, 457, "HEAD", WINDOW)
 
 
-@pytest.mark.parametrize("problem", ["path", "mode", "size", "project", "placement"])
-def test_pin_refuses_invalid_target_receipt_evidence(repo_pair, problem):
-    repo, _ = repo_pair
+@pytest.mark.parametrize("problem", ["path", "size", "project", "placement"])
+def test_pin_refuses_invalid_target_receipt_evidence(pinned_evidence, problem):
+    repo = pinned_evidence(STORY, 457)
     entry = receipt()
     if problem == "path":
         write(repo, entry.path + "~", b"disallowed")
-    elif problem == "mode":
-        link_value = write(repo, "link-fixture", b"private-target")
-        oid = git(repo, "hash-object", "-w", str(link_value))
-        git(repo, "update-index", "--add", "--cacheinfo", f"120000,{oid},{entry.path}")
-        git(repo, "commit", "-m", "pin special mode")
-        with pytest.raises(EffortError, match="normal pinned evidence file"):
-            read_inputs(repo, PROJECT, 457, git(repo, "rev-parse", "HEAD"), WINDOW)
-        return
     elif problem == "size":
         write(repo, entry.path, b"0" * (MAX_INPUT_BLOB_BYTES + 1))
     elif problem == "project":
@@ -212,8 +217,19 @@ def test_pin_refuses_invalid_target_receipt_evidence(repo_pair, problem):
         read_inputs(repo, PROJECT, 457, pin(repo), WINDOW)
 
 
-def test_coverage_fork_and_cutoff_crossing_lineage_remain_explicit(repo_pair):
+def test_pin_refuses_special_git_mode(repo_pair):
     repo, _ = repo_pair
+    entry = receipt()
+    link_value = write(repo, "link-fixture", b"private-target")
+    oid = git(repo, "hash-object", "-w", str(link_value))
+    git(repo, "update-index", "--add", "--cacheinfo", f"120000,{oid},{entry.path}")
+    git(repo, "commit", "-m", "pin special mode")
+    with pytest.raises(EffortError, match="normal pinned evidence file"):
+        read_inputs(repo, PROJECT, 457, git(repo, "rev-parse", "HEAD"), WINDOW)
+
+
+def test_coverage_fork_and_cutoff_crossing_lineage_remain_explicit(pinned_evidence):
+    repo = pinned_evidence(STORY, 457)
     older = add_receipt(repo, observed_at=at(2, 1))
     add_receipt(repo, rev=2, prev=older, observed_at=at(2))
     add_coverage(repo)
@@ -235,8 +251,10 @@ def test_pin_bounds_recursive_path_stream(repo_pair, monkeypatch):
 @pytest.mark.parametrize(
     "issue", [None, "late-admission", "missing-source", "late-observation", "duplicate"]
 )
-def test_timing_joins_require_registered_actor_and_wait_evidence(repo_pair, issue):
-    repo, _ = repo_pair
+def test_timing_joins_require_registered_actor_and_wait_evidence(
+    pinned_evidence, issue
+):
+    repo = pinned_evidence(STORY, 457)
     add_receipt(repo)
     path = "attachments/timing/fixture-457.json"
     shared = {
@@ -294,9 +312,7 @@ def test_timing_joins_require_registered_actor_and_wait_evidence(repo_pair, issu
             "scope": {"project": "aitm", "story": 457},
         },
     }
-    log = repo / STORY / "events.jsonl"
-    with log.open("a") as output:
-        output.write(json.dumps(event) + "\n")
+    append(repo, f"{STORY}/events.jsonl", json.dumps(event).encode() + b"\n")
     join = {
         "attempt": "5" * 64,
         "path": path,

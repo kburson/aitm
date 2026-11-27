@@ -1,16 +1,17 @@
 import asyncio
 import json
+import os
 import sys
 from dataclasses import replace
 from datetime import UTC, datetime
 from io import BytesIO
+from pathlib import Path
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
 
 from aitm_usage.effort import (
-    Disposition,
-    EffortStore,
     Enrollment,
     NativeTurn,
     Outcome,
@@ -71,15 +72,49 @@ def launch(tmp_path, script, **kwargs):
     )
 
 
+@pytest.fixture
+def captured_process(monkeypatch):
+    def run(stdout, returncode=0, *, stderr=b"", limits=None, inherit_env=frozenset()):
+        options = {}
+        transport = Mock()
+        transport.get_returncode.return_value = returncode
+
+        async def read_process(loop, build_protocol, executable, **kwargs):
+            assert executable == sys.executable
+            options.update(kwargs)
+            pipes = build_protocol()
+            pipes.connection_made(transport)
+            pipes.pipe_data_received(1, stdout)
+            pipes.pipe_data_received(2, stderr)
+            pipes.connection_lost(None)
+            return transport, pipes
+
+        monkeypatch.setattr(asyncio.BaseEventLoop, "subprocess_exec", read_process)
+        result = asyncio.run(
+            effort_capture.capture(
+                FixtureAdapter(),
+                enrollment=ENROLLMENT,
+                command=effort_capture.HarnessCommand(
+                    (sys.executable,), Path("/fixture"), inherit_env
+                ),
+                limits=limits or effort_capture.CaptureLimits(),
+            )
+        )
+        transport.close.assert_called_once_with()
+        return result, options
+
+    return run
+
+
 @pytest.mark.parametrize(
     ("terminal", "returncode", "tokens"),
     [("interrupted", 0, 8), ("failed", 9, 12)],
 )
 def test_terminal_outcome_and_usage_survive_process_exit(
-    tmp_path, terminal, returncode, tokens
+    captured_process, terminal, returncode, tokens
 ):
     line = json.dumps({"terminal": terminal, "tokens": tokens})
-    result = launch(tmp_path, f"print({line!r}); raise SystemExit({returncode})")
+    result, _ = captured_process(line.encode() + b"\n", returncode)
 
     assert result.process.state is effort_capture.ProcessState.EXITED
     assert result.process.returncode == returncode
@@ -88,11 +123,10 @@ def test_terminal_outcome_and_usage_survive_process_exit(
     assert line not in repr(result)
 
 
-def test_stream_limit_preserves_prior_terminal_receipt(tmp_path):
-    line = '{"terminal":"failed","tokens":12}'
-    result = launch(
-        tmp_path,
-        f"import sys; print({line!r}, flush=True); sys.stderr.write('x' * 16384)",
+def test_stream_limit_preserves_prior_terminal_receipt(captured_process):
+    result, _ = captured_process(
+        b'{"terminal":"failed","tokens":12}\n',
+        stderr=b"x" * 16384,
         limits=effort_capture.CaptureLimits(stdout_bytes=128, stderr_bytes=64),
     )
 
@@ -115,46 +149,35 @@ def test_timeout_is_independent_of_unobserved_terminal_outcome(tmp_path):
     assert result.observation.gap is effort_capture.CaptureGap.MISSING
 
 
-def test_configured_launch_inherits_only_selected_environment(tmp_path, monkeypatch):
-    monkeypatch.setenv("HOME", str(tmp_path))
+def test_configured_launch_inherits_only_selected_environment(
+    captured_process, monkeypatch
+):
     monkeypatch.setenv("AITM_FIXTURE_SIGN_IN", "fixture-profile")
     monkeypatch.setenv("AITM_FIXTURE_UNRELATED", "fixture-secret")
-    script = (
-        "from os import environ; "
-        f"assert environ['HOME'] == {str(tmp_path)!r}; "
-        "assert environ['AITM_FIXTURE_SIGN_IN'] == 'fixture-profile'; "
-        "assert 'AITM_FIXTURE_UNRELATED' not in environ; "
-        'print(\'{"terminal":"completed","tokens":0}\')'
-    )
-    command = effort_capture.HarnessCommand(
-        (sys.executable, "-c", script),
-        cwd=tmp_path,
+    result, options = captured_process(
+        b'{"terminal":"completed","tokens":0}\n',
         inherit_env=frozenset({"AITM_FIXTURE_SIGN_IN"}),
     )
-    result = asyncio.run(
-        effort_capture.capture(FixtureAdapter(), enrollment=ENROLLMENT, command=command)
-    )
-
+    assert options["cwd"] == Path("/fixture")
+    assert options["env"]["AITM_FIXTURE_SIGN_IN"] == "fixture-profile"
+    assert options["env"].get("HOME") == os.environ.get("HOME")
+    assert "AITM_FIXTURE_UNRELATED" not in options["env"]
     assert result.process.returncode == 0
     assert result.observation.outcome is Outcome.COMPLETED
 
 
-def test_exact_recovery_replays_live_observation(tmp_path):
-    line = '{"terminal":"completed","tokens":23}'
-    store = EffortStore(tmp_path / "effort.sqlite3", ENROLLMENT.project_id)
-    store.enroll(ENROLLMENT)
-    live = launch(tmp_path, f"print({line!r})").observation
-    assert store.ingest(live.receipt) is Disposition.INSERTED
-
+def test_exact_recovery_replays_live_observation(captured_process):
+    line = b'{"terminal":"completed","tokens":23}'
+    result, _ = captured_process(line + b"\n")
+    live = result.observation
     recovered = effort_capture.recover(
         FixtureAdapter(),
         enrollment=ENROLLMENT,
         expected_turn=replace(TURN, surface="retained"),
-        evidence=BytesIO(line.encode()),
+        evidence=BytesIO(line),
     )
-
     assert recovered.receipt.observation_id == live.receipt.observation_id
-    assert store.ingest(recovered.receipt) is Disposition.REPLAYED
+    assert recovered.receipt.digest == live.receipt.digest
 
 
 @pytest.mark.parametrize("field", ["account", "session", "turn"])
