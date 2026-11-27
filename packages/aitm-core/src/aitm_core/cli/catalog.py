@@ -26,7 +26,7 @@ ROUTES = MappingProxyType(
         ("link",): "aitm_core.cli.stories",
         ("discuss",): "aitm_core.cli.read",
         ("bind",): "aitm_core.cli.bind",
-        ("unbind",): "aitm_core.cli.bind",
+        ("unbind",): "aitm_core.cli.sync",
         ("sync",): "aitm_core.cli.sync",
         ("actions", "retry"): "aitm_core.cli.actions",
         ("attempt", "reconcile"): "aitm_core.cli.plan",
