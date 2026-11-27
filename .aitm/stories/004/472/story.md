@@ -52,3 +52,7 @@ Estimate: **19 implementation agent-hours**, including verification and review. 
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **30** · **P1/Feature** · **19 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **EP03**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Integration resource
+
+[Draft trunk PR #541](https://github.com/kburson/aitm/pull/541) is linked to the epic. The shared branch `codex/core-472-integration` was observed at `48666e85daf2bd3f42a3e09849603d0329e61cf8` against trunk `44ca79c17f80a657d6278cfd82cb988e8a19820a`. #13 owns the composed trunk delivery after verified #9 through #12 receipts.
