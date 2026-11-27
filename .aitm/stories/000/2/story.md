@@ -91,6 +91,10 @@ The Core implementation estimate is **297.25 h across 89 bounded leaves**. #228 
 
 Completed [#456](https://github.com/kburson/aitm/issues/456) satisfies the Core producer prerequisite and replaces the retired #100 edge. #230 remains the Core child for live qualification of the #459 planning usage producer against #51. #230 has a separate preliminary estimate and lies outside the accepted M1 release scope. [Producer delivery sign-off](https://github.com/kburson/aitm/blob/2ec8bca0934c62bbb44866ea57fb5c2776960c0c/.aitm/stories/004/456/retro/2026-11-26-delivery-sign-off.md) · [Reviewed dependency replan](https://github.com/kburson/aitm/blob/3e43229baecb7d1d3346df9d3012f1eacf821b39/.aitm/stories/002/230/plan/2026-11-11-230-cost-dependency-replan.md).
 
+## Configured workflow amendment and delivery replan
+
+The [accepted design amendment](design/2026-11-26-configured-workflow-amendment-draft.md) and its XPR were published at [07755fa0](https://github.com/kburson/aitm/commit/07755fa0bf8e5fabdcadbce0eb31a126b5cc6303). The [implementation-plan revision](plan/2026-11-26-configured-workflow-implementation-plan.md), [legacy rule crosswalk](plan/2026-11-26-legacy-rule-crosswalk.md), and [mini-epic ledger](plan/2026-11-26-core-mini-epic-ledger.md) propose replacing the single integration sequence with bounded trunk deliveries. The repository retains the earlier accepted plan and native parentage until the revised decomposition is reviewed and reconciled.
+
 ## Behavior-driven testing
 
 Use the independently reviewed [Core testing standard](../../002/286/plan/2026-11-14-286-core-behavior-test-standard.md) when planning and reviewing Core leaves.
