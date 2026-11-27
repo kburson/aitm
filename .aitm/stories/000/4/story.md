@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 4
 title: "[Core C02] Event envelopes and reducer dispatch invariants"
 kind: "story"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/4"
 parent: 470
 children: []
 blocking: [6, 7, 8, 9, 14, 16, 23, 28, 29]
 blocked-by: [3]
 created: "2026-11-09T07:59:41Z"
-updated: "2026-11-27T08:07:37.930Z"
+updated: "2026-11-27T08:11:23.114Z"
 last-branch: "codex/core-4-event-envelopes"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
@@ -108,3 +108,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 [Plan for C02](plan/2026-11-27-pickup.md) against the verified #3 landing.
 
 [Accepted pickup review](plan/2026-11-27-pickup-review.md).
+
+[Draft PR #530](https://github.com/kburson/aitm/pull/530) · [Delivery checklist](plan/delivery-checklist.md).
