@@ -3,14 +3,15 @@ schema: "aitm.story/v0"
 id: 19
 title: "[Core C11] Crash-resumable init and reconfiguration"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/19"
+linked-pr: "https://github.com/kburson/aitm/pull/561"
 parent: 475
 children: []
 blocking: [20, 54, 510]
 blocked-by: [12, 17, 18]
 created: "2026-11-09T08:00:45Z"
-updated: "2026-11-27T21:43:13.731748+00:00"
+updated: "2026-11-27T21:47:07.315283+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
