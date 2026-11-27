@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 498
 title: "[Core C90] Pinned workflow document and ordered graph"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/498"
 parent: 473
 children: []
 blocking: [499, 503]
 blocked-by: [12, 14]
 created: "2026-11-27T04:49:04Z"
-updated: "2026-11-27T17:35:46.018Z"
+updated: "2026-11-27T17:38:38.565Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -40,3 +40,7 @@ Parent: #473. Core coordination: #2. State: Ready for Planning.
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **40** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #473 with scope entry **C90**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Verified delivery
+
+[Linked PR #552](https://github.com/kburson/aitm/pull/552) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md).
