@@ -89,7 +89,11 @@ class ObservedFact:
 @dataclass(frozen=True, slots=True)
 class ActionRecord:
     pending: ActionScope
-    result: ActionCompleted | ActionFailed | None = None
+    results: dict[str, ActionCompleted | ActionFailed] = field(default_factory=dict)
+
+    @property
+    def result(self) -> ActionCompleted | ActionFailed | None:
+        return next(reversed(self.results.values()), None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -185,9 +189,20 @@ def _apply_action(
             raise EvidenceIntegrityError(
                 "action result lacks a matching pending action"
             )
-        if isinstance(record.result, ActionCompleted) and record.result != fact:
-            raise EvidenceIntegrityError("completed action has a conflicting result")
-        next_record = replace(record, result=fact)
+        prior = record.results.get(event.operation_id)
+        if prior is not None:
+            if prior != fact:
+                raise EvidenceIntegrityError("operation has conflicting action results")
+            return state
+        if isinstance(record.result, ActionCompleted):
+            if record.result != fact:
+                raise EvidenceIntegrityError(
+                    "completed action has a conflicting result"
+                )
+            return state
+        next_record = replace(
+            record, results={**record.results, event.operation_id: fact}
+        )
     return replace(state, actions={**state.actions, key: next_record})
 
 

@@ -314,6 +314,45 @@ def test_action_outcome_and_usage_retain_distinct_provenance():
         )
 
 
+def test_action_retry_keeps_all_operation_results_under_the_same_key():
+    scope = {
+        "origin_operation": "op1",
+        "owner": "board",
+        "action_id": "sync",
+        "target_version": 1,
+        "owner_version": "3",
+        "attempt": None,
+        "workflow": LEGACY,
+    }
+    pending = fact("action.pending", **scope)
+    unavailable = fact(
+        "action.failed", **scope, outcome="unavailable", proof_refs=["disabled"]
+    )
+    completed = fact(
+        "action.completed", **scope, outcome="completed", proof_refs=["synced"]
+    )
+    distinct_failure = fact(
+        "action.failed", **scope, outcome="failed", proof_refs=["denied"]
+    )
+    for conflicting in (distinct_failure, completed):
+        with pytest.raises(EvidenceIntegrityError, match="conflicting action results"):
+            fold(records([pending], [unavailable, conflicting]), core_reducers())
+    with pytest.raises(EvidenceIntegrityError, match="completed action"):
+        fold(
+            records([pending], [unavailable], [completed], [distinct_failure]),
+            core_reducers(),
+        )
+
+    observations = records([pending], [unavailable], [completed])
+    state = fold([*observations, observations[1]], core_reducers())
+    action = state.domains["evidence"].actions[("op1", "board", "sync", 1)]
+    assert [(key, result.outcome) for key, result in action.results.items()] == [
+        ("op2", "unavailable"),
+        ("op3", "completed"),
+    ]
+    assert action.result.outcome == "completed"
+
+
 def test_document_review_retains_opening_and_deduplicates_turns():
     key = {"record_id": "level-1", "level": "sar", "path": "plans/current.md"}
     opening = fact(
