@@ -9,6 +9,16 @@ from test_effort_trail import PROJECT, effort_snapshot, evidence, ref
 from aitm_usage.effort import Attribution, EffortStore, Role
 
 
+class ExportDirectory:
+    """Fixed in-memory export bytes with a read-only filesystem-shaped API."""
+
+    def __init__(self, files):
+        self.files = files
+
+    def __truediv__(self, name):
+        return SimpleNamespace(read_bytes=lambda: self.files[name])
+
+
 def test_report_scopes_attempts_and_exports_deterministically(monkeypatch, capsys):
     from aitm_usage.effort.cli import main
 
@@ -140,11 +150,7 @@ def test_legacy_export_preserves_identity_and_blocks_combined_total():
         "usage.jsonl": data,
     }
 
-    class ExportDirectory:
-        def __truediv__(self, name):
-            return SimpleNamespace(read_bytes=lambda: files[name])
-
-    legacy = read_legacy(ExportDirectory(), PROJECT)
+    legacy = read_legacy(ExportDirectory(files), PROJECT)
     report = build_report(snapshot, RollupTarget(PROJECT, story=443), legacy=legacy)
     assert report["total"]["observed_tokens"] == 10
     assert report["combined_coverage"] == "unresolved-overlap"

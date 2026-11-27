@@ -5,12 +5,14 @@ from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta, tzinfo
 from threading import Barrier
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
 from test_effort_trail import effort_snapshot
+from test_ledger import _QueryRows
 
-from aitm_usage.types import Availability, SourceRef, TokenCounts
+from aitm_usage.types import Availability, SourceRef, TokenCounts, _encode
 
 PROJECT = UUID(int=1)
 ATTEMPT = UUID(int=2)
@@ -52,6 +54,8 @@ def test_replays_are_idempotent_across_restart(effort, enrollment, receipt, tmp_
     path = tmp_path / "effort.db"
     store = effort.EffortStore(path, PROJECT)
     assert store.enroll(enrollment) is effort.Disposition.INSERTED
+    enrolled_only = store.snapshot()
+    assert enrolled_only.enrollments == (enrollment,) and not enrolled_only.attributed
     assert store.ingest(receipt) is effort.Disposition.INSERTED
     snapshot = store.snapshot()
 
@@ -61,6 +65,22 @@ def test_replays_are_idempotent_across_restart(effort, enrollment, receipt, tmp_
     assert reopened.snapshot() == snapshot
     assert snapshot.attributed[0].story == 12
     assert snapshot.attributed[0].receipt.tokens.total_tokens == 0
+
+    # Exercise the provider-native price receipt through the same durable
+    # replay and conflict path as the ordinary usage receipt above.
+    from test_effort_grok import ENROLLMENT as grok_enrollment
+    from test_effort_grok import TICKS, settled_grok_usage
+
+    first, changed = settled_grok_usage()
+    grok_path = tmp_path / "grok.db"
+    grok = effort.EffortStore(grok_path, grok_enrollment.project_id)
+    assert grok.enroll(grok_enrollment) is effort.Disposition.INSERTED
+    assert grok.ingest(first) is effort.Disposition.INSERTED
+    grok = effort.EffortStore(grok_path, grok_enrollment.project_id)
+    assert grok.ingest(first) is effort.Disposition.REPLAYED
+    assert grok.snapshot().attributed[0].receipt == first
+    assert grok.ingest(changed) is effort.Disposition.CONFLICTED
+    assert grok.snapshot().attributed[0].receipt.grok_cost_usd_ticks == TICKS
 
 
 def test_out_of_order_refinement_waits_for_exact_lineage(
@@ -292,19 +312,61 @@ def test_missing_scope_does_not_bind_to_enrolled_story(effort, enrollment, recei
 
 
 def test_new_turn_without_new_attempt_is_a_conflict(
-    effort, enrollment, receipt, tmp_path
+    effort, enrollment, receipt, monkeypatch
 ):
-    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
-    store.enroll(enrollment)
-    store.ingest(receipt)
+    from unittest.mock import Mock
+
     other = replace(receipt, turn=replace(receipt.turn, turn=ref("f")))
-    assert store.ingest(other) is effort.Disposition.CONFLICTED
-    assert [row.receipt for row in store.snapshot().attributed] == [receipt]
+    store = effort.EffortStore.__new__(effort.EffortStore)
+    store.project_id = enrollment.project_id
+    responses = {
+        "SELECT 1 FROM conflicts WHERE digest=?": [],
+        "SELECT 1 FROM pending WHERE digest=?": [],
+        "SELECT digest FROM revisions WHERE observation=? AND revision=?": [],
+        "SELECT observation FROM effective WHERE attempt=? AND observation<>?": [
+            (receipt.observation_id,),
+        ],
+        "SELECT 1 FROM scope_markers WHERE "
+        "(observation=? AND attempt<>?) OR (attempt=? AND observation<>?)": [],
+    }
+
+    def execute(query, options):
+        if "SELECT observation FROM effective" in query:
+            assert options == (str(enrollment.attempt_id), other.observation_id)
+        return _QueryRows(responses[" ".join(query.split())])
+
+    db = SimpleNamespace(execute=execute)
+    monkeypatch.setattr(store, "_effective", Mock(return_value=None))
+    monkeypatch.setattr(store, "_enrollment", Mock(return_value=enrollment))
+    monkeypatch.setattr(store, "_advance_generation", Mock())
+    conflict = Mock()
+    monkeypatch.setattr(store, "_conflict", conflict)
+    assert store._ingest(db, other) is effort.Disposition.CONFLICTED
+    conflict.assert_called_once_with(db, other, "turn-attempt")
 
 
-def test_snapshot_retains_enrolled_attempts_without_usage(effort, enrollment, tmp_path):
-    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
-    store.enroll(enrollment)
+def test_snapshot_retains_enrolled_attempts_without_usage(
+    effort, enrollment, monkeypatch
+):
+    store = effort.EffortStore.__new__(effort.EffortStore)
+    store.project_id = enrollment.project_id
+    responses = {
+        "sqlite_schema": [("scope_markers",), ("handoffs",)],
+        "scope_markers": [],
+        "handoffs": [],
+        "enrollments": [(_encode(enrollment, type(enrollment)),)],
+        "effective": [],
+        "pending": [],
+        "conflicts": [],
+    }
+
+    def execute(query):
+        return responses[query.split(" FROM ", 1)[1].split()[0]]
+
+    monkeypatch.setattr(
+        store, "_transaction", lambda: nullcontext(SimpleNamespace(execute=execute))
+    )
+    monkeypatch.setattr(store, "_generation", lambda _: 5)
     snapshot = store.snapshot()
     assert snapshot.enrollments == (enrollment,)
     assert not snapshot.attributed
@@ -327,6 +389,9 @@ def test_pending_evidence_for_another_turn_moves_to_conflict_on_binding(
     assert not snapshot.pending
     assert snapshot.conflicts[0].receipt == other
     assert snapshot.conflicts[0].reason == "turn-attempt"
+    rejected = replace(other, revision=1, previous_digest=None)
+    assert store.ingest(rejected) is effort.Disposition.CONFLICTED
+    assert [row.receipt for row in store.snapshot().attributed] == [receipt]
 
 
 def test_pending_collision_cannot_suppress_revision_with_valid_predecessor(

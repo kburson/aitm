@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -6,6 +7,7 @@ from uuid import UUID
 import pytest
 from test_effort_session import CHILD, OWNER, PROJECT, REMOTE, SESSION, layout
 from test_effort_session import session_api as session_api
+from test_ledger import _QueryRows
 
 from aitm_usage.effort.pinned_coverage import (
     canonical,
@@ -13,14 +15,16 @@ from aitm_usage.effort.pinned_coverage import (
     validate_coverage,
 )
 from aitm_usage.effort.receipts import (
+    Enrollment,
     Outcome,
+    Role,
     TimeBasis,
     UsageReceipt,
     UsageScope,
 )
 from aitm_usage.effort.session import SessionStore, validate_public_receipt
 from aitm_usage.effort.store import EffortError
-from aitm_usage.types import Availability, TokenCounts
+from aitm_usage.types import Availability, TokenCounts, _encode
 
 WINDOW = {
     "window_start_utc": "2026-11-25T00:00:00Z",
@@ -73,6 +77,8 @@ def test_export_preserves_attempt_identity_through_story_switch(session_api, tmp
         reopened, [SESSION], 457, WINDOW, "closed", authority([OWNER, CHILD])
     )
     data = validate_coverage(raw)
+    with pytest.raises(EffortError, match="session"):
+        export_coverage(reopened, [SESSION, UUID(int=5)], 457, WINDOW, "open")
     (public,) = reopened.public_receipts(SESSION)
     opaque = validate_public_receipt(public)["attempt"]
     assert {r["state"] for r in data["attempts"]} == {"pending-binding", "observed"}
@@ -85,32 +91,52 @@ def test_export_preserves_attempt_identity_through_story_switch(session_api, tmp
     )
 
 
-def test_zero_length_at_window_open_is_an_enrolled_attempt(session_api, tmp_path):
-    store, launch, turn = layout(session_api, tmp_path / "store.sqlite")
-    store.bind(SESSION, CHILD, launch, turn)
+def test_zero_length_at_window_open_is_an_enrolled_attempt(monkeypatch):
+    from test_effort_trail import evidence
+
+    store = SessionStore.__new__(SessionStore)
+    store.project_id = PROJECT
+    _, native = evidence("zero-window")
     start = datetime(2026, 11, 25, tzinfo=UTC)
-    store.accept(
-        SESSION,
-        UsageReceipt(
-            PROJECT,
-            CHILD,
-            turn,
-            "a" * 64,
-            datetime(2026, 11, 25, 1, tzinfo=UTC),
-            1,
-            Availability.COMPLETE,
-            Outcome.COMPLETED,
-            TokenCounts(input_tokens=0),
-            scope=UsageScope.BOUNDED,
-            started_at=start,
-            ended_at=start,
-            time_basis=TimeBasis.NATIVE,
+    receipt = replace(
+        native,
+        project_id=PROJECT,
+        attempt_id=CHILD,
+        observed_at=datetime(2026, 11, 25, 1, tzinfo=UTC),
+        tokens=TokenCounts(input_tokens=0),
+        started_at=start,
+        ended_at=start,
+    )
+    enrollment = Enrollment(PROJECT, SESSION, CHILD, Role.WORKER, 457)
+    responses = {
+        "session_selections": ((str(SESSION),), [(1,)]),
+        "session_expectations": (
+            (str(SESSION),),
+            [
+                (
+                    str(CHILD),
+                    _encode(receipt.turn, type(receipt.turn)),
+                    _encode(enrollment, Enrollment),
+                )
+            ],
         ),
+        "revisions": ((str(CHILD),), [(receipt.to_json(),)]),
+        "conflicts": ((str(CHILD),), []),
+        "pending": ((str(CHILD),), []),
+        "scope_markers": ((str(CHILD),), []),
+    }
+
+    def execute(query, options):
+        table = query.split(" FROM ", 1)[1].split()[0]
+        expected, rows = responses[table]
+        assert options == expected
+        return _QueryRows(rows)
+
+    monkeypatch.setattr(
+        store, "_transaction", lambda: nullcontext(SimpleNamespace(execute=execute))
     )
     states, _ = store.coverage_snapshot([SESSION], 457, WINDOW)
     assert states[CHILD] == "observed"
-    with pytest.raises(EffortError, match="session"):
-        export_coverage(store, [SESSION, UUID(int=5)], 457, WINDOW, "open")
 
 
 class CoverageStore:
