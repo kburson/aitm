@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 6
 title: "[Core C54] Lifecycle, relationships and document-state reducers"
 kind: "story"
-state: plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/6"
 parent: 470
 children: []
 blocking: [8, 9, 78]
 blocked-by: [4, 5]
 created: "2026-11-09T07:59:49Z"
-updated: "2026-11-27T08:47:11.128Z"
-last-branch: "planning"
+updated: "2026-11-27T08:50:06.592Z"
+last-branch: "codex/core-6-lifecycle-reducers"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
@@ -104,3 +104,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 **Ready for Planning** · rank **40** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #470 with scope entry **C54**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
 
 [Rank 40 pickup plan](plan/2026-11-27-pickup.md) pins the verified #4 and #5 deliveries.
+
+[Accepted pickup review](plan/2026-11-27-pickup-review.md).
