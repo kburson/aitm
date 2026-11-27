@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 11
 title: "[Core C06] Planning history validation and worktree exclusion"
 kind: "story"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/11"
 parent: 472
 children: []
 blocking: [12, 13, 18, 20, 21, 48, 53]
 blocked-by: [3, 10]
 created: "2026-11-09T08:00:10Z"
-updated: "2026-11-27T13:14:04.308Z"
+updated: "2026-11-27T13:15:32.433Z"
 last-branch: "codex/core-11-planning-gate"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 3.5, "size": "S"}
