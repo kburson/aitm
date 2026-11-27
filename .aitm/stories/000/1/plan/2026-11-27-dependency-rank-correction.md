@@ -49,7 +49,7 @@ is Done. Its reviewed kickoff is retained, and the board is back at
 Ready for Planning until all six predecessor epics deliver.
 
 The native graph places #247 after #493 because #259 requires #230. The
-[Viewer plan](../../002/247/plan/2026-11-11-247-m6-viewer-decomposition.md)
+[Viewer plan](../../../002/247/plan/2026-11-11-247-m6-viewer-decomposition.md)
 also requires M2's delivered hosted issue-link and field/readback
 contracts for #258, #257 and #259. #524 owns those contracts at rank
 250, so #247 is rank 251. Child-specific acceptance and hosting
