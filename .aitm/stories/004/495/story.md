@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 495
 title: "[Core C108] Inventory resident actions, evidence and restart"
 kind: "story"
-state: test
+state: review
 issue: "https://github.com/kburson/aitm/issues/495"
 parent: 471
 children: []
 blocking: [497]
 blocked-by: []
 created: "2026-11-27T04:49:01Z"
-updated: "2026-11-27T10:56:36.715Z"
+updated: "2026-11-27T11:00:32.129Z"
 last-branch: "codex/core-495-legacy-resident-actions"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 3.5, "size": "S"}
