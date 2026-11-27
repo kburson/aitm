@@ -7,7 +7,8 @@ from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
-from test_effort_trail import effort_snapshot
+from test_effort_trail import effort_snapshot, ref
+from test_ledger import _QueryRows
 
 from aitm_usage.effort.receipts import (
     NativeTurn,
@@ -189,9 +190,83 @@ def test_session_cli_registers_expectation_before_provider(monkeypatch, capsys):
     ]
 
 
+@pytest.fixture
+def supervised_dispatch(session_api, monkeypatch):
+    from aitm_usage.effort import Enrollment
+    from aitm_usage.effort.capture import (
+        CaptureResult,
+        DescendantState,
+        ProcessState,
+        ProcessStatus,
+    )
+    from aitm_usage.types import _decode
+
+    store = session_api.SessionStore.__new__(session_api.SessionStore)
+    store.project_id = PROJECT
+    launch = ref("launch")
+    turn = NativeTurn(
+        "codex",
+        "0.171.0-alpha.13.2",
+        "desktop",
+        ref("account"),
+        ref("session"),
+        ref("turn"),
+    )
+    enrollment = Enrollment(PROJECT, SESSION, CHILD, Role.WORKER, 457)
+    bound = None
+    dispatched = False
+    observed = None
+
+    def execute(query, arguments):
+        nonlocal bound, dispatched
+        if query.startswith("SELECT 1 FROM session_dispatches"):
+            assert arguments == (str(CHILD),)
+            return _QueryRows([(1,)] if dispatched else [])
+        if query.startswith("INSERT INTO session_dispatches"):
+            assert arguments == (str(CHILD),) and not dispatched
+            dispatched = True
+            return None
+        if query.startswith("SELECT 1 FROM session_expectations"):
+            assert arguments == (turn.identity,)
+            return _QueryRows([])
+        if query.startswith("UPDATE session_expectations"):
+            raw, identity, attempt = arguments
+            assert (identity, attempt) == (turn.identity, str(CHILD))
+            bound = _decode(raw, NativeTurn)
+            return None
+        assert "FROM session_expectations s" in query and arguments == (str(SESSION),)
+        payload = None if observed is None else observed.to_json()
+        return [(str(CHILD), bound, payload)]
+
+    def expected(db, session, attempt):
+        assert (session, attempt) == (SESSION, CHILD)
+        return session_api.Expectation(enrollment, launch, bound)
+
+    def ingest(db, receipt):
+        nonlocal observed
+        assert receipt.turn == bound == turn and dispatched
+        observed = receipt
+        return Disposition.INSERTED
+
+    async def capture(adapter, *, enrollment, command, limits):
+        assert dispatched and bound == turn and enrollment.attempt_id == CHILD
+        status = ProcessStatus(ProcessState.EXITED, 0, DescendantState.UNKNOWN)
+        return CaptureResult(
+            status, adapter.observe(SimpleNamespace(stdout=b"finished\n"))
+        )
+
+    monkeypatch.setattr(
+        store, "_transaction", lambda **_: nullcontext(SimpleNamespace(execute=execute))
+    )
+    monkeypatch.setattr(store, "_expected", expected)
+    monkeypatch.setattr(store, "_ingest", ingest)
+    monkeypatch.setattr(session_api, "capture", capture)
+    return store, launch, turn
+
+
 @pytest.mark.parametrize("prebind", [False, True])
 def test_supervised_launch_settles_automatically_and_will_not_repeat(
-    session_api, tmp_path, prebind
+    session_api, request, prebind
 ):
     import asyncio
     import sys
@@ -199,7 +274,11 @@ def test_supervised_launch_settles_automatically_and_will_not_repeat(
 
     from aitm_usage.effort.capture import HarnessCommand, Observation
 
-    store, launch, turn = layout(session_api, tmp_path / "effort.db")
+    if prebind:
+        store, launch, turn = request.getfixturevalue("supervised_dispatch")
+    else:
+        tmp_path = request.getfixturevalue("tmp_path")
+        store, launch, turn = layout(session_api, tmp_path / "effort.db")
 
     class Observes:
         def observe(self, event):
@@ -285,7 +364,6 @@ def public_revisions(session_api, monkeypatch):
 def test_unknown_scope_and_open_markers_withhold_publication(
     session_api, public_revisions
 ):
-    from test_effort_trail import ref
 
     from aitm_usage.effort.assignments import MarkerKind, ScopeMarker
 
@@ -364,7 +442,6 @@ def test_frozen_batch_survives_story_and_revision_changes():
 
 
 def test_review_companion_keeps_sealed_decision_independent(session_api, monkeypatch):
-    from test_effort_trail import ref
 
     from aitm_usage.effort.receipts import Enrollment, ReviewBinding
     from aitm_usage.effort.review_receipts import (
@@ -428,8 +505,6 @@ def test_late_scope_proof_redacts_historical_usage_without_losing_lineage(
     session_api, public_revisions
 ):
     from datetime import timedelta
-
-    from test_effort_trail import ref
 
     from aitm_usage.effort.assignments import MarkerKind, ScopeMarker
     from aitm_usage.effort.receipts import TimeBasis

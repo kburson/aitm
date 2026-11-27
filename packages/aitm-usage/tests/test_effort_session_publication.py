@@ -106,6 +106,18 @@ def test_publishes_once_without_touching_worktree(repo_pair):
         )
     assert git(remote, "rev-parse", PLANNING) == tip
 
+    git(
+        checkout,
+        "remote",
+        "set-url",
+        "--push",
+        "origin",
+        str(remote.parent / "other.git"),
+    )
+    with pytest.raises(ValueError, match="remote"):
+        publish_receipts(checkout, str(remote), PROJECT, [item])
+    assert git(remote, "rev-parse", PLANNING) == tip
+
 
 def test_conflict_does_not_push_new_files_in_same_batch(planning_tree):
     first = receipt()
@@ -120,19 +132,26 @@ def test_conflict_does_not_push_new_files_in_same_batch(planning_tree):
         )
 
 
-def test_refuses_mismatched_identity_project_and_remote(repo_pair, tmp_path):
-    checkout, remote = repo_pair
-    tip = git(remote, "rev-parse", PLANNING)
+def test_refuses_mismatched_identity_project_and_remote(monkeypatch):
+    from unittest.mock import Mock, call
+
     item = receipt()
     wrong_fields = PublicationEntry(457, "b" * 64, 1, item.data)
+    repo = Path("/fixture/checkout")
+    remote = "https://example.invalid/approved/planning.git"
+    read = Mock(side_effect=[remote.encode() + b"\n", b"other.git\n"])
+    monkeypatch.setattr(publication, "_read", read)
     with pytest.raises(ValueError, match="scope"):
-        publish_receipts(checkout, str(remote), PROJECT, [wrong_fields])
+        publication._validated_batch(PROJECT, [wrong_fields])
     with pytest.raises(ValueError, match="scope"):
-        publish_receipts(checkout, str(remote), UUID(int=1), [item])
-    git(checkout, "remote", "set-url", "--push", "origin", str(tmp_path / "other.git"))
+        publication._validated_batch(UUID(int=1), [item])
+    read.assert_not_called()
     with pytest.raises(ValueError, match="remote"):
-        publish_receipts(checkout, str(remote), PROJECT, [item])
-    assert git(remote, "rev-parse", PLANNING) == tip
+        publication._require_remote(repo, remote)
+    assert read.call_args_list == [
+        call(repo, "remote", "get-url", "--all", "origin"),
+        call(repo, "remote", "get-url", "--push", "--all", "origin"),
+    ]
 
 
 def test_refuses_missing_story_and_symlinked_tree(repo_pair):
@@ -237,20 +256,66 @@ def test_revision_requires_its_exact_public_predecessor(planning_tree):
     ]
 
 
-def test_policy_refusal_retains_remote_and_bounds_pushes(repo_pair, monkeypatch):
-    checkout, remote = repo_pair
-    real_run = publication._git
+def test_policy_refusal_retains_remote_and_bounds_pushes(planning_tree, monkeypatch):
+    from contextlib import nullcontext
+
+    tip = planning_tree.pin()
+    item = receipt()
+    remote = "https://example.invalid/approved/planning.git"
+    fetches = []
     pushes = []
+    cleanup = []
+    real_read = publication._read
 
-    def refuse(repo, *args, **kwargs):
-        if args[0] == "push":
-            pushes.append(args)
-            return subprocess.CompletedProcess(args, 1, b"", b"policy refused")
-        return real_run(repo, *args, **kwargs)
+    def read(repo, *args):
+        if args[0] == "remote":
+            assert args in {
+                ("remote", "get-url", "--all", "origin"),
+                ("remote", "get-url", "--push", "--all", "origin"),
+            }
+            return remote.encode() + b"\n"
+        if args[0] == "rev-parse":
+            assert args == ("rev-parse", "--verify", f"{fetches[-1]}^{{commit}}")
+            return tip.encode() + b"\n"
+        return real_read(repo, *args)
 
-    monkeypatch.setattr(publication, "_git", refuse)
-    tip = git(remote, "rev-parse", PLANNING)
+    def git_transport(repo, *args):
+        assert repo is planning_tree
+        match args[0]:
+            case "fetch":
+                source, destination = args[-1].split(":")
+                assert source == PLANNING
+                fetches.append(destination)
+                return subprocess.CompletedProcess(args, 0, b"", b"")
+            case "push":
+                pushes.append(args[-1])
+                return subprocess.CompletedProcess(args, 1, b"", b"policy refused")
+            case "update-ref":
+                assert args[1] == "-d"
+                cleanup.append(args[-1])
+                return subprocess.CompletedProcess(args, 0, b"", b"")
+            case _:
+                pytest.fail(f"Unexpected Git transport operation: {args!r}")
+
+    def candidate(repo, index, base, missing):
+        assert (repo, index, base, missing) == (
+            planning_tree,
+            Path("/fixture/stage/index"),
+            tip,
+            [item],
+        )
+        return "c" * 40
+
+    monkeypatch.setattr(
+        publication.tempfile,
+        "TemporaryDirectory",
+        lambda **_: nullcontext("/fixture/stage"),
+    )
+    monkeypatch.setattr(publication, "_read", read)
+    monkeypatch.setattr(publication, "_git", git_transport)
+    monkeypatch.setattr(publication, "_commit", candidate)
     with pytest.raises(publication.PublicationHold, match="unverified"):
-        publish_receipts(checkout, str(remote), PROJECT, [receipt()])
-    assert len(pushes) == 3
-    assert git(remote, "rev-parse", PLANNING) == tip
+        publish_receipts(planning_tree, remote, PROJECT, [item])
+    assert pushes == [f"{'c' * 40}:{PLANNING}"] * 3
+    assert fetches and fetches == cleanup * 4
+    assert item.path not in planning_tree.commits[tip]

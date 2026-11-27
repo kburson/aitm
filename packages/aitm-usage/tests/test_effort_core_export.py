@@ -8,13 +8,7 @@ from importlib.resources import files
 from uuid import UUID
 
 import pytest
-from fixtures.receiver import (
-    ImportInterrupted,
-    Receiver,
-    ReceiverConflict,
-    _compatible,
-    _validate_row,
-)
+from fixtures.receiver import ImportInterrupted, Receiver, ReceiverConflict
 from pinned_evidence_fixture import pinned_evidence as pinned_evidence
 from test_effort_pinned_inputs import add_receipt, append, at, pin, write
 from test_effort_session_publication import PROJECT, STORY
@@ -242,7 +236,7 @@ def test_core_export_derives_pinned_rows_and_provenance(repo_pair, tmp_path):
         "duplicate",
     ],
 )
-def test_core_export_preserves_held_evidence(pinned_evidence, mode):
+def test_core_export_preserves_held_evidence(pinned_evidence, tmp_path, mode):
     repo = pinned_evidence(STORY, STORY_ID)
     overrides = {}
     if mode == "partial":
@@ -277,15 +271,18 @@ def test_core_export_preserves_held_evidence(pinned_evidence, mode):
         return
     out = export(repo, artifact(repo))
     proof = json.loads(out["provenance.json"])
-    if mode in ("disputed", "grok"):
-        assert not out["usage.jsonl"]
-        assert proof["rows"][0]["status"] == "held"
-    else:
-        row = json.loads(out["usage.jsonl"])
-        manifest = json.loads(out["manifest.json"])
-        _validate_row(row, manifest["rate_basis"])
-        assert row["source"] == SOURCE and not _compatible(row)
-        assert proof["rows"][0]["status"] == "pending"
+    with Receiver(tmp_path / "receiver.db", PROJECT) as receiver:
+        assert (
+            receiver.import_snapshot(materialize(tmp_path / "snapshot", out))
+            == "imported"
+        )
+        assert not receiver.accepted
+        if mode in ("disputed", "grok"):
+            assert not receiver.pending and not out["usage.jsonl"]
+            assert proof["rows"][0]["status"] == "held"
+        else:
+            assert receiver.pending == {SOURCE}
+            assert proof["rows"][0]["status"] == "pending"
 
 
 def test_core_export_refuses_foreign_forged_and_wrong_rate(pinned_evidence, tmp_path):
@@ -539,7 +536,7 @@ def test_oversized_cli_bundle_writes_no_stdout(
 
 
 def test_fixture_keeps_unpriced_complete_usage_and_partial_usage_separate(
-    pinned_evidence,
+    pinned_evidence, tmp_path
 ):
     repo = pinned_evidence(STORY, STORY_ID)
     exact_receipt(repo, model="gpt-6.2-astra")
@@ -564,10 +561,20 @@ def test_fixture_keeps_unpriced_complete_usage_and_partial_usage_separate(
     proof = json.loads(packet["provenance.json"])
     assert proof["api_estimate_usd"] is None and proof["cost_eligible"] is False
     assert proof["rows"][0]["price_gap"] == "unsupported-rate-model"
-    rate_basis = json.loads(packet["manifest.json"])["rate_basis"]
-    _validate_row(first, rate_basis)
-    _validate_row(second, rate_basis)
-    assert first["source"] == SOURCE and _compatible(first)
-    assert second["source"] == "hmac-sha256:" + "b" * 64 and not _compatible(second)
-    assert proof["rows"][0]["row_sha256"] == sha256(canonical_record(first)).hexdigest()
-    assert proof["rows"][1]["status"] == "pending"
+    pending = "hmac-sha256:" + "b" * 64
+    with Receiver(tmp_path / "receiver.db", PROJECT) as receiver:
+        assert (
+            receiver.import_snapshot(materialize(tmp_path / "snapshot", packet))
+            == "imported"
+        )
+        assert receiver.accepted == {SOURCE: proof["rows"][0]["row_sha256"]}
+        assert receiver.pending == {pending}
+        assert (
+            _fixture_readback(
+                receiver,
+                pending,
+                proof["rows"][1]["row_sha256"],
+                controlled_rollback=True,
+            )
+            == "held"
+        )
