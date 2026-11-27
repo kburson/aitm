@@ -14,6 +14,7 @@ from aitm_usage.effort import (
     ReviewBinding,
     Role,
 )
+from aitm_usage.effort.store import Snapshot, StoryObservation
 from aitm_usage.types import Availability, TokenCounts
 
 
@@ -71,6 +72,16 @@ def records():
     return [_record(row) for row in json.loads(source.read_bytes())["attempts"]]
 
 
+def snapshot_for(*enrollments, usage=(), pending=()):
+    enrollment_by_attempt = {row.attempt_id: row for row in enrollments}
+    attributed = tuple(
+        StoryObservation(receipt, enrollment, enrollment.story, enrollment.epic, None)
+        for receipt in usage
+        for enrollment in (enrollment_by_attempt[receipt.attempt_id],)
+    )
+    return Snapshot(PROJECT, 0, tuple(enrollments), attributed, pending, ())
+
+
 def test_qualified_rounds_reconcile_independent_delivery_and_replay(records, tmp_path):
     from aitm_usage.effort.review_receipts import reconcile_review_receipts
 
@@ -121,16 +132,13 @@ def test_qualified_rounds_reconcile_independent_delivery_and_replay(records, tmp
     assert db.read_bytes() == original
 
 
-def test_companion_rejects_wrong_identity_seal_and_native_turn(records, tmp_path):
+def test_companion_rejects_wrong_identity_seal_and_native_turn(records):
     from aitm_usage.effort.review_receipts import reconcile_review_receipts
 
     attempt, decision, usage = records[0]
     identity = attempt.identity
     enrollment = identity.enrollment
-    store = EffortStore(tmp_path / "effort.db", PROJECT)
-    store.enroll(enrollment)
-    store.ingest(usage)
-    snapshot = store.snapshot()
+    snapshot = snapshot_for(enrollment, usage=(usage,))
     for wrong in (
         replace(identity, reviewer=ref("wrong-reviewer")),
         replace(identity, artifact_sha256="0" * 64),
@@ -165,46 +173,41 @@ def test_companion_rejects_wrong_identity_seal_and_native_turn(records, tmp_path
         snapshot, [replace(attempt, observation_id=None)], [decision]
     )[0]
     assert unbound.decision == decision and unbound.usage is None
-    assert store.snapshot() == snapshot
 
 
-def test_same_review_round_cannot_claim_two_seals(records, tmp_path):
+def test_same_review_round_cannot_claim_two_seals(records):
     from aitm_usage.effort.review_receipts import reconcile_review_receipts
 
     attempt, decision, _ = records[0]
-    store = EffortStore(tmp_path / "effort.db", PROJECT)
     enrollment = attempt.identity.enrollment
     retry = replace(enrollment, attempt_id=uuid5(NAMESPACE_URL, "retry"))
     retry_identity = replace(attempt.identity, enrollment=retry)
-    store.enroll(enrollment)
-    store.enroll(retry)
     retry_attempt = replace(attempt, identity=retry_identity, observation_id=None)
     retry_decision = replace(decision, identity=retry_identity, seal=ref("retry"))
     with pytest.raises(EffortError, match="conflicting sealed"):
         reconcile_review_receipts(
-            store.snapshot(), [attempt, retry_attempt], [decision, retry_decision]
+            snapshot_for(enrollment, retry),
+            [attempt, retry_attempt],
+            [decision, retry_decision],
         )
 
 
-def test_pending_usage_restores_lineage_without_changing_decision(records, tmp_path):
+def test_pending_usage_restores_lineage_without_changing_decision(records):
     from aitm_usage.effort.review_receipts import reconcile_review_receipts
 
     attempt, decision, first = records[0]
     successor = replace(
         first, revision=2, previous_digest=first.digest, source_sha256="c" * 64
     )
-    database = tmp_path / "effort.db"
-    store = EffortStore(database, PROJECT)
-    store.enroll(attempt.identity.enrollment)
-    assert store.ingest(successor) is Disposition.PENDING
-    read_only = EffortStore(database, PROJECT, read_only=True)
-    (pending,) = reconcile_review_receipts(read_only.snapshot(), [attempt], [decision])
+    enrollment = attempt.identity.enrollment
+    (pending,) = reconcile_review_receipts(
+        snapshot_for(enrollment, pending=(successor,)), [attempt], [decision]
+    )
     assert pending.decision == decision
     assert pending.usage is None and pending.pending_usage_revisions == 1
 
-    assert store.ingest(first) is Disposition.REFINED
     (settled,) = reconcile_review_receipts(
-        read_only.snapshot(), [attempt], [decision, decision]
+        snapshot_for(enrollment, usage=(successor,)), [attempt], [decision, decision]
     )
     assert settled.decision == decision
     assert settled.usage == successor and settled.pending_usage_revisions == 0

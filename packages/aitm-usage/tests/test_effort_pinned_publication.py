@@ -456,23 +456,19 @@ def test_partial_cost_hold_leaves_existing_dashboard_cost_unknown(repo_pair):
 @pytest.mark.parametrize(
     "field", ["source_sha256", "project_uuid", "verified_story", "selector"]
 )
-def test_cost_projection_requires_exact_operator_binding(repo_pair, field):
+def test_cost_projection_requires_exact_operator_binding(field):
     from aitm_usage.effort.pinned_cost import cost_candidate
 
-    _, _, pin = repo_pair
-    data = envelope(pin)
+    data = envelope("1" * 40)
     selector, proof = selector_and_proof(data, "a" * 40)
     proof[field] = "different"
     assert cost_candidate(data, selector, proof)["status"] == "held"
 
 
-def test_cost_projection_does_not_trust_eligibility_without_reconciled_coverage(
-    repo_pair,
-):
+def test_cost_projection_does_not_trust_eligibility_without_reconciled_coverage():
     from aitm_usage.effort.pinned_cost import cost_candidate
 
-    _, _, pin = repo_pair
-    data = envelope(pin, coverage_override={"expected_turns": 2, "pending": 1})
+    data = envelope("1" * 40, coverage_override={"expected_turns": 2, "pending": 1})
     selector, proof = selector_and_proof(data, "a" * 40)
     result = cost_candidate(data, selector, proof)
     assert result == {"status": "held", "reasons": ["invalid-complete-cost"]}

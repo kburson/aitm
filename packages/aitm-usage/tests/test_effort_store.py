@@ -1,12 +1,14 @@
 import importlib
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta, tzinfo
 from threading import Barrier
 from uuid import UUID
 
 import pytest
+from test_effort_trail import effort_snapshot
 
 from aitm_usage.types import Availability, SourceRef, TokenCounts
 
@@ -66,10 +68,12 @@ def test_out_of_order_refinement_waits_for_exact_lineage(
 ):
     store = effort.EffortStore(tmp_path / "effort.db", PROJECT)
     store.enroll(enrollment)
+    receipt = replace(receipt, scope=effort.UsageScope.UNKNOWN)
     final = replace(
         receipt,
         revision=2,
         previous_digest=receipt.digest,
+        scope=effort.UsageScope.BOUNDED,
         coverage=Availability.COMPLETE,
         tokens=TokenCounts(total_tokens=42),
     )
@@ -81,6 +85,11 @@ def test_out_of_order_refinement_waits_for_exact_lineage(
     assert not snapshot.pending
     assert [row.receipt for row in snapshot.attributed] == [final]
     assert store.ingest(receipt) is effort.Disposition.REPLAYED
+    lost = replace(
+        final, revision=3, previous_digest=final.digest, tokens=TokenCounts()
+    )
+    assert store.ingest(lost) is effort.Disposition.CONFLICTED
+    assert store.snapshot().attributed[0].receipt == final
 
 
 def test_cross_project_and_cross_attempt_turn_reuse_are_isolated(
@@ -106,18 +115,10 @@ def test_cross_project_and_cross_attempt_turn_reuse_are_isolated(
 
 
 def test_conflicting_incomplete_chain_records_gap_without_replacing_prior_usage(
-    effort, enrollment, receipt, tmp_path
+    effort, receipt
 ):
-    store = effort.EffortStore(tmp_path / "effort.db", PROJECT)
-    store.enroll(enrollment)
     bad = replace(receipt, revision=2, previous_digest="e" * 64)
-    assert store.ingest(bad) is effort.Disposition.PENDING
-    assert store.ingest(receipt) is effort.Disposition.INSERTED
-    snapshot = store.snapshot()
-    assert not snapshot.pending
-    assert [row.receipt for row in snapshot.attributed] == [receipt]
-    assert snapshot.conflicts[0].reason == "revision-lineage"
-    assert store.ingest(bad) is effort.Disposition.REPLAYED
+    assert effort.EffortStore._revision_conflict(receipt, bad) == "revision-lineage"
 
 
 def test_parallel_local_writers_publish_one_observation(
@@ -179,20 +180,15 @@ def test_strict_wire_format_and_provenance(effort, receipt):
 
 
 def test_late_receipt_keeps_original_story_after_same_session_switch(
-    effort, enrollment, receipt, tmp_path
+    enrollment, receipt
 ):
-    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
     attempt_b = UUID(int=30)
-    store.enroll(enrollment)
-    store.enroll(replace(enrollment, attempt_id=attempt_b, story=13))
+    enrollment_b = replace(enrollment, attempt_id=attempt_b, story=13)
     receipt_b = replace(
         receipt, attempt_id=attempt_b, turn=replace(receipt.turn, turn=ref("e"))
     )
-    store.ingest(receipt_b)
-    store.ingest(receipt)
-    assert {
-        row.receipt.attempt_id: row.story for row in store.snapshot().attributed
-    } == {
+    snapshot = effort_snapshot((enrollment_b, receipt_b), (enrollment, receipt))
+    assert {row.receipt.attempt_id: row.story for row in snapshot.attributed} == {
         enrollment.attempt_id: 12,
         attempt_b: 13,
     }
@@ -227,13 +223,19 @@ def test_unattached_link_is_immutable_authorized_and_idempotent(
 
 
 def test_mixed_turn_never_inherits_story_or_accepts_late_link(
-    effort, enrollment, receipt, tmp_path
+    effort, enrollment, receipt, monkeypatch
 ):
-    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
-    store.enroll(enrollment)
     mixed = replace(receipt, scope=effort.UsageScope.MIXED)
-    store.ingest(mixed)
-    assert store.snapshot().attributed[0].story is None
+    assert effort_snapshot((enrollment, mixed)).attributed[0].story is None
+    store = effort.EffortStore.__new__(effort.EffortStore)
+    store.project_id = enrollment.project_id
+    monkeypatch.setattr(store, "_transaction", lambda *, write: nullcontext(object()))
+
+    def effective(db, observation):
+        assert observation == mixed.observation_id
+        return mixed
+
+    monkeypatch.setattr(store, "_effective", effective)
     link = effort.Attribution(
         enrollment.project_id, mixed.observation_id, None, 12, ref("b")
     )
@@ -242,19 +244,20 @@ def test_mixed_turn_never_inherits_story_or_accepts_late_link(
 
 
 def test_different_agent_can_continue_same_story_with_fresh_session(
-    effort, enrollment, receipt, tmp_path
+    enrollment, receipt
 ):
-    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
     successor = UUID(int=31)
-    store.enroll(enrollment)
-    store.ingest(receipt)
-    store.enroll(replace(enrollment, attempt_id=successor))
-    store.ingest(
-        replace(
-            receipt, attempt_id=successor, turn=replace(receipt.turn, session=ref("8"))
-        )
-    )
-    rows = store.snapshot().attributed
+    rows = effort_snapshot(
+        (enrollment, receipt),
+        (
+            replace(enrollment, attempt_id=successor),
+            replace(
+                receipt,
+                attempt_id=successor,
+                turn=replace(receipt.turn, session=ref("8")),
+            ),
+        ),
+    ).attributed
     assert len(rows) == 2
     assert all(row.story == 12 for row in rows)
     assert len({row.receipt.turn.session for row in rows}) == 2
@@ -273,11 +276,7 @@ def test_existing_foreign_database_is_never_adopted_or_modified(
     assert path.read_bytes() == before
 
 
-def test_missing_scope_does_not_bind_to_enrolled_story(
-    effort, enrollment, receipt, tmp_path
-):
-    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
-    store.enroll(enrollment)
+def test_missing_scope_does_not_bind_to_enrolled_story(effort, enrollment, receipt):
     undecided = effort.UsageReceipt(
         receipt.project_id,
         receipt.attempt_id,
@@ -289,8 +288,7 @@ def test_missing_scope_does_not_bind_to_enrolled_story(
         receipt.outcome,
         receipt.tokens,
     )
-    store.ingest(undecided)
-    assert store.snapshot().attributed[0].story is None
+    assert effort_snapshot((enrollment, undecided)).attributed[0].story is None
 
 
 def test_new_turn_without_new_attempt_is_a_conflict(
@@ -351,33 +349,30 @@ def test_pending_collision_cannot_suppress_revision_with_valid_predecessor(
     assert snapshot.pending == ()
     assert snapshot.attributed[0].receipt == correct
     assert snapshot.conflicts[0].receipt == wrong
+    assert snapshot.conflicts[0].reason == "revision-lineage"
+    assert store.ingest(wrong) is effort.Disposition.REPLAYED
     assert store.ingest(correct) is effort.Disposition.REPLAYED
 
 
 def test_exact_recovery_can_refine_unknown_scope_and_keep_usage(
-    effort, enrollment, receipt, tmp_path
+    effort, enrollment, receipt
 ):
-    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
-    store.enroll(enrollment)
     unknown_scope = replace(
         receipt, scope=effort.UsageScope.UNKNOWN, coverage=Availability.COMPLETE
     )
-    store.ingest(unknown_scope)
-    assert store.snapshot().attributed[0].story is None
+    assert effort_snapshot((enrollment, unknown_scope)).attributed[0].story is None
     recovered = replace(
         unknown_scope,
         scope=effort.UsageScope.BOUNDED,
         revision=2,
         previous_digest=unknown_scope.digest,
     )
-    assert store.ingest(recovered) is effort.Disposition.REFINED
-    assert store.snapshot().attributed[0].story == 12
+    assert effort.EffortStore._revision_conflict(unknown_scope, recovered) is None
+    assert effort_snapshot((enrollment, recovered)).attributed[0].story == 12
+    assert recovered.tokens == unknown_scope.tokens
 
 
-def test_refinement_cannot_erase_observed_counts(effort, enrollment, receipt, tmp_path):
-    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
-    store.enroll(enrollment)
-    store.ingest(receipt)
+def test_refinement_cannot_erase_observed_counts(effort, receipt):
     lost = replace(
         receipt,
         revision=2,
@@ -385,8 +380,7 @@ def test_refinement_cannot_erase_observed_counts(effort, enrollment, receipt, tm
         coverage=Availability.COMPLETE,
         tokens=TokenCounts(),
     )
-    assert store.ingest(lost) is effort.Disposition.CONFLICTED
-    assert store.snapshot().attributed[0].receipt == receipt
+    assert effort.EffortStore._revision_conflict(receipt, lost) == "revision-usage"
 
 
 def test_intervals_compare_actual_time_across_repeated_local_hour(effort, receipt):

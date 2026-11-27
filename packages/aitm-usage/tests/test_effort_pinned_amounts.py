@@ -1,4 +1,5 @@
 from hashlib import sha256
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -73,32 +74,41 @@ def _summarize(turns=(), *, coverage=None, gaps=(), timing=()):
     )
 
 
-def test_pinned_card_requires_expected_digest_and_canonical_bytes(tmp_path):
+class RateCard:
+    def __init__(self, raw):
+        self.raw = raw
+
+    def open(self, mode):
+        assert mode == "rb"
+        return BytesIO(self.raw)
+
+
+def test_pinned_card_requires_expected_digest_and_canonical_bytes():
     from aitm_usage.effort.pinned_amounts import load_comparison_rates
 
     raw = _CARD.read_bytes()
     digest = sha256(raw).hexdigest()
-    assert _rates().sha256 == digest
+    card = RateCard(raw)
+    rates = load_comparison_rates(card, digest)
+    assert rates.sha256 == digest
     source = _CARD.with_name("2026-11-25-sol-standard-source.json")
-    assert _rates().source_sha256 == sha256(source.read_bytes()).hexdigest()
+    assert rates.source_sha256 == sha256(source.read_bytes()).hexdigest()
     with pytest.raises(ValueError):
-        load_comparison_rates(_CARD, "1" * 64)
-    tampered = tmp_path / "rates.json"
-    tampered.write_bytes(raw + b"\n")
+        load_comparison_rates(card, "1" * 64)
+    tampered = raw + b"\n"
     with pytest.raises(ValueError):
-        load_comparison_rates(tampered, sha256(tampered.read_bytes()).hexdigest())
+        load_comparison_rates(RateCard(tampered), sha256(tampered).hexdigest())
 
 
-def test_pinned_card_rejects_unsupported_tier_and_unqualified_provider(tmp_path):
+def test_pinned_card_rejects_unsupported_tier_and_unqualified_provider():
     from aitm_usage.effort.pinned_amounts import load_comparison_rates
 
+    original = _CARD.read_bytes()
     for old, new in ((b'"standard"', b'"fast"'), (b'"codex"', b'"other"')):
-        path = tmp_path / "card.json"
-        raw = _CARD.read_bytes().replace(old, new)
-        assert raw != _CARD.read_bytes()
-        path.write_bytes(raw)
+        raw = original.replace(old, new)
+        assert raw != original
         with pytest.raises(ValueError):
-            load_comparison_rates(path, sha256(raw).hexdigest())
+            load_comparison_rates(RateCard(raw), sha256(raw).hexdigest())
 
 
 @pytest.mark.parametrize(

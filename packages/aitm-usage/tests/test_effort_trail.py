@@ -25,7 +25,8 @@ from aitm_usage.effort import (
     WorkflowWindow,
     rollup,
 )
-from aitm_usage.types import Availability, SourceRef, TokenCounts
+from aitm_usage.effort.store import Snapshot
+from aitm_usage.types import Availability, SourceRef, TokenCounts, _encode
 
 PROJECT = UUID(int=442)
 RUN = UUID(int=435)
@@ -76,6 +77,34 @@ def target(story=None):
     return RollupTarget(PROJECT, epic=435, story=story)
 
 
+def effort_snapshot(*pairs, pending_enrollments=(), markers=(), links=()):
+    enrollments = tuple(enrollment for enrollment, _ in pairs) + pending_enrollments
+    (project,) = {enrollment.project_id for enrollment in enrollments}
+    starts = {row.turn.identity for row in markers if row.kind is MarkerKind.START}
+    ends = {row.turn.identity for row in markers if row.kind is MarkerKind.END}
+    open_scopes = starts - ends
+    links_by_observation = {link.observation_id: link for link in links}
+    attributed = tuple(
+        EffortStore._story_observation(
+            receipt.to_json(),
+            _encode(enrollment, Enrollment),
+            _encode(link, type(link)) if link is not None else None,
+            receipt.observation_id in open_scopes,
+        )
+        for enrollment, receipt in pairs
+        for link in (links_by_observation.get(receipt.observation_id),)
+    )
+    return Snapshot(
+        project,
+        0,
+        enrollments,
+        attributed,
+        (),
+        (),
+        tuple(markers),
+    )
+
+
 def test_markers_handoff_and_late_receipt_preserve_original_story(tmp_path):
     database = tmp_path / "effort.db"
     store = EffortStore(database, PROJECT)
@@ -116,35 +145,42 @@ def test_markers_handoff_and_late_receipt_preserve_original_story(tmp_path):
     assert rollup(snapshot, target(1)).total.engaged == timedelta(seconds=2)
 
 
-def test_open_and_mixed_turns_are_unassigned(tmp_path):
-    store = EffortStore(tmp_path / "effort.db", PROJECT)
+def test_open_and_mixed_turns_are_unassigned():
     enrolled, receipt = evidence("turn")
-    store.enroll(enrolled)
-    store.mark_scope(marker(receipt, MarkerKind.START, 900))
-    store.ingest(receipt)
-    snapshot = store.snapshot()
+    start = marker(receipt, MarkerKind.START, 900)
+    end = marker(receipt, MarkerKind.END, 2100)
+    bounded = (enrolled, receipt)
+    snapshot = effort_snapshot(bounded, markers=(start,))
     assert snapshot.attributed[0].story is None
     result = rollup(snapshot, target())
     assert result.total.observations == 0
     assert result.unassigned_observations == 1
-    store.mark_scope(marker(receipt, MarkerKind.END, 2100))
-    assert rollup(store.snapshot(), target()).total.observations == 1
+    assert (
+        rollup(
+            effort_snapshot(bounded, markers=(start, end)), target()
+        ).total.observations
+        == 1
+    )
 
     enrolled, receipt = evidence("mixed")
     receipt = replace(receipt, scope=UsageScope.MIXED)
-    store.enroll(enrolled)
-    store.mark_scope(marker(receipt, MarkerKind.START, 900))
-    store.mark_scope(marker(receipt, MarkerKind.END, 2100))
-    store.ingest(receipt)
-    snapshot = store.snapshot()
+    snapshot = effort_snapshot(
+        bounded,
+        (enrolled, receipt),
+        markers=(
+            start,
+            end,
+            marker(receipt, MarkerKind.START, 900),
+            marker(receipt, MarkerKind.END, 2100),
+        ),
+    )
     result = rollup(snapshot, target())
     assert result.total.observations == 1
     assert result.unassigned_observations == 1
     assert rollup(snapshot, RollupTarget(PROJECT)).total.usage_gaps == 1
 
 
-def test_nested_disjoint_usage_and_overlapping_sessions(tmp_path):
-    store = EffortStore(tmp_path / "effort.db", PROJECT)
+def test_nested_disjoint_usage_and_overlapping_sessions():
     parent, inclusive = evidence("aggregate", 1000, 4000)
     direct, own = evidence("direct", 1000, 3000)
     child, nested = evidence("nested", 2000, 3000, session="worker")
@@ -155,15 +191,12 @@ def test_nested_disjoint_usage_and_overlapping_sessions(tmp_path):
         schema="aitm.effort.receipt/v3",
         tokens=TokenCounts(total_tokens=100),
     )
-    for enrollment, receipt in (
+    snapshot = effort_snapshot(
         (parent, inclusive),
         (replace(direct, parent_attempt_id=parent.attempt_id), own),
         (replace(child, parent_attempt_id=parent.attempt_id), nested),
         (retry, repeated),
-    ):
-        store.enroll(enrollment)
-        store.ingest(receipt)
-    snapshot = store.snapshot()
+    )
     separate = rollup(snapshot, target())
     assert separate.total.working_wall is None
     assert separate.total.workflow_elapsed is None
@@ -183,17 +216,15 @@ def test_nested_disjoint_usage_and_overlapping_sessions(tmp_path):
     assert aligned.by_provider["codex"].observed_tokens == 30
 
 
-def test_missing_time_unknown_counts_and_project_authority(tmp_path):
-    store = EffortStore(tmp_path / "effort.db", PROJECT)
+def test_missing_time_unknown_counts_and_project_authority():
     enrolled, receipt = evidence("unknown")
-    store.enroll(enrolled)
-    store.enroll(replace(enrolled, attempt_id=uuid4()))
-    store.ingest(
-        replace(
-            receipt, tokens=TokenCounts(), coverage=Availability.PARTIAL, ended_at=None
-        )
+    partial = replace(
+        receipt, tokens=TokenCounts(), coverage=Availability.PARTIAL, ended_at=None
     )
-    snapshot = store.snapshot()
+    snapshot = effort_snapshot(
+        (enrolled, partial),
+        pending_enrollments=(replace(enrolled, attempt_id=uuid4()),),
+    )
     assert rollup(snapshot, target()).total.observed_tokens is None
     assert rollup(snapshot, target()).total.engaged is None
     assert rollup(snapshot, target()).total.clock_gaps == 1
@@ -431,21 +462,20 @@ def test_inclusive_grok_receipt_round_trips_without_duplicating_price():
     [(1000, 4000), (None, 900), (3000, None)],
     ids=["crossing", "partial-before", "partial-after"],
 )
-def test_receipt_crossing_comparable_markers_leaves_a_boundary_gap(
-    tmp_path, started, ended
-):
-    store = EffortStore(tmp_path / "effort.db", PROJECT)
+def test_receipt_crossing_comparable_markers_leaves_a_boundary_gap(started, ended):
     enrolled, receipt = evidence("crossing")
     receipt = replace(
         receipt,
         started_at=None if started is None else instant(started),
         ended_at=None if ended is None else instant(ended),
     )
-    store.enroll(enrolled)
-    store.mark_scope(marker(receipt, MarkerKind.START, 1000))
-    store.mark_scope(marker(receipt, MarkerKind.END, 1500))
-    store.ingest(receipt)
-    snapshot = store.snapshot()
+    snapshot = effort_snapshot(
+        (enrolled, receipt),
+        markers=(
+            marker(receipt, MarkerKind.START, 1000),
+            marker(receipt, MarkerKind.END, 1500),
+        ),
+    )
     clocks = {receipt.observation_id: ref("clock")}
     totals = rollup(snapshot, target(), clocks=clocks).total
     assert totals.observed_tokens is None

@@ -7,6 +7,7 @@ from threading import Barrier
 from uuid import UUID
 
 import pytest
+from pinned_evidence_fixture import pinned_evidence as pinned_evidence
 
 from aitm_usage.effort import session_publication as publication
 from aitm_usage.effort.receipts import Outcome, Role, TimeBasis, UsageScope
@@ -91,10 +92,11 @@ def test_publishes_once_without_touching_worktree(repo_pair):
     assert git(checkout, "branch", "--show-current") == "work"
     assert git(checkout, "for-each-ref", "refs/aitm/session-publication") == ""
 
+    second = receipt(revision=2, previous=hashlib.sha256(item.data).hexdigest())
+    tip = publish_receipts(checkout, str(remote), PROJECT, [second])
+    for landed in (item, second):
+        assert git(remote, "show", f"{tip}:{landed.path}").encode() == landed.data
 
-def test_conflict_does_not_push_new_files_in_same_batch(repo_pair):
-    checkout, remote = repo_pair
-    tip = publish_receipts(checkout, str(remote), PROJECT, [receipt()])
     with pytest.raises(ValueError, match="conflicting immutable"):
         publish_receipts(
             checkout,
@@ -103,6 +105,19 @@ def test_conflict_does_not_push_new_files_in_same_batch(repo_pair):
             [receipt("b" * 64), receipt(marker="conflict")],
         )
     assert git(remote, "rev-parse", PLANNING) == tip
+
+
+def test_conflict_does_not_push_new_files_in_same_batch(planning_tree):
+    first = receipt()
+    planning_tree.write(first.path, first.data)
+    tip = planning_tree.pin()
+    tree = publication._PlanningTree(planning_tree, tip)
+    with pytest.raises(ValueError, match="conflicting immutable"):
+        tree.missing(
+            publication._validated_batch(
+                PROJECT, [receipt("b" * 64), receipt(marker="conflict")]
+            )
+        )
 
 
 def test_refuses_mismatched_identity_project_and_remote(repo_pair, tmp_path):
@@ -178,33 +193,48 @@ def test_concurrent_writers_keep_both_disjoint_receipts(repo_pair, monkeypatch):
         assert git(remote, "show", f"{tip}:{item.path}").encode() == item.data
 
 
-def test_observation_cannot_move_to_another_story_in_later_revision(repo_pair):
-    checkout, remote = repo_pair
-    first = receipt()
-    tip = publish_receipts(checkout, str(remote), PROJECT, [first])
-    predecessor = hashlib.sha256(first.data).hexdigest()
-    with pytest.raises(ValueError, match="another story"):
-        publish_receipts(
-            checkout,
-            str(remote),
-            PROJECT,
-            [receipt(story=458, revision=2, previous=predecessor)],
+@pytest.fixture
+def planning_tree(pinned_evidence, monkeypatch):
+    from types import SimpleNamespace
+
+    evidence = pinned_evidence(STORY, 457)
+
+    def read(repo, *args):
+        return evidence.response(
+            SimpleNamespace(repository=repo, commit=next(reversed(evidence.commits))),
+            *args,
+            limit=2 * 1024 * 1024,
         )
-    assert git(remote, "rev-parse", PLANNING) == tip
+
+    monkeypatch.setattr(publication, "_read", read)
+    return evidence
 
 
-def test_revision_requires_its_exact_public_predecessor(repo_pair):
-    checkout, remote = repo_pair
+def test_observation_cannot_move_to_another_story_in_later_revision(planning_tree):
+    first = receipt()
+    planning_tree.write(first.path, first.data)
+    tip = planning_tree.pin()
+    tree = publication._PlanningTree(planning_tree, tip)
+    predecessor = hashlib.sha256(first.data).hexdigest()
+    moved = receipt(story=458, revision=2, previous=predecessor)
+    with pytest.raises(ValueError, match="another story"):
+        tree.missing(publication._validated_batch(PROJECT, [moved]))
+
+
+def test_revision_requires_its_exact_public_predecessor(planning_tree):
     first = receipt()
     second = receipt(revision=2, previous=hashlib.sha256(first.data).hexdigest())
     wrong_root = receipt(marker="wrong")
+    tip = planning_tree.pin()
+    tree = publication._PlanningTree(planning_tree, tip)
     with pytest.raises(ValueError, match="predecessor"):
-        publish_receipts(checkout, str(remote), PROJECT, [second])
+        tree.missing(publication._validated_batch(PROJECT, [second]))
     with pytest.raises(ValueError, match="predecessor"):
-        publish_receipts(checkout, str(remote), PROJECT, [wrong_root, second])
-    tip = publish_receipts(checkout, str(remote), PROJECT, [second, first])
-    assert git(remote, "show", f"{tip}:{first.path}").encode() == first.data
-    assert git(remote, "show", f"{tip}:{second.path}").encode() == second.data
+        tree.missing(publication._validated_batch(PROJECT, [wrong_root, second]))
+    assert tree.missing(publication._validated_batch(PROJECT, [second, first])) == [
+        second,
+        first,
+    ]
 
 
 def test_policy_refusal_retains_remote_and_bounds_pushes(repo_pair, monkeypatch):
