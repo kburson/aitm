@@ -271,7 +271,9 @@ def test_tree_and_preconditions_reject_an_invalid_update_atomically(backend):
     assert backend.snapshot() == before
 
 
-def test_write_authority_distinguishes_absence_refusal_and_registered_result():
+def test_write_authority_distinguishes_absence_refusal_and_registered_result(
+    backend_factory=MemoryBackend,
+):
     def deny(owner, change):
         return WriteAuthorization(
             allowed=False, origin=AuthorityOrigin.REGISTERED, reason="scope"
@@ -289,7 +291,7 @@ def test_write_authority_distinguishes_absence_refusal_and_registered_result():
         (replace(registered, write_authorization=deny), LocalOutcome.REFUSED),
         (registered, LocalOutcome.COMPLETED),
     ):
-        store = MemoryBackend({BODY: b"old"}, ports=ports)
+        store = backend_factory({BODY: b"old"}, ports=ports)
         snapshot = store.snapshot()
         result = store.transact(proposal(store, snapshot), snapshot)
         assert result.command.local == expected
@@ -339,7 +341,9 @@ def attempt_bytes():
 
 
 @pytest.mark.parametrize("kind", ["attempt.reconcile", "expand"])
-def test_attempt_mutation_requires_the_installed_preflight(kind):
+def test_attempt_mutation_requires_the_installed_preflight(
+    kind, backend_factory=MemoryBackend
+):
     def blocked(context):
         assert context.operation.category == OperationCategory.NORMAL
         assert context.attempts[0].started.attempt == "attempt-9"
@@ -350,7 +354,7 @@ def test_attempt_mutation_requires_the_installed_preflight(kind):
         (replace(ports, attempt_preflight=None), LocalOutcome.UNAVAILABLE),
         (ports, LocalOutcome.REFUSED),
     ):
-        store = MemoryBackend(
+        store = backend_factory(
             {BODY: b"old", story_event_path(9): attempt_bytes()}, ports=composition
         )
         before = store.snapshot()
@@ -367,10 +371,12 @@ def test_attempt_mutation_requires_the_installed_preflight(kind):
         ("attempt.recover", OperationCategory.RECOVERY),
     ],
 )
-def test_special_categories_require_the_exact_declared_capability(kind, category):
+def test_special_categories_require_the_exact_declared_capability(
+    kind, category, backend_factory=MemoryBackend
+):
     scope = {(kind, 1): category}
     files = {BODY: b"old", story_event_path(9): attempt_bytes()}
-    store = MemoryBackend(files, ports=PORTS, categories=scope)
+    store = backend_factory(files, ports=PORTS, categories=scope)
     before = store.snapshot()
     borrowed = proposal(store, before, kind="expand", category=category)
     assert store.transact(borrowed, before).command.local == LocalOutcome.REFUSED
@@ -383,7 +389,7 @@ def test_special_categories_require_the_exact_declared_capability(kind, category
             outcome=PreflightOutcome.PASSED, origin=AuthorityOrigin.FIXTURE
         )
 
-    authorized = MemoryBackend(
+    authorized = backend_factory(
         files,
         ports=replace(PORTS, attempt_preflight=fixture_preflight),
         categories=scope,

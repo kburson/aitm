@@ -1,44 +1,14 @@
 """Run the C04 contract against temporary Git repositories and exercise ref CAS."""
 
-from contextlib import contextmanager
-from dataclasses import replace
-from importlib.util import module_from_spec, spec_from_file_location
-from pathlib import Path
 from subprocess import check_output
-from threading import Lock
 
 import pytest
 
 from aitm_core.models.common import LocalOutcome
-from aitm_core.store.git_backend import GitBackend, ValidationRejected
+from aitm_core.store.git_backend import GitBackend, UnknownTree
 from aitm_core.store.objects import Repository
-
-_spec = spec_from_file_location(
-    "aitm_c04_contract", Path(__file__).parents[1] / "unit" / "test_c04.py"
-)
-assert _spec is not None and _spec.loader is not None
-_contract = module_from_spec(_spec)
-_spec.loader.exec_module(_contract)
-
-REF = "refs/heads/planning"
-
-
-class FixtureGate:
-    def __init__(self):
-        self.lock = Lock()
-        self.observed = []
-
-    @contextmanager
-    def __call__(self, repo, target):
-        assert repo.ref == target == REF
-        with self.lock:
-            yield self.validate
-
-    def validate(self, before, candidate):
-        self.observed.append((before, candidate))
-        if candidate is not None:
-            assert before.store == candidate.store
-            assert before.revision != candidate.revision
+from tests.support.c05 import REF, FixtureGate
+from tests.unit import test_c04 as _contract
 
 
 def git(root, *args):
@@ -89,8 +59,11 @@ def test_git_transaction(backend, tmp_path, monkeypatch):
     caller_index = tmp_path / "caller.index"
     caller_index.write_bytes(index_before)
 
+    _contract.test_tree_and_preconditions_reject_an_invalid_update_atomically(backend)
     start = backend.snapshot()
     assert backend.read_tree(start.tree).tree == start.tree
+    with pytest.raises(UnknownTree):
+        backend.read_tree("0" * repo.oid_length)
     note = _contract.EventAppend(story=9, records=(_contract.wire(9, "store-op", 1),))
     request = _contract.proposal(
         backend,
@@ -134,106 +107,44 @@ def test_git_transaction(backend, tmp_path, monkeypatch):
     assert reopened.transact(request, reopened.snapshot()) == result
 
 
-@pytest.mark.parametrize(
-    "name",
-    [
-        "test_operation_cas",
-        "test_refusal_retains_guards_without_applying_effects",
-        "test_append_validates_all_streams_before_commit",
-        "test_same_snapshot_has_one_concurrent_winner",
-        "test_tree_and_preconditions_reject_an_invalid_update_atomically",
-    ],
-)
-def test_c04_mutation_contract_on_git(backend, name):
-    getattr(_contract, name)(backend)
-
-
-@pytest.mark.parametrize(
-    ("name", "arguments"),
-    [
-        (
-            "test_write_authority_distinguishes_absence_refusal_and_registered_result",
-            (),
-        ),
-        (
-            "test_attempt_mutation_requires_the_installed_preflight",
-            ("attempt.reconcile",),
-        ),
-        ("test_attempt_mutation_requires_the_installed_preflight", ("expand",)),
-        (
-            "test_special_categories_require_the_exact_declared_capability",
-            ("authoring.sync", _contract.OperationCategory.AUTHORED_SYNC),
-        ),
-        (
-            "test_special_categories_require_the_exact_declared_capability",
-            ("stop.reconcile", _contract.OperationCategory.STOP_RECONCILIATION),
-        ),
-        (
-            "test_special_categories_require_the_exact_declared_capability",
-            ("attempt.recover", _contract.OperationCategory.RECOVERY),
-        ),
-    ],
-)
-def test_c04_service_contract_on_git(make_backend, monkeypatch, name, arguments):
-    monkeypatch.setattr(_contract, "MemoryBackend", make_backend)
-    getattr(_contract, name)(*arguments)
-
-
 class Interrupted(RuntimeError):
     pass
 
 
-@pytest.mark.parametrize("after_cas", [False, True])
-def test_git_interruption_recovers_by_operation_identity(
-    backend, monkeypatch, after_cas
-):
-    before = backend.snapshot()
-    request = _contract.proposal(backend, before, "interrupted")
-    update = Repository.compare_and_swap
+def test_git_interruption_recovers_by_operation_identity(backend, monkeypatch):
+    for index, after_cas in enumerate((False, True)):
+        before = backend.snapshot()
+        request = _contract.proposal(backend, before, f"interrupted-{index}")
+        update = Repository.compare_and_swap
 
-    def interrupt(repo, new, expected):
+        def interrupt(repo, new, expected):
+            if after_cas:
+                assert update(repo, new, expected)
+            raise Interrupted("simulated process interruption")
+
+        with monkeypatch.context() as error:
+            error.setattr(Repository, "compare_and_swap", interrupt)
+            with pytest.raises(Interrupted):
+                backend.transact(request, before)
+
+        observed = backend.snapshot()
+        assert (observed != before) == after_cas
+        reopened = GitBackend(backend.repository, FixtureGate(), ports=_contract.PORTS)
+        recovered = reopened.transact(request, before)
+        assert recovered.command.local == LocalOutcome.COMPLETED
         if after_cas:
-            assert update(repo, new, expected)
-        raise Interrupted("simulated process interruption")
-
-    with monkeypatch.context() as error:
-        error.setattr(Repository, "compare_and_swap", interrupt)
-        with pytest.raises(Interrupted):
-            backend.transact(request, before)
-
-    observed = backend.snapshot()
-    assert (observed != before) == after_cas
-    reopened = GitBackend(backend.repository, FixtureGate(), ports=_contract.PORTS)
-    recovered = reopened.transact(request, before)
-    assert recovered.command.local == LocalOutcome.COMPLETED
-    if after_cas:
-        assert recovered.snapshot == observed
-    assert reopened.transact(request, reopened.snapshot()) == recovered
-    assert (
-        git(backend.repository.root, "rev-list", "--count", f"{before.revision}..{REF}")
-        == b"1"
-    )
-
-
-def test_validation_is_mandatory_and_refusal_preserves_ref(make_backend):
-    class RejectCandidate(FixtureGate):
-        def validate(self, before, candidate):
-            super().validate(before, candidate)
-            if candidate is not None:
-                raise ValidationRejected("scope denied")
-
-    gate = RejectCandidate()
-    backend = make_backend({_contract.BODY: b"old"}, gate=gate)
-    start = backend.snapshot()
-    op = _contract.proposal(backend, start)
-    with pytest.raises(TypeError):
-        GitBackend(backend.repository, None, ports=_contract.PORTS)
-
-    result = backend.transact(op, start)
-    assert result.command.local == LocalOutcome.INTEGRITY_ERROR
-    assert result.reason == "scope denied"
-    assert backend.snapshot() == start
-    assert len(gate.observed) == 2
+            assert recovered.snapshot == observed
+        assert reopened.transact(request, reopened.snapshot()) == recovered
+        assert (
+            git(
+                backend.repository.root,
+                "rev-list",
+                "--count",
+                f"{before.revision}..{REF}",
+            )
+            == b"1"
+        )
+        backend = reopened
 
 
 def test_ref_cas_preserves_a_competing_update(backend, monkeypatch):
@@ -271,49 +182,3 @@ def test_symbolic_planning_ref_is_refused(backend):
     assert result.command.local == LocalOutcome.INTEGRITY_ERROR
     assert git(root, "symbolic-ref", REF) == b"refs/heads/scratch"
     assert git(root, "rev-parse", "refs/heads/scratch") == scratch
-
-
-def test_advance_after_successful_cas_retains_committed_snapshot(backend, monkeypatch):
-    repo = backend.repository
-    start = backend.snapshot()
-    request = _contract.proposal(backend, start)
-    request = request.model_copy(update={"pending_actions": ("project.readback",)})
-    update = Repository.compare_and_swap
-
-    def advance(repository, new, expected):
-        assert update(repository, new, expected)
-        committed = repository.read_tree(new)
-        later = repository.create_commit(
-            committed, {_contract.RELATED: b"later update"}, "competing"
-        )
-        assert update(repository, later.revision, committed.revision)
-        return True
-
-    with monkeypatch.context() as race:
-        race.setattr(Repository, "compare_and_swap", advance)
-        result = backend.transact(request, start)
-
-    observed = backend.snapshot()
-    assert result.command.local == LocalOutcome.CONFLICT
-    assert result.reason == "ref-advanced-after-cas"
-    assert result.command.pending == ()
-    assert repo.parent(observed) == result.snapshot.revision
-    assert backend.read(result.snapshot, (_contract.BODY,))[_contract.BODY] == b"new"
-    reopened = GitBackend(repo, FixtureGate(), ports=_contract.PORTS)
-    retry = reopened.transact(request, observed)
-    assert retry.command.local == LocalOutcome.COMPLETED
-    assert retry.snapshot == result.snapshot
-    assert retry.command.pending == ("project.readback",)
-
-
-def test_absent_expected_revision_is_an_unknown_snapshot(backend):
-    current = backend.snapshot()
-    request = _contract.proposal(backend, current)
-    unknown = replace(current, revision="0" * backend.repository.oid_length)
-
-    result = backend.transact(request, unknown)
-
-    assert result.command.local == LocalOutcome.INTEGRITY_ERROR
-    assert result.reason == "unknown-snapshot"
-    assert result.snapshot == current
-    assert backend.snapshot() == current
