@@ -21,3 +21,7 @@ operation identity, request digest and introducing parent. Story-owned records
 also require the exact owning story. Two new refusal cases failed before the
 fix and passed afterward, alongside the positive case and all 145 installed
 Core tests with Ruff at head `ac63552b844007eddc9e1191fbc2bd429f30dda6`.
+
+## Hosted verification
+
+[CI run 46005511033](https://github.com/kburson/aitm/actions/runs/46005511033) and [Core CI run 46005511116](https://github.com/kburson/aitm/actions/runs/46005511116) passed on base `25b0657dccf471820387402053f1efd1e00c3b52`, head `ac63552b844007eddc9e1191fbc2bd429f30dda6` and synthetic merge tree `03d108c9cac680c0b8b768241b5f12a4555ceed2`. Hosted Core ran 145 passing tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
