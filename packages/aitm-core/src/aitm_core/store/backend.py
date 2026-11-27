@@ -192,6 +192,14 @@ def evaluate_operation(
             LocalOutcome.REFUSED, authorization.reason, authorization=authorization
         )
 
+    if authorization.extension != op.owner.extension or (
+        op.owner.extension is not None
+        and set(authorization.owned_paths) != {item.path for item in op.change.writes}
+    ):
+        return OperationEvaluation(
+            LocalOutcome.UNAVAILABLE, "extension-write-authority-unqualified"
+        )
+
     try:
         context = OperationContext(op, snapshot, _read_attempts(blobs))
     except UnavailableReducer as error:

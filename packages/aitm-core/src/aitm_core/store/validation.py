@@ -12,7 +12,7 @@ from pydantic import JsonValue
 
 from aitm_core.events import UnavailableReducer, core_reducers, fold
 from aitm_core.models.common import CommandResult, LocalOutcome, StoreAnchor
-from aitm_core.models.operations import repository_path, story_scope
+from aitm_core.models.operations import WriteAuthorization, repository_path, story_scope
 from aitm_core.store.backend import Snapshot
 from aitm_core.store.objects import GitCommandError, Repository
 
@@ -38,10 +38,29 @@ _ALLOWED_DATA = frozenset(
 )
 _MONTH = re.compile(r"[0-9]{4}-(?:0[1-9]|1[0-2])")
 _SCHEMA = re.compile(r"aitm\.[a-z0-9.-]+/v1")
+_EXTENSION_DIRECTORY = re.compile(r"[a-z][a-z0-9-]*")
+CORE_ROOT_NAMES = frozenset(
+    {"README.md", "store.json", "operations", "repairs", "ideas", "drafts"}
+)
+CORE_STORY_NAMES = frozenset(
+    {
+        "description.md",
+        "draft.md",
+        "story.md",
+        "events.jsonl",
+        "attachments",
+        "design",
+        "evidence",
+        "plan",
+        "retro",
+        "operations",
+    }
+)
 
 
 class PlanningPath(StrEnum):
     DATA = "data"
+    EXTENSION_DATA = "extension-data"
     STORE = "store"
     OPERATION = "operation"
     REPAIR = "repair"
@@ -107,6 +126,10 @@ def classify_planning_path(path: str) -> PlanningPath:
                 return PlanningPath.DATA
             if tail[0] == "operations" and suffix == ".json":
                 return PlanningPath.OPERATION
+            if tail[0] not in CORE_STORY_NAMES | {
+                "core"
+            } and _EXTENSION_DIRECTORY.fullmatch(tail[0]):
+                return PlanningPath.EXTENSION_DATA
     if len(parts) >= 4 and suffix in _ALLOWED_DATA:
         if (
             parts[1] == "ideas"
@@ -123,6 +146,13 @@ def classify_planning_path(path: str) -> PlanningPath:
                     len(parts) >= 6 and parts[4] == "attachments"
                 ):
                     return PlanningPath.DATA
+    if (
+        len(parts) >= 3
+        and suffix in _ALLOWED_DATA
+        and parts[1] not in CORE_ROOT_NAMES | {"core", "stories"}
+        and _EXTENSION_DIRECTORY.fullmatch(parts[1])
+    ):
+        return PlanningPath.EXTENSION_DATA
     raise ValueError(f"unauthorized planning data path: {path}")
 
 
@@ -168,20 +198,27 @@ def _check_tree(
     new: dict[str, _Entry],
 ) -> None:
     typed = {}
+    extension_changes = set()
+    extension_authorizations = set()
     for path, entry in new.items():
         if entry.mode != "100644" or entry.kind != "blob":
             raise ValueError(
                 f"planning data requires a regular non-executable blob: {path}"
             )
         role = classify_planning_path(path)
-        if role != PlanningPath.DATA and old.get(path) != entry:
-            typed[path] = role
+        if old.get(path) != entry:
+            if role is PlanningPath.EXTENSION_DATA:
+                extension_changes.add(path)
+            elif role is not PlanningPath.DATA:
+                typed[path] = role
 
     retained = {}
     for path, entry in old.items():
         if new.get(path) == entry:
             continue
         role = classify_planning_path(path)
+        if role is PlanningPath.EXTENSION_DATA:
+            extension_changes.add(path)
         if role in {PlanningPath.OPERATION, PlanningPath.REPAIR}:
             raise ValueError(f"retained planning record changed: {path}")
         if role == PlanningPath.EVENTS:
@@ -241,6 +278,28 @@ def _check_tree(
                 or re.fullmatch(r"[0-9a-f]{64}", request) is None
             ):
                 raise ValueError(f"unbound transaction record: {path}")
+            authority = row.get("authorization")
+            if isinstance(authority, dict) and (
+                "extension" in authority or "owned_paths" in authority
+            ):
+                receipt = WriteAuthorization.model_validate_json(json.dumps(authority))
+                if (
+                    receipt.extension is None
+                    or command.local is not LocalOutcome.COMPLETED
+                ):
+                    raise ValueError(f"invalid extension operation receipt: {path}")
+                for owned in receipt.owned_paths:
+                    if (
+                        classify_planning_path(owned) is not PlanningPath.EXTENSION_DATA
+                        or owned in extension_authorizations
+                    ):
+                        raise ValueError(f"ambiguous extension write receipt: {owned}")
+                    extension_authorizations.add(owned)
+    unproven = extension_changes - extension_authorizations
+    if unproven:
+        raise ValueError(
+            f"extension data lacks a matching operation receipt: {min(unproven)}"
+        )
 
 
 def _commit_parents(repository: Repository, revision: str) -> tuple[str, ...]:
