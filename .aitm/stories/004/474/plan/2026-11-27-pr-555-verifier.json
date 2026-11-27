@@ -1,0 +1,24 @@
+{
+  "status": "pass",
+  "verified_at": "2026-11-27T20:20:35.976390+00:00",
+  "repository": "kburson/aitm",
+  "pr": 555,
+  "target": "trunk",
+  "base": "92de6dce1bf3f094004b133a793f8036875b2004",
+  "head": "4b9d66a2f97f1350800847b8c35879949f61c064",
+  "tested": "1363cbc6f200ca1181d585a1aea413487079bcd4",
+  "tree": "5261468e349ff0f1005aad0fe868992ef0c7c784",
+  "run_id": 46062484950,
+  "run_attempt": 1,
+  "artifact_id": 15229686757,
+  "archive_digest": "sha256:adeac75d7a806d4bf2cb35b5a49bdb8204651a4cc9d9504a76c38feb9a8bdbeb",
+  "subject_digest": "5ec10d6f3f74257daf96c859690ba6f586ba201c5937144d0d2ea41f4814b33e",
+  "controls": {
+    "gate": "e3f3c1bf5207cae58aa7445d2362d666a600acd9",
+    "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+    "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+    "policy": "b2bef5b180d17fca3f135c45e2eeb98c64a508db",
+    "verifier": "88603331939ce61557f0abcd93a4df6d5c45ea4f",
+    "workflow": "e7f12ef681b626cd269834d0d3f97343e0c85c58"
+  }
+}
