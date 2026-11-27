@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 28
 title: "[Core C23] Activity eligibility and implementation clock fold"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/28"
 parent: 473
 children: []
 blocking: [34, 36, 39, 40, 51, 229]
 blocked-by: [4, 14]
 created: "2026-11-09T08:01:23Z"
-updated: "2026-11-27T17:07:08.375Z"
+updated: "2026-11-27T17:12:48.767Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -102,3 +102,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **20** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #473 with scope entry **C23**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Verified delivery
+
+[Linked PR #550](https://github.com/kburson/aitm/pull/550) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md).
