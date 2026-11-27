@@ -111,6 +111,12 @@ def test_sync_and_reconcile(topology, tmp_path, monkeypatch):
     assert (copies / "local" / PLAN).read_bytes() == b"Local competing plan\n"
     assert (copies / "shared" / PLAN).read_bytes() == b"Rival plan\n"
 
+    refused_deletion = cli(
+        local, "sync", *options, *reconcile_args, "--delete", PLAN, "--resolve"
+    )
+    assert refused_deletion["local"] == "conflict", refused_deletion
+    assert git(Path(remote), "rev-parse", PLANNING) == remote_tip.revision
+
     path.write_bytes(b"Explicit merged plan\n")
     shim = tmp_path / "lost-ack"
     shim.mkdir()

@@ -642,6 +642,10 @@ def reconcile_sync(
         writes = {}
         for path in sorted(paths):
             content = read_workspace(Path(binding.worktree), path)
+            if content is not None and path in selected.deletions:
+                raise BindingConflict(
+                    f"Remove the workspace file before selecting its deletion at {path}."
+                )
             if content is None and path not in selected.deletions:
                 raise BindingConflict(
                     f"Resolution requires a body or explicit deletion for {path}."
