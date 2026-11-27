@@ -64,7 +64,9 @@ class DirectiveRegistration(Registration):
     @model_validator(mode="after")
     def check_directive(self) -> Self:
         if self.slot.kind != "directive" or not self.markdown.endswith(".md"):
-            raise ValueError("directive requires an action slot and a Markdown source")
+            raise ValueError(
+                "directive requires a directive slot and a Markdown source"
+            )
         return self
 
 

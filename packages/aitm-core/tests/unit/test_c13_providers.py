@@ -235,7 +235,23 @@ def test_publication_verification_requires_the_observed_ref_and_operation_witnes
     assert result.intent.target.repository == "org/planning"
     assert result.contained_operation_id == "operation-1"
     assert PublicationResult.model_validate_json(result.model_dump_json()) == result
+    wrong_commit = observed.model_copy(update={"observed_commit": "b" * 40})
+    with pytest.raises(ValidationError):
+        PublicationResult(
+            intent=intent,
+            status="verified",
+            observed=wrong_commit,
+            contained_operation_id="operation-1",
+            evidence=("receipt:operation-in-observed-history",),
+        )
 
+    witness = {
+        "intent": intent,
+        "status": "verified",
+        "observed": observed,
+        "contained_operation_id": "operation-1",
+        "evidence": ("receipt:operation-in-observed-history",),
+    }
     for overrides in (
         {"observed": None},
         {"observed": RefObservation(ref=target.ref.name, observed_commit=None)},
@@ -261,7 +277,7 @@ def test_publication_verification_requires_the_observed_ref_and_operation_witnes
         {"version": 2},
     ):
         with pytest.raises(ValidationError):
-            PublicationResult.model_validate({**dict(result), **overrides})
+            PublicationResult.model_validate(witness | overrides)
 
 
 @pytest.mark.parametrize("status", ["pending", "unsupported"])
@@ -271,7 +287,7 @@ def test_unverified_publication_has_no_containment_claim(status):
         operation_id="operation-1", target=target, candidate=HEAD
     )
     observed = RefObservation(
-        ref=target.ref.name, observed_commit=HEAD, remote="origin"
+        ref=target.ref.name, observed_commit="b" * 40, remote="origin"
     )
     pending = PublicationResult(intent=intent, status=status, observed=observed)
     assert pending.contained_operation_id is None

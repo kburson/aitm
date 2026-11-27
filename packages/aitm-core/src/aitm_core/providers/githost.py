@@ -77,8 +77,13 @@ class PublicationResult(_HostContract):
         if self.status == "verified":
             if (
                 self.observed is None
-                or self.observed.observed_commit is None
-                or self.contained_operation_id != self.intent.operation_id
+                or self.observed.observed_commit != self.intent.candidate
+            ):
+                raise ValueError(
+                    "verified publication requires the exact candidate tip"
+                )
+            if (
+                self.contained_operation_id != self.intent.operation_id
                 or not self.evidence
             ):
                 raise ValueError(
