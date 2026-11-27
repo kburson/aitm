@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 13
 title: "[Core C08] Candidate fetch and shared-history continuity"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/13"
 parent: 472
 children: []
 blocking: [15, 17, 18, 23, 473, 474, 475, 478, 480, 482, 486]
 blocked-by: [11, 12]
 created: "2026-11-09T08:00:19Z"
-updated: "2026-11-27T15:55:34.677Z"
+updated: "2026-11-27T16:21:06.378Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -106,3 +106,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **50** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #472 with scope entry **C08**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Verified delivery
+
+[Linked PR #547](https://github.com/kburson/aitm/pull/547) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). Verified trunk landing `ddaa65b225e54f91a9279fb59976ae6d45ced9df` via PR #541.

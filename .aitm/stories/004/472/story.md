@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 472
 title: "[Epic] Core — Trusted Git story store"
 kind: "epic"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/472"
 parent: 1
 children: [9, 10, 11, 12, 13]
 blocking: []
 blocked-by: [8, 497]
 created: "2026-11-27T04:48:39Z"
-updated: "2026-11-27T16:18:27.162Z"
+updated: "2026-11-27T16:21:06.378Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 19.0, "size": "Feature"}
@@ -56,3 +56,7 @@ Estimate: **19 implementation agent-hours**, including verification and review. 
 ## Integration resource
 
 [Draft trunk PR #541](https://github.com/kburson/aitm/pull/541) is linked to the epic. The shared branch `codex/core-472-integration` was observed at `48666e85daf2bd3f42a3e09849603d0329e61cf8` against trunk `44ca79c17f80a657d6278cfd82cb988e8a19820a`. #13 owns the composed trunk delivery after verified #9 through #12 receipts.
+
+## Verified delivery
+
+[Linked PR #541](https://github.com/kburson/aitm/pull/541) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). Verified trunk landing `ddaa65b225e54f91a9279fb59976ae6d45ced9df` via PR #541.
