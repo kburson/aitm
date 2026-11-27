@@ -7,3 +7,7 @@ Attempt 1. Codex is the implementing agent and closure owner. [Accepted pickup](
 - [ ] Check exact hosted repository CI and the separately required hosted Core CI.
 - [ ] Mark ready, obtain Grok 4.7 SAR and run the trusted verifier.
 - [ ] Verify landing and record sign-off, Agent Cost and Done.
+
+## Hosted verification
+
+[CI run 45996681291](https://github.com/kburson/aitm/actions/runs/45996681291) and [Core CI run 45996681289](https://github.com/kburson/aitm/actions/runs/45996681289) passed on base `44ca79c17f80a657d6278cfd82cb988e8a19820a`, head `5f22070962dc080f4616d2572e1ff4c531bafd31` and synthetic merge tree `521c3c1824622e02761ae07cf12983bf1b75d124`. Hosted Core ran 110 passing tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
