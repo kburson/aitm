@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 6
 title: "[Core C54] Lifecycle, relationships and document-state reducers"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/6"
 parent: 470
 children: []
 blocking: [8, 9, 78]
 blocked-by: [4, 5]
 created: "2026-11-09T07:59:49Z"
-updated: "2026-11-27T09:09:54.493Z"
+updated: "2026-11-27T09:12:36.526Z"
 last-branch: "codex/core-6-lifecycle-reducers"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -108,3 +108,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 [Accepted pickup review](plan/2026-11-27-pickup-review.md).
 
 [Draft PR #532](https://github.com/kburson/aitm/pull/532) · [Delivery checklist](plan/delivery-checklist.md).
+
+## Done
+
+[PR #532](https://github.com/kburson/aitm/pull/532) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T09:12:33Z. Project #24 read back Done.
