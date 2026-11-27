@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 9
 title: "[Core C04] Typed operations and MemoryBackend semantics"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/9"
 parent: 472
 children: []
 blocking: [10, 15, 16, 17]
 blocked-by: [4, 6, 7, 8]
 created: "2026-11-09T08:00:01Z"
-updated: "2026-11-27T12:17:40.900Z"
+updated: "2026-11-27T12:24:45.778Z"
 last-branch: "codex/core-9-memory-backend"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -102,3 +102,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **10** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #472 with scope entry **C04**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Done
+
+[PR #540](https://github.com/kburson/aitm/pull/540) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T12:24:42Z. Project #24 read back Done.
