@@ -20,7 +20,7 @@ from aitm_core.store.backend import (
     Snapshot,
     evaluate_operation,
 )
-from aitm_core.store.objects import GitCommandError, Repository
+from aitm_core.store.objects import GitCommandError, Repository, UnknownTree
 
 _RECORD_ROOT = ".aitm/operations"
 
@@ -151,7 +151,11 @@ class GitBackend:
             with self._gate(self.repository, self.repository.ref) as validate:
                 current = self.snapshot()
                 validate(current, None)
-                if expected != self.read_tree(expected.revision):
+                try:
+                    known = self.read_tree(expected.revision)
+                except UnknownTree:
+                    known = None
+                if expected != known:
                     return self._failure(
                         op, current, LocalOutcome.INTEGRITY_ERROR, "unknown-snapshot"
                     )
@@ -195,8 +199,21 @@ class GitBackend:
                     return self._failure(
                         op, self.snapshot(), LocalOutcome.CONFLICT, "snapshot-changed"
                     )
-                if self.snapshot() != candidate:
-                    raise ValidationRejected("planning ref changed after the update")
+                current = candidate
+                observed = self.snapshot()
+                if observed != candidate:
+                    return OperationResult(
+                        CommandResult(
+                            operation_id=op.operation_id,
+                            local=LocalOutcome.CONFLICT,
+                            evidence=(
+                                f"Planning tip advanced to {observed.revision}.",
+                            ),
+                            recovery="Reconcile the retained commit by operation ID.",
+                        ),
+                        candidate,
+                        "ref-advanced-after-cas",
+                    )
                 return record.result(candidate)
         except (GitCommandError, OSError) as error:
             return self._failure(op, current, LocalOutcome.UNAVAILABLE, str(error))

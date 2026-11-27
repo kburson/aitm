@@ -30,6 +30,10 @@ class GitCommandError(RuntimeError):
         super().__init__(f"git {command} failed: {detail}")
 
 
+class UnknownTree(ValueError):
+    """The requested Git object does not identify a tree."""
+
+
 @dataclass(frozen=True, slots=True)
 class Repository:
     root: Path
@@ -94,9 +98,13 @@ class Repository:
 
     def read_tree(self, oid: str) -> Snapshot:
         revision = self._oid(oid)
-        tree = self._git("rev-parse", "--verify", f"{revision}^{{tree}}")
+        resolved = self._run("rev-parse", "--quiet", "--verify", f"{revision}^{{tree}}")
+        if resolved.returncode == 1:
+            raise UnknownTree("requested revision does not resolve to a local tree")
+        if resolved.returncode:
+            raise GitCommandError("rev-parse", resolved.stderr)
         return Snapshot(
-            self.identity, revision, self._oid(tree.strip().decode("ascii"))
+            self.identity, revision, self._oid(resolved.stdout.strip().decode("ascii"))
         )
 
     def read_blobs(self, tree: str, paths: Sequence[str]) -> Blobs:

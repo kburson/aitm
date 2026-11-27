@@ -1,6 +1,7 @@
 """Run the C04 contract against temporary Git repositories and exercise ref CAS."""
 
 from contextlib import contextmanager
+from dataclasses import replace
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from subprocess import check_output
@@ -270,3 +271,49 @@ def test_symbolic_planning_ref_is_refused(backend):
     assert result.command.local == LocalOutcome.INTEGRITY_ERROR
     assert git(root, "symbolic-ref", REF) == b"refs/heads/scratch"
     assert git(root, "rev-parse", "refs/heads/scratch") == scratch
+
+
+def test_advance_after_successful_cas_retains_committed_snapshot(backend, monkeypatch):
+    repo = backend.repository
+    start = backend.snapshot()
+    request = _contract.proposal(backend, start)
+    request = request.model_copy(update={"pending_actions": ("project.readback",)})
+    update = Repository.compare_and_swap
+
+    def advance(repository, new, expected):
+        assert update(repository, new, expected)
+        committed = repository.read_tree(new)
+        later = repository.create_commit(
+            committed, {_contract.RELATED: b"later update"}, "competing"
+        )
+        assert update(repository, later.revision, committed.revision)
+        return True
+
+    with monkeypatch.context() as race:
+        race.setattr(Repository, "compare_and_swap", advance)
+        result = backend.transact(request, start)
+
+    observed = backend.snapshot()
+    assert result.command.local == LocalOutcome.CONFLICT
+    assert result.reason == "ref-advanced-after-cas"
+    assert result.command.pending == ()
+    assert repo.parent(observed) == result.snapshot.revision
+    assert backend.read(result.snapshot, (_contract.BODY,))[_contract.BODY] == b"new"
+    reopened = GitBackend(repo, FixtureGate(), ports=_contract.PORTS)
+    retry = reopened.transact(request, observed)
+    assert retry.command.local == LocalOutcome.COMPLETED
+    assert retry.snapshot == result.snapshot
+    assert retry.command.pending == ("project.readback",)
+
+
+def test_absent_expected_revision_is_an_unknown_snapshot(backend):
+    current = backend.snapshot()
+    request = _contract.proposal(backend, current)
+    unknown = replace(current, revision="0" * backend.repository.oid_length)
+
+    result = backend.transact(request, unknown)
+
+    assert result.command.local == LocalOutcome.INTEGRITY_ERROR
+    assert result.reason == "unknown-snapshot"
+    assert result.snapshot == current
+    assert backend.snapshot() == current
