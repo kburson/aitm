@@ -10,7 +10,7 @@ children: [249, 248, 250, 251, 252, 253, 254, 255, 256, 258, 257, 259, 260]
 blocking: []
 blocked-by: [2]
 created: "2026-11-12T00:31:36Z"
-updated: "2026-11-12T01:40:33Z"
+updated: "2026-11-27T14:41:12.161Z"
 last-branch: "planning"
 estimate: {"agent-hours": 43.5, "size": "Feature", "scope": "accepted backlog decomposition"}
 priority: null
@@ -51,3 +51,7 @@ All items are in Backlog. Each needs its own reviewed and accepted JIT implement
 ## Cost integration dependency update
 
 [The reviewed #230 replan](../230/plan/2026-11-11-230-cost-dependency-replan.md) resolves the prior #100 completion-accounting hold. #259 retains its qualified #230 and M2 gates. #260 retains #259 and its other accepted prerequisites.
+
+## Dependency rank correction
+
+Project #24 rank **251**. Current status **Backlog**. See the [product dependency map](../../000/1/plan/2026-11-27-dependency-rank-correction.md) for the verified prerequisites.

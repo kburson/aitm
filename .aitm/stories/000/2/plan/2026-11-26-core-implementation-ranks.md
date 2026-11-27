@@ -32,3 +32,5 @@ Rank is the proposed order inside each level. Work can run in parallel when its 
 | 240 | [#493](https://github.com/kburson/aitm/issues/493) Agent Cost Capture package | 10 [#519](https://github.com/kburson/aitm/issues/519) · 20 [#520](https://github.com/kburson/aitm/issues/520) · 30 [#521](https://github.com/kburson/aitm/issues/521) · 40 [#230](https://github.com/kburson/aitm/issues/230) |
 
 All 142 ranks were read back. [Structured verification](2026-11-26-core-implementation-ranks.json).
+
+The [product dependency map](../../1/plan/2026-11-27-dependency-rank-correction.md) records #2 at rank 221 and #247 at rank 251. It includes dependencies inherited from child stories and the documented M2 gate. The delivery slice ranks in this table still apply.

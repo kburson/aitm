@@ -3,14 +3,14 @@ schema: aitm.story/v0
 id: 2
 title: "[Epic] aitm-core: story store, state machine, CLI, extension API"
 kind: epic
-state: plan
+state: ready-for-plan
 issue: https://github.com/kburson/aitm/issues/2
 parent: 1
 children: [228, 229]
 blocking: [247]
 blocked-by: [456]
 created: 2026-11-08T19:24:20Z
-updated: "2026-11-27T06:32:21.651Z"
+updated: "2026-11-27T14:41:12.161Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: {"agent-hours": 4, "size": "S", "scope": "direct coordination"}
@@ -64,7 +64,7 @@ So that state, timing and evidence are recorded by the tool, never repaired by h
 
 ## Refinement
 
-**Current refinement.** #2’s direct coordination scope is size **S**, estimated at **4 agent-hours**, at **Rank 10**. [Sizing basis](2026-11-26-coordination-and-follow-up-refinement.md). The **386.5 implementation agent-hours** are the delivery total for 110 stories in 22 sibling mini-epics under #1. The two direct children, #228 and #229, are post-release timing follow-ups with their own **7.5 h** combined estimate. [Accepted delivery ledger](plan/2026-11-26-core-mini-epic-ledger.md) · [Historical rollup and initial Project readback](2026-11-26-refinement-refresh.md).
+**Current refinement.** #2’s direct coordination scope is size **S**, estimated at **4 agent-hours**, at **Rank 221**. [Sizing basis](2026-11-26-coordination-and-follow-up-refinement.md). The **386.5 implementation agent-hours** are the delivery total for 110 stories in 22 sibling mini-epics under #1. The two direct children, #228 and #229, are post-release timing follow-ups with their own **7.5 h** combined estimate. [Accepted delivery ledger](plan/2026-11-26-core-mini-epic-ledger.md) · [Historical rollup and initial Project readback](2026-11-26-refinement-refresh.md).
 
 The original **180 h / XL / P1** Refine estimate and its earlier scope remain historical. [Initial rationale](refinement.md).
 
@@ -142,4 +142,8 @@ Planning and reconciliation evidence is recorded in [the planning effort receipt
 
 ## Core kickoff — 2026-11-27
 
-**Planning** · rank **10** · **P3/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **#2**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md). Coordination is P3 on Project #24. The earlier planning header showed P1. The Core delivery slices and timing follow-ups retain P1.
+**Planning at kickoff** · then rank **10** · **P3/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **#2**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md). Coordination is P3 on Project #24. The earlier planning header showed P1. The Core delivery slices and timing follow-ups retain P1.
+
+## Dependency rank correction
+
+Project #24 rank **221**. Current status **Ready for Planning**. See the [product dependency map](../../000/1/plan/2026-11-27-dependency-rank-correction.md) for the verified prerequisites.
