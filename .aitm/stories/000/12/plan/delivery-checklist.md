@@ -7,3 +7,14 @@ Attempt 1. Codex is the implementing agent and closure owner. [Accepted pickup](
 - [ ] Check exact hosted repository CI and the separately required hosted Core CI.
 - [ ] Mark ready, obtain Grok 4.7 SAR and run the trusted verifier.
 - [ ] Verify landing and record sign-off, Agent Cost and Done.
+
+## Hosted policy pin
+
+Before review, added a test that first failed because the local branch could
+stand in for the anchored hosted route. The revised service reads the exact
+hosted route from a dedicated validated local ref. A fetched candidate does
+not change policy before continuity validation and admission. A cached
+committed view can remain readable while the checked-out code branch stays
+untouched. All 28 C07 cases and 173 installed Core tests passed again, with
+Ruff lint and format on head `4221091c9ec68c20472d5e351a95cafa13b86e05`. Both hosted workflows are rerun for
+this head while #544 remains draft.
