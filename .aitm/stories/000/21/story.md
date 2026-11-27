@@ -3,14 +3,15 @@ schema: "aitm.story/v0"
 id: 21
 title: "[Core C16] Authoring and implementation bindings"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/21"
+linked-pr: "https://github.com/kburson/aitm/pull/563"
 parent: 475
 children: []
 blocking: [22, 30, 36, 41, 52, 57, 74, 77, 234]
 blocked-by: [11, 12, 16]
 created: "2026-11-09T08:00:54Z"
-updated: "2026-11-27T22:47:02.115388+00:00"
+updated: "2026-11-27T22:49:21.141971+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
