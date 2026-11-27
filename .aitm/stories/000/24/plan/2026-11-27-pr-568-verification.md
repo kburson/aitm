@@ -5,7 +5,7 @@
 - Synthetic merge `f22e45f4f23307403bfd51f100f5d8b1673c80d3`
 - Tree `6b3115aaf878d0754bf48d839e855a02fffa1c61`
 
-The focused tests first failed because the intake implementation was absent. The exact local candidate passed all nine focused cases. The real-Git scenario includes installed idea creation and listing, same-minute draft collisions, ambiguous handles, one-commit discard, attachment and tree receipts, tombstone name collisions, stable retry, graduation refusal and a competing remote attachment. Core Ruff lint and formatting and the tooling test passed. The initial local baseline had one C11 failure during a deleted-remote-ref scenario. C11 passed in isolation, and the complete hosted Core suite passed.
+The focused tests first failed because the intake implementation was absent. The exact local candidate passed all nine focused cases. The real-Git scenario includes installed idea creation and listing, same-minute draft collisions, ambiguous handles, one-commit discard, attachment and tree receipts, tombstone name collisions, stable retry, graduation refusal and a competing remote attachment. Core Ruff lint and formatting and the tooling test passed. The initial local baseline had one C11 failure during a deleted-remote-ref scenario. C11 passed in isolation. The complete exact candidate passed all 932 Core tests locally and in hosted Core CI.
 
 - [Hosted repository CI](https://github.com/kburson/aitm/actions/runs/46083979594/attempts/1) passed with 1,644 unit and 142 integration cases from 1,786 unique Linux cases.
 - [Hosted Core CI](https://github.com/kburson/aitm/actions/runs/46083979589/attempts/1) passed with 858 unit and 74 integration cases from 932 unique Linux cases. All 932 Core product tests and one tooling test passed.
