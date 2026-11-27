@@ -3,16 +3,16 @@ schema: "aitm.story/v0"
 id: 228
 title: "[Core] Qualify legacy dashboard timing replay"
 kind: "story"
-state: "backlog"
+state: refine
 issue: "https://github.com/kburson/aitm/issues/228"
 parent: 2
 children: []
 blocking: []
 blocked-by: [23, 53, 54, 55, 56, 72]
 created: "2026-11-11T14:37:22Z"
-updated: "2026-11-11T14:41:24Z"
+updated: "2026-11-27T05:46:53.142Z"
 last-branch: "planning"
-estimate: {"agent-hours": 3.75, "size": "S", "scope": "preliminary transfer estimate"}
+estimate: {"agent-hours": 3.75, "size": "S", "scope": "post-release qualification"}
 priority: "P1"
 origin: ".aitm/stories/001/181/plan/2026-11-11-181-slice-c-implementation-plan.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -24,6 +24,10 @@ scope-transfer: {"story": 181, "key": "C02", "publication": "20ae85e8e38fd3417e1
 # [Core] Qualify legacy dashboard timing replay
 
 [GitHub issue #228](https://github.com/kburson/aitm/issues/228) · [Owner epic #2](https://github.com/kburson/aitm/issues/2)
+
+## Current refinement
+
+**Refine**, **Rank 10 within #2**, size **S**, estimate **3.75 agent-hours**. Qualify legacy dashboard timing replay against the released Core and pinned #181/#111 inputs. The existing 3.75 h transfer estimate covers evidence setup, scoped replay and failure cases, and verification of the result. The required release qualification in #72 remains an implementation prerequisite. [Sizing basis](../../000/2/2026-11-26-coordination-and-follow-up-refinement.md).
 
 ## Scope
 

@@ -1,0 +1,176 @@
+{
+  "verified_at": "2026-11-27T05:46:53.142Z",
+  "targets": {
+    "2": {
+      "hours": 4,
+      "rank": 10,
+      "scope": "Direct Core coordination and #247 readiness handoff. Budget 1 h to establish the readiness evidence map, 2 h to reconcile material drift against the mini-epics’ delivery receipts, and 1 h to prepare the disposition and handoff to #247. The 386.5 h sibling delivery total and the 7.5 h child subtotal are tracked separately."
+    },
+    "228": {
+      "hours": 3.75,
+      "rank": 10,
+      "scope": "Qualify legacy dashboard timing replay against the released Core and pinned #181/#111 inputs. The existing 3.75 h transfer estimate covers evidence setup, scoped replay and failure cases, and verification of the result. The required release qualification in #72 remains an implementation prerequisite."
+    },
+    "229": {
+      "hours": 3.75,
+      "rank": 20,
+      "scope": "Qualify native story and epic Actual against the released Core and pinned #227/native inputs. The existing 3.75 h transfer estimate covers fixture setup, scoped attribution and coverage checks, and verification of the report. The required release qualification in #72 remains an implementation prerequisite."
+    }
+  },
+  "native": {
+    "2": {
+      "before": {
+        "id": "I_kwDOVnNyI88AAAABdf6cLA",
+        "number": 2,
+        "state": "OPEN",
+        "parent": 1,
+        "blockedBy": [
+          456
+        ],
+        "blocking": [
+          247
+        ],
+        "subIssues": [
+          228,
+          229
+        ],
+        "project": {
+          "id": "PVTI_lAHOABCEY84Bq1hZzhHL4u0",
+          "values": {
+            "Status": "d220c89a",
+            "Priority": "90b2e477",
+            "Rank": 10.0
+          }
+        }
+      },
+      "after": {
+        "id": "I_kwDOVnNyI88AAAABdf6cLA",
+        "number": 2,
+        "state": "OPEN",
+        "parent": 1,
+        "blockedBy": [
+          456
+        ],
+        "blocking": [
+          247
+        ],
+        "subIssues": [
+          228,
+          229
+        ],
+        "project": {
+          "id": "PVTI_lAHOABCEY84Bq1hZzhHL4u0",
+          "values": {
+            "Status": "d220c89a",
+            "Priority": "90b2e477",
+            "Rank": 10.0,
+            "Estimate": 4.0,
+            "Size": "9592a5a3"
+          }
+        }
+      },
+      "body_sha256": "cec76cd5e8531b3edb59a411b6d29281e6a9665f91e34a4f68b939987bee07f6"
+    },
+    "228": {
+      "before": {
+        "id": "I_kwDOVnNyI88AAAABeVdL_g",
+        "number": 228,
+        "state": "OPEN",
+        "parent": 2,
+        "blockedBy": [
+          23,
+          53,
+          54,
+          55,
+          56,
+          72
+        ],
+        "blocking": [],
+        "subIssues": [],
+        "project": {
+          "id": "PVTI_lAHOABCEY84Bq1hZzhH2aJY",
+          "values": {
+            "Status": "f75ad846",
+            "Rank": 420.0
+          }
+        }
+      },
+      "after": {
+        "id": "I_kwDOVnNyI88AAAABeVdL_g",
+        "number": 228,
+        "state": "OPEN",
+        "parent": 2,
+        "blockedBy": [
+          23,
+          53,
+          54,
+          55,
+          56,
+          72
+        ],
+        "blocking": [],
+        "subIssues": [],
+        "project": {
+          "id": "PVTI_lAHOABCEY84Bq1hZzhH2aJY",
+          "values": {
+            "Status": "d220c89a",
+            "Rank": 10.0,
+            "Estimate": 3.75,
+            "Size": "9592a5a3"
+          }
+        }
+      },
+      "body_sha256": "0f5370fa58e6244e3436c34203e46c7aaec9a636bd0343a25c89b821378ee07b"
+    },
+    "229": {
+      "before": {
+        "id": "I_kwDOVnNyI88AAAABeVdS4Q",
+        "number": 229,
+        "state": "OPEN",
+        "parent": 2,
+        "blockedBy": [
+          23,
+          28,
+          34,
+          36,
+          72
+        ],
+        "blocking": [],
+        "subIssues": [],
+        "project": {
+          "id": "PVTI_lAHOABCEY84Bq1hZzhH2aR8",
+          "values": {
+            "Status": "f75ad846",
+            "Rank": 420.0
+          }
+        }
+      },
+      "after": {
+        "id": "I_kwDOVnNyI88AAAABeVdS4Q",
+        "number": 229,
+        "state": "OPEN",
+        "parent": 2,
+        "blockedBy": [
+          23,
+          28,
+          34,
+          36,
+          72
+        ],
+        "blocking": [],
+        "subIssues": [],
+        "project": {
+          "id": "PVTI_lAHOABCEY84Bq1hZzhH2aR8",
+          "values": {
+            "Status": "d220c89a",
+            "Rank": 20.0,
+            "Estimate": 3.75,
+            "Size": "9592a5a3"
+          }
+        }
+      },
+      "body_sha256": "aaa233e76efe8ba7298df420ccfd83aaae648a3ba7e2a5fc05a733e123ffb96c"
+    }
+  },
+  "project": 24
+}

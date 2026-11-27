@@ -10,10 +10,10 @@ children: [228, 229]
 blocking: [247]
 blocked-by: [456]
 created: 2026-11-08T19:24:20Z
-updated: "2026-11-27T05:44:13.623Z"
+updated: "2026-11-27T05:46:53.142Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 4, "size": "S", "scope": "direct coordination"}
 priority: P1
 original-estimate: { agent-hours: 180, size: XL, priority: P1, source: refinement.md }
 origin: .aitm/drafts/2026-11/20261108-1310-core
@@ -63,7 +63,7 @@ So that state, timing and evidence are recorded by the tool, never repaired by h
 
 ## Refinement
 
-**Current refinement.** #2 is a coordination epic at **Rank 10**. Its direct scope is awaiting size and estimate. The **386.5 implementation agent-hours** are the delivery total for 110 stories in 22 sibling mini-epics under #1. The two direct children, #228 and #229, are post-release timing follow-ups with their own **7.5 h** combined estimate. [Accepted delivery ledger](plan/2026-11-26-core-mini-epic-ledger.md) · [Historical rollup and initial Project readback](2026-11-26-refinement-refresh.md).
+**Current refinement.** #2’s direct coordination scope is size **S**, estimated at **4 agent-hours**, at **Rank 10**. [Sizing basis](2026-11-26-coordination-and-follow-up-refinement.md). The **386.5 implementation agent-hours** are the delivery total for 110 stories in 22 sibling mini-epics under #1. The two direct children, #228 and #229, are post-release timing follow-ups with their own **7.5 h** combined estimate. [Accepted delivery ledger](plan/2026-11-26-core-mini-epic-ledger.md) · [Historical rollup and initial Project readback](2026-11-26-refinement-refresh.md).
 
 The original **180 h / XL / P1** Refine estimate and its earlier scope remain historical. [Initial rationale](refinement.md).
 
