@@ -5,12 +5,12 @@ title: "[Core C11] Crash-resumable init and reconfiguration"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/19"
-parent: 2
+parent: 475
 children: []
-blocking: [20, 54]
+blocking: [20, 54, 510]
 blocked-by: [12, 17, 18]
 created: "2026-11-09T08:00:45Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -19,10 +19,20 @@ origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c11-crash-resumabl
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C11", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "c7657057cf43e6d10b7eaff90a6a8ace780770dc7fa63a0c813acf89c30b4813"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C11", "parent": 475}
 ---
 
 # [Core C11] Crash-resumable init and reconfiguration
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#475](https://github.com/kburson/aitm/issues/475). Key: C11. Estimate: **4 h**. Blocked by: #12, #17, #18.
+
+Resolve the configured workflow from the same anchored default commit as policy; delegate parsing to C90 and cutover to C98. Verify story-worktree substitution cannot change authority.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#19](https://github.com/kburson/aitm/issues/19) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

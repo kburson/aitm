@@ -6,14 +6,14 @@ kind: epic
 state: backlog
 issue: https://github.com/kburson/aitm/issues/2
 parent: 1
-children: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 74, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 75, 37, 76, 38, 39, 40, 41, 42, 77, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 78, 53, 54, 55, 56, 57, 58, 59, 60, 63, 64, 79, 80, 61, 62, 81, 65, 82, 66, 67, 68, 69, 70, 71, 72, 228, 229, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 230]
+children: [228, 229]
 blocking: [247]
 blocked-by: [456]
 created: 2026-11-08T19:24:20Z
-updated: "2026-11-26T15:06:19.931Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
-estimate: { agent-hours: 297.25, size: XL }
+estimate: {"agent-hours": 386.5, "size": "XL"}
 priority: P1
 original-estimate: { agent-hours: 180, size: XL, priority: P1, source: refinement.md }
 origin: .aitm/drafts/2026-11/20261108-1310-core
@@ -93,7 +93,7 @@ Completed [#456](https://github.com/kburson/aitm/issues/456) satisfies the Core 
 
 ## Configured workflow amendment and delivery replan
 
-The [accepted design amendment](design/2026-11-26-configured-workflow-amendment-draft.md) and its XPR were published at [07755fa0](https://github.com/kburson/aitm/commit/07755fa0bf8e5fabdcadbce0eb31a126b5cc6303). The [implementation-plan revision](plan/2026-11-26-configured-workflow-implementation-plan.md), [legacy rule crosswalk](plan/2026-11-26-legacy-rule-crosswalk.md), and [mini-epic ledger](plan/2026-11-26-core-mini-epic-ledger.md) propose replacing the single integration sequence with bounded trunk deliveries. Claude Opus 5.5 accepted the revised plan in round two of [XPR](plan/reviews/plan/2026-11-27-2026-11-26-configured-workflow-implementation-plan-review-d69706914b83ab63954983955c19e200/review-d69706914b83ab63954983955c19e200-review-manifest.md). The reviewed ledger keeps the 89 existing M1 issue IDs and proposes 22 Core mini-epics with 110 children and 386.5 estimated agent-hours. Earlier accepted plans remain historical. Native parentage and issue scopes still reflect the prior decomposition pending reconciliation.
+The [accepted design amendment](design/2026-11-26-configured-workflow-amendment-draft.md) and its XPR were published at [07755fa0](https://github.com/kburson/aitm/commit/07755fa0bf8e5fabdcadbce0eb31a126b5cc6303). The [implementation-plan revision](plan/2026-11-26-configured-workflow-implementation-plan.md), [legacy rule crosswalk](plan/2026-11-26-legacy-rule-crosswalk.md), and [mini-epic ledger](plan/2026-11-26-core-mini-epic-ledger.md) propose replacing the single integration sequence with bounded trunk deliveries. Claude Opus 5.5 accepted the revised plan in round two of [XPR](plan/reviews/plan/2026-11-27-2026-11-26-configured-workflow-implementation-plan-review-d69706914b83ab63954983955c19e200/review-d69706914b83ab63954983955c19e200-review-manifest.md). The reviewed ledger keeps the 89 existing M1 issue IDs and proposes 22 Core mini-epics with 110 children and 386.5 estimated agent-hours. Earlier accepted plans remain historical. GitHub and planning were reconciled to the accepted ledger. #2 coordinates the rollout without a shared integration branch. The mini-epics are under #1; #228 and #229 remain direct children. The implementation estimate is separate from planning effort and Cost.
 
 ## Behavior-driven testing
 
@@ -102,3 +102,32 @@ Use the independently reviewed [Core testing standard](../../002/286/plan/2026-1
 ## #133 no longer blocks Core
 
 On 2026-11-16 the owner removed #133 from this epic's blockers. The test-feedback replacement is [#340](../../003/340/story.md) and [#341](../../003/341/story.md).
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+## Agent Cost
+
+<!-- aitm-core-2-cost-active -->
+
+Planning and reconciliation evidence is recorded in [the planning effort receipt](attachments/2026-11-26-core-planning-effort.md).
+
+**Known Standard API-equivalent subtotal:** USD 10.8370112. **Verified billed cost:** Unknown. All observed planning usage is attributed to #2.
+
+| Work | Provider/model | Cached input | New input | Output | Standard API-equivalent USD |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Initial legacy/current-plan assessment | Codex / gpt-6.2-sol | 547,840 | 74,761 | 4,694 | $0.251246 |
+| Runtime workflow and planning paths | Codex / gpt-6.2-sol | 88,448 | 2,695 | 1,386 | $0.028095 |
+| Dev, Review and guardrails | Codex / gpt-6.2-sol | 91,008 | 2,198 | 1,289 | $0.026387 |
+| Design amendment draft | Codex / gpt-6.2-sol | 965,120 | 99,231 | 10,187 | $0.396844 |
+| JIT policy and design XPR author | Codex / gpt-6.2-sol | 5,730,048 | 47,149 | 8,508 | $0.752383 |
+| Core replan and plan XPR author | Codex / gpt-6.2-sol | 12,050,688 | 87,962 | 27,664 | $1.657633 |
+| GitHub and planning reconciliation | Codex / gpt-6.2-sol | 18,030,208 | 86,034 | 32,781 | $3.892932 |
+| Design builder check | Codex / gpt-6.2-sol | 194,304 | 28,354 | 1,586 | $0.091998 |
+| Legacy crosswalk subagent | Codex / gpt-6.2-sol | 887,936 | 59,762 | 12,317 | $0.331488 |
+| Workflow delta subagent | Codex / gpt-6.2-sol | 757,760 | 51,522 | 4,522 | $0.224040 |
+| Live inventory subagent | Codex / gpt-6.2-sol | 660,736 | 55,086 | 3,997 | $0.216216 |
+| Native reconciliation verifier | Codex / gpt-6.2-sol | 577,152 | 44,299 | 4,282 | $0.189133 |
+| Design XPR reviewer | Claude / claude-opus-5-5 | 837,888 | 89,357 | 14,759 | $1.177486 |
+| Plan XPR reviewer | Claude / claude-opus-5-5 | 1,398,439 | 112,977 | 20,889 | $1.601132 |

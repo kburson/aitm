@@ -5,24 +5,34 @@ title: "[Core C49] Core-only nominal lifecycle qualification"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/65"
-parent: 2
+parent: 487
 children: []
 blocking: [66, 67, 68, 69]
-blocked-by: [20, 23, 24, 26, 35, 36, 40, 42, 45, 46, 49, 50, 51, 52, 57, 63, 27, 18, 48, 55, 64, 79, 81, 80]
+blocked-by: [18, 20, 23, 24, 26, 27, 35, 36, 40, 42, 45, 46, 48, 49, 50, 51, 52, 55, 57, 63, 64, 79, 80, 81, 499, 503, 505, 506, 507]
 created: "2026-11-09T08:04:06Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 3.0, "size": "S"}
+estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c49-core-only-nominal-lifecycle-qualification"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C49", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "6525929513b816d5c443023bd0069be5a865f2162988094703fe1627d1fbdc7b"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C49", "parent": 487}
 ---
 
 # [Core C49] Core-only nominal lifecycle qualification
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#487](https://github.com/kburson/aitm/issues/487). Key: C49. Estimate: **4 h**. Blocked by: #18, #20, #23, #24, #26, #27, #35, #36, #40, #42, #45, #46, #48, #49, #50, #51, #52, #55, #57, #63, #64, #79, #80, #81, #499, #503, #505, #506, #507.
+
+Explain current directive, proof, blocked or unavailable reason and eligible operation without a write. Exercise default, parkingless and Housekeeping local profiles, including a restarted authored closeout. Keep the base CLI audit independent of later real hosted mounting.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#65](https://github.com/kburson/aitm/issues/65) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

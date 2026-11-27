@@ -5,12 +5,12 @@ title: "[Core C54] Lifecycle, relationships and document-state reducers"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/6"
-parent: 2
+parent: 470
 children: []
 blocking: [8, 9, 78]
 blocked-by: [4, 5]
 created: "2026-11-09T07:59:49Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -19,10 +19,20 @@ origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c54-lifecycle-rela
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C54", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "3a939072150c757328b8b98c6fbc8190c562282ed0ab6c012ca14135c2a264c7"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C54", "parent": 470}
 ---
 
 # [Core C54] Lifecycle, relationships and document-state reducers
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#470](https://github.com/kburson/aitm/issues/470). Key: C54. Estimate: **3.5 h**. Blocked by: #4, #5.
+
+Fold typed state and operation facts with pinned workflow provenance. Prove a renamed label, legacy state ID, and historical capability record remain reconstructable. Attempt start and close derive from typed boundary events.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#6](https://github.com/kburson/aitm/issues/6) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

@@ -5,23 +5,33 @@ title: "[Core C89] Installed managed PR and evidence commands"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/242"
-parent: 2
+parent: 490
 children: []
-blocking: []
-blocked-by: [240, 241]
+blocking: [513, 514]
+blocked-by: [240, 241, 499]
 created: "2026-11-11T15:58:21Z"
-updated: "2026-11-11T16:02:43Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
-estimate: {"agent-hours": 3, "size": "S"}
+estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md#c89"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan-amendment", "story": 2, "key": "C89", "path": ".aitm/stories/000/2/plan/2026-11-11-2-governed-pr-and-branch-lifecycle.md", "publication": "8939d9fff17599fe644604b5b267625b4bc5621f", "raw-sha256": "e4245997416a6e39188aacbab246a1fbb41d9ccc8c50e1a2971d85f52b033db3"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C89", "parent": 490}
 ---
 
 # [Core C89] Installed managed PR and evidence commands
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#490](https://github.com/kburson/aitm/issues/490). Key: C89. Estimate: **3.5 h**. Blocked by: #240, #241, #499.
+
+Register composed source for Dev, mount pickup and governed PR operations through the shared catalog, and require local proof before push and current hosted CI/XPR for merge. Retirement happens after verified closeout under its retained dependent fence. C100/C101 prove the mounted order and parity.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 [GitHub issue #242](https://github.com/kburson/aitm/issues/242) · [Parent #2](../../000/2/story.md) · Backlog.
 

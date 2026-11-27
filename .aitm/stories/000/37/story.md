@@ -5,12 +5,12 @@ title: "[Core C28] State transitions and atomic guard outcomes"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/37"
-parent: 2
+parent: 479
 children: []
-blocking: [76, 38, 39, 40, 50, 59, 79, 81, 82]
-blocked-by: [16, 26, 35, 36, 22, 27, 17, 75]
+blocking: [38, 39, 40, 50, 59, 76, 79, 81, 82, 506, 509]
+blocked-by: [16, 17, 22, 26, 27, 35, 36, 75, 497, 499, 502, 503]
 created: "2026-11-09T08:02:02Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -19,10 +19,20 @@ origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c28-state-transiti
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C28", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "68c6f2e4ba76f2e12ef3369efa0e36d87678979ceed511a4e3aa9347279ad31f"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C28", "parent": 479}
 ---
 
 # [Core C28] State transitions and atomic guard outcomes
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#479](https://github.com/kburson/aitm/issues/479). Key: C28. Estimate: **4 h**. Blocked by: #16, #17, #22, #26, #27, #35, #36, #75, #497, #499, #502, #503.
+
+Drive evaluation and atomic outcomes from the resolved graph, replace kind rules and terminal destinations with typed capability bindings, and route Refine split and other design rework through Design. Keep edge legality and CAS retries. Use provider-neutral ports so early slices do not depend on late hosted composition.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#37](https://github.com/kburson/aitm/issues/37) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

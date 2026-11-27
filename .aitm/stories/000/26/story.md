@@ -5,24 +5,34 @@ title: "[Core C22] Graduation and atomic relationships"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/26"
-parent: 2
+parent: 476
 children: []
-blocking: [27, 37, 76, 39, 63, 65, 82, 234]
+blocking: [27, 37, 39, 63, 65, 76, 82, 234]
 blocked-by: [16, 25, 74]
 created: "2026-11-09T08:01:14Z"
-updated: "2026-11-11T16:02:43Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 4, "size": "S"}
+estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c22-graduation-and-atomic-relationships"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C22", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "582f77ebf4c60bfd94c5aa5bcce645f9f8dc9e5b2a845301af15a21451b80a8d"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C22", "parent": 476}
 ---
 
 # [Core C22] Graduation and atomic relationships
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#476](https://github.com/kburson/aitm/issues/476). Key: C22. Estimate: **4 h**. Blocked by: #16, #25, #74.
+
+Graduate identity, relationships and declared delivery target. Require zero work-ref/draft intents or effects at graduation and continue to refuse foreign identity reuse. C81 owns resource claims at pickup.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#26](https://github.com/kburson/aitm/issues/26) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

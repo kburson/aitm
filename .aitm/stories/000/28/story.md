@@ -5,12 +5,12 @@ title: "[Core C23] Activity eligibility and implementation clock fold"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/28"
-parent: 2
+parent: 473
 children: []
 blocking: [34, 36, 39, 40, 51, 229]
 blocked-by: [4, 14]
 created: "2026-11-09T08:01:23Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -19,10 +19,20 @@ origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c23-activity-eligi
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C23", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "ec15330001311945cbd0c34f1125deb03d306a7dbb47df5c6c99b285d74015b3"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C23", "parent": 473}
 ---
 
 # [Core C23] Activity eligibility and implementation clock fold
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#473](https://github.com/kburson/aitm/issues/473). Key: C23. Estimate: **3.5 h**. Blocked by: #4, #14.
+
+Retain the historical deliverable and proof where they remain applicable. Apply the parent, estimate, and dependencies in this section.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#28](https://github.com/kburson/aitm/issues/28) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

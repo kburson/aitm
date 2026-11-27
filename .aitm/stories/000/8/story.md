@@ -5,24 +5,36 @@ title: "[Core C56] Evidence, action and provenance reducers with composition"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/8"
-parent: 2
+parent: 470
 children: []
-blocking: [9, 29, 77]
+blocking: [9, 29, 77, 472, 473, 474, 477, 478, 482, 483, 486, 491]
 blocked-by: [4, 6, 7]
 created: "2026-11-09T07:59:57Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 3.0, "size": "S"}
+estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c56-evidence-action-and-provenance-reducers-with-composition"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C56", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "a6c5c135e292c010c0ff6b2df760a98609fcd7a03ac852c88bef436d99f59bc3"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C56", "parent": 470}
 ---
 
 # [Core C56] Evidence, action and provenance reducers with composition
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#470](https://github.com/kburson/aitm/issues/470). Key: C56. Estimate: **3.5 h**. Blocked by: #4, #6, #7.
+
+Fold typed state and operation facts with pinned workflow provenance. Prove a renamed label, legacy state ID, and historical capability record remain reconstructable. Attempt start and close derive from typed boundary events.
+
+Integration owner. Trunk admission requires verified deliveries: #3, #4, #5, #6, #7.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#8](https://github.com/kburson/aitm/issues/8) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

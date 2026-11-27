@@ -5,24 +5,34 @@ title: "[Core C72] Typed decomposition descriptors and applicability"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/75"
-parent: 2
+parent: 478
 children: []
-blocking: [37, 53, 82]
+blocking: [37, 53, 82, 501]
 blocked-by: [5, 12, 25, 35, 36]
 created: "2026-11-09T13:42:07Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 3.5, "size": "S"}
+estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c72-typed-decomposition-descriptors-and-applicability"
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C72", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "c291805b48e01fb13932df320b15a231fb409bcbe712f43671a6957a2c8970e2"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C72", "parent": 478}
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
 ---
 
 # [Core C72] Typed decomposition descriptors and applicability
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#478](https://github.com/kburson/aitm/issues/478). Key: C72. Estimate: **4 h**. Blocked by: #5, #12, #25, #35, #36.
+
+Keep attempts and phase estimates. Freeze parent plan digest and child entry fields needed at pickup. Reconcile existing child identities and source provenance if parent entry changes. C93/C94 own evaluation and the peer-review threshold.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#75](https://github.com/kburson/aitm/issues/75) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

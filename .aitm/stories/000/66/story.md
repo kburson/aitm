@@ -5,24 +5,36 @@ title: "[Core C67] Complete installed CLI surface audit"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/66"
-parent: 2
+parent: 487
 children: []
-blocking: [68, 69, 240]
-blocked-by: [65, 56, 64, 51, 76, 74, 82, 79, 81, 80]
+blocking: [68, 69, 240, 488, 490, 491]
+blocked-by: [51, 56, 64, 65, 74, 76, 79, 80, 81, 82]
 created: "2026-11-09T08:04:10Z"
-updated: "2026-11-11T16:02:43Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 2.5, "size": "S"}
+estimate: {"agent-hours": 3.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c67-complete-installed-cli-surface-audit"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C67", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "f218b6d432fee065f46b34ba7441c8cfd416d352d9a7a8e8ed9f158e2f816097"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C67", "parent": 487}
 ---
 
 # [Core C67] Complete installed CLI surface audit
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#487](https://github.com/kburson/aitm/issues/487). Key: C67. Estimate: **3 h**. Blocked by: #51, #56, #64, #65, #74, #76, #79, #80, #81, #82.
+
+Explain current directive, proof, blocked or unavailable reason and eligible operation without a write. Exercise default, parkingless and Housekeeping local profiles, including a restarted authored closeout. Keep the base CLI audit independent of later real hosted mounting.
+
+Integration owner. Trunk admission requires verified deliveries: #51, #52, #57, #65, #67.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#66](https://github.com/kburson/aitm/issues/66) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

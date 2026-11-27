@@ -5,24 +5,34 @@ title: "[Core C79] Test and Review exit composites with atomic signoff"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/80"
-parent: 2
+parent: 484
 children: []
-blocking: [61, 62, 81, 65, 82, 66, 238, 239]
-blocked-by: [79, 42, 45, 46, 49, 63]
+blocking: [61, 62, 65, 66, 81, 82, 238, 239, 510]
+blocked-by: [42, 45, 46, 49, 63, 79, 497, 503, 506, 507]
 created: "2026-11-09T13:42:11Z"
-updated: "2026-11-11T16:02:43Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 3.5, "size": "S"}
+estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c79-test-and-review-exit-composites-with-atomic-signoff"
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C79", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "b780dff78b37e38aa62830b75a68917d9367a5ad9375fa5c6354c25c622c0b75"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C79", "parent": 484}
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
 ---
 
 # [Core C79] Test and Review exit composites with atomic signoff
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#484](https://github.com/kburson/aitm/issues/484). Key: C79. Estimate: **4 h**. Blocked by: #42, #45, #46, #49, #63, #79, #497, #503, #506, #507.
+
+Move the old Test check into the Dev candidate guard. Bind pre-push proof to exact source and test inputs, require tagged/composed source and resolved expansion, and combine authenticated hosted CI with pre-Review and final closeout through typed ports. C95 owns selection policy.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#80](https://github.com/kburson/aitm/issues/80) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

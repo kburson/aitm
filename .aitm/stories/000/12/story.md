@@ -5,24 +5,34 @@ title: "[Core C07] Committed configuration and routing anchors"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/12"
-parent: 2
+parent: 472
 children: []
-blocking: [13, 14, 19, 21, 30, 75, 77, 54]
-blocked-by: [5, 11]
+blocking: [13, 14, 19, 21, 30, 54, 75, 77, 498]
+blocked-by: [5, 11, 497]
 created: "2026-11-09T08:00:15Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 3.0, "size": "S"}
+estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c07-committed-configuration-and-routing-anchors"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C07", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "8883c9016590560fb001fc98412ed06776b428c10bd63d1c311044901ce0ee72"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C07", "parent": 472}
 ---
 
 # [Core C07] Committed configuration and routing anchors
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#472](https://github.com/kburson/aitm/issues/472). Key: C07. Estimate: **3.5 h**. Blocked by: #5, #11, #497.
+
+Resolve the configured workflow from the same anchored default commit as policy; delegate parsing to C90 and cutover to C98. Verify story-worktree substitution cannot change authority.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#12](https://github.com/kburson/aitm/issues/12) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

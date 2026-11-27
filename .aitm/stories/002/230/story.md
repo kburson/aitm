@@ -5,14 +5,14 @@ title: "[Core] Qualify Usage Monitor Cost integration"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/230"
-parent: 2
+parent: 493
 children: []
 blocking: [259]
-blocked-by: [51, 459]
+blocked-by: [51, 459, 521]
 created: "2026-11-11T14:37:29Z"
-updated: "2026-11-26T15:06:19.931Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
-estimate: {"agent-hours": 3.25, "size": "S", "scope": "preliminary transfer estimate"}
+estimate: {"agent-hours": 3.25, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/001/181/plan/2026-11-11-181-slice-c-implementation-plan.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-11-230-cost-dependency-replan.md", "plan/2026-11-11-230-cost-dependency-replan-review.md"], "attachments": []}
@@ -22,6 +22,16 @@ scope-transfer: {"story": 181, "key": "C04", "publication": "20ae85e8e38fd3417e1
 ---
 
 # [Core] Qualify Usage Monitor Cost integration
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#493](https://github.com/kburson/aitm/issues/493). Key: COST4. Estimate: **3.25 h**. Blocked by: #51, #459, #521.
+
+Retain live Cost qualification outside M1 after #51, #459 and the compatible package when selected. The package source and wheel precede this observation.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 [GitHub issue #230](https://github.com/kburson/aitm/issues/230) · [Owner epic #2](https://github.com/kburson/aitm/issues/2)
 

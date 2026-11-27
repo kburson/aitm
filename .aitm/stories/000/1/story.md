@@ -6,11 +6,11 @@ kind: epic
 state: backlog
 issue: https://github.com/kburson/aitm/issues/1
 parent: null
-children: [2, 247]
+children: [2, 247, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493]
 blocking: []
 blocked-by: []
 created: 2026-11-08T19:24:00Z
-updated: 2026-11-11T14:41:24Z
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: { agent-hours: null, size: null }

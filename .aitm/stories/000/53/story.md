@@ -5,12 +5,12 @@ title: "[Core C46] Legacy inventory and deterministic v0 adapters"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/53"
-parent: 2
+parent: 486
 children: []
 blocking: [54, 228]
-blocked-by: [5, 11, 34, 33, 75, 78]
+blocked-by: [5, 11, 33, 34, 75, 78]
 created: "2026-11-09T08:03:11Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -19,10 +19,20 @@ origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c46-legacy-invento
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C46", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "abc9d63f1fbc4d33f4651d652b78f807d268a73d3c5eaa0287f85ac68f219a25"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C46", "parent": 486}
 ---
 
 # [Core C46] Legacy inventory and deterministic v0 adapters
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#486](https://github.com/kburson/aitm/issues/486). Key: C46. Estimate: **4 h**. Blocked by: #5, #11, #33, #34, #75, #78.
+
+Carry legacy state and accepted design, attempt, candidate and operation provenance into the owned migration fixture. C98 supplies the live-workflow mapping policy and refusal cases. Preserve original event identities and exact accepted bytes.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#53](https://github.com/kburson/aitm/issues/53) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

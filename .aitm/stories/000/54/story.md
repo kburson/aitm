@@ -5,12 +5,12 @@ title: "[Core C47] Stable legacy adoption preparation"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/54"
-parent: 2
+parent: 486
 children: []
 blocking: [55, 228]
 blocked-by: [12, 19, 53]
 created: "2026-11-09T08:03:15Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.0, "size": "S"}
@@ -19,10 +19,20 @@ origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c47-stable-legacy-
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C47", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "589cf896fb1e28d1732d6d0dad44ad2b88ddae9a43c3fb75ec0a8a45f8831ecd"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C47", "parent": 486}
 ---
 
 # [Core C47] Stable legacy adoption preparation
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#486](https://github.com/kburson/aitm/issues/486). Key: C47. Estimate: **3 h**. Blocked by: #12, #19, #53.
+
+Carry legacy state and accepted design, attempt, candidate and operation provenance into the owned migration fixture. C98 supplies the live-workflow mapping policy and refusal cases. Preserve original event identities and exact accepted bytes.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#54](https://github.com/kburson/aitm/issues/54) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 

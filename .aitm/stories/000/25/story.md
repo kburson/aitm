@@ -5,24 +5,34 @@ title: "[Core C20] Semantic identity reservations and uncertain dispatch"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/25"
-parent: 2
+parent: 476
 children: []
-blocking: [26, 75, 39, 234]
-blocked-by: [17, 14, 24, 74]
+blocking: [26, 39, 75, 234]
+blocked-by: [14, 17, 24, 74]
 created: "2026-11-09T08:01:10Z"
-updated: "2026-11-11T16:02:43Z"
+updated: "2026-11-27T05:03:04.452Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 4, "size": "S"}
+estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c20-semantic-identity-reservations-and-uncertain-dispatch"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
-plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C20", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "599a44fb568851dfe4cda271fe737b8602940541c071b3f6fc27162f998fff01"}
+plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C20", "parent": 476}
 ---
 
 # [Core C20] Semantic identity reservations and uncertain dispatch
+
+## Accepted workflow reconciliation
+
+[Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-26-core-native-reconciliation-receipt.json).
+
+Current parent: [#476](https://github.com/kburson/aitm/issues/476). Key: C20. Estimate: **4 h**. Blocked by: #14, #17, #24, #74.
+
+Graduate identity, relationships and declared delivery target. Require zero work-ref/draft intents or effects at graduation and continue to refuse foreign identity reuse. C81 owns resource claims at pickup.
+
+The earlier decomposition below is retained as historical provenance. Current behavior and tests follow the accepted replan.
 
 **GitHub issue:** [kburson/aitm#25](https://github.com/kburson/aitm/issues/25) · **Parent:** [#2](../2/story.md) · **State:** Backlog.
 
