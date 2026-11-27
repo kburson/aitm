@@ -22,7 +22,11 @@ if TYPE_CHECKING:
     from aitm_core.store.git_backend import GitBackend
     from aitm_core.store.installation import Installation
     from aitm_core.store.objects import Repository
-    from aitm_core.store.validation import ForwardRepairVerifier, ValidationReport
+    from aitm_core.store.validation import (
+        DiagnosedHistory,
+        ForwardRepairVerifier,
+        ValidationReport,
+    )
 
 ServicePortName = Literal[
     "policy_resolution",
@@ -51,7 +55,7 @@ class ServicePorts:
     policy_resolution: object | None = None
     policy_refresh: object | None = None
     validation_gate: object | None = None
-    forward_repair_verifier: object | None = None
+    forward_repair_verifier: object | None = "default"
     write_authorization: object | None = None
     attempt_preflight: object | None = None
     init_hooks: object | None = None
@@ -104,7 +108,8 @@ def backend(
             tip,
             repository=repository,
             forward_repair_verifier=cast(
-                "ForwardRepairVerifier | None", services.forward_repair_verifier
+                'ForwardRepairVerifier | Literal["default"] | None',
+                services.forward_repair_verifier,
             ),
         )
 
@@ -167,8 +172,17 @@ def refresh(
         cached_refs,
         refresh_refs,
     )
+    from aitm_core.store.repair import repair_verifier
 
-    verifier = ports.forward_repair_verifier if ports is not None else None
+    verifier = ports.forward_repair_verifier if ports is not None else "default"
+    if verifier == "default":
+
+        def selected_verifier(
+            store: StoreAnchor, diagnosis: DiagnosedHistory, candidate: Snapshot
+        ) -> ValidationReport:
+            return repair_verifier(anchor.repository)(store, diagnosis, candidate)
+
+        verifier = selected_verifier
     request = RefreshPolicy(
         installation=anchor,
         trusted_checkpoint=trusted_checkpoint,

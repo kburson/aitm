@@ -16,15 +16,12 @@ from aitm_core.store.validation import validate_history
 
 def handle(route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult:
     identity = uuid4().hex
-    if route != ("planning", "validate"):
-        return CommandResult(
-            operation_id=identity,
-            local=LocalOutcome.UNAVAILABLE,
-            evidence=(
-                "The planning repair route requires the forward repair capability.",
-            ),
-        )
-    parser = argparse.ArgumentParser(prog="aitm planning validate", exit_on_error=False)
+    repairing = route == ("planning", "repair")
+    parser = argparse.ArgumentParser(
+        prog=f"aitm planning {route[-1]}", exit_on_error=False
+    )
+    if repairing:
+        parser.add_argument("--expected-tip", required=True)
     parser.add_argument("--anchor", type=Path)
     parser.add_argument("--repository", type=Path, default=Path.cwd())
     parser.add_argument("--tip")
@@ -43,6 +40,19 @@ def handle(route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult:
             )
         anchor = StoreAnchor.model_validate_json(options.anchor.read_bytes())
         repository = Repository(options.repository, anchor.planning_ref)
+        if repairing:
+            from aitm_core.services import load_installation
+            from aitm_core.store.repair import RepairConflict, repair
+
+            installation = load_installation(repository, anchor, options.installation)
+            try:
+                return repair(installation, options.expected_tip).command
+            except RepairConflict as error:
+                return CommandResult(
+                    operation_id=identity,
+                    local=LocalOutcome.CONFLICT,
+                    evidence=(str(error),),
+                )
         if options.refresh:
             return _refresh_validation(identity, repository, anchor, options)
         tip = options.tip or repository.tip().revision

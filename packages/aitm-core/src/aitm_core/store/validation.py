@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import sha256
 from pathlib import PurePosixPath
-from typing import Protocol
+from typing import Literal, Protocol
 
 from pydantic import JsonValue
 
@@ -451,10 +451,16 @@ def validate_history(
     tip: str,
     *,
     repository: Repository,
-    forward_repair_verifier: ForwardRepairVerifier | None = None,
+    forward_repair_verifier: ForwardRepairVerifier
+    | Literal["default"]
+    | None = "default",
 ) -> ValidationReport:
     """Read and validate without moving refs, checking out trees or editing the index."""
     try:
+        if forward_repair_verifier == "default":
+            from aitm_core.store.repair import repair_verifier
+
+            forward_repair_verifier = repair_verifier(repository)
         return _walk(anchor, tip, repository, forward_repair_verifier)
     except (GitCommandError, OSError, UnavailableReducer) as error:
         return ValidationReport(LocalOutcome.UNAVAILABLE, tip, str(error))
