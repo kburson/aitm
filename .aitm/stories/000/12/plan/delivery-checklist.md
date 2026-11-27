@@ -28,3 +28,7 @@ leaves `packages/aitm-usage`, `tools/ci` and the workflows untouched.
 [Core CI](https://github.com/kburson/aitm/actions/runs/46008168471) passed.
 Started a full repository CI rerun at the same head. The PR stays draft
 until both required checks pass on the exact candidate.
+
+## Hosted verification
+
+[CI run 46008168418](https://github.com/kburson/aitm/actions/runs/46008168418) and [Core CI run 46008168471](https://github.com/kburson/aitm/actions/runs/46008168471) passed on base `cce0cb2b033be027f695e3d8f9896edca40de765`, head `4221091c9ec68c20472d5e351a95cafa13b86e05` and synthetic merge tree `5d8e19e2f034fa349612f1578251c2657beae92c`. Hosted Core ran 173 passing tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
