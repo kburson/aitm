@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 7
 title: "[Core C55] Attempt, execution and clock-boundary reducers"
 kind: "story"
-state: test
+state: review
 issue: "https://github.com/kburson/aitm/issues/7"
 parent: 470
 children: []
 blocking: [8, 9]
 blocked-by: [4]
 created: "2026-11-09T07:59:53Z"
-updated: "2026-11-27T09:24:09.046Z"
+updated: "2026-11-27T09:27:50.798Z"
 last-branch: "codex/core-7-attempt-reducers"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
