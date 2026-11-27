@@ -3,14 +3,15 @@ schema: "aitm.story/v0"
 id: 20
 title: "[Core C12] Hook chaining and readiness diagnostics"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/20"
+linked-pr: "https://github.com/kburson/aitm/pull/562"
 parent: 475
 children: []
 blocking: [22, 42, 64, 65, 500]
 blocked-by: [11, 19]
 created: "2026-11-09T08:00:49Z"
-updated: "2026-11-27T22:22:27.592386+00:00"
+updated: "2026-11-27T22:25:02.635449+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.0, "size": "S"}
