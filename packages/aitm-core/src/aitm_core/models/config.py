@@ -127,7 +127,6 @@ class WorkflowConfig(ConfigSection):
 
 
 class CommittedConfig(ConfigSection):
-    model_config = ConfigDict(extra="ignore", frozen=True)
     store: StoreConfig
     enforcement: EnforcementConfig
     limits: Limits

@@ -189,6 +189,8 @@ def test_delivered_anchor_change_fences_both_modes(setup, mode, old_value, new_v
         ('independence = "distinct-session"', 'independence = "self"'),
         ('assurances = ["declared-manual"]', "assurances = []"),
         ("idle_gap_minutes = 15", ""),
+        ("leaf_agent_hours = 4", "leaf_agent_hours = 4.01"),
+        ("expansions_per_attempt = 1", "expansions_per_attempt = 2"),
         ('schema = "aitm.review-policy/v1"', 'schema = "aitm.review-policy/v8"'),
         (f'file = "{WORKFLOW}"', 'file = "../story.toml"'),
         (f'file = "{WORKFLOW}"', 'file = ".aitm/workflows/missing.toml"'),
@@ -297,3 +299,14 @@ def test_workflow_symlink_cannot_substitute_a_path(setup):
     local = RefObservation(ref=DEFAULT, observed_commit=git(root, "rev-parse", "HEAD"))
     with pytest.raises(PolicyUnavailable, match="regular file"):
         policy(anchor, RefreshResult(local=local))
+
+
+@pytest.mark.parametrize(
+    "unsupported",
+    ["unrecognized_setting = true\n", '[unrecognized_policy]\nreview = "none"\n'],
+)
+def test_unknown_top_level_policy_is_unavailable(setup, unsupported):
+    root, anchor, settings = setup
+    observed = commit_policy(root, unsupported + settings)
+    with pytest.raises(PolicyUnavailable, match="unrecognized_"):
+        policy(anchor, observed)
