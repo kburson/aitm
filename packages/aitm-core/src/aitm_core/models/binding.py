@@ -5,7 +5,12 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from aitm_core.models.attempts import BindingPurpose, EvidenceOperation, SourceSnapshot
+from aitm_core.models.attempts import (
+    BindingPurpose,
+    EvidenceOperation,
+    ObjectId,
+    SourceSnapshot,
+)
 from aitm_core.models.common import StoreAnchor
 from aitm_core.models.events import DIGEST
 from aitm_core.models.operations import repository_path, story_scope
@@ -80,6 +85,7 @@ def allows_authored(scope: StoryRef | EntityRef, path: str) -> bool:
 class BoundPath(BindingFact):
     path: str
     digest: DIGEST | None
+    revision: ObjectId | None = None
 
 
 class Binding(BindingFact):

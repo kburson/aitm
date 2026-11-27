@@ -64,6 +64,7 @@ def test_binding_generation(repository, policy_inputs, tmp_path_factory):
     other = tmp_path_factory.mktemp("another-worktree")
     git(root, "worktree", "add", "-qb", "author", str(author), "trunk")
     git(root, "worktree", "add", "-qb", "other", str(other), "trunk")
+    git(root, "branch", "planning-derived", RECORDS)
     before = git(root, "worktree", "list", "--porcelain")
     claimed = cli(author, "bind", "16", "--session", "alpha", "--path", PLAN)
     assert claimed["local"] == "completed", claimed
@@ -127,6 +128,26 @@ def test_binding_generation(repository, policy_inputs, tmp_path_factory):
         *recovered_lease,
     )
     assert declined["local"] == "integrity-error", declined
+    planning_commit = git(root, "rev-parse", RECORDS)
+    planning_tree = git(root, "rev-parse", f"{planning_commit}^{{tree}}")
+    wrong_history = cli(
+        other,
+        "bind",
+        "16",
+        "--implementation",
+        "--session",
+        "beta",
+        "--attempt",
+        "attempt-1",
+        "--branch",
+        "refs/heads/planning-derived",
+        "--commit",
+        planning_commit,
+        "--tree",
+        planning_tree,
+        *recovered_lease,
+    )
+    assert wrong_history["local"] == "conflict", wrong_history
     implementation = cli(
         other,
         "bind",
@@ -146,6 +167,7 @@ def test_binding_generation(repository, policy_inputs, tmp_path_factory):
     assert claim["branch"] == "refs/heads/other"
     assert claim["source"] == {"commit": code, "tree": tree}
 
+    (other / PLAN).write_bytes(b"Refactor retains authored work\n")
     refactored = cli(
         other,
         "bind",
@@ -166,6 +188,10 @@ def test_binding_generation(repository, policy_inputs, tmp_path_factory):
         *source,
     )
     assert refactored["local"] == "completed", refactored
+    assert (other / PLAN).read_bytes() == b"Refactor retains authored work\n"
+    assert (
+        Path(refactored["evidence"][1]) / PLAN
+    ).read_bytes() == b"Refactor retains authored work\n"
     scrapped = cli(
         other,
         "bind",

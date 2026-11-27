@@ -291,6 +291,22 @@ class Workspace:
             raise BindingConflict(
                 "Refactor must retain the recorded implementation branch."
             )
+        admitted = (
+            self.installation.validated_code_ref
+            or self.installation.store.code_default_ref
+        )
+        dest = _direct_ref(self.repo, admitted)
+        if (
+            dest is None
+            or self.repo._run("merge-base", dest, request.source.commit).returncode
+            or _is_ancestor(
+                self.repo, self.installation.store.root_commit, request.source.commit
+            )
+            is True
+        ):
+            raise BindingConflict(
+                "The pinned implementation branch is outside code history."
+            )
         if request.branch_mode in {"create", "scrap"}:
             if request.branch_mode == "scrap" and (
                 previous is None
@@ -317,15 +333,7 @@ class Workspace:
                 raise BindingConflict(
                     "The new branch name already belongs to another operation."
                 )
-            admitted = (
-                self.installation.validated_code_ref
-                or self.installation.store.code_default_ref
-            )
-            dest = _direct_ref(self.repo, admitted)
-            if (
-                dest is None
-                or _is_ancestor(self.repo, request.source.commit, dest) is not True
-            ):
+            if _is_ancestor(self.repo, request.source.commit, dest) is not True:
                 raise BindingConflict(
                     "The pinned new branch baseline is outside admitted code history."
                 )
@@ -406,10 +414,34 @@ class Workspace:
         with ref_gate(self.repo, RefIdentity(self.repo.ref), RefMutationKind.PLANNING):
             branch, source, authority = self._source(request, previous, root)
             tip, blobs = self._plan(request, previous)
+            bases = []
+            same_worktree = previous is not None and (
+                previous.worktree,
+                previous.git_directory,
+            ) == (root, directory)
+            old_paths = (
+                {item.path: item for item in previous.paths}
+                if previous is not None and same_worktree
+                else {}
+            )
             if request.purpose != BindingPurpose.EVIDENCE:
                 for path, data in blobs.items():
+                    old = old_paths.get(path)
+                    local = read_workspace(Path(root), path)
+                    # Keep an existing editor's unseen or unsynced bytes and
+                    # their original per-file base when only the lease changes.
+                    if (
+                        old is not None
+                        and local != data
+                        and (local is not None or old.digest is not None)
+                    ):
+                        bases.append(old)
+                        continue
                     if data is not None:
                         _materialize(Path(root), path, data)
+                    bases.append(
+                        BoundPath(path=path, digest=digest(data), revision=tip.revision)
+                    )
                 if isinstance(request.scope, StoryRef):
                     preview = str(
                         PurePosixPath(story_event_path(request.scope.story)).with_name(
@@ -417,7 +449,9 @@ class Workspace:
                         )
                     )
                     content = self.repo.read_blobs(tip.tree, (preview,))[preview]
-                    if content is not None:
+                    if content is not None and (
+                        not same_worktree or read_workspace(Path(root), preview) is None
+                    ):
                         _materialize(Path(root), preview, content, mode=0o444)
             if (
                 branch is not None
@@ -440,10 +474,7 @@ class Workspace:
                 worktree=root,
                 git_directory=directory,
                 planning=SourceSnapshot(commit=tip.revision, tree=tip.tree),
-                paths=tuple(
-                    BoundPath(path=path, digest=digest(data))
-                    for path, data in blobs.items()
-                ),
+                paths=tuple(bases),
                 attempt=request.attempt,
                 branch=branch,
                 source=source,
