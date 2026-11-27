@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 495
 title: "[Core C108] Inventory resident actions, evidence and restart"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/495"
 parent: 471
 children: []
 blocking: [497]
 blocked-by: []
 created: "2026-11-27T04:49:01Z"
-updated: "2026-11-27T11:00:32.129Z"
+updated: "2026-11-27T11:04:05.164Z"
 last-branch: "codex/core-495-legacy-resident-actions"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -40,3 +40,7 @@ Parent: #471. Core coordination: #2. State: Ready for Planning.
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **20** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #471 with scope entry **C108**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Done
+
+[PR #537](https://github.com/kburson/aitm/pull/537) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T11:04:01Z. Project #24 read back Done.
