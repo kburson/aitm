@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 233
 title: "[Core C80] Managed provider contracts and capability results"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/233"
 parent: 473
 children: []
 blocking: [234, 511]
 blocked-by: [14]
 created: "2026-11-11T15:58:14Z"
-updated: "2026-11-27T17:13:50.356Z"
+updated: "2026-11-27T17:18:26.054Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
