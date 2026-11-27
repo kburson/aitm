@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/3"
 parent: 470
 children: []
 blocking: [4, 5, 11, 64]
-blocked-by: [83]
+blocked-by: [83, 527]
 created: "2026-11-09T07:59:36Z"
 updated: "2026-11-27T06:38:08.398Z"
 last-branch: "codex/core-3-foundation"
@@ -111,3 +111,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Test checkpoint
 
 [Draft PR #526](https://github.com/kburson/aitm/pull/526) · [Delivery checklist](plan/delivery-checklist.md).
+
+The owner authorized [#527](https://github.com/kburson/aitm/issues/527) as the separate hosted Core CI prerequisite.
