@@ -1,0 +1,540 @@
+{
+  "design_publication": "4db85c4b31b8a091716bc97303cb3538a31a2a57",
+  "before": {
+    "1": {
+      "id": "I_kwDOVnNyI88AAAABdf6X6g",
+      "number": 1,
+      "state": "OPEN",
+      "parent": null,
+      "blockedBy": [],
+      "blocking": [],
+      "subIssues": [
+        2,
+        247,
+        470,
+        471,
+        472,
+        473,
+        474,
+        475,
+        476,
+        477,
+        478,
+        479,
+        480,
+        481,
+        482,
+        483,
+        484,
+        485,
+        486,
+        487,
+        488,
+        489,
+        490,
+        491,
+        492,
+        493,
+        522,
+        523,
+        524
+      ],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL4uc",
+        "values": {
+          "Status": "f75ad846",
+          "Priority": "90b2e477",
+          "Rank": 10.0
+        }
+      }
+    },
+    "51": {
+      "id": "I_kwDOVnNyI88AAAABdnPzOw",
+      "number": 51,
+      "state": "OPEN",
+      "parent": 487,
+      "blockedBy": [
+        15,
+        28,
+        36,
+        49
+      ],
+      "blocking": [
+        65,
+        66,
+        230,
+        520,
+        523
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL45w",
+        "values": {
+          "Status": "f75ad846",
+          "Rank": 10.0,
+          "Estimate": 3.0,
+          "Size": "9592a5a3",
+          "Priority": "0a877460"
+        }
+      }
+    },
+    "72": {
+      "id": "I_kwDOVnNyI88AAAABdnRGew",
+      "number": 72,
+      "state": "OPEN",
+      "parent": 491,
+      "blockedBy": [
+        70,
+        71
+      ],
+      "blocking": [
+        228,
+        229,
+        522,
+        523,
+        524,
+        525
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL4_I",
+        "values": {
+          "Status": "f75ad846",
+          "Rank": 50.0,
+          "Estimate": 2.5,
+          "Size": "9592a5a3",
+          "Priority": "0a877460"
+        }
+      }
+    },
+    "228": {
+      "id": "I_kwDOVnNyI88AAAABeVdL_g",
+      "number": 228,
+      "state": "OPEN",
+      "parent": 2,
+      "blockedBy": [
+        23,
+        53,
+        54,
+        55,
+        56,
+        72
+      ],
+      "blocking": [],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhH2aJY",
+        "values": {
+          "Status": "d220c89a",
+          "Rank": 10.0,
+          "Estimate": 3.75,
+          "Size": "9592a5a3"
+        }
+      }
+    },
+    "229": {
+      "id": "I_kwDOVnNyI88AAAABeVdS4Q",
+      "number": 229,
+      "state": "OPEN",
+      "parent": 2,
+      "blockedBy": [
+        23,
+        28,
+        34,
+        36,
+        72
+      ],
+      "blocking": [
+        523
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhH2aR8",
+        "values": {
+          "Status": "d220c89a",
+          "Rank": 20.0,
+          "Estimate": 3.75,
+          "Size": "9592a5a3"
+        }
+      }
+    },
+    "522": {
+      "id": "I_kwDOVnNyI88AAAABi9TMzg",
+      "number": 522,
+      "state": "OPEN",
+      "parent": 1,
+      "blockedBy": [
+        72,
+        525
+      ],
+      "blocking": [
+        523
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTd_I",
+        "values": {
+          "Status": "f75ad846"
+        }
+      }
+    },
+    "523": {
+      "id": "I_kwDOVnNyI88AAAABi9TNlQ",
+      "number": 523,
+      "state": "OPEN",
+      "parent": 1,
+      "blockedBy": [
+        51,
+        72,
+        229,
+        522
+      ],
+      "blocking": [],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTd_g",
+        "values": {
+          "Status": "f75ad846"
+        }
+      }
+    },
+    "524": {
+      "id": "I_kwDOVnNyI88AAAABi9YUbA",
+      "number": 524,
+      "state": "OPEN",
+      "parent": 1,
+      "blockedBy": [
+        72
+      ],
+      "blocking": [],
+      "subIssues": [
+        525
+      ],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTh8U",
+        "values": {
+          "Status": "f75ad846"
+        }
+      }
+    },
+    "525": {
+      "id": "I_kwDOVnNyI88AAAABi9YVDQ",
+      "number": 525,
+      "state": "OPEN",
+      "parent": 524,
+      "blockedBy": [
+        72
+      ],
+      "blocking": [
+        522
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTh8s",
+        "values": {
+          "Status": "f75ad846",
+          "Size": "9592a5a3",
+          "Estimate": 3.75
+        }
+      }
+    }
+  },
+  "after": {
+    "1": {
+      "id": "I_kwDOVnNyI88AAAABdf6X6g",
+      "number": 1,
+      "state": "OPEN",
+      "parent": null,
+      "blockedBy": [],
+      "blocking": [],
+      "subIssues": [
+        2,
+        247,
+        470,
+        471,
+        472,
+        473,
+        474,
+        475,
+        476,
+        477,
+        478,
+        479,
+        480,
+        481,
+        482,
+        483,
+        484,
+        485,
+        486,
+        487,
+        488,
+        489,
+        490,
+        491,
+        492,
+        493,
+        522,
+        523,
+        524
+      ],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL4uc",
+        "values": {
+          "Status": "f75ad846",
+          "Priority": "90b2e477",
+          "Rank": 10.0
+        }
+      }
+    },
+    "51": {
+      "id": "I_kwDOVnNyI88AAAABdnPzOw",
+      "number": 51,
+      "state": "OPEN",
+      "parent": 487,
+      "blockedBy": [
+        15,
+        28,
+        36,
+        49
+      ],
+      "blocking": [
+        65,
+        66,
+        230,
+        520,
+        523
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL45w",
+        "values": {
+          "Status": "f75ad846",
+          "Rank": 10.0,
+          "Estimate": 3.0,
+          "Size": "9592a5a3",
+          "Priority": "0a877460"
+        }
+      }
+    },
+    "72": {
+      "id": "I_kwDOVnNyI88AAAABdnRGew",
+      "number": 72,
+      "state": "OPEN",
+      "parent": 491,
+      "blockedBy": [
+        70,
+        71
+      ],
+      "blocking": [
+        228,
+        229,
+        522,
+        523,
+        524,
+        525
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHL4_I",
+        "values": {
+          "Status": "f75ad846",
+          "Rank": 50.0,
+          "Estimate": 2.5,
+          "Size": "9592a5a3",
+          "Priority": "0a877460"
+        }
+      }
+    },
+    "228": {
+      "id": "I_kwDOVnNyI88AAAABeVdL_g",
+      "number": 228,
+      "state": "OPEN",
+      "parent": 2,
+      "blockedBy": [
+        23,
+        53,
+        54,
+        55,
+        56,
+        72
+      ],
+      "blocking": [],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhH2aJY",
+        "values": {
+          "Status": "d220c89a",
+          "Rank": 10.0,
+          "Estimate": 3.75,
+          "Size": "9592a5a3"
+        }
+      }
+    },
+    "229": {
+      "id": "I_kwDOVnNyI88AAAABeVdS4Q",
+      "number": 229,
+      "state": "OPEN",
+      "parent": 2,
+      "blockedBy": [
+        23,
+        28,
+        34,
+        36,
+        72
+      ],
+      "blocking": [
+        523
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhH2aR8",
+        "values": {
+          "Status": "d220c89a",
+          "Rank": 20.0,
+          "Estimate": 3.75,
+          "Size": "9592a5a3"
+        }
+      }
+    },
+    "522": {
+      "id": "I_kwDOVnNyI88AAAABi9TMzg",
+      "number": 522,
+      "state": "OPEN",
+      "parent": 1,
+      "blockedBy": [
+        72,
+        525
+      ],
+      "blocking": [
+        523
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTd_I",
+        "values": {
+          "Status": "f75ad846",
+          "Rank": 260.0,
+          "Size": "6f8e12e4",
+          "Estimate": 18.5
+        }
+      }
+    },
+    "523": {
+      "id": "I_kwDOVnNyI88AAAABi9TNlQ",
+      "number": 523,
+      "state": "OPEN",
+      "parent": 1,
+      "blockedBy": [
+        51,
+        72,
+        229,
+        522
+      ],
+      "blocking": [],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTd_g",
+        "values": {
+          "Status": "f75ad846",
+          "Rank": 270.0,
+          "Size": "6f8e12e4",
+          "Estimate": 21.5
+        }
+      }
+    },
+    "524": {
+      "id": "I_kwDOVnNyI88AAAABi9YUbA",
+      "number": 524,
+      "state": "OPEN",
+      "parent": 1,
+      "blockedBy": [
+        72
+      ],
+      "blocking": [],
+      "subIssues": [
+        525
+      ],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTh8U",
+        "values": {
+          "Status": "f75ad846",
+          "Rank": 250.0,
+          "Size": "7b141a16",
+          "Estimate": 44.5
+        }
+      }
+    },
+    "525": {
+      "id": "I_kwDOVnNyI88AAAABi9YVDQ",
+      "number": 525,
+      "state": "OPEN",
+      "parent": 524,
+      "blockedBy": [
+        72
+      ],
+      "blocking": [
+        522
+      ],
+      "subIssues": [],
+      "project": {
+        "id": "PVTI_lAHOABCEY84Bq1hZzhMTh8s",
+        "values": {
+          "Status": "f75ad846",
+          "Size": "9592a5a3",
+          "Estimate": 3.75
+        }
+      }
+    }
+  },
+  "verified_at": "2026-11-27T06:20:53.280Z",
+  "reviews": {
+    "524": {
+      "review_id": "review-a9af7c6091f4f1719529a371c02f6f77",
+      "artifact": ".aitm/stories/005/524/design/github-extension-design.md",
+      "artifact_sha256": "dd7b26b28322ebd03211717d0e5f7b4bd46c5f79eebe219a7a881383768d113d",
+      "artifact_blob": "f88d8caa1c9e1cbc353a127e60e9bd6691f15f88",
+      "original_finalized_tip": "f031191fdf58acb57708518712bab0b02e9821d3",
+      "rounds": 3,
+      "manifest": ".aitm/stories/005/524/design/reviews/spec/2026-11-27-github-extension-design-review-a9af7c6091f4f1719529a371c02f6f77/review-a9af7c6091f4f1719529a371c02f6f77-review-manifest.md",
+      "reviewer_model": "claude-opus-5-5"
+    },
+    "522": {
+      "review_id": "review-da800297e0b0c147b91cbdf5f1aad338",
+      "artifact": ".aitm/stories/005/522/design/history-import-design.md",
+      "artifact_sha256": "5d414016baf1d3c68360808d831cdc95d7198f25856c44230ee5b183394a5109",
+      "artifact_blob": "5cac02dcdf9249ee8dc9628490f9690b11cf7947",
+      "original_finalized_tip": "125d2f22f580b0ebece15a92d10fe2c8f5029927",
+      "rounds": 2,
+      "manifest": ".aitm/stories/005/522/design/reviews/spec/2026-11-27-history-import-design-review-da800297e0b0c147b91cbdf5f1aad338/review-da800297e0b0c147b91cbdf5f1aad338-review-manifest.md",
+      "reviewer_model": "claude-opus-5-5"
+    },
+    "523": {
+      "review_id": "review-e3cc08fe8be7c89350666f9039583e47",
+      "artifact": ".aitm/stories/005/523/design/rubric-design.md",
+      "artifact_sha256": "282f7ac2895191588bd4a269b27cb31ac48d9f8a4949680b82c97fc72f970197",
+      "artifact_blob": "af48d426f0f66147dc84b9975018df8191c4362c",
+      "original_finalized_tip": "c90951694f62611b2ef9727eea26bd2f735e5f18",
+      "rounds": 2,
+      "manifest": ".aitm/stories/005/523/design/reviews/spec/2026-11-27-rubric-design-review-e3cc08fe8be7c89350666f9039583e47/review-e3cc08fe8be7c89350666f9039583e47-review-manifest.md",
+      "reviewer_model": "claude-opus-5-5"
+    }
+  },
+  "sizing": {
+    "524": [
+      250,
+      "XL",
+      44.5
+    ],
+    "522": [
+      260,
+      "Feature",
+      18.5
+    ],
+    "523": [
+      270,
+      "Feature",
+      21.5
+    ]
+  }
+}

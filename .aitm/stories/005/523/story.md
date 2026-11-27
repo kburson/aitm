@@ -10,9 +10,9 @@ children: []
 blocking: []
 blocked-by: [51, 72, 229, 522]
 created: "2026-11-27T05:59:08Z"
-updated: "2026-11-27T05:59:57.455Z"
+updated: "2026-11-27T06:20:53.280Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 21.5, "size": "Feature", "scope": "milestone refinement forecast"}
 priority: null
 origin: ".aitm/drafts/2026-11/20261108-1310-rubric"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/rubric-design.md"], "plan": [], "attachments": []}
@@ -37,3 +37,7 @@ Native blockers: [#51](https://github.com/kburson/aitm/issues/51), [#72](https:/
 ## Design
 
 [Draft design](design/rubric-design.md) · [Graduated draft](draft.md) · [Native readback](../../000/1/plan/2026-11-26-m7-m8-graduation.json). Size, estimate, and bounded child decomposition remain for refinement.
+
+## Reviewed sizing and delivery order
+
+**Rank 270 · Feature · 21.5 implementation agent-hours.** Installed adaptive estimator and fixture-qualified feedback pipeline. Real-data model activation has separate sufficiency and evaluation gates. [Claude Opus 5.5 XPR](design/reviews/spec/2026-11-27-rubric-design-review-e3cc08fe8be7c89350666f9039583e47/review-e3cc08fe8be7c89350666f9039583e47-review-manifest.md).

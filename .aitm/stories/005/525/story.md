@@ -40,3 +40,7 @@ Deliver the bounded read-only GitHub source adapter and capability proof require
 Proposed estimate **3.75 implementation agent-hours**, size **S**. This covers the narrow read contract, fixture and live receipt. Further legacy fields or the full history scan belong to a separate reviewed scope.
 
 [M2 design and source handoff](../524/design/github-extension-design.md#read-only-source-access-for-m7).
+
+## Reviewed independent landing and M7 intake
+
+Qualify and land the source-only capability and exact compatible wheel independently after #72. M7 #522 checks its release and qualified live receipt before corpus capture. Use a versioned selection predicate with fixture and approved bounded live input so qualification does not wait for M7 policy. [Reviewed M2 handoff](https://github.com/kburson/aitm/blob/4db85c4b31b8a091716bc97303cb3538a31a2a57/.aitm/stories/005/524/design/github-extension-design.md#delivery-handoff-and-sequencing).

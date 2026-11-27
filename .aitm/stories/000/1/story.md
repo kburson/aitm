@@ -86,3 +86,7 @@ The dependency direction is M7 to M8. M7 publishes the corpus under a neutral co
 ## M2 graduation and M7 source access
 
 [M2 #524](../../005/524/story.md) is under #1, with a [draft design](../../005/524/design/github-extension-design.md). Its bounded source-access child [#525](https://github.com/kburson/aitm/issues/525) qualifies independently and is the native source-access blocker for M7 [#522](https://github.com/kburson/aitm/issues/522). [#72](https://github.com/kburson/aitm/issues/72) remains the Core release prerequisite. [Graduation and dependency readback](plan/2026-11-27-m2-graduation.json).
+
+## M2, M7 and M8 reviewed sizing
+
+[Accepted XPRs and implementation order](plan/2026-11-27-m2-m7-m8-xpr-and-sizing.md) records Rank 250 for M2 #524, 260 for M7 #522, and 270 for M8 #523. #525 can land as soon as its Core release prerequisite and source qualification are satisfied.
