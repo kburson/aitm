@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 11
 title: "[Core C06] Planning history validation and worktree exclusion"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/11"
 parent: 472
 children: []
 blocking: [12, 13, 18, 20, 21, 48, 53]
 blocked-by: [3, 10]
 created: "2026-11-09T08:00:10Z"
-updated: "2026-11-27T13:19:06.422Z"
+updated: "2026-11-27T13:21:36.581Z"
 last-branch: "codex/core-11-planning-gate"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -104,3 +104,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **30** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #472 with scope entry **C06**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Done
+
+[PR #543](https://github.com/kburson/aitm/pull/543) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T13:21:33Z. Project #24 read back Done.
