@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 4
 title: "[Core C02] Event envelopes and reducer dispatch invariants"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/4"
 parent: 470
 children: []
 blocking: [6, 7, 8, 9, 14, 16, 23, 28, 29]
 blocked-by: [3]
 created: "2026-11-09T07:59:41Z"
-updated: "2026-11-27T08:14:26.695Z"
+updated: "2026-11-27T08:21:56.695Z"
 last-branch: "codex/core-4-event-envelopes"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
@@ -110,3 +110,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 [Accepted pickup review](plan/2026-11-27-pickup-review.md).
 
 [Draft PR #530](https://github.com/kburson/aitm/pull/530) · [Delivery checklist](plan/delivery-checklist.md).
+
+## Done
+
+[PR #530](https://github.com/kburson/aitm/pull/530) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T08:21:53Z. Project #24 read back Done.
