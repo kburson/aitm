@@ -8,7 +8,10 @@ from sys import stderr, stdin
 from uuid import uuid4
 
 from aitm_core.models.common import CommandResult, LocalOutcome
+from aitm_core.services import ServicePorts
 from aitm_core.setup.adoption import AdoptionProposal, prepare_replacement, reconfigure
+from aitm_core.setup.doctor import InstallationDoctor
+from aitm_core.setup.hooks import GitHooks
 from aitm_core.setup.init import (
     InitRequest,
     _active_installation,
@@ -102,15 +105,16 @@ def handle(_route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult
             return prepare_replacement(request, options.replacement_branch).command
         if options.reconfigure:
             return reconfigure(AdoptionProposal(request)).command
+        ports = ServicePorts(init_hooks=GitHooks(), init_doctor=InstallationDoctor())
         existing = adopt_committed(
-            request, check_branch=options.planning_branch is not None
+            request, check_branch=options.planning_branch is not None, ports=ports
         )
         if existing is not None:
             return existing.command
         if remote is not None and request.planning_remote is None:
             request = replace(request, planning_remote=remote)
         proposal = prepare_init(request)
-        return resume_init(request, proposal.operation_id).command
+        return resume_init(request, proposal.operation_id, ports).command
     except (
         argparse.ArgumentError,
         GitCommandError,
