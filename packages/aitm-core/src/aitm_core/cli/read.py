@@ -28,6 +28,8 @@ class ReadEvidence(BaseModel):
     tree: str
     code_freshness: str
     shared_freshness: str
+    shared_commit: str | None
+    matches_shared_tip: bool | None
     source: str
     rows: tuple[IndexRow, ...] = ()
     context: ContextPacket | None = None
@@ -106,18 +108,28 @@ def _read(
     search = " ".join(options.terms) if action == "search" else None
     result = query(view, Query(text=search, story=story, stories_only=action == "list"))
     shared = views.shared.status.value if views.shared is not None else "unknown"
+    shared_commit = views.shared.valid_tip if views.shared is not None else None
+    matches_shared_tip = (
+        result.commit == shared_commit if shared_commit is not None else None
+    )
     details = ReadEvidence(
         commit=result.commit,
         tree=result.tree,
         source=result.source,
         code_freshness=views.code_freshness.value,
         shared_freshness=shared,
+        shared_commit=shared_commit,
+        matches_shared_tip=matches_shared_tip,
         rows=result.rows,
     )
     freshness = (
         f"Pinned planning tree {result.tree} at {result.commit}.",
         f"Code freshness {details.code_freshness}. Shared planning {shared}.",
     )
+    if matches_shared_tip is False:
+        freshness += (
+            f"This local view differs from the last validated shared commit {shared_commit}.",
+        )
     outcome = LocalOutcome.COMPLETED
     if action == "explain" and explanation is None:
         outcome = LocalOutcome.UNAVAILABLE

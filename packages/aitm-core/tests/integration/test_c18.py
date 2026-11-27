@@ -242,3 +242,14 @@ exec {quote(git_executable)} "$@"
     assert log.read_text().splitlines() and set(log.read_text().splitlines()) == {
         "ls-remote"
     }
+
+    shared = installation.repository.tip()
+    unpublished = installation.repository.create_commit(
+        shared, {IDEA: b"# Unpublished nectarine idea"}, "unpublished-idea"
+    )
+    git(topology.local, "update-ref", PLANNING, unpublished.revision, shared.revision)
+    diverged = invoke("search", "nectarine", "--refresh")
+    assert diverged["read"]["tree"] == unpublished.tree
+    assert diverged["read"]["shared_freshness"] == "verified"
+    assert diverged["read"]["shared_commit"] == shared.revision
+    assert diverged["read"]["matches_shared_tip"] is False
