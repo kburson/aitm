@@ -16,3 +16,7 @@ Attempt 1. Implementer and closure owner are this Codex delivery agent. [Accepte
 The trusted verifier held on a changed gate-control input. The root workspace `pyproject.toml` is part of C01 and is classified as CI configuration. Re-run the verifier after an independent source verdict on the same exact tree and a recorded coordinator disposition. This is separate from hosted Core coverage.
 
 PR #526 remains draft and #3 remains in Test. The accepted pickup requires applicable hosted proof before draft removal and the Grok 4.7 source SAR. A separate Core validation prerequisite or a change to the reviewed test basis requires a scope decision.
+
+## Separate hosted Core prerequisite
+
+The owner authorized [#527](https://github.com/kburson/aitm/issues/527). Its reviewed workflow landed through [PR #528](https://github.com/kburson/aitm/pull/528) in `34fd11588a1fecf3d04f16a311f1be9bd2f33c3b`. The story branch merged that integration base in `9b34623e`. The package and workspace changes are identical to the previous revision. Fresh repository CI and the new Core Python job are required for this updated candidate.
