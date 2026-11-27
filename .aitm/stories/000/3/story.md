@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 3
 title: "[Core C01] Package foundation and command result contract"
 kind: "story"
-state: plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/3"
 parent: 470
 children: []
 blocking: [4, 5, 11, 64]
 blocked-by: [83]
 created: "2026-11-09T07:59:36Z"
-updated: "2026-11-27T06:32:21.651Z"
-last-branch: "planning"
+updated: "2026-11-27T06:33:41.044Z"
+last-branch: "codex/core-3-foundation"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
@@ -103,3 +103,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Planning** · rank **10** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #470 with scope entry **C01**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Develop pickup
+
+[Accepted pickup](plan/2026-11-27-pickup.md) · [Grok 4.7 review](plan/2026-11-27-pickup-review.md).
