@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 3
 title: "[Core C01] Package foundation and command result contract"
 kind: "story"
-state: "backlog"
+state: plan
 issue: "https://github.com/kburson/aitm/issues/3"
 parent: 470
 children: []
 blocking: [4, 5, 11, 64]
 blocked-by: [83]
 created: "2026-11-09T07:59:36Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:21.651Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -20,6 +20,7 @@ files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [],
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C01", "parent": 470}
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":470,"design_sources":[2],"scope_entry":"C01","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C01] Package foundation and command result contract
@@ -98,3 +99,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "fa26bded4a3b931eaa626d634fa6b810d99d00265582df24ec1485a4dd27ba8c"
 }
 ```
+
+## Core kickoff — 2026-11-27
+
+**Planning** · rank **10** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #470 with scope entry **C01**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 36
 title: "[Core C27] Attempts, JIT coverage and estimates"
 kind: "story"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/36"
 parent: 478
 children: []
 blocking: [37, 40, 51, 57, 59, 65, 75, 76, 229, 501]
 blocked-by: [21, 28, 35]
 created: "2026-11-09T08:01:58Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -20,6 +20,7 @@ files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [],
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C27", "parent": 478}
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":478,"design_sources":[2],"scope_entry":"C27","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C27] Attempts, JIT coverage and estimates
@@ -99,3 +100,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "61806d99c8f445c5dc2a7f98a409fd5048aa43b98f0b03b101532a3f9b1f452e"
 }
 ```
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **10** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #478 with scope entry **C27**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

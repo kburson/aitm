@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 35
 title: "[Core C26] CAS review import and exact-content acceptance"
 kind: "story"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/35"
 parent: 477
 children: []
 blocking: [36, 37, 55, 65, 75, 76, 478, 479, 482, 486, 487, 501, 502]
 blocked-by: [15, 22, 33, 34]
 created: "2026-11-09T08:01:54Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -20,6 +20,7 @@ files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [],
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C26", "parent": 477}
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":477,"design_sources":[2],"scope_entry":"C26","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C26] CAS review import and exact-content acceptance
@@ -99,3 +100,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "37d70ab81afd753bf33d179d4cdd3eb4353abe8df558ca0c529fea062ec6a264"
 }
 ```
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **50** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #477 with scope entry **C26**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 481
 title: "[Epic] Core — Managed local verification"
 kind: "epic"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/481"
 parent: 1
 children: [42, 43, 44, 505]
 blocking: []
 blocked-by: [15, 31, 500]
 created: "2026-11-27T04:48:48Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 14.5, "size": "Feature"}
@@ -20,6 +20,7 @@ plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df01
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":1,"design_sources":[1,2],"scope_entry":"EP12","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Epic] Core — Managed local verification
@@ -30,7 +31,7 @@ trips: []
 
 Run exact-candidate baseline and selector fixtures in captured and qualified contained environments.
 
-Parent: #1. Core coordination: #2. State: Backlog.
+Parent: #1. Core coordination: #2. State: Ready for Planning.
 
 ## Delivery
 
@@ -46,3 +47,7 @@ Required upstream trunk receipts: #15, #31, #500.
 - #505 · C95 · 4 h
 
 Estimate: **14.5 implementation agent-hours**, including verification and review. [Reviewed implementation plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Accepted delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md).
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **120** · **P1/Feature** · **14.5 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **EP12**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

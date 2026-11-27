@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 22
 title: "[Core C17] Allowlisted sync and authored conflict resolution"
 kind: "story"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/22"
 parent: 475
 children: []
 blocking: [27, 35, 37, 40, 50, 55, 60, 74, 500]
 blocked-by: [15, 17, 20, 21]
 created: "2026-11-09T08:00:58Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -20,6 +20,7 @@ files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [],
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C17", "parent": 475}
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":475,"design_sources":[2],"scope_entry":"C17","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C17] Allowlisted sync and authored conflict resolution
@@ -99,3 +100,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "928612fd62de40a6677080136505c2b3cb8cb5686a9b0b3fb44ad2e44786f0b3"
 }
 ```
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **40** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #475 with scope entry **C17**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

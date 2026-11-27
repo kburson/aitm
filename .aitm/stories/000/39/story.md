@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 39
 title: "[Core C30] Expansion reservation and resolution"
 kind: "story"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/39"
 parent: 480
 children: []
 blocking: [40, 59, 60, 61]
 blocked-by: [25, 26, 27, 28, 37, 38]
 created: "2026-11-09T08:02:10Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -20,6 +20,7 @@ files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [],
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C30", "parent": 480}
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":480,"design_sources":[2],"scope_entry":"C30","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C30] Expansion reservation and resolution
@@ -100,3 +101,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "174c7566f6f401881b6ebc0ba56c94dedbe04f55f1e9c4408ad19c0d744fa2fe"
 }
 ```
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **10** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #480 with scope entry **C30**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

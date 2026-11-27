@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 508
 title: "[Core C96] Provision an integration resource in Plan"
 kind: "story"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/508"
 parent: 485
 children: []
 blocking: [240, 486, 489, 490, 513]
 blocked-by: [63, 237, 502]
 created: "2026-11-27T04:49:13Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -20,6 +20,7 @@ plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df01
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":485,"design_sources":[2],"scope_entry":"C96","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C96] Provision an integration resource in Plan
@@ -28,7 +29,7 @@ trips: []
 
 ## Current scope and parent
 
-Parent: #485. Core coordination: #2. State: Backlog.
+Parent: #485. Core coordination: #2. State: Ready for Planning.
 
 `src/aitm_core/managed/integration_resource.py` · `prepare_integration_resource(request) -> ResourceResult`. `tests/integration/test_c96.py` proves the qualified owner can provision an exact Plan-bound resource without child deliveries or an attempt clock, safely unlock child pickup, and reconcile the same role/claim on restart.
 
@@ -37,3 +38,7 @@ Parent: #485. Core coordination: #2. State: Backlog.
 **Estimate:** 4 implementation agent-hours including verification and review. **Blocked by:** #63, #237, #502.
 
 [Reviewed implementation plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Accepted delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md). The parent plan does not establish this child’s Design, Plan, JIT applicability, or implementation authority.
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **60** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #485 with scope entry **C96**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

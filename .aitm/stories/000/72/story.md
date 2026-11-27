@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 72
 title: "[Core C60] Publish and qualify the exact released core"
 kind: "story"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/72"
 parent: 491
 children: []
 blocking: [228, 229, 522, 523, 524, 525]
 blocked-by: [70, 71]
 created: "2026-11-09T08:04:35Z"
-updated: "2026-11-27T06:05:49.247Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
@@ -20,6 +20,7 @@ files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [],
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C60", "parent": 491}
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":491,"design_sources":[2],"scope_entry":"C60","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C60] Publish and qualify the exact released core
@@ -101,3 +102,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "2aa13ab9c3838ef90ea7f847503cf2b8920a44fedb7a5c3c45886bba038cf172"
 }
 ```
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **50** · **P1/S** · **2.5 agent-hours**. Design accepted for this manual workflow through issue #491 with scope entry **C60**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

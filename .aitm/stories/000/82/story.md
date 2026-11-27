@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 82
 title: "[Core C75] Plan-entry graduation and provenance reconciliation"
 kind: "story"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/82"
 parent: 484
 children: []
 blocking: [66, 69, 235]
 blocked-by: [26, 27, 37, 40, 58, 64, 75, 79, 80]
 created: "2026-11-09T13:42:14Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -20,6 +20,7 @@ plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df01
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":484,"design_sources":[2],"scope_entry":"C75","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C75] Plan-entry graduation and provenance reconciliation
@@ -94,3 +95,7 @@ This leaf supplies a prerequisite interface to the managed lifecycle amendment.
 New dependent leaves [C82 / #235](../../002/235/story.md).
 
 [Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **50** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #484 with scope entry **C75**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

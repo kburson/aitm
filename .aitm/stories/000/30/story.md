@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 30
 title: "[Core C33] Private immutable input capture"
 kind: "story"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/30"
 parent: 480
 children: []
 blocking: [31, 52]
 blocked-by: [12, 21]
 created: "2026-11-09T08:01:32Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.0, "size": "S"}
@@ -20,6 +20,7 @@ files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [],
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C33", "parent": 480}
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":480,"design_sources":[2],"scope_entry":"C33","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C33] Private immutable input capture
@@ -97,3 +98,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "af7bbec9ca0546a4bc42b1f2838b17cd6e23d5f96c9e01f93589914fdf246116"
 }
 ```
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **40** · **P1/S** · **3 agent-hours**. Design accepted for this manual workflow through issue #480 with scope entry **C33**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

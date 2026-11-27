@@ -3,18 +3,18 @@ schema: aitm.story/v0
 id: 2
 title: "[Epic] aitm-core: story store, state machine, CLI, extension API"
 kind: epic
-state: refine
+state: plan
 issue: https://github.com/kburson/aitm/issues/2
 parent: 1
 children: [228, 229]
 blocking: [247]
 blocked-by: [456]
 created: 2026-11-08T19:24:20Z
-updated: "2026-11-27T05:46:53.142Z"
+updated: "2026-11-27T06:32:21.651Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: {"agent-hours": 4, "size": "S", "scope": "direct coordination"}
-priority: P1
+priority: "P3"
 original-estimate: { agent-hours: 180, size: XL, priority: P1, source: refinement.md }
 origin: .aitm/drafts/2026-11/20261108-1310-core
 files:
@@ -25,6 +25,7 @@ files:
   attachments: []
 expansions: []
 trips: []
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":1,"design_sources":[1],"scope_entry":"#2","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Epic] aitm-core: story store, state machine, CLI, extension API
@@ -138,3 +139,7 @@ Planning and reconciliation evidence is recorded in [the planning effort receipt
 | Native reconciliation verifier | Codex / gpt-6.2-sol | 577,152 | 44,299 | 4,282 | $0.189133 |
 | Design XPR reviewer | Claude / claude-opus-5-5 | 837,888 | 89,357 | 14,759 | $1.177486 |
 | Plan XPR reviewer | Claude / claude-opus-5-5 | 1,398,439 | 112,977 | 20,889 | $1.601132 |
+
+## Core kickoff — 2026-11-27
+
+**Planning** · rank **10** · **P3/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **#2**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md). Coordination is P3 on Project #24. The earlier planning header showed P1. The Core delivery slices and timing follow-ups retain P1.

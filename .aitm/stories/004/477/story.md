@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 477
 title: "[Epic] Core — Design and plan review evidence"
 kind: "epic"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/477"
 parent: 1
 children: [29, 32, 33, 34, 35]
 blocking: []
 blocked-by: [8, 15, 23, 500]
 created: "2026-11-27T04:48:45Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 15.0, "size": "Feature"}
@@ -20,6 +20,7 @@ plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df01
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":1,"design_sources":[1,2],"scope_entry":"EP08","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Epic] Core — Design and plan review evidence
@@ -30,7 +31,7 @@ trips: []
 
 Reconstruct, import, and invalidate actual reviewed document bytes under the applicable policy.
 
-Parent: #1. Core coordination: #2. State: Backlog.
+Parent: #1. Core coordination: #2. State: Ready for Planning.
 
 ## Delivery
 
@@ -47,3 +48,7 @@ Required upstream trunk receipts: #8, #15, #23, #500.
 - #35 · C26 · 4 h
 
 Estimate: **15 implementation agent-hours**, including verification and review. [Reviewed implementation plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Accepted delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md).
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **80** · **P1/Feature** · **15 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **EP08**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

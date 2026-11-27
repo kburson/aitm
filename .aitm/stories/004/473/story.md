@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 473
 title: "[Epic] Core — Extension contracts and owned ingress"
 kind: "epic"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/473"
 parent: 1
 children: [14, 15, 28, 233, 498, 499]
 blocking: []
 blocked-by: [8, 13]
 created: "2026-11-27T04:48:40Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 21.5, "size": "Feature"}
@@ -20,6 +20,7 @@ plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df01
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":1,"design_sources":[1,2],"scope_entry":"EP04","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Epic] Core — Extension contracts and owned ingress
@@ -30,7 +31,7 @@ trips: []
 
 Exercise an installed-interface fixture for safe provider and activity records; validate ownership and keep unsupported activity unqualified.
 
-Parent: #1. Core coordination: #2. State: Backlog.
+Parent: #1. Core coordination: #2. State: Ready for Planning.
 
 ## Delivery
 
@@ -48,3 +49,7 @@ Required upstream trunk receipts: #8, #13.
 - #499 · C92 · 3.5 h
 
 Estimate: **21.5 implementation agent-hours**, including verification and review. [Reviewed implementation plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Accepted delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md).
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **40** · **P1/Feature** · **21.5 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **EP04**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

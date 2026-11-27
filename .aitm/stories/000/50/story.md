@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 50
 title: "[Core C43] Durable resident-action queue and replay"
 kind: "story"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/50"
 parent: 483
 children: []
 blocking: [58, 63, 64, 65, 234, 509]
 blocked-by: [14, 17, 22, 37, 40, 42, 74]
 created: "2026-11-09T08:02:58Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -20,6 +20,7 @@ files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [],
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C43", "parent": 483}
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":483,"design_sources":[2],"scope_entry":"C43","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C43] Durable resident-action queue and replay
@@ -110,3 +111,7 @@ The current planning estimate is **3.5 implementation agent-hours** (P1/S). The 
 New dependent leaves [C81 / #234](../../002/234/story.md).
 
 [Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **10** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #483 with scope entry **C43**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

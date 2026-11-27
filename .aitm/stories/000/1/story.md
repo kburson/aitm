@@ -3,14 +3,14 @@ schema: aitm.story/v0
 id: 1
 title: "[Epic] aitm product: Python rewrite of ai-task-manager"
 kind: epic
-state: backlog
+state: refine
 issue: https://github.com/kburson/aitm/issues/1
 parent: null
 children: [2, 247, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 522, 523, 524]
 blocking: []
 blocked-by: []
 created: 2026-11-08T19:24:00Z
-updated: "2026-11-27T06:05:49.247Z"
+updated: "2026-11-27T06:29:41.968Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: { agent-hours: null, size: null }
@@ -90,3 +90,7 @@ The dependency direction is M7 to M8. M7 publishes the corpus under a neutral co
 ## M2, M7 and M8 reviewed sizing
 
 [Accepted XPRs and implementation order](plan/2026-11-27-m2-m7-m8-xpr-and-sizing.md) records Rank 250 for M2 #524, 260 for M7 #522, and 270 for M8 #523. #525 can land as soon as its Core release prerequisite and source qualification are satisfied.
+
+## Core kickoff — 2026-11-27
+
+Core delivery starts with #2 and the ranked Core slices. [Reviewed Core kickoff](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

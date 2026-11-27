@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 56
 title: "[Core C51] Real review/migration and second-clone qualification"
 kind: "story"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/56"
 parent: 486
 children: []
 blocking: [66, 68, 69, 228, 487, 491]
 blocked-by: [23, 55]
 created: "2026-11-09T08:03:24Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -20,6 +20,7 @@ files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [],
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C51", "parent": 486}
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":486,"design_sources":[2],"scope_entry":"C51","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C51] Real review/migration and second-clone qualification
@@ -100,3 +101,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "88abe31c6df678c12697ba4ee90dc16ef49d87f93e294007d089d516f6e1413e"
 }
 ```
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **60** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #486 with scope entry **C51**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 479
 title: "[Epic] Core — Configured state transitions"
 kind: "epic"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/479"
 parent: 1
 children: [37, 38, 76, 503, 504]
 blocking: []
 blocked-by: [15, 23, 27, 35, 497, 500, 502]
 created: "2026-11-27T04:48:46Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 17.5, "size": "Feature"}
@@ -20,6 +20,7 @@ plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df01
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":1,"design_sources":[1,2],"scope_entry":"EP10","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Epic] Core — Configured state transitions
@@ -30,7 +31,7 @@ trips: []
 
 Load two differently shaped workflows and prove typed guards, directives, terminal routes and split/recovery destinations.
 
-Parent: #1. Core coordination: #2. State: Backlog.
+Parent: #1. Core coordination: #2. State: Ready for Planning.
 
 ## Delivery
 
@@ -47,3 +48,7 @@ Required upstream trunk receipts: #15, #23, #27, #35, #497, #500, #502.
 - #504 · C105 · 2 h
 
 Estimate: **17.5 implementation agent-hours**, including verification and review. [Reviewed implementation plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Accepted delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md).
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **100** · **P1/Feature** · **17.5 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **EP10**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).

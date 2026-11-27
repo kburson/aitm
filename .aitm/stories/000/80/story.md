@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 80
 title: "[Core C79] Test and Review exit composites with atomic signoff"
 kind: "story"
-state: "backlog"
+state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/80"
 parent: 484
 children: []
 blocking: [61, 62, 65, 66, 81, 82, 238, 239, 510]
 blocked-by: [42, 45, 46, 49, 63, 79, 497, 503, 506, 507]
 created: "2026-11-09T13:42:11Z"
-updated: "2026-11-27T05:03:04.452Z"
+updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -20,6 +20,7 @@ plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df01
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
 expansions: []
 trips: []
+design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":484,"design_sources":[2],"scope_entry":"C79","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
 ---
 
 # [Core C79] Test and Review exit composites with atomic signoff
@@ -96,3 +97,7 @@ The current planning estimate is **3.5 implementation agent-hours** (P1/S). The 
 New dependent leaves [C85 / #238](../../002/238/story.md), [C86 / #239](../../002/239/story.md).
 
 [Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.
+
+## Core kickoff — 2026-11-27
+
+**Ready for Planning** · rank **40** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #484 with scope entry **C79**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
