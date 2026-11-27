@@ -1,5 +1,7 @@
 # Product delivery dependencies and rank correction
 
+The ranks below record the initial correction. See [current product ranks](2026-11-27-product-rank-scale.md) for the subsequent scale reset.
+
 Project #24, read back at `2026-11-27T14:41:12.161Z`. Solid arrows show delivery order through
 verified native dependencies or the owning slice. The dashed arrow shows
 the hosted Viewer contract in the accepted plan. Green means Done and amber

@@ -54,4 +54,4 @@ All items are in Backlog. Each needs its own reviewed and accepted JIT implement
 
 ## Dependency rank correction
 
-Project #24 rank **251**. Current status **Backlog**. See the [product dependency map](../../000/1/plan/2026-11-27-dependency-rank-correction.md) for the verified prerequisites.
+Project #24 rank **270**. Current status **Backlog**. See the [product dependency map](../../000/1/plan/2026-11-27-product-rank-scale.md) for the verified prerequisites.

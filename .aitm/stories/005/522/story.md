@@ -40,4 +40,4 @@ Source access is gated on the qualified read-only adapter and handoff receipt fr
 
 ## Reviewed sizing and delivery order
 
-**Rank 260 · Feature · 18.5 implementation agent-hours.** Validated legacy corpus and handoff to #523. The provider adapter and rubric work have their own estimates. [Claude Opus 5.5 XPR](design/reviews/spec/2026-11-27-history-import-design-review-da800297e0b0c147b91cbdf5f1aad338/review-da800297e0b0c147b91cbdf5f1aad338-review-manifest.md).
+**Rank 280 · Feature · 18.5 implementation agent-hours.** Validated legacy corpus and handoff to #523. The provider adapter and rubric work have their own estimates. [Claude Opus 5.5 XPR](design/reviews/spec/2026-11-27-history-import-design-review-da800297e0b0c147b91cbdf5f1aad338/review-da800297e0b0c147b91cbdf5f1aad338-review-manifest.md).

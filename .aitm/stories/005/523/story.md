@@ -40,4 +40,4 @@ Native blockers: [#51](https://github.com/kburson/aitm/issues/51), [#72](https:/
 
 ## Reviewed sizing and delivery order
 
-**Rank 270 · Feature · 21.5 implementation agent-hours.** Installed adaptive estimator and fixture-qualified feedback pipeline. Real-data model activation has separate sufficiency and evaluation gates. [Claude Opus 5.5 XPR](design/reviews/spec/2026-11-27-rubric-design-review-e3cc08fe8be7c89350666f9039583e47/review-e3cc08fe8be7c89350666f9039583e47-review-manifest.md).
+**Rank 290 · Feature · 21.5 implementation agent-hours.** Installed adaptive estimator and fixture-qualified feedback pipeline. Real-data model activation has separate sufficiency and evaluation gates. [Claude Opus 5.5 XPR](design/reviews/spec/2026-11-27-rubric-design-review-e3cc08fe8be7c89350666f9039583e47/review-e3cc08fe8be7c89350666f9039583e47-review-manifest.md).

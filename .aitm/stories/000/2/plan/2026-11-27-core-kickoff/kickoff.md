@@ -22,4 +22,4 @@ The implementation plan and its crosswalk were accepted in XPR round two at `798
 
 ## Dependency rank correction
 
-The rank and Planning status recorded at kickoff were superseded by the [product dependency audit](../../../1/plan/2026-11-27-dependency-rank-correction.md). Use rank 221 and wait for the six owning delivery epics before resuming #2. The reviewed coordination scope and #247 handoff requirements still apply.
+The rank and Planning status recorded at kickoff were superseded by the [current product rank map](../../../1/plan/2026-11-27-product-rank-scale.md). Use rank 230 and wait for the six owning delivery epics before resuming #2. The reviewed coordination scope and #247 handoff requirements still apply.

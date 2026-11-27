@@ -34,4 +34,4 @@ Deliver aitm-github for the released Core. The scoped read-only adapter [#525](h
 
 ## Reviewed sizing and delivery order
 
-**Rank 250 · XL · 44.5 implementation agent-hours.** Aggregate provider work, including #525 once. Source access can land before the remaining M2 capabilities. [Claude Opus 5.5 XPR](design/reviews/spec/2026-11-27-github-extension-design-review-a9af7c6091f4f1719529a371c02f6f77/review-a9af7c6091f4f1719529a371c02f6f77-review-manifest.md).
+**Rank 260 · XL · 44.5 implementation agent-hours.** Aggregate provider work, including #525 once. Source access can land before the remaining M2 capabilities. [Claude Opus 5.5 XPR](design/reviews/spec/2026-11-27-github-extension-design-review-a9af7c6091f4f1719529a371c02f6f77/review-a9af7c6091f4f1719529a371c02f6f77-review-manifest.md).

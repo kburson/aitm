@@ -64,7 +64,7 @@ So that state, timing and evidence are recorded by the tool, never repaired by h
 
 ## Refinement
 
-**Current refinement.** #2’s direct coordination scope is size **S**, estimated at **4 agent-hours**, at **Rank 221**. [Sizing basis](2026-11-26-coordination-and-follow-up-refinement.md). The **386.5 implementation agent-hours** are the delivery total for 110 stories in 22 sibling mini-epics under #1. The two direct children, #228 and #229, are post-release timing follow-ups with their own **7.5 h** combined estimate. [Accepted delivery ledger](plan/2026-11-26-core-mini-epic-ledger.md) · [Historical rollup and initial Project readback](2026-11-26-refinement-refresh.md).
+**Current refinement.** #2’s direct coordination scope is size **S**, estimated at **4 agent-hours**, at **Rank 230**. [Sizing basis](2026-11-26-coordination-and-follow-up-refinement.md). The **386.5 implementation agent-hours** are the delivery total for 110 stories in 22 sibling mini-epics under #1. The two direct children, #228 and #229, are post-release timing follow-ups with their own **7.5 h** combined estimate. [Accepted delivery ledger](plan/2026-11-26-core-mini-epic-ledger.md) · [Historical rollup and initial Project readback](2026-11-26-refinement-refresh.md).
 
 The original **180 h / XL / P1** Refine estimate and its earlier scope remain historical. [Initial rationale](refinement.md).
 
@@ -146,4 +146,4 @@ Planning and reconciliation evidence is recorded in [the planning effort receipt
 
 ## Dependency rank correction
 
-Project #24 rank **221**. Current status **Ready for Planning**. See the [product dependency map](../../000/1/plan/2026-11-27-dependency-rank-correction.md) for the verified prerequisites.
+Project #24 rank **230**. Current status **Ready for Planning**. See the [product dependency map](../../000/1/plan/2026-11-27-product-rank-scale.md) for the verified prerequisites.
