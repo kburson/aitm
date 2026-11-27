@@ -84,40 +84,79 @@ class Publisher:
             self._request_ref(operation.operation_id), oid.decode().strip()
         )
 
+    def retain_supersession(
+        self, original: Operation, replacement: Operation, retained_revision: str
+    ) -> None:
+        """Link exact requests beside the replacement without altering its bytes."""
+        self.retain_request(replacement)
+        lineage = dumps(
+            {
+                "schema": "aitm.publication-supersession/v1",
+                "supersedes": original.operation_id,
+                "original_request": original.request_digest,
+                "retained_revision": retained_revision,
+                "replacement": replacement.operation_id,
+                "replacement_request": replacement.request_digest,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        oid = self.repository._git("hash-object", "-w", "--stdin", data=lineage)
+        self._retain_ref(
+            self._lineage_ref(replacement.operation_id), oid.decode().strip()
+        )
+
+    def _lineage_ref(self, identity: str) -> str:
+        return self._request_ref(identity).replace(
+            "/publication/", "/publication-lineage/", 1
+        )
+
     def request(self, identity: str) -> Operation:
-        raw = self.repository._git("cat-file", "blob", self._request_ref(identity))
-        wire = loads(raw)
-        wire["intent"]["payload"] = b64decode(
-            wire["intent"]["payload"], altchars=b"-_", validate=True
-        )
-        for write in wire["change"]["writes"]:
-            if write["content"] is not None:
-                write["content"] = b64decode(
-                    write["content"], altchars=b"-_", validate=True
-                )
-        for event in wire["change"]["events"]:
-            event["records"] = tuple(
-                b64decode(record, altchars=b"-_", validate=True)
-                for record in event["records"]
+        try:
+            raw = self.repository._git("cat-file", "blob", self._request_ref(identity))
+            wire = loads(raw)
+            wire["intent"]["payload"] = b64decode(
+                wire["intent"]["payload"], altchars=b"-_", validate=True
             )
-        for name in ("read_set", "writes", "events"):
-            wire["change"][name] = tuple(wire["change"][name])
-        wire["intent"]["related_preconditions"] = tuple(
-            wire["intent"]["related_preconditions"]
-        )
-        wire["guards"] = tuple(wire["guards"])
-        wire["pending_actions"] = tuple(wire["pending_actions"])
-        operation = Operation.model_validate(wire, strict=False)
-        if operation.operation_id != identity:
-            raise ReplayConflict("retained publication request names another operation")
-        return operation
+            for write in wire["change"]["writes"]:
+                if write["content"] is not None:
+                    write["content"] = b64decode(
+                        write["content"], altchars=b"-_", validate=True
+                    )
+            for event in wire["change"]["events"]:
+                event["records"] = tuple(
+                    b64decode(record, altchars=b"-_", validate=True)
+                    for record in event["records"]
+                )
+            for name in ("read_set", "writes", "events"):
+                wire["change"][name] = tuple(wire["change"][name])
+            wire["intent"]["related_preconditions"] = tuple(
+                wire["intent"]["related_preconditions"]
+            )
+            wire["guards"] = tuple(wire["guards"])
+            wire["pending_actions"] = tuple(wire["pending_actions"])
+            operation = Operation.model_validate(wire, strict=False)
+            if operation.operation_id != identity:
+                raise ReplayConflict(
+                    "retained publication request names another operation"
+                )
+            return operation
+        except ReplayConflict:
+            raise
+        except (GitCommandError, ValueError, KeyError, TypeError) as error:
+            raise ReplayConflict(
+                "the exact retained publication request is unavailable or invalid"
+            ) from error
+
+    def _committed_record(self, snapshot: Snapshot, identity: str) -> _Record | None:
+        path = _record_path(identity)
+        raw = self.repository.read_blobs(snapshot.tree, (path,))[path]
+        return _Record.model_validate_json(raw) if raw is not None else None
 
     def record(self, snapshot: Snapshot, operation: Operation) -> _Record | None:
-        path = _record_path(operation.operation_id)
-        raw = self.repository.read_blobs(snapshot.tree, (path,))[path]
-        if raw is None:
+        record = self._committed_record(snapshot, operation.operation_id)
+        if record is None:
             return None
-        record = _Record.model_validate_json(raw)
         if (
             record.command.operation_id != operation.operation_id
             or record.request_digest != operation.request_digest
@@ -175,11 +214,17 @@ class Publisher:
                 continue
             if operation.policy_digest != policy.source.digest:
                 raise ReplayConflict("the committed policy changed before publication")
-            if operation.guards or operation.pending_actions:
+            if operation.guards:
                 raise ReplayConflict(
-                    "the retained operation requires fresh guard or action qualification"
+                    "the retained operation requires fresh guard qualification"
                 )
             paths = tuple(item.path for item in operation.change.read_set)
+            destinations = {
+                entry.path
+                for entry in (*operation.change.writes, *operation.change.events)
+            }
+            if not destinations.issubset(paths):
+                raise ReplayConflict("retained operation omits a write precondition")
             pinned = repo.read_blobs(current.tree, paths)
             authorizer = ExtensionWriteAuthorizer(
                 registry, core=lambda _owner, _change: record.authorization
@@ -237,9 +282,14 @@ class Publisher:
         original = None
         repo = self.repository
         try:
-            operation = self.request(operation_id)
             original = repo.tip()
-            local_completed = self.record(original, operation) is not None
+            record = self._committed_record(original, operation_id)
+            local_completed = (
+                record is not None
+                and record.command.operation_id == operation_id
+                and record.command.local == LocalOutcome.COMPLETED
+            )
+            operation = self.request(operation_id)
             first_shared = None
             for attempt in range(3):
                 observed = preflight_policy(self.installation, ports=self.ports)
@@ -338,6 +388,7 @@ class Publisher:
                 shared_tip,
                 recovery,
                 str(error),
+                local_completed=local_completed,
             )
         except (
             GitCommandError,
@@ -353,4 +404,5 @@ class Publisher:
                 shared_tip,
                 recovery,
                 str(error),
+                local_completed=local_completed,
             )

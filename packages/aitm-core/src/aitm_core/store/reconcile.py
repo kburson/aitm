@@ -1,7 +1,6 @@
 """Resolve a retained publication conflict through explicit, scoped recovery."""
 
 from dataclasses import dataclass
-from json import dumps
 
 from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutcome
 from aitm_core.models.operations import Operation
@@ -62,21 +61,6 @@ def reconcile(
                 raise ReplayConflict(
                     "replacement requires a new identity and the original write scope"
                 )
-            lineage = dumps(
-                {
-                    "supersedes": operation_id,
-                    "retained_revision": retained,
-                    "original_payload": replacement.intent.model_dump(mode="json")[
-                        "payload"
-                    ],
-                },
-                separators=(",", ":"),
-            ).encode()
-            replacement = replacement.model_copy(
-                update={
-                    "intent": replacement.intent.model_copy(update={"payload": lineage})
-                }
-            )
 
         observed = preflight_policy(installation, ports=ports)
         shared = observed.views.shared
@@ -128,6 +112,8 @@ def reconcile(
                             "replacement read set disagrees with the shared tip"
                         )
             gate(snapshot, shared_snapshot)
+            if replacement is not None:
+                publisher.retain_supersession(original, replacement, retained)
             if snapshot != shared_snapshot and not repo.compare_and_swap(
                 shared_snapshot.revision, snapshot.revision
             ):
@@ -144,9 +130,9 @@ def reconcile(
             CommandResult(
                 operation_id=operation_id,
                 local=LocalOutcome.COMPLETED,
-                publication=PublicationOutcome.VERIFIED,
+                publication=PublicationOutcome.NOT_APPLICABLE,
                 evidence=(
-                    "Retained the shared version. The unpublished operation remains in recovery.",
+                    "Selected the verified shared prefix. The original operation remains unpublished and retained for recovery.",
                 ),
                 recovery=recovery,
             ),

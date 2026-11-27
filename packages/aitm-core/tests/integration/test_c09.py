@@ -12,9 +12,17 @@ from subprocess import run
 import pytest
 
 from aitm_core.cli.describe import handle
+from aitm_core.cli.dispatch import publish as retry_publication
+from aitm_core.description import DescriptionInput, DescriptionTarget, describe
 from aitm_core.events import core_reducers, fold
 from aitm_core.models.common import PublicationOutcome
-from aitm_core.models.operations import ReadExpectation, story_event_path
+from aitm_core.models.operations import (
+    AuthorityOrigin,
+    ReadExpectation,
+    WriteAuthorization,
+    story_event_path,
+)
+from aitm_core.services import ServicePorts, preflight_policy
 from aitm_core.store.objects import Repository
 from aitm_core.store.publication import Publisher
 from aitm_core.store.reconcile import Resolution, reconcile
@@ -164,7 +172,7 @@ def test_racing_clones_replay_only_whole_disjoint_operations(
 
     monkeypatch.setattr(Publisher, "_push", race)
     monkeypatch.chdir(topology.local)
-    if race_kind == "related":
+    if race_kind in {"related", "disjoint"}:
         from aitm_core.cli import describe as adapter
 
         build = adapter.describe
@@ -175,6 +183,10 @@ def test_racing_clones_replay_only_whole_disjoint_operations(
 
         def read_related(target, fields):
             request = build(target, fields)
+            if race_kind == "disjoint":
+                return request.model_copy(
+                    update={"pending_actions": ("deferred-provider-action",)}
+                )
             return request.model_copy(
                 update={
                     "change": request.change.model_copy(
@@ -206,17 +218,68 @@ def test_racing_clones_replay_only_whole_disjoint_operations(
             assert any("read-set-changed" in line for line in result.evidence)
         assert git(topology.local, "rev-parse", result.recovery) == candidates[0]
         assert git(remote, "rev-parse", PLANNING) == other.writer()
+        retry = retry_publication(topology.policy.installation, result.operation_id)
+        assert retry.local == "completed", retry.evidence
+        assert retry.publication == "pending"
         resolved = reconcile(
             topology.policy.installation,
             result.operation_id,
             Resolution(candidates[0], other.writer()),
         )
         assert resolved.command.local == "completed", resolved.reason
+        assert resolved.command.publication == "not-applicable"
         assert topology.writer() == other.writer()
         assert git(topology.local, "rev-parse", result.recovery) == candidates[0]
+        if race_kind == "authored":
+            installation = topology.policy.installation
+            publisher = Publisher(installation)
+            original = publisher.request(result.operation_id)
+            repo = installation.repository
+            authority = preflight_policy(installation).policy
+            blobs = repo.read_blobs(repo.tip().tree, (EVENTS, DESCRIPTION))
+            replacement = describe(
+                DescriptionTarget(
+                    16,
+                    blobs,
+                    original.owner,
+                    authority.source.digest,
+                    "explicit-replacement",
+                    "2026-11-27T19:00:00Z",
+                ),
+                DescriptionInput(
+                    title="Resolved content",
+                    actor="operator",
+                    want="the retained choice",
+                    so_that="it is audited",
+                    scope="Use the explicit replacement.",
+                ),
+            )
+            ports = ServicePorts(
+                write_authorization=lambda *_: WriteAuthorization(
+                    allowed=True, origin=AuthorityOrigin.FIXTURE
+                )
+            )
+            applied = reconcile(
+                installation,
+                result.operation_id,
+                Resolution(candidates[0], other.writer(), replacement),
+                ports=ports,
+            )
+            assert applied.command.local == "completed", applied.reason
+            assert applied.command.publication == "verified"
+            assert publisher.request(replacement.operation_id) == replacement
+            lineage = loads(
+                repo._git(
+                    "cat-file", "blob", publisher._lineage_ref(replacement.operation_id)
+                )
+            )
+            assert lineage["original_request"] == original.request_digest
+            assert lineage["replacement_request"] == replacement.request_digest
+            assert lineage["retained_revision"] == candidates[0]
         return
 
     assert ran == 2
+    assert result.pending == ("deferred-provider-action",)
     assert result.publication == PublicationOutcome.VERIFIED
     assert (
         candidates[0]
@@ -229,6 +292,11 @@ def test_racing_clones_replay_only_whole_disjoint_operations(
     )
     assert git(remote, "rev-parse", PLANNING) == candidates[1]
     repo = Repository(topology.local, PLANNING)
+    pub = Publisher(topology.policy.installation)
+    request = pub.request(result.operation_id)
+    assert pub.record(repo.tip(), request).command.pending == (
+        "deferred-provider-action",
+    )
     events = repo.read_blobs(repo.tip().tree, (EVENTS, story_event_path(other_story)))
     for event_stream in events.values():
         assert (
@@ -270,5 +338,17 @@ exec {quote(git_path)} "$@"
     assert "observe" in commands[commands.index("push") + 1 :]
     if not pushed:
         publisher = Publisher(topology.policy.installation)
+        request_ref = publisher._request_ref(result["operation_id"])
+        original = git(topology.local, "rev-parse", request_ref)
+        raw = loads(git(topology.local, "cat-file", "blob", request_ref))
+        raw["change"]["read_set"] = []
+        corrupt = git(
+            topology.local, "hash-object", "-w", "--stdin", data=dumps(raw).encode()
+        )
+        git(topology.local, "update-ref", request_ref, corrupt, original)
+        refused = publisher.publish(result["operation_id"])
+        assert refused.status == "conflict", refused
+        assert refused.local_completed and refused.recovery_ref
+        git(topology.local, "update-ref", request_ref, original, corrupt)
         retried = publisher.publish(result["operation_id"])
         assert retried.status == "published", retried
