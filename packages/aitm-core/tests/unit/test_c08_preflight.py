@@ -334,3 +334,52 @@ def test_operation_gate_refuses_if_admitted_code_pin_changes(monkeypatch):
     report = validate(PIN.revision)
     assert report.outcome is LocalOutcome.CONFLICT
     assert report.tip == PIN.revision and "pin changed" in report.reason
+
+
+@pytest.mark.parametrize(
+    ("freshness", "shared_status", "outcome", "publication"),
+    [
+        ("fresh", "verified", LocalOutcome.COMPLETED, PublicationOutcome.PENDING),
+        (
+            "unknown",
+            None,
+            LocalOutcome.INTEGRITY_ERROR,
+            PublicationOutcome.NOT_APPLICABLE,
+        ),
+        (
+            "fenced",
+            "verified",
+            LocalOutcome.INTEGRITY_ERROR,
+            PublicationOutcome.PENDING,
+        ),
+    ],
+    ids=("verified-shared", "unknown-code", "fenced-code"),
+)
+def test_explicit_refresh_reports_mutation_preflight_publication(
+    prepared, monkeypatch, freshness, shared_status, outcome, publication
+):
+    from aitm_core.cli import planning
+
+    prepared.views.code_freshness = freshness
+    if shared_status is not None:
+        prepared.views.shared = SimpleNamespace(
+            status=shared_status, reason=None, local_diverged=False
+        )
+
+    def validate(anchor, tip, *, repository):
+        assert outcome is LocalOutcome.COMPLETED
+        assert anchor.code_default_ref == prepared.anchor.store.code_default_ref
+        assert tip == PIN.revision and repository is prepared.anchor.repository
+        return SimpleNamespace(outcome=LocalOutcome.COMPLETED, tip=tip, reason=None)
+
+    monkeypatch.setattr(services, "load_installation", lambda *_args: prepared.anchor)
+    monkeypatch.setattr(planning, "validate_history", validate)
+    result = planning._refresh_validation(
+        "explicit-refresh",
+        prepared.anchor.repository,
+        prepared.anchor.store,
+        SimpleNamespace(installation=None, tip=None),
+    )
+    mutation = services.prepare_mutation(prepared.anchor, operation(), PIN)
+    assert result.local is mutation.outcome is outcome
+    assert result.publication is mutation.publication is publication

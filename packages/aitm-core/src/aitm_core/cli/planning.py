@@ -7,7 +7,6 @@ from uuid import uuid4
 from aitm_core.models.common import (
     CommandResult,
     LocalOutcome,
-    PublicationOutcome,
     StoreAnchor,
 )
 from aitm_core.store.gate import COOPERATIVE_LIMIT
@@ -75,29 +74,16 @@ def _refresh_validation(
     options: argparse.Namespace,
 ) -> CommandResult:
     from aitm_core.services import load_installation, preflight_policy
-    from aitm_core.store.continuity import ContinuityStatus
-    from aitm_core.store.fetch import Freshness
 
     installation = load_installation(repository, anchor, options.installation)
     preflight = preflight_policy(installation)
     views = preflight.views
-    shared = views.shared
-    incomplete = views.code_freshness in (Freshness.STALE, Freshness.UNKNOWN) or (
-        shared is not None
-        and (
-            shared.status in (ContinuityStatus.STALE, ContinuityStatus.UNKNOWN)
-            or shared.local_diverged
-        )
-    )
-    publication = (
-        PublicationOutcome.PENDING if incomplete else PublicationOutcome.NOT_APPLICABLE
-    )
     evidence = (*preflight.evidence, COOPERATIVE_LIMIT)
     if preflight.outcome != LocalOutcome.COMPLETED:
         return CommandResult(
             operation_id=identity,
             local=preflight.outcome,
-            publication=publication,
+            publication=preflight.publication,
             evidence=evidence,
         )
     admitted = installation.policy_ref(views.local)
@@ -106,7 +92,7 @@ def _refresh_validation(
         return CommandResult(
             operation_id=identity,
             local=LocalOutcome.UNAVAILABLE,
-            publication=publication,
+            publication=preflight.publication,
             evidence=(*evidence, "No admitted code and planning view is available."),
         )
     validator_anchor = anchor.model_copy(update={"code_default_ref": admitted})
@@ -115,6 +101,6 @@ def _refresh_validation(
     return CommandResult(
         operation_id=identity,
         local=report.outcome,
-        publication=publication,
+        publication=preflight.publication,
         evidence=(*evidence, message),
     )
