@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 10
 title: "[Core C05] Git snapshot reads and atomic operation commits"
 kind: "story"
-state: ready-for-plan
+state: plan
 issue: "https://github.com/kburson/aitm/issues/10"
 parent: 472
 children: []
 blocking: [11]
 blocked-by: [9]
 created: "2026-11-09T08:00:05Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-27T12:24:52.277Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
