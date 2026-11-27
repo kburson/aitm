@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 496
 title: "[Core C109] Inventory operation eligibility, hooks and authority"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/496"
 parent: 471
 children: []
 blocking: [497]
 blocked-by: []
 created: "2026-11-27T04:49:02Z"
-updated: "2026-11-27T11:23:55.336Z"
+updated: "2026-11-27T11:27:18.894Z"
 last-branch: "codex/core-496-legacy-authority"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -40,3 +40,7 @@ Parent: #471. Core coordination: #2. State: Ready for Planning.
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **30** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #471 with scope entry **C109**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Done
+
+[PR #538](https://github.com/kburson/aitm/pull/538) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T11:27:16Z. Project #24 read back Done.
