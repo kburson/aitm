@@ -104,3 +104,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **40** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #474 with scope entry **C18**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Leaf integration
+
+Linked PR [#559](https://github.com/kburson/aitm/pull/559) landed on the integration branch. #23 remains In review pending verified trunk delivery through [#555](https://github.com/kburson/aitm/pull/555).
