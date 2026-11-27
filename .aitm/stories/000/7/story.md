@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 7
 title: "[Core C55] Attempt, execution and clock-boundary reducers"
 kind: "story"
-state: plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/7"
 parent: 470
 children: []
 blocking: [8, 9]
 blocked-by: [4]
 created: "2026-11-09T07:59:53Z"
-updated: "2026-11-27T09:13:49.892Z"
-last-branch: "planning"
+updated: "2026-11-27T09:16:18.767Z"
+last-branch: "codex/core-7-attempt-reducers"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
@@ -104,3 +104,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 **Ready for Planning** · rank **50** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #470 with scope entry **C55**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
 
 [Rank 50 pickup plan](plan/2026-11-27-pickup.md) pins C02 and the current #470 integration base.
+
+[Accepted pickup review](plan/2026-11-27-pickup-review.md).
