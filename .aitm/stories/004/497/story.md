@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 497
 title: "[Core C110] Integrate legacy policy dispositions and proof fixtures"
 kind: "story"
-state: test
+state: review
 issue: "https://github.com/kburson/aitm/issues/497"
 parent: 471
 children: []
 blocking: [12, 37, 80, 241, 472, 479, 484, 489]
 blocked-by: [494, 495, 496]
 created: "2026-11-27T04:49:03Z"
-updated: "2026-11-27T11:40:17.947Z"
+updated: "2026-11-27T11:43:52.028Z"
 last-branch: "codex/core-497-legacy-decisions"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 3.5, "size": "S"}

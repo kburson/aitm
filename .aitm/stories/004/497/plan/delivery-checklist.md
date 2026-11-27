@@ -20,3 +20,7 @@ three outstanding sibling deliveries and satisfied provisioning prerequisites.
 The refusal identifies the exact mismatch in the local verification receipt.
 All 19 vectors, Markdown lint, 99 local installed Core tests and Ruff passed.
 Fresh hosted repository CI and source SAR apply.
+
+## Hosted verification
+
+[CI run 45992346359](https://github.com/kburson/aitm/actions/runs/45992346359) passed on base `7f5b3fb62a83f3f04fea6c5a5ceb1bdaeb04ef32`, head `c7ec0f5a2047c25a96dd45253f8dcb85ce21da96` and synthetic merge tree `80f3e9a6b602041769fc7b7502ffa357fc9361b2`. The workflow path filter applies hosted repository CI to this Markdown candidate. Core inputs are identical to trunk baseline `8aa608cc1e64ed5986c5b6a8371df5a4c5b3f3e6` with [hosted Core run 45979825833](https://github.com/kburson/aitm/actions/runs/45979825833). The installed local Core suite passed 99 tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
