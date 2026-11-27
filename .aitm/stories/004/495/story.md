@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 495
 title: "[Core C108] Inventory resident actions, evidence and restart"
 kind: "story"
-state: ready-for-plan
+state: plan
 issue: "https://github.com/kburson/aitm/issues/495"
 parent: 471
 children: []
 blocking: [497]
 blocked-by: []
 created: "2026-11-27T04:49:01Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-27T10:51:52.282Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
