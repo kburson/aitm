@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 28
 title: "[Core C23] Activity eligibility and implementation clock fold"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/28"
 parent: 473
 children: []
 blocking: [34, 36, 39, 40, 51, 229]
 blocked-by: [4, 14]
 created: "2026-11-09T08:01:23Z"
-updated: "2026-11-27T17:03:27.649Z"
+updated: "2026-11-27T17:07:08.375Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
