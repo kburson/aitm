@@ -107,6 +107,10 @@ On 2026-11-16 the owner removed #133 from this epic's blockers. The test-feedbac
 
 [Core plan](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md) · [Delivery ledger](https://github.com/kburson/aitm/blob/0945941c6c024b6dd621202b2456696ae1df0154/.aitm/stories/000/2/plan/2026-11-26-core-mini-epic-ledger.md) · [Native reconciliation receipt](plan/2026-11-26-core-native-reconciliation-receipt.json).
 
+## Implementation ranks
+
+[Dependency-ordered ranks](plan/2026-11-26-core-implementation-ranks.md) mirror Project #24. Epic ranks and within-epic child ranks advance in steps of 10.
+
 ## Agent Cost
 
 <!-- aitm-core-2-cost-active -->
