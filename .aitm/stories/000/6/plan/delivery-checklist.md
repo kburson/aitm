@@ -15,3 +15,7 @@ Attempt 1. Codex is the implementing agent and closure owner. [Accepted pickup](
 ## Story-scope and sign-off rework
 
 The [first SAR](2026-11-27-pr-532-grok-sar-r1.md) required pinning the lifecycle domain to its own story and folding typed sign-off by the signing agent independently of the recording actor. Cross-story and signer fixtures failed before the fix. The replacement head `49fd26b15980c8a1771df3fd63f32eb221a0f99b` passed 67 locked Core tests and Ruff locally and awaits hosted evidence.
+
+## Hosted verification
+
+[CI run 45970785547](https://github.com/kburson/aitm/actions/runs/45970785547) and [Core CI run 45970785468](https://github.com/kburson/aitm/actions/runs/45970785468) passed on base `7a378bb8b816020186bf30c5669f2170fcebc4cc`, head `49fd26b15980c8a1771df3fd63f32eb221a0f99b` and synthetic merge tree `2eb04e99ddc0130a4ed3e7540272c1c4de436f0d`. Hosted Core ran 67 passing tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
