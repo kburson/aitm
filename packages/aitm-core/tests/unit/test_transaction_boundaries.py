@@ -1,8 +1,10 @@
 """Exercise operation policy without external processes, repositories or services."""
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from hashlib import sha256
 from json import dumps, loads
+from threading import Barrier
 
 import pytest
 
@@ -20,7 +22,7 @@ from aitm_core.models.operations import (
 from aitm_core.services import UnavailablePort
 from aitm_core.store.git_backend import GitBackend
 from aitm_core.store.memory_backend import MemoryBackend
-from tests.support.c05 import FixtureGate
+from tests.support.c05 import CommitStore, FixtureGate
 from tests.unit.test_c04 import (
     BODY,
     POLICY,
@@ -30,7 +32,6 @@ from tests.unit.test_c04 import (
     proposal,
     wire,
 )
-from tests.unit.test_c05 import CommitStore
 
 EVENTS = story_event_path(9)
 
@@ -489,3 +490,152 @@ def test_git_backend_queries_no_objects_after_mandatory_gate_refusal(monkeypatch
         "lock unavailable",
     )
     assert repository.current == before
+
+
+def concurrent_store():
+    evaluating = Barrier(2, timeout=5)
+
+    def authorize(owner, change):
+        evaluating.wait()
+        return PORTS.write_authorization(owner, change)
+
+    return MemoryBackend(
+        {BODY: b"old"}, ports=replace(PORTS, write_authorization=authorize)
+    )
+
+
+def test_concurrent_identical_operation_returns_one_commit_to_both_callers():
+    backend = concurrent_store()
+    before = backend.snapshot()
+    operation = proposal(backend, before)
+    with ThreadPoolExecutor(max_workers=2) as workers:
+        pending = [
+            workers.submit(backend.transact, operation, before) for _ in range(2)
+        ]
+        first, second = (future.result() for future in pending)
+    assert first.command.local == LocalOutcome.COMPLETED
+    assert second == first
+    assert backend.snapshot() == first.snapshot
+    assert backend.read(before, (BODY,)) == {BODY: b"old"}
+    assert backend.read(first.snapshot, (BODY,)) == {BODY: b"new"}
+
+
+def test_concurrent_same_id_with_different_requests_retains_only_winning_request():
+    backend = concurrent_store()
+    before = backend.snapshot()
+    changes = (b"left", b"right")
+    requests = tuple(
+        proposal(backend, before, changes=((BODY, content),)) for content in changes
+    )
+    with ThreadPoolExecutor(max_workers=2) as workers:
+        pending = [
+            workers.submit(backend.transact, request, before) for request in requests
+        ]
+        results = tuple(future.result() for future in pending)
+    (winner,) = tuple(
+        index
+        for index, result in enumerate(results)
+        if result.command.local == LocalOutcome.COMPLETED
+    )
+    loser = 1 - winner
+    assert (results[loser].command.local, results[loser].reason) == (
+        LocalOutcome.INTEGRITY_ERROR,
+        "operation-identity-reused",
+    )
+    assert backend.snapshot() == results[winner].snapshot
+    assert backend.read(backend.snapshot(), (BODY,)) == {BODY: changes[winner]}
+    assert backend.transact(requests[winner], before) == results[winner]
+
+
+def test_initial_file_mapping_cannot_mutate_already_pinned_snapshot():
+    files = {BODY: b"pinned"}
+    backend = MemoryBackend(files, ports=PORTS)
+    before = backend.snapshot()
+    files[BODY] = b"external edit"
+    files[RELATED] = b"external addition"
+    assert backend.snapshot() == before
+    assert backend.read(before, (BODY, RELATED)) == {BODY: b"pinned", RELATED: None}
+
+
+def test_mutable_file_content_cannot_enter_initial_snapshot():
+    with pytest.raises(TypeError, match="snapshot files require immutable bytes"):
+        MemoryBackend({BODY: bytearray(b"mutable")}, ports=PORTS)
+
+
+def test_appending_to_stream_without_final_delimiter_keeps_original_snapshot():
+    first = event_bytes()
+    backend = MemoryBackend({BODY: b"old", EVENTS: first}, ports=PORTS)
+    before = backend.snapshot()
+    second = event_bytes(operation="second", sequence=2, prefix=first + b"\n")
+    append = EventAppend(story=9, records=(second,))
+    operation = proposal(backend, before, "second", events=(append,))
+    result = backend.transact(operation, before)
+    assert result.command.local == LocalOutcome.COMPLETED
+    assert backend.read(before, (EVENTS,)) == {EVENTS: first}
+    assert backend.read(result.snapshot, (EVENTS,)) == {
+        EVENTS: first + b"\n" + second + b"\n"
+    }
+
+
+def test_append_accepts_event_that_binds_both_current_policy_and_read_scope():
+    backend = MemoryBackend({BODY: b"old"}, ports=PORTS)
+    before = backend.snapshot()
+    append = EventAppend(story=9, records=(event_bytes(),))
+    operation = proposal(backend, before, events=(append,))
+    bound = event_bytes(
+        policy_digest=POLICY, read_set_digest=operation.change.read_set_digest
+    )
+    event = EventAppend(story=9, records=(bound,))
+    operation = operation.model_copy(
+        update={"change": operation.change.model_copy(update={"events": (event,)})}
+    )
+    result = backend.transact(operation, before)
+    assert result.command.local == LocalOutcome.COMPLETED
+    assert backend.read(result.snapshot, (EVENTS,)) == {EVENTS: bound + b"\n"}
+
+
+def test_unavailable_reducer_in_pinned_stream_blocks_preflight_and_write():
+    event = event_bytes(type="core.fixture.undelivered")
+    backend = MemoryBackend(
+        {BODY: b"old", EVENTS: event + b"\n"},
+        ports=replace(PORTS, attempt_preflight=unexpected_call),
+    )
+    before = backend.snapshot()
+    result = backend.transact(proposal(backend, before), before)
+    assert result.command.local == LocalOutcome.UNAVAILABLE
+    assert "core.fixture.undelivered" in result.reason
+    assert result.preflight is None
+    assert backend.snapshot() == before
+
+
+def test_unavailable_reducer_in_proposed_append_preserves_atomic_write_set():
+    backend = MemoryBackend({BODY: b"old", RELATED: b"before"}, ports=PORTS)
+    before = backend.snapshot()
+    event = EventAppend(
+        story=9, records=(event_bytes(type="core.fixture.undelivered"),)
+    )
+    operation = proposal(
+        backend, before, events=(event,), changes=((RELATED, b"changed"),)
+    )
+    result = backend.transact(operation, before)
+    assert result.command.local == LocalOutcome.UNAVAILABLE
+    assert "core.fixture.undelivered" in result.reason
+    assert backend.snapshot() == before
+    assert backend.read(before, (EVENTS, RELATED)) == {EVENTS: None, RELATED: b"before"}
+
+
+def test_type_replacement_applies_parent_deletion_and_child_creation_atomically():
+    parent = ".aitm/entry"
+    child = f"{parent}/child.md"
+    backend = MemoryBackend({parent: b"old blob"}, ports=PORTS)
+    before = backend.snapshot()
+    operation = proposal(
+        backend, before, changes=((child, b"new child"), (parent, None))
+    )
+    result = backend.transact(operation, before)
+    assert result.command.local == LocalOutcome.COMPLETED
+    assert backend.read(before, (parent, child)) == {parent: b"old blob", child: None}
+    assert backend.read(result.snapshot, (parent, child)) == {
+        parent: None,
+        child: b"new child",
+    }

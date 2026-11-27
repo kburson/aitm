@@ -2,8 +2,18 @@
 
 import pytest
 
-from aitm_core.reducers.attempts import AttemptIntegrityError
-from tests.unit.test_c55 import SOURCE, START, execution, replay, start_clock
+from aitm_core.events import StoryState
+from aitm_core.reducers.attempts import AttemptIntegrityError, fold_attempt
+from tests.unit.test_c55 import (
+    SOURCE,
+    START,
+    clock,
+    execution,
+    fact,
+    records,
+    replay,
+    start_clock,
+)
 
 
 @pytest.mark.parametrize(
@@ -108,3 +118,61 @@ def test_active_attempt_requires_all_launch_authority(missing):
     _, boundary = start_clock()
     with pytest.raises(AttemptIntegrityError, match="lacks plan and binding evidence"):
         replay(((event, {**data, missing: None}), boundary))
+
+
+def test_open_attempt_cannot_be_replaced_by_another_start():
+    event, data = START
+    new_attempt = event, {**data, "attempt": "a2"}
+    start_boundary = clock("e3", None, "active")
+    kind, boundary = start_boundary
+    with pytest.raises(
+        AttemptIntegrityError, match="start conflicts with retained attempt"
+    ):
+        replay(start_clock(), (new_attempt, (kind, {**boundary, "attempt": "a2"})))
+
+
+def test_execution_cannot_prepare_after_its_attempt_is_closed():
+    closure = [
+        fact(
+            "core.attempt.closed",
+            from_clock="active",
+            disposition="delivered",
+            reason="accepted",
+        ),
+        clock("e3", "active", "terminal-closed", used=40),
+    ]
+    with pytest.raises(AttemptIntegrityError, match="lacks the current active binding"):
+        replay(start_clock(), closure, [execution("prepared")])
+
+
+def test_clock_boundary_cannot_move_back_before_the_retained_timestamp():
+    start, first_clock, pause, stale_resume = records(
+        start_clock(),
+        [
+            clock(
+                "earlier-cause",
+                "active",
+                "review-stopped",
+                used=20,
+                observed_at="2026-11-27T09:00:00Z",
+            )
+        ],
+        [
+            clock(
+                "later-cause",
+                "review-stopped",
+                "active",
+                used=20,
+                observed_at="2026-11-27T08:59:00Z",
+            )
+        ],
+    )
+    # This tests the reducer's cross-operation order independently of the
+    # per-operation cause and timestamp agreement already checked by the batch.
+    state = fold_attempt(StoryState(), start)
+    state = fold_attempt(state, first_clock)
+    state = fold_attempt(state, pause)
+    with pytest.raises(
+        AttemptIntegrityError, match="boundary precedes the retained boundary"
+    ):
+        fold_attempt(state, stale_resume)

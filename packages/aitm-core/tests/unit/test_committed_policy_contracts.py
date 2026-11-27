@@ -242,3 +242,25 @@ def test_legacy_declaration_cannot_replace_independently_anchored_root():
     )
     with pytest.raises(ValueError, match="must name the anchored root"):
         replace(anchor, legacy_root=legacy)
+
+
+def test_hosted_policy_cache_isolated_for_distinct_repository_identities():
+    installation_route = replace(
+        installation(RefFormatPort(), GENESIS),
+        code_remote="code",
+        code_remote_ref=DEFAULT,
+    )
+    other_repo = replace(installation_route, code_repository="another-code-repository")
+    observation = RefObservation(ref=DEFAULT, remote="code", observed_commit=GENESIS)
+    assert installation_route.validated_code_ref != other_repo.validated_code_ref
+    assert (
+        installation_route.policy_ref(observation)
+        == installation_route.validated_code_ref
+    )
+    assert other_repo.policy_ref(observation) == other_repo.validated_code_ref
+
+
+def test_installation_requires_recorded_bootstrap_provenance():
+    anchor = installation(RefFormatPort(), GENESIS)
+    with pytest.raises(ValueError, match="requires recorded bootstrap provenance"):
+        replace(anchor, bootstrap_source="   ")

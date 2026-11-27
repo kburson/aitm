@@ -105,8 +105,48 @@ def test_git_transaction(backend, tmp_path, monkeypatch):
     assert reopened.transact(request, reopened.snapshot()) == result
 
 
-def test_tree_and_preconditions_reject_an_invalid_update_atomically(backend):
-    _contract.test_tree_and_preconditions_reject_an_invalid_update_atomically(backend)
+@pytest.mark.parametrize(
+    "name",
+    [
+        "test_operation_cas",
+        "test_refusal_retains_guards_without_applying_effects",
+        "test_append_validates_all_streams_before_commit",
+        "test_same_snapshot_has_one_concurrent_winner",
+        "test_tree_and_preconditions_reject_an_invalid_update_atomically",
+    ],
+)
+def test_c04_mutation_contract_on_git(backend, name):
+    getattr(_contract, name)(backend)
+
+
+@pytest.mark.parametrize(
+    ("name", "arguments"),
+    [
+        (
+            "test_write_authority_distinguishes_absence_refusal_and_registered_result",
+            (),
+        ),
+        (
+            "test_attempt_mutation_requires_the_installed_preflight",
+            ("attempt.reconcile",),
+        ),
+        ("test_attempt_mutation_requires_the_installed_preflight", ("expand",)),
+        (
+            "test_special_categories_require_the_exact_declared_capability",
+            ("authoring.sync", _contract.OperationCategory.AUTHORED_SYNC),
+        ),
+        (
+            "test_special_categories_require_the_exact_declared_capability",
+            ("stop.reconcile", _contract.OperationCategory.STOP_RECONCILIATION),
+        ),
+        (
+            "test_special_categories_require_the_exact_declared_capability",
+            ("attempt.recover", _contract.OperationCategory.RECOVERY),
+        ),
+    ],
+)
+def test_c04_service_contract_on_git(make_backend, name, arguments):
+    getattr(_contract, name)(*arguments, backend_factory=make_backend)
 
 
 class Interrupted(RuntimeError):

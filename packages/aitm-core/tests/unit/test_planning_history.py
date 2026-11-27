@@ -2,6 +2,7 @@
 
 import json
 from hashlib import sha256
+from types import SimpleNamespace
 
 import pytest
 
@@ -332,3 +333,166 @@ def test_passed_repair_seam_does_not_make_accepted_receipt_mutable(repair_histor
     assert_rejected(
         report, after, candidate, f"retained planning record changed: {REPAIR}"
     )
+
+
+def test_shallow_history_is_unavailable_before_anchoring(history, monkeypatch):
+    repo, anchor = history
+
+    def shallow(command, *args):
+        assert (command, args) == ("rev-parse", ("--is-shallow-repository",))
+        return b"true\n"
+
+    monkeypatch.setattr(repo, "_git", shallow)
+    report = validate_history(anchor, repo.root.revision, repository=repo)
+    assert report == ValidationReport(
+        LocalOutcome.UNAVAILABLE,
+        repo.root.revision,
+        "complete-planning-history-required",
+    )
+
+
+def test_inaccessible_code_ancestry_is_unavailable(history, monkeypatch):
+    repo, anchor = history
+
+    def ancestry_failed(command, *args):
+        assert (command, args) == ("merge-base", (repo.root.revision, "code-root"))
+        return SimpleNamespace(returncode=128, stderr=b"object database unavailable")
+
+    monkeypatch.setattr(repo, "_run", ancestry_failed)
+    report = validate_history(anchor, repo.root.revision, repository=repo)
+    assert report == ValidationReport(
+        LocalOutcome.UNAVAILABLE,
+        repo.root.revision,
+        "git merge-base failed: object database unavailable",
+    )
+
+
+def test_history_uses_anchored_planning_ref_identity(history):
+    repo, anchor = history
+    other_target = anchor.model_copy(
+        update={"planning_ref": "refs/heads/other-records"}
+    )
+    report = validate_history(other_target, repo.root.revision, repository=repo)
+    assert report == ValidationReport(
+        LocalOutcome.INTEGRITY_ERROR,
+        repo.root.revision,
+        "anchor does not identify the configured planning and code refs",
+    )
+
+
+def test_history_checks_commit_parent_independent_of_rev_list(history, monkeypatch):
+    repo, anchor = history
+    candidate = repo.create_commit(repo.root, {README: b"planning"}, "candidate")
+    git = repo._git
+
+    def divergent_parent(command, *args):
+        if (command, args) == ("cat-file", ("commit", candidate.revision)):
+            return b"parent unrelated\n\n"
+        return git(command, *args)
+
+    monkeypatch.setattr(repo, "_git", divergent_parent)
+    assert_rejected(
+        validate_history(anchor, candidate.revision, repository=repo),
+        candidate,
+        repo.root,
+        "planning-history-must-be-linear",
+    )
+
+
+def test_tree_inventory_cannot_silently_overwrite_duplicate_path(history, monkeypatch):
+    repo, anchor = history
+    candidate = repo.create_commit(repo.root, {README: b"planning"}, "candidate")
+    git = repo._git
+
+    def duplicate_path(command, *args):
+        ordinary = git(command, *args)
+        if (command, args) == ("ls-tree", ("-r", "-z", "--full-tree", candidate.tree)):
+            return (
+                ordinary + b"100644 blob " + b"a" * 40 + b"\t" + README.encode() + b"\0"
+            )
+        return ordinary
+
+    monkeypatch.setattr(repo, "_git", duplicate_path)
+    report = validate_history(anchor, candidate.revision, repository=repo)
+    assert report.outcome == LocalOutcome.INTEGRITY_ERROR
+    assert report.tip == candidate.revision
+    assert report.reason == f"duplicate planning path: {README}"
+
+
+def test_typed_entry_without_blob_content_is_integrity_error(history, monkeypatch):
+    repo, anchor = history
+    candidate = repo.create_commit(repo.root, {STORE: b"unreadable"}, "typed metadata")
+
+    def missing_blob(tree, paths):
+        if paths:
+            assert (tree, paths) == (candidate.tree, (STORE,))
+        return dict.fromkeys(paths)
+
+    monkeypatch.setattr(repo, "read_blobs", missing_blob)
+    assert_rejected(
+        validate_history(anchor, candidate.revision, repository=repo),
+        candidate,
+        repo.root,
+        f"missing planning blob: {STORE}",
+    )
+
+
+def test_repair_proof_does_not_bypass_planning_data_policy(repair_history):
+    repo, anchor, _, _, bad_tip, _ = repair_history
+    candidate = repo.create_commit(
+        bad_tip,
+        {
+            "outside.txt": None,
+            REPAIR: b'{"schema":"aitm.forward-repair/v1"}',
+            "unrelated.py": b"source",
+        },
+        "proof over a still-invalid tree",
+    )
+
+    def verify(_anchor, _history, target):
+        assert target == candidate
+        return ValidationReport(LocalOutcome.COMPLETED, target.revision)
+
+    report = validate_history(
+        anchor, candidate.revision, repository=repo, forward_repair_verifier=verify
+    )
+    assert report.outcome == LocalOutcome.INTEGRITY_ERROR
+    assert report.tip == candidate.revision
+    assert report.reason == "outside planning data paths: unrelated.py"
+
+
+def test_story_record_does_not_coerce_boolean_to_story_one(history):
+    repo, anchor = history
+    record = operation_record(repo.root) | {"story": True}
+    path = OPERATION.replace(".aitm/operations/", ".aitm/stories/000/1/operations/")
+    candidate = repo.create_commit(
+        repo.root, {path: encode(record)}, "incorrect story owner type"
+    )
+    assert_rejected(
+        validate_history(anchor, candidate.revision, repository=repo),
+        candidate,
+        repo.root,
+        "operation record does not match its owning story",
+    )
+
+
+def test_git_path_without_utf8_identity_cannot_be_treated_as_planning_data(
+    history, monkeypatch
+):
+    repo, anchor = history
+    candidate = repo.create_commit(
+        repo.root, {README: b"known path"}, "ambiguous path bytes"
+    )
+    git = repo._git
+
+    def invalid_path(command, *args):
+        raw = git(command, *args)
+        if (command, args) == ("ls-tree", ("-r", "-z", "--full-tree", candidate.tree)):
+            raw = raw.replace(README.encode(), b".aitm/\xff.md")
+        return raw
+
+    monkeypatch.setattr(repo, "_git", invalid_path)
+    report = validate_history(anchor, candidate.revision, repository=repo)
+    assert report.outcome == LocalOutcome.INTEGRITY_ERROR
+    assert report.tip == candidate.revision
+    assert "invalid start byte" in report.reason
