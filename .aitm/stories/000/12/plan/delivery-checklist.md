@@ -32,3 +32,12 @@ until both required checks pass on the exact candidate.
 ## Hosted verification
 
 [CI run 46008168418](https://github.com/kburson/aitm/actions/runs/46008168418) and [Core CI run 46008168471](https://github.com/kburson/aitm/actions/runs/46008168471) passed on base `cce0cb2b033be027f695e3d8f9896edca40de765`, head `4221091c9ec68c20472d5e351a95cafa13b86e05` and synthetic merge tree `5d8e19e2f034fa349612f1578251c2657beae92c`. Hosted Core ran 173 passing tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
+
+## Committed policy schema rework
+
+[Initial SAR](2026-11-27-pr-544-grok-sar-r1.md) found that the top-level
+policy model discarded unsupported fields. Two tests failed before the fix.
+The revised model refuses any unsupported top-level field or table. The
+accepted design's four-hour and one-expansion ceilings remain explicit;
+added direct tests proving both reject out-of-range values. All 32 C07
+tests, all 177 installed Core tests, and Ruff passed at head `26846c77ade5d1d7e4cd06b3c0c2e2d4bf5c0a57`.
