@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 471
 title: "[Epic] Core — Legacy rule and policy qualification"
 kind: "epic"
-state: ready-for-plan
+state: plan
 issue: "https://github.com/kburson/aitm/issues/471"
 parent: 1
 children: [494, 495, 496, 497]
 blocking: []
 blocked-by: []
 created: "2026-11-27T04:48:38Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-27T10:20:04.877Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 15.0, "size": "Feature"}
