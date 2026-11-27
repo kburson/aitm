@@ -43,3 +43,25 @@ The cutoff admits issues and comments created on or before it. An observed updat
 5. Decide the issue hierarchy and landing sequence during refinement. Use focused delivery slices with four to six children where applicable and at most four implementation agent-hours per child. Do not make source-access acceptance wait for those later slices.
 
 [Master architecture and milestone plan](../../../000/1/plan/master-plan.md) · [Core’s governed PR handoff](../../../000/2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md) · [Accepted configured workflow plan](../../../000/2/plan/2026-11-26-configured-workflow-implementation-plan.md).
+
+## Delivery handoff and sequencing
+
+[#525](https://github.com/kburson/aitm/issues/525) is the first independently landable slice. Its only native blocker is the released Core #72. It registers the read capability, qualifies an exact installable wheel, and can land on trunk and close under its own receipt while the parent M2 epic is open. Board, PR, protection, M3 and remaining M2 milestones do not gate this slice.
+
+The handoff to [M7 #522](../../522/design/history-import-design.md) consists of the source capability and schema versions, wheel version/digest/source revision, allowed canonical repository and request bounds, cutoff semantics, validation fixture, and a sanitized live capability receipt with result, source IDs, and evidence digests. The handoff proves read eligibility for defined fields and scope. M7 owns full capture and the validated corpus it supplies to [M8 #523](../../523/design/rubric-design.md).
+
+## Refinement estimate and rank
+
+**Rank 250 · XL · 44.5 implementation agent-hours.** XL reflects multiple separately landable provider capabilities. The estimate includes implementation, verification and review, and counts the #525 source-access story once.
+
+| Work | Agent-hours | Basis |
+| --- | ---: | --- |
+| #525 read-only source capability | 3.75 | Existing bounded estimate for the independently installable handoff. |
+| Backlog identity and hierarchy | 7.5 | Issue identity/replay and hierarchy/dependency work, in two bounded slices. |
+| Project projection | 3.75 | Existing C05 intake estimate, including mapping, replay, and scoped readback. |
+| Governed PR, CI, and terminal work | 19.5 | Five scoped intake estimates, 4, 3.5, 4, 4 and 4 h. |
+| Init and protection readback | 6.5 | Two slices for setup and qualified protection or explicit manual disposition. |
+| Installed provider integration | 3.5 | Exact wheel, installed routes, and designated fixture proof. |
+| **Total** | **44.5** | Estimate at Refine level. Final child estimates and eligibility are settled at JIT. |
+
+Rank is the milestone sequence after the existing 10–240 sequence. The source-access child is the first eligible M2 delivery and can cut through independently. Remaining M2 work may proceed in parallel where its own prerequisites allow.

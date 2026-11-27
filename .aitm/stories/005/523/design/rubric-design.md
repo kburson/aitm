@@ -34,3 +34,25 @@ A legacy row may qualify through documented Refine, Plan, and Close equivalents 
 ## Proposed decomposition and decisions
 
 Refine into four to six bounded children for corpus admission, deterministic feature extraction and index, the baseline and comparable-story retrieval, quantile evaluation, and the installed proposal and retraining loop. Keep each implementation child within four agent-hours. The feature set, source-quality policy, minimum sample size, and promotion thresholds require reviewed refinement and empirical evidence. A dashboard check against planning 3bc3dadc found zero eligible records among 363. This is an observation about that snapshot.
+
+## Validated history handoff
+
+Consume the exact [M7 #522 corpus handoff](../522/design/history-import-design.md#handoff-receipts). Pin the manifest location/digest and schema version, scope/cutoff, record dispositions and source digests, validation receipt, and read fixture. Verify replay and compatible schema before training. Admit only records with comparable pre-work estimate and complete qualified Actual tied to the applicable outcome and attempt. A reproducible M7 export can legitimately yield too few qualifying labels. In that case expose the diagnostic or baseline-only path and keep learned calibration unavailable.
+
+Native Actual qualification #229 and the released Core #72/#51 records remain independent inputs. Moving the Actual gate to #228 requires the explicit equivalence and native edge reconciliation already specified above.
+
+## Refinement estimate and rank
+
+**Rank 270 · Feature · 21.5 implementation agent-hours.** Scope is one installable estimator and feedback feature. The estimate includes the C07 comparability intake and excludes M7’s import and #229’s qualification. Estimates include verification and review.
+
+| Work | Agent-hours |
+| --- | ---: |
+| Evidence admission and diagnostics, including 1.5 h for C07 comparability intake | 3.5 |
+| Versioned feature extraction and reproducible snapshot | 3.5 |
+| Baseline and comparable-story retrieval | 3.5 |
+| Quantile model and held-out evaluation | 4 |
+| Installed estimate proposal and versioned retraining | 3.5 |
+| Packaging, compatibility and release proof | 3.5 |
+| **Total** | **21.5** |
+
+This is a six-child-sized initial decomposition. Set the approved sample and evaluation rules before model promotion. Rank follows the validated-history handoff and adds no dependency on unrelated M2 work.

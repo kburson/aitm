@@ -42,3 +42,24 @@ Preserve missing Actual as missing. Corrupt timing, overlapping intervals with u
 - Qualify the scoped M2 source handoff and manifest readback independently of M8.
 - Refine into four to six bounded children for source access and inventory, schema and fixtures, normalization and validation, replay and promotion, and publication. Keep each implementation child within four agent-hours.
 - Resolve the storage and publication route, allowed legacy evidence fields, exact [#525](https://github.com/kburson/aitm/issues/525) source-access proof, trusted Timing Log formats, and exception policy before implementation pickup.
+
+## Handoff receipts
+
+Consume the exact [M2 #525 source handoff](../524/design/github-extension-design.md#delivery-handoff-and-sequencing). Pin the read capability and schema, compatible wheel version/digest/source revision, authorized canonical source, scope and cutoff, fixture revision, and sanitized live qualification receipt. Validate that its allowed evidence and acquisition semantics cover the requested corpus. Refuse an incompatible or insufficient handoff with a specific missing-capability result. Full M2 completion has no role in this check.
+
+Publish a sealed corpus transition to [M8 #523](../523/design/rubric-design.md#validated-history-handoff). The delivery consists of the manifest and schema revision, immutable manifest location and digest, exact source and cutoff, record digests, counts by qualification/disposition, recorded scope exceptions and held rows, and the validation receipt and read fixture. The receipt must show independent replay and preserve estimate, phase, completed attempt/outcome and Actual lineage where substantiated. M7 validates provenance and reproducibility. M8 decides comparability and corpus sufficiency.
+
+## Refinement estimate and rank
+
+**Rank 260 · Feature · 18.5 implementation agent-hours.** Scope is one independently consumable corpus capability. It excludes the #525 adapter and M8 model work. Estimates include verification and review.
+
+| Work | Agent-hours |
+| --- | ---: |
+| Pinned intake and bounded source inventory | 3.5 |
+| Corpus schema, qualification dispositions and fixtures | 4 |
+| Legacy field and evidence normalization | 4 |
+| Replay, corrections and refusal behavior | 3.5 |
+| Sealed export, validation and consumer handoff | 3.5 |
+| **Total** | **18.5** |
+
+This is a five-child-sized initial decomposition. Actual story definitions and JIT estimates require separate refinement. Native prerequisites are #72 and #525. Rank expresses the proposed sequence and adds no dependency on M2’s hosted delivery.
