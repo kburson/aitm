@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 3
 title: "[Core C01] Package foundation and command result contract"
 kind: "story"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/3"
 parent: 470
 children: []
 blocking: [4, 5, 11, 64]
 blocked-by: [83, 527]
 created: "2026-11-09T07:59:36Z"
-updated: "2026-11-27T07:58:19Z"
+updated: "2026-11-27T08:04:23.500Z"
 last-branch: "codex/core-3-foundation"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -113,3 +113,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 [Draft PR #526](https://github.com/kburson/aitm/pull/526) · [Delivery checklist](plan/delivery-checklist.md).
 
 The owner authorized [#527](https://github.com/kburson/aitm/issues/527) as the separate hosted Core CI prerequisite.
+
+## Done
+
+[PR #526](https://github.com/kburson/aitm/pull/526) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T08:04:20Z. Project #24 read back Done.
