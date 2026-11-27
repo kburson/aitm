@@ -287,3 +287,29 @@ def test_binding_generation(repository, policy_inputs, tmp_path_factory, monkeyp
     assert effective["paths"] == []
     assert effective["branch"] is None
     assert effective["capabilities"] == ["managed-verification"]
+
+    evidence_lease = (
+        "16",
+        "--binding",
+        effective["identity"],
+        "--generation",
+        str(effective["generation"]),
+        "--session",
+        "evidence-session",
+    )
+    plan_before_release = git(root, "rev-parse", RECORDS)
+    assert cli(other, "sync", *evidence_lease)["local"] == "integrity-error"
+    selected = cli(other, "unbind", *evidence_lease, "--path", PLAN)
+    assert selected["local"] == "integrity-error", selected
+    assert cli(author, "unbind", *evidence_lease)["local"] == "conflict"
+    released = cli(other, "unbind", *evidence_lease)
+    assert released["local"] == "completed", released
+    assert git(root, "rev-parse", RECORDS) == plan_before_release
+    assert (other / PLAN).read_bytes() == b"Refactor retains authored work\n"
+    assert cli(other, "unbind", *evidence_lease)["local"] == "conflict"
+    next_holder = cli(root, "bind", "16", "--session", "new-planning-holder")
+    assert next_holder["local"] == "completed", next_holder
+    assert (
+        json.loads(next_holder["evidence"][0])["generation"]
+        == effective["generation"] + 1
+    )

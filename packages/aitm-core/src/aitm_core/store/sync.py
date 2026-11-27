@@ -521,9 +521,23 @@ def unbind(
     ports: ServicePorts | None = None,
 ) -> UnbindResult:
     with workspace.lock():
-        result = _sync(
-            workspace, _verify(workspace, binding), selected, ports or ServicePorts()
-        )
+        binding = _verify(workspace, binding)
+        if binding.purpose == BindingPurpose.EVIDENCE:
+            if selected.paths or selected.deletions:
+                raise ValueError(
+                    "Evidence-only bindings have no authored sync authority."
+                )
+            closed = binding.model_copy(update={"active": False})
+            workspace.persist(closed)
+            return UnbindResult(
+                CommandResult(
+                    operation_id=uuid4().hex,
+                    local=LocalOutcome.COMPLETED,
+                    evidence=("Released the evidence-only binding.",),
+                ),
+                closed,
+            )
+        result = _sync(workspace, binding, selected, ports or ServicePorts())
         outcome = UnbindResult(result.command, result.binding, result.changed)
         if (
             outcome.command.local != LocalOutcome.COMPLETED
