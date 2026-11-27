@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 471
 title: "[Epic] Core — Legacy rule and policy qualification"
 kind: "epic"
-state: review
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/471"
 parent: 1
 children: [494, 495, 496, 497]
 blocking: []
 blocked-by: []
 created: "2026-11-27T04:48:38Z"
-updated: "2026-11-27T11:50:42.076Z"
+updated: "2026-11-27T11:57:08.533Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 15.0, "size": "Feature"}
@@ -51,3 +51,7 @@ Estimate: **15 implementation agent-hours**, including verification and review. 
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **20** · **P1/Feature** · **15 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **EP02**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Done
+
+[PR #536](https://github.com/kburson/aitm/pull/536) · [Verified delivery, sign-off and Agent Cost](retro/2026-11-27-delivery.md). GitHub issue closed at 2026-11-27T11:56:47Z. Project #24 read back Done.
