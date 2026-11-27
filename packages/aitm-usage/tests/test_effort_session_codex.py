@@ -1,3 +1,4 @@
+import io
 import json
 from hashlib import sha256
 from pathlib import Path
@@ -127,10 +128,28 @@ def turn(
     return start_and_usage + ([] if terminal is None else [event(terminal, **identity)])
 
 
+def transcript_bytes(rows):
+    return b"".join(json.dumps(row).encode() + b"\n" for row in rows)
+
+
 def save(tmp_path, *rows):
     path = tmp_path / "exact.jsonl"
-    path.write_bytes(b"".join(json.dumps(row).encode() + b"\n" for row in rows))
+    path.write_bytes(transcript_bytes(rows))
     return path
+
+
+class MemoryTranscript:
+    """An authorized exact file backed by a bounded reader over retained bytes."""
+
+    def __init__(self, *rows, trailing=b""):
+        self.data = transcript_bytes(rows) + trailing
+
+    def is_absolute(self):
+        return True
+
+    def open(self, mode):
+        assert mode == "rb"
+        return io.BytesIO(self.data)
 
 
 def recover(path, **kwargs):
@@ -191,8 +210,8 @@ def test_subagent_start_and_stop_expose_the_same_child_path():
     assert parse_codex_hook(json.dumps(stop).encode()).transcript_path == child
 
 
-def test_exact_bound_owner_uses_request_evidence_and_counts_only_once(tmp_path):
-    capture = recover(save(tmp_path, metadata(), *turn()))
+def test_exact_bound_owner_uses_request_evidence_and_counts_only_once():
+    capture = recover(MemoryTranscript(metadata(), *turn()))
     receipt = capture.observation.receipt
     assert receipt.coverage == Availability.COMPLETE
     assert receipt.turn.surface == "desktop"
@@ -204,9 +223,8 @@ def test_exact_bound_owner_uses_request_evidence_and_counts_only_once(tmp_path):
     assert "private-response" not in receipt.to_json()
 
 
-def test_forked_child_discards_copied_parent_and_binds_exact_dispatch(tmp_path):
-    path = save(
-        tmp_path,
+def test_forked_child_discards_copied_parent_and_binds_exact_dispatch():
+    path = MemoryTranscript(
         metadata(CHILD, SESSION),
         metadata(),
         *turn(),
@@ -243,41 +261,38 @@ def test_forked_child_discards_copied_parent_and_binds_exact_dispatch(tmp_path):
     ).observation.receipt
 
 
-def test_missing_terminal_is_pending_and_trailing_fragment_is_ignored(tmp_path):
-    path = save(tmp_path, metadata(), *turn(terminal=None))
-    with path.open("ab") as stream:
-        stream.write(b'{"type":')
+def test_missing_terminal_is_pending_and_trailing_fragment_is_ignored():
+    path = MemoryTranscript(metadata(), *turn(terminal=None), trailing=b'{"type":')
     result = recover(path).observation
     assert result.gap == CaptureGap.MISSING
     assert result.receipt is None
 
 
-def test_interruption_keeps_observed_usage_as_partial(tmp_path):
+def test_interruption_keeps_observed_usage_as_partial():
     obs = recover(
-        save(tmp_path, metadata(), *turn(terminal="turn_aborted"))
+        MemoryTranscript(metadata(), *turn(terminal="turn_aborted"))
     ).observation
     assert obs.outcome == Outcome.INTERRUPTED
     assert obs.receipt.coverage == Availability.PARTIAL
     assert obs.receipt.tokens.total_tokens == 46
 
 
-def test_refuses_unsound_usage_and_wrong_exact_file(tmp_path):
+def test_refuses_unsound_usage_and_wrong_exact_file():
     corrupt = turn()
     corrupt[-2]["payload"]["turn_token_usage"] = tokens(3)
-    obs = recover(save(tmp_path, metadata(), *corrupt)).observation
+    obs = recover(MemoryTranscript(metadata(), *corrupt)).observation
     assert obs.gap == CaptureGap.MALFORMED
     assert not obs.receipt
-    obs = recover(save(tmp_path, metadata(), *turn()), session_id=OTHER).observation
+    obs = recover(MemoryTranscript(metadata(), *turn()), session_id=OTHER).observation
     assert obs.gap == CaptureGap.WRONG_TURN
     assert not obs.receipt
-    obs = recover(save(tmp_path, metadata(), *turn()), max_bytes=128).observation
+    obs = recover(MemoryTranscript(metadata(), *turn()), max_bytes=128).observation
     assert obs.gap == CaptureGap.EVIDENCE_LIMIT
     assert not obs.receipt
 
 
-def test_refuses_ambiguous_child_history_without_explicit_turn(tmp_path):
-    path = save(
-        tmp_path,
+def test_refuses_ambiguous_child_history_without_explicit_turn():
+    path = MemoryTranscript(
         metadata(CHILD, SESSION),
         metadata(),
         *turn(),
@@ -296,11 +311,10 @@ def test_refuses_ambiguous_child_history_without_explicit_turn(tmp_path):
     assert not obs.receipt
 
 
-def test_exact_child_parent_turn_is_available_before_completion(tmp_path):
+def test_exact_child_parent_turn_is_available_before_completion():
     from aitm_usage.effort.session_codex import codex_child_parent_turn
 
-    path = save(
-        tmp_path,
+    path = MemoryTranscript(
         metadata(CHILD, SESSION),
         metadata(),
         *turn(),

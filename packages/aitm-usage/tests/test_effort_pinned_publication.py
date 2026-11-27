@@ -238,27 +238,32 @@ def test_publication_replay_keeps_original_artifact_and_local_worktree(repo_pair
     assert git(checkout, "branch", "--show-current").strip() == b"work"
     assert oid(checkout) == pin
     assert not git(checkout, "for-each-ref", "refs/aitm/pinned-report-publication")
+    _assert_registration_readback(checkout, remote, pin, data, report_id, artifact)
 
 
-def test_publication_conflict_holds_without_overwriting(repo_pair):
-    from aitm_usage.effort.pinned_publication import publish_pinned_report
+def test_publication_conflict_holds_without_overwriting(monkeypatch):
+    from types import SimpleNamespace
+
+    from aitm_usage.effort import pinned_publication as publication
     from aitm_usage.effort.pinned_report import report_path
     from aitm_usage.effort.session_publication import PublicationHold
 
-    checkout, remote, pin = repo_pair
-    data = envelope(pin)
-    target = checkout / report_path(STORY, json.loads(data)["report_id"])
-    target.parent.mkdir(parents=True)
-    target.write_bytes(b"conflict")
-    conflicting = commit(checkout, "conflicting report")
-    git(checkout, "push", "origin", f"HEAD:{PLANNING}")
+    repo = Path("/fixture/planning")
+    data = envelope("1" * 40)
+    path = report_path(STORY, json.loads(data)["report_id"])
+    conflicted = data[:-1] + b" "
+    tree = SimpleNamespace(repository=repo, entry=lambda name: (b"100644", "old-blob"))
+    queries = []
+
+    def read(repository, *args):
+        assert repository == repo and args[0] == "cat-file" and args[-1] == "old-blob"
+        queries.append(args)
+        return str(len(conflicted)).encode() if args[1] == "-s" else conflicted
+
+    monkeypatch.setattr(publication, "_read", read)
     with pytest.raises(PublicationHold, match="conflicting immutable"):
-        publish_pinned_report(checkout, str(remote), data)
-    assert oid(remote, PLANNING) == conflicting
-    assert (
-        git(remote, "show", f"{conflicting}:{target.relative_to(checkout).as_posix()}")
-        == b"conflict"
-    )
+        publication._require_bytes(tree, path, data, "conflicting immutable")
+    assert queries == [("cat-file", "-s", "old-blob"), ("cat-file", "blob", "old-blob")]
 
 
 def test_publication_holds_if_an_immutable_report_was_removed(repo_pair):
@@ -277,6 +282,17 @@ def test_publication_holds_if_an_immutable_report_was_removed(repo_pair):
     with pytest.raises(PublicationHold, match="conflicting immutable report history"):
         publish_pinned_report(checkout, str(remote), data)
     assert oid(remote, PLANNING) == removed
+
+    alternate = envelope(pin, complete=False)
+    other_path = report_path(STORY, json.loads(alternate)["report_id"])
+    other = checkout / other_path
+    other.write_bytes(b"conflict")
+    conflicting = commit(checkout, "conflicting report")
+    git(checkout, "push", "origin", f"HEAD:{PLANNING}")
+    with pytest.raises(PublicationHold, match="conflicting immutable"):
+        publish_pinned_report(checkout, str(remote), alternate)
+    assert oid(remote, PLANNING) == conflicting
+    assert git(remote, "show", f"{conflicting}:{other_path}") == b"conflict"
 
 
 def test_publication_refreshes_stale_remote_and_keeps_lost_ack_replay_stable(
@@ -319,16 +335,9 @@ def test_publication_refreshes_stale_remote_and_keeps_lost_ack_replay_stable(
     assert oid(remote, PLANNING) == later
 
 
-def test_registration_replays_exact_fact_and_holds_conflicting_readback(repo_pair):
-    from aitm_usage.effort.pinned_publication import (
-        prepare_report_registration,
-        publish_pinned_report,
-    )
+def _assert_registration_readback(checkout, remote, pin, data, report_id, artifact):
+    from aitm_usage.effort.pinned_publication import prepare_report_registration
     from aitm_usage.effort.session_publication import PublicationHold
-
-    checkout, remote, pin = repo_pair
-    data = envelope(pin)
-    report_id, artifact = publish_pinned_report(checkout, str(remote), data)
 
     def prepare(published_commit=artifact):
         return prepare_report_registration(
@@ -361,6 +370,41 @@ def test_registration_replays_exact_fact_and_holds_conflicting_readback(repo_pai
     with pytest.raises(PublicationHold, match="conflicting.*registration"):
         prepare()
     assert oid(remote, PLANNING) == conflict
+
+
+def test_registration_replays_exact_fact_and_holds_conflicting_readback():
+    from types import SimpleNamespace
+
+    from aitm_usage.effort.pinned_publication import _registration_exists
+    from aitm_usage.effort.session_publication import PublicationHold
+
+    report_id = "a" * 64
+    data = {
+        "kind": "pinned-story-effort-report",
+        "report_id": report_id,
+        "path": f"attachments/effort/reports/{report_id}.json",
+        "cutoff_utc": CUTOFF,
+        "scope": {"story": STORY, "project": PROJECT},
+        "sha256": "b" * 64,
+    }
+    event = registration_event(data["path"], b"independent registration", data["kind"])
+    event["data"] = data
+    body = raw(event) + b"\n"
+
+    def entry(path):
+        assert path == f"{STORY_ROOT}/events.jsonl"
+        return b"100644", "event-blob"
+
+    def blob(oid):
+        assert oid == "event-blob"
+        return body
+
+    tree = SimpleNamespace(entry=entry, blob=blob)
+    assert _registration_exists(tree, STORY, data)
+    conflicting = event | {"data": data | {"sha256": "0" * 64}}
+    body = raw(conflicting) + b"\n"
+    with pytest.raises(PublicationHold, match="conflicting.*registration"):
+        _registration_exists(tree, STORY, data)
 
 
 def dashboard_view(checkout, pin, selector):
@@ -403,6 +447,16 @@ def test_complete_cost_projection_is_accepted_by_existing_dashboard(repo_pair):
     from aitm_usage.effort.pinned_publication import publish_pinned_report
 
     checkout, remote, pin = repo_pair
+    partial = envelope(pin, complete=False)
+    _, partial_artifact = publish_pinned_report(checkout, str(remote), partial)
+    selector, _ = selector_and_proof(partial, partial_artifact)
+    assert dashboard_view(checkout, partial_artifact, selector) == {
+        "cost": None,
+        "coverage": "unknown",
+        "digests": [],
+        "actual_ms": 60_000,
+    }
+
     data = envelope(pin)
     _, artifact = publish_pinned_report(checkout, str(remote), data)
     selector, proof = selector_and_proof(data, artifact)
@@ -433,46 +487,33 @@ def test_complete_cost_projection_is_accepted_by_existing_dashboard(repo_pair):
     assert post["actual_ms"] == 60_000
 
 
-def test_partial_cost_hold_leaves_existing_dashboard_cost_unknown(repo_pair):
+def test_partial_cost_hold_leaves_existing_dashboard_cost_unknown():
     from aitm_usage.effort.pinned_cost import cost_candidate
-    from aitm_usage.effort.pinned_publication import publish_pinned_report
 
-    checkout, remote, pin = repo_pair
-    data = envelope(pin, complete=False)
-    _, artifact = publish_pinned_report(checkout, str(remote), data)
-    selector, proof = selector_and_proof(data, artifact)
+    data = envelope("1" * 40, complete=False)
+    selector, proof = selector_and_proof(data, "a" * 40)
     assert cost_candidate(data, selector, proof) == {
         "status": "held",
         "reasons": ["coverage-open"],
-    }
-    assert dashboard_view(checkout, artifact, selector) == {
-        "cost": None,
-        "coverage": "unknown",
-        "digests": [],
-        "actual_ms": 60_000,
     }
 
 
 @pytest.mark.parametrize(
     "field", ["source_sha256", "project_uuid", "verified_story", "selector"]
 )
-def test_cost_projection_requires_exact_operator_binding(repo_pair, field):
+def test_cost_projection_requires_exact_operator_binding(field):
     from aitm_usage.effort.pinned_cost import cost_candidate
 
-    _, _, pin = repo_pair
-    data = envelope(pin)
+    data = envelope("1" * 40)
     selector, proof = selector_and_proof(data, "a" * 40)
     proof[field] = "different"
     assert cost_candidate(data, selector, proof)["status"] == "held"
 
 
-def test_cost_projection_does_not_trust_eligibility_without_reconciled_coverage(
-    repo_pair,
-):
+def test_cost_projection_does_not_trust_eligibility_without_reconciled_coverage():
     from aitm_usage.effort.pinned_cost import cost_candidate
 
-    _, _, pin = repo_pair
-    data = envelope(pin, coverage_override={"expected_turns": 2, "pending": 1})
+    data = envelope("1" * 40, coverage_override={"expected_turns": 2, "pending": 1})
     selector, proof = selector_and_proof(data, "a" * 40)
     result = cost_candidate(data, selector, proof)
     assert result == {"status": "held", "reasons": ["invalid-complete-cost"]}

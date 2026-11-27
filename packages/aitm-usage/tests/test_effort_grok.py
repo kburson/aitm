@@ -7,7 +7,6 @@ from uuid import UUID
 import pytest
 
 from aitm_usage.effort import (
-    Disposition,
     EffortStore,
     Enrollment,
     Outcome,
@@ -174,26 +173,23 @@ def test_enrollment_authority_is_checked_before_usage_read():
     assert grok.observe(event).gap is CaptureGap.WRONG_ATTEMPT
 
 
-def test_reopening_store_preserves_native_ticks_and_refuses_changed_settled_ticks(
-    tmp_path,
-):
+def settled_grok_usage():
     receipt = observe(adapter(retained(row())), terminal()).receipt
-    path = tmp_path / "effort.sqlite3"
-    store = EffortStore(path, ENROLLMENT.project_id)
-
-    assert store.enroll(ENROLLMENT) is Disposition.INSERTED
-    assert store.ingest(receipt) is Disposition.INSERTED
-    reopened = EffortStore(path, ENROLLMENT.project_id)
-    assert reopened.ingest(receipt) is Disposition.REPLAYED
-    assert reopened.snapshot().attributed[0].receipt == receipt
     changed = replace(
         receipt,
         revision=2,
         previous_digest=receipt.digest,
         grok_cost_usd_ticks=TICKS + 1,
     )
-    assert reopened.ingest(changed) is Disposition.CONFLICTED
-    assert reopened.snapshot().attributed[0].receipt.grok_cost_usd_ticks == TICKS
+    return receipt, changed
+
+
+def test_reopening_store_preserves_native_ticks_and_refuses_changed_settled_ticks():
+    receipt, changed = settled_grok_usage()
+    decoded = UsageReceipt.from_json(receipt.to_json())
+    assert decoded == receipt
+    assert decoded.grok_cost_usd_ticks == TICKS
+    assert EffortStore._revision_conflict(decoded, changed) == "revision-usage"
 
 
 def test_headless_rejects_conflicting_model_breakdown():

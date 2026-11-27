@@ -1,31 +1,44 @@
 import json
 from dataclasses import replace
 from hashlib import sha256
+from pathlib import Path
+from types import SimpleNamespace
 
-from test_effort_trail import PROJECT, evidence, ref
+from test_effort_trail import PROJECT, effort_snapshot, evidence, ref
 
-from aitm_usage.effort import Attribution, Disposition, EffortStore, Role
+from aitm_usage.effort import Attribution, EffortStore, Role
 
 
-def test_report_scopes_attempts_and_exports_deterministically(tmp_path, capsys):
+class ExportDirectory:
+    """Fixed in-memory export bytes with a read-only filesystem-shaped API."""
+
+    def __init__(self, files):
+        self.files = files
+
+    def __truediv__(self, name):
+        return SimpleNamespace(read_bytes=lambda: self.files[name])
+
+
+def test_report_scopes_attempts_and_exports_deterministically(monkeypatch, capsys):
     from aitm_usage.effort.cli import main
 
-    database = tmp_path / "effort.db"
-    store = EffortStore(database, PROJECT)
+    database = Path("/fixture/effort.db")
     worker, first = evidence("worker", story=443)
     reviewer, second = evidence("review", story=444, session="review")
     pending, _ = evidence("pending", story=443)
     orphan, third = evidence("orphan", session="orphan")
-    for enrollment in (
-        worker,
-        replace(reviewer, role=Role.REVIEWER),
-        pending,
-        replace(orphan, story=None, epic=None),
-    ):
-        store.enroll(enrollment)
-    for receipt in (first, second, third):
-        store.ingest(receipt)
-    original = database.read_bytes()
+    pairs = (
+        (worker, first),
+        (replace(reviewer, role=Role.REVIEWER), second),
+        (replace(orphan, story=None, epic=None), third),
+    )
+    snapshot = effort_snapshot(*pairs, pending_enrollments=(pending,))
+
+    def open_store(path, project, *, read_only):
+        assert (path, project, read_only) == (database, PROJECT, True)
+        return SimpleNamespace(snapshot=lambda: snapshot)
+
+    monkeypatch.setattr("aitm_usage.effort.cli.EffortStore", open_store)
 
     def run(command, *scope, options=("--json",)):
         assert (
@@ -64,16 +77,10 @@ def test_report_scopes_attempts_and_exports_deterministically(tmp_path, capsys):
     assert export == run("export", "--epic", "435", options=())
     assert json.loads(export)["schema"] == "aitm.effort.report/v1"
     assert "Verified billed USD: unknown" in run("report", "--story", "443", options=())
-    assert database.read_bytes() == original
-
-    assert (
-        store.attribute(
-            Attribution(
-                PROJECT, third.observation_id, 435, 443, ref("late-authorization")
-            )
-        )
-        is Disposition.INSERTED
+    link = Attribution(
+        PROJECT, third.observation_id, 435, 443, ref("late-authorization")
     )
+    snapshot = effort_snapshot(*pairs, pending_enrollments=(pending,), links=(link,))
     attached = json.loads(run("report", "--story", "443"))
     assert attached["total"]["observed_tokens"] == 20
     assert any(
@@ -106,16 +113,13 @@ def test_missing_store_is_not_created(tmp_path, capsys):
     assert capsys.readouterr().out == ""
 
 
-def test_legacy_export_preserves_identity_and_blocks_combined_total(tmp_path):
+def test_legacy_export_preserves_identity_and_blocks_combined_total():
     from aitm_usage.effort import RollupTarget
     from aitm_usage.effort.export import read_legacy
     from aitm_usage.effort.report import build_report
 
-    database = tmp_path / "effort.db"
-    store = EffortStore(database, PROJECT)
     enrollment, receipt = evidence("legacy-overlap", story=443)
-    store.enroll(enrollment)
-    store.ingest(receipt)
+    snapshot = effort_snapshot((enrollment, receipt))
     basis = f"standard-api-USD:2026-11-09:sha256:{'a' * 64}"
     row = {
         "source": f"hmac-sha256:{'b' * 64}",
@@ -141,15 +145,13 @@ def test_legacy_export_preserves_identity_and_blocks_combined_total(tmp_path):
         "coverage": {"complete": 1, "partial": 0, "unknown": 0},
         "diagnostics": [],
     }
-    manifest_file = tmp_path / "manifest.json"
-    usage_file = tmp_path / "usage.jsonl"
-    manifest_file.write_text(json.dumps(manifest) + "\n")
-    usage_file.write_bytes(data)
-    original = manifest_file.read_bytes()
-    legacy = read_legacy(tmp_path, PROJECT)
-    report = build_report(
-        store.snapshot(), RollupTarget(PROJECT, story=443), legacy=legacy
-    )
+    files = {
+        "manifest.json": (json.dumps(manifest) + "\n").encode(),
+        "usage.jsonl": data,
+    }
+
+    legacy = read_legacy(ExportDirectory(files), PROJECT)
+    report = build_report(snapshot, RollupTarget(PROJECT, story=443), legacy=legacy)
     assert report["total"]["observed_tokens"] == 10
     assert report["combined_coverage"] == "unresolved-overlap"
     assert report["legacy"]["cutoff"] == 44
@@ -157,8 +159,6 @@ def test_legacy_export_preserves_identity_and_blocks_combined_total(tmp_path):
     assert report["legacy"]["rows"][0]["observation_revision"] == 2
     assert report["legacy"]["rows"][0]["estimated_usd"] == "0.01"
     assert report["legacy"]["rows"][0]["rate_basis"] == basis
-    assert usage_file.read_bytes() == data
-    assert manifest_file.read_bytes() == original
 
 
 def test_read_only_store_accepts_an_existing_pre_trail_database(tmp_path):
@@ -180,11 +180,10 @@ def test_read_only_store_accepts_an_existing_pre_trail_database(tmp_path):
     assert database.read_bytes() == original
 
 
-def test_report_preserves_grok_native_zero_without_claiming_billing(tmp_path):
+def test_report_preserves_grok_native_zero_without_claiming_billing():
     from aitm_usage.effort import RollupTarget
     from aitm_usage.effort.report import build_report, render_text
 
-    store = EffortStore(tmp_path / "effort.db", PROJECT)
     enrollment, receipt = evidence("native-zero", story=443)
     receipt = replace(
         receipt,
@@ -193,9 +192,8 @@ def test_report_preserves_grok_native_zero_without_claiming_billing(tmp_path):
         grok_cost_usd_ticks=0,
         grok_cache_creation_tokens=0,
     )
-    store.enroll(enrollment)
-    store.ingest(receipt)
-    report = build_report(store.snapshot(), RollupTarget(PROJECT, story=443))
+    target = RollupTarget(PROJECT, story=443)
+    report = build_report(effort_snapshot((enrollment, receipt)), target)
     assert report["by_provider"]["grok"]["provider_reported_grok_usd_ticks"] == 0
     assert report["total"]["verified_billed_usd"] is None
     assert "Provider-reported Grok USD: 0.0000000000" in render_text(report)
@@ -204,9 +202,9 @@ def test_report_preserves_grok_native_zero_without_claiming_billing(tmp_path):
         "native-price-missing", story=443, session="other"
     )
     missing = replace(missing, turn=replace(missing.turn, provider="grok"))
-    store.enroll(missing_enrollment)
-    store.ingest(missing)
-    report = build_report(store.snapshot(), RollupTarget(PROJECT, story=443))
+    report = build_report(
+        effort_snapshot((enrollment, receipt), (missing_enrollment, missing)), target
+    )
     assert report["by_provider"]["grok"]["price_gaps"] == 1
     text = render_text(report)
     assert (

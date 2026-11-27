@@ -345,6 +345,8 @@ jobs:
           ready=$(date +%s)
           workers=3
           export PYTHONPATH="$root:$root/tools/ci"
+          AITM_CI_CHILD_EVIDENCE=1 uv run --locked python -m tools.ci.unit_test_floor aitm-usage \
+            | tee -a "$GITHUB_STEP_SUMMARY"
           export AITM_CI_CHILD_EVIDENCE=1 COVERAGE_FILE="$out/.product"
           mode=$(jq -er .mode "$out/evidence/selection.json")
           if [[ "$mode" == checks ]]; then

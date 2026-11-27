@@ -1,10 +1,13 @@
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
 from test_effort_session import CHILD, OWNER, PROJECT, REMOTE, SESSION, layout
 from test_effort_session import session_api as session_api
+from test_ledger import _QueryRows
 
 from aitm_usage.effort.pinned_coverage import (
     canonical,
@@ -12,6 +15,7 @@ from aitm_usage.effort.pinned_coverage import (
     validate_coverage,
 )
 from aitm_usage.effort.receipts import (
+    Enrollment,
     Outcome,
     Role,
     TimeBasis,
@@ -20,7 +24,7 @@ from aitm_usage.effort.receipts import (
 )
 from aitm_usage.effort.session import SessionStore, validate_public_receipt
 from aitm_usage.effort.store import EffortError
-from aitm_usage.types import Availability, TokenCounts
+from aitm_usage.types import Availability, TokenCounts, _encode
 
 WINDOW = {
     "window_start_utc": "2026-11-25T00:00:00Z",
@@ -73,6 +77,8 @@ def test_export_preserves_attempt_identity_through_story_switch(session_api, tmp
         reopened, [SESSION], 457, WINDOW, "closed", authority([OWNER, CHILD])
     )
     data = validate_coverage(raw)
+    with pytest.raises(EffortError, match="session"):
+        export_coverage(reopened, [SESSION, UUID(int=5)], 457, WINDOW, "open")
     (public,) = reopened.public_receipts(SESSION)
     opaque = validate_public_receipt(public)["attempt"]
     assert {r["state"] for r in data["attempts"]} == {"pending-binding", "observed"}
@@ -85,35 +91,74 @@ def test_export_preserves_attempt_identity_through_story_switch(session_api, tmp
     )
 
 
-def test_zero_length_at_window_open_is_an_enrolled_attempt(session_api, tmp_path):
-    store, launch, turn = layout(session_api, tmp_path / "store.sqlite")
-    store.bind(SESSION, CHILD, launch, turn)
+def test_zero_length_at_window_open_is_an_enrolled_attempt(monkeypatch):
+    from test_effort_trail import evidence
+
+    store = SessionStore.__new__(SessionStore)
+    store.project_id = PROJECT
+    _, native = evidence("zero-window")
     start = datetime(2026, 11, 25, tzinfo=UTC)
-    store.accept(
-        SESSION,
-        UsageReceipt(
-            PROJECT,
-            CHILD,
-            turn,
-            "a" * 64,
-            datetime(2026, 11, 25, 1, tzinfo=UTC),
-            1,
-            Availability.COMPLETE,
-            Outcome.COMPLETED,
-            TokenCounts(input_tokens=0),
-            scope=UsageScope.BOUNDED,
-            started_at=start,
-            ended_at=start,
-            time_basis=TimeBasis.NATIVE,
+    receipt = replace(
+        native,
+        project_id=PROJECT,
+        attempt_id=CHILD,
+        observed_at=datetime(2026, 11, 25, 1, tzinfo=UTC),
+        tokens=TokenCounts(input_tokens=0),
+        started_at=start,
+        ended_at=start,
+    )
+    enrollment = Enrollment(PROJECT, SESSION, CHILD, Role.WORKER, 457)
+    responses = {
+        "session_selections": ((str(SESSION),), [(1,)]),
+        "session_expectations": (
+            (str(SESSION),),
+            [
+                (
+                    str(CHILD),
+                    _encode(receipt.turn, type(receipt.turn)),
+                    _encode(enrollment, Enrollment),
+                )
+            ],
         ),
+        "revisions": ((str(CHILD),), [(receipt.to_json(),)]),
+        "conflicts": ((str(CHILD),), []),
+        "pending": ((str(CHILD),), []),
+        "scope_markers": ((str(CHILD),), []),
+    }
+
+    def execute(query, options):
+        table = query.split(" FROM ", 1)[1].split()[0]
+        expected, rows = responses[table]
+        assert options == expected
+        return _QueryRows(rows)
+
+    monkeypatch.setattr(
+        store, "_transaction", lambda: nullcontext(SimpleNamespace(execute=execute))
     )
     states, _ = store.coverage_snapshot([SESSION], 457, WINDOW)
     assert states[CHILD] == "observed"
 
 
-def test_closed_evidence_must_match_store_and_explicit_zero(tmp_path):
-    store = SessionStore(tmp_path / "store.sqlite", PROJECT)
-    store.select(SESSION, 457, REMOTE)
+class CoverageStore:
+    project_id = PROJECT
+
+    def __init__(self, attempts=None, unresolved=0):
+        self.attempts = {} if attempts is None else attempts
+        self.unresolved = unresolved
+
+    def coverage_snapshot(self, sessions, story, window):
+        if sessions != [SESSION]:
+            raise EffortError("Unknown effort session")
+        assert (story, window) == (457, WINDOW)
+        return self.attempts.copy(), self.unresolved
+
+    @staticmethod
+    def public_attempt(attempt):
+        return f"{attempt.int:064x}"
+
+
+def test_closed_evidence_must_match_store_and_explicit_zero():
+    store = CoverageStore()
     with pytest.raises(EffortError, match="admission"):
         export_coverage(store, [SESSION], 457, WINDOW, "closed")
     with pytest.raises(EffortError, match="no-work"):
@@ -122,7 +167,7 @@ def test_closed_evidence_must_match_store_and_explicit_zero(tmp_path):
         store, [SESSION], 457, WINDOW, "closed", authority([], verified_no_work=True)
     )
     assert validate_coverage(zero)["attempts"] == []
-    store.expect(SESSION, OWNER, Role.ORCHESTRATOR, store.reference("launch", "canary"))
+    store = CoverageStore({OWNER: "pending-binding"})
     with pytest.raises(EffortError, match="attempt"):
         export_coverage(
             store,
@@ -132,13 +177,21 @@ def test_closed_evidence_must_match_store_and_explicit_zero(tmp_path):
             "closed",
             authority([], verified_no_work=True),
         )
-    with pytest.raises(EffortError, match="session"):
-        export_coverage(store, [SESSION, UUID(int=5)], 457, WINDOW, "open")
+    # An explicitly unselected session also makes the independently supplied
+    # admission roster inapplicable.
+    with pytest.raises(EffortError, match="scope"):
+        export_coverage(
+            store,
+            [SESSION],
+            457,
+            WINDOW,
+            "closed",
+            authority([OWNER], sessions=[str(UUID(int=5))]),
+        )
 
 
-def test_explicit_missing_and_unassigned_remain_visible(session_api, tmp_path):
-    store, launch, _ = layout(session_api, tmp_path / "store.sqlite")
-    store.expect(SESSION, UUID(int=7), Role.WORKER, launch, defer_story=True)
+def test_explicit_missing_and_unassigned_remain_visible():
+    store = CoverageStore({OWNER: "pending-binding", CHILD: "pending-binding"}, 1)
     open_record = validate_coverage(
         export_coverage(store, [SESSION], 457, WINDOW, "open")
     )
@@ -161,22 +214,22 @@ def test_explicit_missing_and_unassigned_remain_visible(session_api, tmp_path):
         validate_coverage(canonical(tampered))
 
 
-def test_scope_correction_and_conflict_are_not_complete(session_api, tmp_path):
-    store, launch, turn = layout(session_api, tmp_path / "store.sqlite")
-    store.bind(SESSION, CHILD, launch, turn)
-    initial = UsageReceipt(
-        PROJECT,
-        CHILD,
-        turn,
-        "a" * 64,
-        datetime(2026, 11, 25, 1, tzinfo=UTC),
-        1,
-        Availability.PARTIAL,
-        Outcome.COMPLETED,
-        TokenCounts(input_tokens=0),
-        scope=UsageScope.BOUNDED,
+def test_scope_correction_and_conflict_are_not_complete(session_api):
+    from test_effort_trail import evidence
+
+    _, native = evidence("receipt-conflict")
+    initial = replace(
+        native, project_id=PROJECT, attempt_id=CHILD, coverage=Availability.PARTIAL
     )
-    store.accept(SESSION, initial)
-    store.accept(SESSION, replace(initial, source_sha256="b" * 64))
+    conflict = replace(initial, source_sha256="b" * 64)
+
+    def execute(query, arguments):
+        assert "FROM conflicts" in query and arguments == (str(CHILD),)
+        return [(conflict.to_json(),)]
+
+    state = session_api._coverage_state(
+        SimpleNamespace(execute=execute), str(CHILD), initial.turn, initial, None
+    )
+    store = CoverageStore({OWNER: "pending-binding", CHILD: state})
     data = validate_coverage(export_coverage(store, [SESSION], 457, WINDOW, "open"))
     assert {row["state"] for row in data["attempts"]} == {"pending-binding", "disputed"}
