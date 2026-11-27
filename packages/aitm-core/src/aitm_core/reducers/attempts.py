@@ -178,6 +178,10 @@ def _bind_recovery(record: AttemptRecord, fact: RecoveryBinding) -> AttemptRecor
             "binding": fact.binding,
             "recovery_bound": True,
             "closed": False,
+            "recovery_generations": {
+                **record.recovery_generations,
+                fact.generation: authority,
+            },
         }
     )
 
@@ -201,13 +205,16 @@ def _record_execution(record: AttemptRecord, fact: ExecutionRecorded) -> Attempt
             raise AttemptIntegrityError(
                 "execution phase lacks the current active binding"
             )
-        authority = record.recovery if record.recovery_bound else None
-        if fact.recovery_authority_id != (
-            authority.authority_id if authority else None
-        ):
-            raise AttemptIntegrityError(
-                "execution phase disagrees with binding authority"
-            )
+    authority = record.recovery_generations.get(fact.generation)
+    if authority is None:
+        if fact.recovery_authority_id is not None:
+            raise AttemptIntegrityError("execution has no retained recovery authority")
+    elif (
+        fact.recovery_authority_id != authority.authority_id
+        or fact.action_key != "managed-verification"
+        or "managed-verification" not in authority.allowed
+    ):
+        raise AttemptIntegrityError("execution exceeds its retained recovery scope")
     if fact.source != record.started.source:
         raise AttemptIntegrityError(
             "execution phase disagrees with the retained source"

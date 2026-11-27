@@ -136,6 +136,9 @@ class AttemptRecord(AttemptFact):
     closed: bool = False
     recovery: RecoveryAuthority | None = None
     recovery_bound: bool = False
+    recovery_generations: dict[Positive, RecoveryAuthority] = Field(
+        default_factory=dict
+    )
     executions: dict[str, tuple[ExecutionRecorded, ...]] = Field(default_factory=dict)
 
     @property

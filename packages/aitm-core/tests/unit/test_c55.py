@@ -98,6 +98,7 @@ def replay(*batches):
         "core.expansion.resolved",
         "core.review.recorded",
         "core.review.activated",
+        "core.review.invalidated",
     ):
         registry.register(event_type, lambda state, event: state)
     events = records(*batches)
@@ -228,6 +229,17 @@ def test_no_child_resolution_and_effective_review_replay():
     ]
     result = replay(start_clock(), reservation, no_child, recorded, active)
     assert result.clock_mode == "review-stopped" and result.used_millis == 28
+    invalidation = fact("core.review.invalidated", resumes_execution=True)
+    rework = [invalidation, clock("e10", "review-stopped", "active", 28)]
+    resumed = replay(start_clock(), reservation, no_child, recorded, active, rework)
+    assert resumed.clock_mode == "active" and resumed.used_millis == 28
+    with pytest.raises(AttemptIntegrityError, match="missing clock"):
+        replay(start_clock(), reservation, no_child, recorded, active, [invalidation])
+
+
+def test_clock_cannot_pair_with_a_cause_from_another_operation():
+    with pytest.raises(AttemptIntegrityError, match="conflicts"):
+        validate_boundary_batch(records([START], [clock("e1", None, "active")]))
 
 
 @pytest.mark.parametrize("needs_verification", [False, True])
@@ -272,6 +284,66 @@ def test_recovery_binding_fences_ended_generation_and_keeps_allowance(
     assert resumed.generation == 2 and resumed.allowance_millis == 60000
     assert resumed.used_millis == 100 and len(resumed.closures) == 1
     assert resumed.clock_mode == ("active" if needs_verification else "terminal-closed")
+    if needs_verification:
+        scope = {
+            "action_key": "managed-verification",
+            "recovery_authority_id": "recovery-1",
+            "generation": 2,
+        }
+        prepared = [execution("prepared", **scope)]
+        admitted = [execution("admitted", **scope, proof="admission-proof")]
+        result = replay(start_clock(), closed, reopened, binding, prepared, admitted)
+        assert result.executions["exec-1"][-1].recovery_authority_id == "recovery-1"
+        with pytest.raises(AttemptIntegrityError, match="recovery.*scope"):
+            replay(
+                start_clock(),
+                closed,
+                reopened,
+                binding,
+                [
+                    execution(
+                        "prepared", **{**scope, "action_key": "apply-implementation"}
+                    )
+                ],
+            )
+        verified = [
+            fact(
+                "core.attempt.closed",
+                generation=2,
+                from_clock="active",
+                disposition="delivered",
+                reason="proof observed",
+            ),
+            clock("e10", "active", "terminal-closed", 120, generation=2),
+        ]
+        with pytest.raises(AttemptIntegrityError, match="recovery.*scope"):
+            replay(
+                start_clock(),
+                closed,
+                reopened,
+                binding,
+                prepared,
+                admitted,
+                verified,
+                [
+                    execution(
+                        "finished",
+                        **{**scope, "recovery_authority_id": None},
+                        proof="proof",
+                    )
+                ],
+            )
+        retained = replay(
+            start_clock(),
+            closed,
+            reopened,
+            binding,
+            prepared,
+            admitted,
+            verified,
+            [execution("finished", **scope, proof="proof")],
+        )
+        assert retained.executions["exec-1"][-1].phase == "finished"
     with pytest.raises(AttemptIntegrityError, match="generation"):
         replay(start_clock(), closed, reopened, binding, [execution("prepared")])
     with pytest.raises(AttemptIntegrityError, match="allowance"):
