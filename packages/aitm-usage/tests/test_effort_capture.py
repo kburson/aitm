@@ -12,6 +12,8 @@ from uuid import UUID
 import pytest
 
 from aitm_usage.effort import (
+    Disposition,
+    EffortStore,
     Enrollment,
     NativeTurn,
     Outcome,
@@ -166,18 +168,22 @@ def test_configured_launch_inherits_only_selected_environment(
     assert result.observation.outcome is Outcome.COMPLETED
 
 
-def test_exact_recovery_replays_live_observation(captured_process):
-    line = b'{"terminal":"completed","tokens":23}'
-    result, _ = captured_process(line + b"\n")
-    live = result.observation
+def test_exact_recovery_replays_live_observation(tmp_path):
+    line = '{"terminal":"completed","tokens":23}'
+    store = EffortStore(tmp_path / "effort.sqlite3", ENROLLMENT.project_id)
+    store.enroll(ENROLLMENT)
+    live = launch(tmp_path, f"print({line!r})").observation
+    assert store.ingest(live.receipt) is Disposition.INSERTED
+
     recovered = effort_capture.recover(
         FixtureAdapter(),
         enrollment=ENROLLMENT,
         expected_turn=replace(TURN, surface="retained"),
-        evidence=BytesIO(line),
+        evidence=BytesIO(line.encode()),
     )
+
     assert recovered.receipt.observation_id == live.receipt.observation_id
-    assert recovered.receipt.digest == live.receipt.digest
+    assert store.ingest(recovered.receipt) is Disposition.REPLAYED
 
 
 @pytest.mark.parametrize("field", ["account", "session", "turn"])

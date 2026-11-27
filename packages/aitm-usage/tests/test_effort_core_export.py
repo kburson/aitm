@@ -236,7 +236,7 @@ def test_core_export_derives_pinned_rows_and_provenance(repo_pair, tmp_path):
         "duplicate",
     ],
 )
-def test_core_export_preserves_held_evidence(pinned_evidence, tmp_path, mode):
+def test_core_export_preserves_held_evidence(pinned_evidence, request, mode):
     repo = pinned_evidence(STORY, STORY_ID)
     overrides = {}
     if mode == "partial":
@@ -269,6 +269,7 @@ def test_core_export_preserves_held_evidence(pinned_evidence, tmp_path, mode):
         with pytest.raises(EffortError, match="Multiple pinned receipt identities"):
             artifact(repo)
         return
+    tmp_path = request.getfixturevalue("tmp_path")
     out = export(repo, artifact(repo))
     proof = json.loads(out["provenance.json"])
     with Receiver(tmp_path / "receiver.db", PROJECT) as receiver:

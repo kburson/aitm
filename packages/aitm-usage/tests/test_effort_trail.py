@@ -144,6 +144,21 @@ def test_markers_handoff_and_late_receipt_preserve_original_story(tmp_path):
     assert rollup(snapshot, target(2)).total.observations == 1
     assert rollup(snapshot, target(1)).total.engaged == timedelta(seconds=2)
 
+    # The published rollup fixture exercises arithmetic in isolation. Keep
+    # its handoff and attribution dispositions on a separate real SQLite store.
+    _, _, pairs, markers, fixture_handoff, late, _ = _epic_trail_inputs()
+    fixture_store = EffortStore(tmp_path / "published-trail.db", PROJECT)
+    for enrollment, _ in pairs:
+        fixture_store.enroll(enrollment)
+    for fact in markers:
+        fixture_store.mark_scope(fact)
+    for _, receipt in pairs:
+        fixture_store.ingest(receipt)
+    assert fixture_store.handoff(fixture_handoff) == Disposition.INSERTED
+    assert fixture_store.attribute(late) == Disposition.INSERTED
+    assert fixture_store.attribute(late) == Disposition.REPLAYED
+    assert any(row.attribution == late for row in fixture_store.snapshot().attributed)
+
 
 def test_open_and_mixed_turns_are_unassigned():
     enrolled, receipt = evidence("turn")
@@ -234,14 +249,15 @@ def test_missing_time_unknown_counts_and_project_authority():
         rollup(snapshot, replace(target(), project_id=uuid4()))
 
 
-def test_published_epic_trail_fixture(tmp_path):
+def _epic_trail_inputs():
     from aitm_usage.effort import Attribution
 
     path = Path(__file__).parent / "fixtures" / "effort" / "epic-trail-433.json"
     fixture = json.loads(path.read_text(encoding="utf-8"))
     expected = fixture["rollup"]
     stories = {name: index for index, name in enumerate(expected["children"], 1)}
-    db = EffortStore(tmp_path / "effort.db", PROJECT)
+    pairs = []
+    markers = []
     receipts = {}
     clocks = {}
     late = None
@@ -289,12 +305,15 @@ def test_published_epic_trail_fixture(tmp_path):
             )
         receipts[row["attempt"]] = receipt
         clocks[receipt.observation_id] = ref("clock")
-        db.enroll(enrollment)
+        pairs.append((enrollment, receipt))
         assignment = fixture["assignment_markers"].get(row["attempt"])
         if assignment and "start_ms" in assignment:
-            db.mark_scope(marker(receipt, MarkerKind.START, assignment["start_ms"]))
-            db.mark_scope(marker(receipt, MarkerKind.END, assignment["end_ms"]))
-        db.ingest(receipt)
+            markers.extend(
+                (
+                    marker(receipt, MarkerKind.START, assignment["start_ms"]),
+                    marker(receipt, MarkerKind.END, assignment["end_ms"]),
+                )
+            )
         if scope is None and row["effective_scope"]:
             late = Attribution(
                 PROJECT,
@@ -304,14 +323,18 @@ def test_published_epic_trail_fixture(tmp_path):
                 ref("link"),
             )
     assert late is not None
-    db.handoff(
-        Handoff(
-            PROJECT,
-            receipts["parallel-worker-b-handoff"].turn,
-            receipts["parallel-successor"].turn,
-            ref("handoff"),
-        )
+    handoff = Handoff(
+        PROJECT,
+        receipts["parallel-worker-b-handoff"].turn,
+        receipts["parallel-successor"].turn,
+        ref("handoff"),
     )
+    return fixture, stories, pairs, markers, handoff, late, clocks
+
+
+def test_published_epic_trail_fixture():
+    fixture, stories, pairs, markers, _, late, clocks = _epic_trail_inputs()
+    expected = fixture["rollup"]
 
     def compare(snapshot, selected, values, bounds=None):
         window = WorkflowWindow(ref("clock"), *map(instant, bounds)) if bounds else None
@@ -325,10 +348,9 @@ def test_published_epic_trail_fixture(tmp_path):
                 milliseconds=values["workflow_elapsed_ms"]
             )
 
-    compare(db.snapshot(), target(), fixture["late_attribution"]["before_epic"])
-    assert db.attribute(late) == Disposition.INSERTED
-    assert db.attribute(late) == Disposition.REPLAYED
-    snapshot = db.snapshot()
+    prior = effort_snapshot(*pairs, markers=markers)
+    compare(prior, target(), fixture["late_attribution"]["before_epic"])
+    snapshot = effort_snapshot(*pairs, markers=markers, links=(late,))
     compare(
         snapshot,
         target(),

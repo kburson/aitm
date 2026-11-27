@@ -135,10 +135,18 @@ def test_cross_project_and_cross_attempt_turn_reuse_are_isolated(
 
 
 def test_conflicting_incomplete_chain_records_gap_without_replacing_prior_usage(
-    effort, receipt
+    effort, enrollment, receipt, tmp_path
 ):
+    store = effort.EffortStore(tmp_path / "effort.db", PROJECT)
+    store.enroll(enrollment)
     bad = replace(receipt, revision=2, previous_digest="e" * 64)
-    assert effort.EffortStore._revision_conflict(receipt, bad) == "revision-lineage"
+    assert store.ingest(bad) is effort.Disposition.PENDING
+    assert store.ingest(receipt) is effort.Disposition.INSERTED
+    snapshot = store.snapshot()
+    assert not snapshot.pending
+    assert [row.receipt for row in snapshot.attributed] == [receipt]
+    assert snapshot.conflicts[0].reason == "revision-lineage"
+    assert store.ingest(bad) is effort.Disposition.REPLAYED
 
 
 def test_parallel_local_writers_publish_one_observation(
@@ -200,15 +208,20 @@ def test_strict_wire_format_and_provenance(effort, receipt):
 
 
 def test_late_receipt_keeps_original_story_after_same_session_switch(
-    enrollment, receipt
+    effort, enrollment, receipt, tmp_path
 ):
+    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
     attempt_b = UUID(int=30)
-    enrollment_b = replace(enrollment, attempt_id=attempt_b, story=13)
+    store.enroll(enrollment)
+    store.enroll(replace(enrollment, attempt_id=attempt_b, story=13))
     receipt_b = replace(
         receipt, attempt_id=attempt_b, turn=replace(receipt.turn, turn=ref("e"))
     )
-    snapshot = effort_snapshot((enrollment_b, receipt_b), (enrollment, receipt))
-    assert {row.receipt.attempt_id: row.story for row in snapshot.attributed} == {
+    store.ingest(receipt_b)
+    store.ingest(receipt)
+    assert {
+        row.receipt.attempt_id: row.story for row in store.snapshot().attributed
+    } == {
         enrollment.attempt_id: 12,
         attempt_b: 13,
     }
@@ -264,20 +277,19 @@ def test_mixed_turn_never_inherits_story_or_accepts_late_link(
 
 
 def test_different_agent_can_continue_same_story_with_fresh_session(
-    enrollment, receipt
+    effort, enrollment, receipt, tmp_path
 ):
+    store = effort.EffortStore(tmp_path / "effort.db", enrollment.project_id)
     successor = UUID(int=31)
-    rows = effort_snapshot(
-        (enrollment, receipt),
-        (
-            replace(enrollment, attempt_id=successor),
-            replace(
-                receipt,
-                attempt_id=successor,
-                turn=replace(receipt.turn, session=ref("8")),
-            ),
-        ),
-    ).attributed
+    store.enroll(enrollment)
+    store.ingest(receipt)
+    store.enroll(replace(enrollment, attempt_id=successor))
+    store.ingest(
+        replace(
+            receipt, attempt_id=successor, turn=replace(receipt.turn, session=ref("8"))
+        )
+    )
+    rows = store.snapshot().attributed
     assert len(rows) == 2
     assert all(row.story == 12 for row in rows)
     assert len({row.receipt.turn.session for row in rows}) == 2
