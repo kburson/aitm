@@ -16,7 +16,10 @@ from pydantic import (
     ValidationError,
 )
 
-EVENT_TYPE_PATTERN = r"^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$"
+EVENT_TYPE_PATTERN = (
+    r"^(?:[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*"
+    r"|core\.attempt\.clock\.changed)$"
+)
 DIGEST = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 UTC_TIMESTAMP = re.compile(
     r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|\+00:00)"
