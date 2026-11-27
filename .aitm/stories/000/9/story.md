@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 9
 title: "[Core C04] Typed operations and MemoryBackend semantics"
 kind: "story"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/9"
 parent: 472
 children: []
 blocking: [10, 15, 16, 17]
 blocked-by: [4, 6, 7, 8]
 created: "2026-11-09T08:00:01Z"
-updated: "2026-11-27T12:06:23.698Z"
+updated: "2026-11-27T12:12:37.383Z"
 last-branch: "codex/core-9-memory-backend"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 4.0, "size": "S"}
