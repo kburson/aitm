@@ -11,3 +11,7 @@ Attempt 1. Codex is the implementing agent and closure owner. [Accepted pickup](
 ## Hosted verification
 
 [CI run 45973347426](https://github.com/kburson/aitm/actions/runs/45973347426) and [Core CI run 45973347356](https://github.com/kburson/aitm/actions/runs/45973347356) passed on base `a7fd302fc324f263926a885c5599e0d005abf77b`, head `6c5e65bd43b7b74fe990ade480a884ea6fd22ed1` and synthetic merge tree `0f2a5ec5dc43c979551058974785b3e2593e5794`. Hosted Core ran 90 passing tests and Ruff. The PR left draft and entered Grok 4.7 source SAR on this candidate.
+
+## Recovery authority and rework coverage
+
+The [initial SAR](2026-11-27-pr-533-grok-sar-r1.md) required evidence-only execution scope on every phase and causal rework coverage. The new scope test reproduced an accepted out-of-authority action. Replacement head `97f4f922fbace6acbcaa4b8367c2209d4cde5909` retains each recovery binding's authority by generation, enforces it through deferred result observations, and covers valid and missing rework boundaries plus a mismatched causal operation. Locked installed Core passed 91 tests, Ruff lint and formatting locally.
