@@ -91,13 +91,6 @@ def test_index_snapshot_is_atomic_with_exact_fallback(topology, tmp_path):
     assert query(replace(original, database=corrupt), Query(text="lemon")).rows == (
         query(original, Query(text="lemon")).rows
     )
-    rebuilt = index_snapshot(repo.tip(), repository=repo, database=corrupt)
-    with connect(rebuilt.database) as connection:
-        assert (
-            connection.execute("SELECT tree FROM metadata").fetchone()[0]
-            == original.snapshot.tree
-        )
-
     connection = connect(database)
     try:
         assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
@@ -119,6 +112,23 @@ def test_index_snapshot_is_atomic_with_exact_fallback(topology, tmp_path):
         assert query(original, Query(text="lemon")).rows
         assert not query(new, Query(text="lemon")).rows
         assert query(new, Query(text="fig")).rows
+        old_wal = database.with_name(database.name + "-wal").read_bytes()
+        stale_wal = corrupt.with_name(corrupt.name + "-wal")
+        stale_wal.write_bytes(old_wal)
+        rebuilt = index_snapshot(original.snapshot, repository=repo, database=corrupt)
+        assert rebuilt.database != corrupt
+        assert corrupt.read_bytes() == b"not a database"
+        assert stale_wal.read_bytes() == old_wal
+        with connect(rebuilt.database) as recovered:
+            assert (
+                recovered.execute("SELECT tree FROM metadata").fetchone()[0]
+                == original.snapshot.tree
+            )
+        reopened = query(replace(new, database=corrupt), Query(text="fig"))
+        assert (
+            reopened.source == "index"
+            and reopened.rows == query(new, Query(text="fig")).rows
+        )
     finally:
         connection.close()
 

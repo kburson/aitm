@@ -4,7 +4,7 @@ import sqlite3
 from contextlib import closing
 from dataclasses import dataclass
 
-from .build import IndexView, build_connection, index_snapshot
+from .build import IndexView, active_index, build_connection, index_snapshot
 from .schema import DOCUMENT_TABLES, INDEX_VERSION, IndexRow, open_index
 
 
@@ -53,7 +53,7 @@ def _read(connection: sqlite3.Connection, filter: Query) -> tuple[IndexRow, ...]
 
 
 def _indexed(view: IndexView, filter: Query) -> tuple[IndexRow, ...] | None:
-    with closing(open_index(view.database, read_only=True)) as connection:
+    with closing(open_index(active_index(view.database), read_only=True)) as connection:
         connection.execute("PRAGMA query_only = ON")
         connection.execute("BEGIN")
         version = connection.execute("PRAGMA user_version").fetchone()[0]

@@ -27,7 +27,24 @@ class IndexRow(BaseModel):
     lessons: tuple[str, ...] = ()
 
 
+class DamagedIndex(ValueError):
+    """The main database file cannot own a SQLite WAL."""
+
+
+def _check_header(database: Path) -> None:
+    try:
+        with database.open("rb") as source:
+            header = source.read(16)
+    except FileNotFoundError:
+        return
+    if header != b"SQLite format 3\x00" and (
+        header or database.with_name(database.name + "-wal").exists()
+    ):
+        raise DamagedIndex("index main file has no valid SQLite header")
+
+
 def open_index(database: Path, *, read_only: bool = False) -> sqlite3.Connection:
+    _check_header(database)
     if read_only:
         return sqlite3.connect(
             database.resolve().as_uri() + "?mode=ro", uri=True, timeout=0.05

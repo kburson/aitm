@@ -6,7 +6,9 @@ from contextlib import closing
 from dataclasses import dataclass
 from os import replace
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from re import fullmatch
+from tempfile import NamedTemporaryFile
+from uuid import uuid4
 
 from aitm_core.documents import DocumentError, _parse
 from aitm_core.events import core_reducers, fold
@@ -23,6 +25,7 @@ from .schema import (
     DOCUMENT_TABLES,
     INDEX_VERSION,
     TABLES,
+    DamagedIndex,
     IndexRow,
     initialize,
     open_index,
@@ -226,6 +229,42 @@ def _build_file(view: IndexView) -> None:
         build_connection(connection, view)
 
 
+def _generation_pointer(database: Path) -> Path:
+    return database.with_name(database.name + ".active")
+
+
+def active_index(database: Path) -> Path:
+    """Resolve only local cache-generation names owned by this index."""
+    try:
+        name = _generation_pointer(database).read_text(encoding="ascii").strip()
+    except (FileNotFoundError, UnicodeError):
+        return database
+    prefix = database.name + ".generation-"
+    if name.startswith(prefix) and fullmatch(
+        r"[0-9a-f]{32}", name.removeprefix(prefix)
+    ):
+        return database.with_name(name)
+    return database
+
+
+def _publish_generation(database: Path, generation: Path) -> None:
+    # Replace only the locator. Each SQLite database and its WAL sidecars
+    # stay at their original path for the lifetime of every reader.
+    with NamedTemporaryFile(
+        mode="w",
+        encoding="ascii",
+        prefix=".aitm-index-",
+        dir=database.parent,
+        delete=False,
+    ) as pointer:
+        temporary = Path(pointer.name)
+        pointer.write(generation.name + "\n")
+    try:
+        replace(temporary, _generation_pointer(database))
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def index_snapshot(
     snapshot: Snapshot, *, repository: Repository, database: Path
 ) -> IndexView:
@@ -233,30 +272,19 @@ def index_snapshot(
     if snapshot != repository.read_tree(snapshot.revision):
         raise ValueError("snapshot does not name the pinned repository tree")
     database.parent.mkdir(parents=True, exist_ok=True)
-    view = IndexView(snapshot, repository, database)
-    identity = _file_identity(database) if database.exists() else None
+    view = IndexView(snapshot, repository, active_index(database))
     try:
         _build_file(view)
-    except sqlite3.DatabaseError as error:
-        if error.sqlite_errorcode & 0xFF not in {
+    except (DamagedIndex, sqlite3.DatabaseError) as error:
+        if isinstance(
+            error, sqlite3.DatabaseError
+        ) and error.sqlite_errorcode & 0xFF not in {
             sqlite3.SQLITE_CORRUPT,
             sqlite3.SQLITE_NOTADB,
         }:
             raise
-        with TemporaryDirectory(
-            prefix=".aitm-index-", dir=database.parent
-        ) as temporary:
-            replacement = Path(temporary) / "index.sqlite"
-            _build_file(IndexView(snapshot, repository, replacement))
-            current = _file_identity(database)
-            if identity is None or current != identity:
-                raise sqlite3.OperationalError(
-                    "the damaged index changed during rebuild"
-                ) from error
-            replace(replacement, database)
+        generation = database.with_name(f"{database.name}.generation-{uuid4().hex}")
+        view = IndexView(snapshot, repository, generation)
+        _build_file(view)
+        _publish_generation(database, generation)
     return view
-
-
-def _file_identity(database: Path) -> tuple[int, int, int, int]:
-    current = database.stat()
-    return current.st_dev, current.st_ino, current.st_size, current.st_mtime_ns
