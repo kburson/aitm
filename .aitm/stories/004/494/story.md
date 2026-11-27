@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 494
 title: "[Core C107] Inventory legacy guard conditions and exceptions"
 kind: "story"
-state: test
+state: review
 issue: "https://github.com/kburson/aitm/issues/494"
 parent: 471
 children: []
 blocking: [497]
 blocked-by: []
 created: "2026-11-27T04:49:00Z"
-updated: "2026-11-27T10:41:36.338Z"
+updated: "2026-11-27T10:46:45.317Z"
 last-branch: "codex/core-494-legacy-guard-inventory"
 last-worktree: "/Users/kpburson/.codex/worktrees/aitm-core-470/trunk"
 estimate: {"agent-hours": 4.0, "size": "S"}
