@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 481
 title: "[Epic] Core — Managed local verification"
 kind: "epic"
-state: ready-for-plan
+state: plan
 issue: "https://github.com/kburson/aitm/issues/481"
 parent: 1
 children: [42, 43, 44, 505]
@@ -31,7 +31,7 @@ design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":1,"desig
 
 Run exact-candidate baseline and selector fixtures in captured and qualified contained environments.
 
-Parent: #1. Core coordination: #2. State: Ready for Planning.
+Parent: #1. Core coordination: #2. State: Planning.
 
 ## Delivery
 
@@ -51,3 +51,7 @@ Estimate: **14.5 implementation agent-hours**, including verification and review
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **120** · **P1/Feature** · **14.5 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **EP12**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Manual admission
+
+[Planning and sequencing correction](plan/2026-11-28-manual-admission.md).
