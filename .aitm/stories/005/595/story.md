@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 595
 title: "[Core] Close expansion authority and custody gaps before attempt control"
 kind: "story"
-state: backlog
+state: done
 issue: "https://github.com/kburson/aitm/issues/595"
 parent: 480
 children: []
@@ -25,3 +25,7 @@ trips: []
 Project 24 rank **15**, P1/S. The accepted implementation scope is estimated at four agent-hours. This story depends on [#594](../594/story.md) and blocks #40. Its current hypothesis is exact issuer-claim ordering against the stop plus closed-attempt identity reconciliation. See the [accepted spike and independent scope reviews](../594/retro/2026-11-28-594-acceptance.md) for the exact boundaries, dependencies and production proofs.
 
 This is manual bootstrap evidence. Runtime transition and implementation clock are both false.
+
+## Delivery
+
+[Native Linked PR #596](https://github.com/kburson/aitm/pull/596) · [Coordinator sign-off, exact receipts and Agent Cost](retro/2026-11-28-595-delivery.md).
