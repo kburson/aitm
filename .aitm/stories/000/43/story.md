@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 43
 title: "[Core C36] macOS contained-lane probe and profile"
 kind: "story"
-state: ready-for-plan
+state: plan
 issue: "https://github.com/kburson/aitm/issues/43"
 parent: 481
 children: []
@@ -102,3 +102,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **20** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #481 with scope entry **C36**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Manual pickup
+
+[Planning and proof basis](plan/2026-11-28-43-macos-containment.md).
