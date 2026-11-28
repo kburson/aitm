@@ -231,6 +231,7 @@ def _record_execution(record: AttemptRecord, fact: ExecutionRecorded) -> Attempt
             "authority_ref",
             "expected_prior_version",
             "recovery_authority_id",
+            "candidate",
         )
     ):
         raise AttemptIntegrityError("execution phase disagrees with retained authority")

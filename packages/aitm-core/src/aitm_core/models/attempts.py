@@ -6,6 +6,8 @@ from typing import Annotated, Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
+from aitm_core.models.events import DIGEST
+
 Text = Annotated[str, Field(min_length=1)]
 Positive = Annotated[int, Field(gt=0)]
 Nonnegative = Annotated[int, Field(ge=0)]
@@ -37,6 +39,13 @@ class AttemptFact(BaseModel):
 class SourceSnapshot(AttemptFact):
     commit: ObjectId
     tree: ObjectId
+
+
+class ExecutionCandidate(AttemptFact):
+    source: SourceSnapshot
+    capture_manifest: DIGEST | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class RecoveryAuthority(AttemptFact):
@@ -123,6 +132,9 @@ class ExecutionRecorded(AttemptBoundary):
     expected_prior_version: ObjectId
     source: SourceSnapshot
     phase: ExecutionPhase
+    candidate: ExecutionCandidate | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     recovery_authority_id: Text | None = None
     admission_commit: ObjectId | None = None
     outcome: Text | None = None
