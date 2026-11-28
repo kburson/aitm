@@ -8,7 +8,7 @@ from uuid import uuid4
 from aitm_core.cli.review_import import accept
 from aitm_core.events import UnavailableReducer
 from aitm_core.jit import Baseline, Coverage
-from aitm_core.models.attempts import BindingPurpose, SourceSnapshot
+from aitm_core.models.attempts import BindingPurpose
 from aitm_core.models.binding import StoryRef
 from aitm_core.models.common import CommandResult, LocalOutcome
 from aitm_core.models.events import EventActor
@@ -123,22 +123,13 @@ def _run(route: str, arguments: tuple[str, ...], identity: str) -> CommandResult
                 character not in "0123456789abcdef" for character in args.baseline
             ):
                 raise PlanningRefusal("JIT requires a full commit object ID.")
-            tree = (
-                workspace.repo._git("rev-parse", "--verify", args.baseline + "^{tree}")
-                .decode()
-                .strip()
-            )
-            commit = (
-                workspace.repo._git(
-                    "rev-parse", "--verify", args.baseline + "^{commit}"
+            if source is None:
+                return _result(
+                    identity,
+                    LocalOutcome.UNAVAILABLE,
+                    "JIT requires source coordinates from the current binding.",
                 )
-                .decode()
-                .strip()
-            )
-            if commit != args.baseline:
-                raise PlanningRefusal("JIT baseline must be a commit.")
-            source = SourceSnapshot(commit=commit, tree=tree)
-            if binding.source is not None and source != binding.source:
+            if source.commit != args.baseline:
                 raise BindingConflict("JIT baseline differs from the bound source.")
         if route == "estimate" and binding.purpose != BindingPurpose.PLANNING:
             raise BindingConflict("Estimate observations require a planning binding.")

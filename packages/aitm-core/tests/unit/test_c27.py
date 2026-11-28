@@ -425,20 +425,12 @@ def test_in_process_attempt_reconcile_obeys_transaction_preflight(monkeypatch):
     )
     bad_baseline = (*jit_args[:-1], "no-object")
     assert invoke(bad_baseline).local == LocalOutcome.REFUSED
-    calls = []
-
-    def resolve(*command):
-        calls.append(command)
-        return (
-            SOURCE.tree.encode()
-            if command[-1].endswith("^{tree}")
-            else SOURCE.commit.encode()
-        )
-
-    repo._git = resolve
     outcome = PreflightOutcome.PASSED
+    assert invoke((*jit_args[:-1], NEW_SOURCE.commit)).local == LocalOutcome.REFUSED
+    binding.source = None
+    assert invoke(jit_args).local == LocalOutcome.UNAVAILABLE
+    binding.source = SOURCE
     assert invoke((*jit_args, "--partial")).local == LocalOutcome.COMPLETED
-    assert len(calls) == 2
     persisted = store.read(store.snapshot(), (event_path,))[event_path]
     final = fold(persisted.splitlines(keepends=True), core_reducers())
     assert b'"outcome":"hold"' in persisted
