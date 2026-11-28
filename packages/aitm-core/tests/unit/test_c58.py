@@ -162,3 +162,19 @@ def test_legacy_predecessor_path_cannot_hide_a_conflicting_hash():
 
     with pytest.raises(ReviewError, match="start source"):
         _bind_turn(*_timed_turn("author-response-1.md", "sha256:" + "b" * 64))
+
+
+def test_exact_claim_survives_an_unusable_predecessor_clock():
+    future = replace(REVIEWER, submitted_at="2026-11-08T00:02:00Z")
+    bound = CLAIM.model_copy(update={"turn": 1})
+    result = derive_anchor(REVIEWER, future, (bound,), MANIFEST)
+    assert (result.basis, result.started_at) == ("claim", bound.claimed_at)
+
+
+def test_unqualified_timing_cannot_declare_an_unbound_start():
+    from aitm_core.reviews.native import _bind_turn
+
+    response, header, turn = _timed_turn("author-response-1.md", FINGERPRINT)
+    response = response.model_copy(update={"start_basis": None})
+    with pytest.raises(ReviewError, match="start basis"):
+        _bind_turn(response, header, turn)

@@ -61,8 +61,6 @@ def derive_anchor(
     """Use exact-turn claims and bounded predecessor proxies, ignoring registrations."""
     end = _instant(response.submitted_at)
     previous = _instant(predecessor.submitted_at) if predecessor else None
-    if previous is not None and previous > end:
-        return TimingAnchor("unknown", None, None)
     matches = tuple(
         claim
         for claim in claims
@@ -82,7 +80,7 @@ def derive_anchor(
     if len(matches) == 1:
         claim = matches[0]
         return TimingAnchor("claim", claim.claimed_at, manifest, claim.claim_id)
-    if not matches and predecessor is not None:
+    if not matches and predecessor is not None and previous <= end:
         return TimingAnchor(
             "prior-submit", predecessor.submitted_at, predecessor.source
         )

@@ -146,7 +146,10 @@ class PortableFacts:
     manifest: SourceReference
     revisions: tuple[_Revision, ...]
     turns: tuple[NativeTurn, ...]
+    # Recorder-declared finalization provenance. The native manifest is
+    # itself written by finalization and cannot contain its own Git OID.
     finalization_commit: str | None = None
+    finalization_source: SourceReference | None = None
 
     @property
     def revision_commit(self) -> str:
@@ -382,6 +385,15 @@ def _bind_turn(
     ):
         raise ReviewError("portable response disagrees with its native provenance")
     if response.start_basis is None:
+        if any(
+            value is not None
+            for value in (
+                response.started_at,
+                response.start_source,
+                header.get("start_source_digest"),
+            )
+        ):
+            raise ReviewError("portable timing claims a start without a start basis")
         return
     anchor = native.anchor
     if response.start_basis != anchor.basis or response.started_at != anchor.started_at:
@@ -446,9 +458,12 @@ def _bind_bundle(
                 raise ReviewError("ambiguous native response reference")
             native_originals[source] = _read_nested(root, source)
     facts = map_native(tuple(native_originals.values()))
-    finalization = header.get("native_finalization_commit")
-    if finalization is not None:
-        finalization = _COMMIT.validate_python(finalization, strict=True)
+    if header.get("native_finalization_commit") is None:
+        raise ReviewError("native bundle lacks a retained finalization reference")
+    finalization = _COMMIT.validate_python(
+        header["native_finalization_commit"], strict=True
+    )
+    portable_manifest = originals["review-manifest.md"]
     if (
         facts.review_id != review_id
         or facts.classification.lower() != record.manifest.level
@@ -491,6 +506,9 @@ def _bind_bundle(
     ), replace(
         facts,
         finalization_commit=finalization,
+        finalization_source=SourceReference(
+            portable_manifest.name, portable_manifest.raw_digest
+        ),
     )
 
 

@@ -3,8 +3,11 @@
 import json
 from hashlib import sha1
 
+import pytest
+
 from aitm_core.reviews.native import validate_bundle
 from aitm_core.reviews.policy import ReviewPolicy
+from aitm_core.reviews.portable import ReviewError
 from aitm_core.reviews.topology import IdentityBinding, IdentityMapping, Participant
 from tests.unit.test_c24 import ARTIFACT, BASE, FINAL, digest, write_bundle
 
@@ -164,3 +167,14 @@ def test_native_mapping(tmp_path):
     assert facts.turns[-1].anchor.basis == "prior-submit"
     assert facts.turns[-1].source_digest == digest(latest.read_bytes())
     assert {path: path.read_bytes() for path in originals_before} == originals_before
+
+    portable = root / "review-manifest.md"
+    assert facts.finalization_source.path == portable.name
+    assert facts.finalization_source.digest == digest(portable.read_bytes())
+    portable.write_text(
+        portable.read_text().replace(
+            f"native_finalization_commit: {FINALIZATION}\n", ""
+        )
+    )
+    with pytest.raises(ReviewError, match="finalization reference"):
+        validate_bundle(root, policy)
