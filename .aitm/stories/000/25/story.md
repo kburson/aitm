@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 25
 title: "[Core C20] Semantic identity reservations and uncertain dispatch"
 kind: "story"
-state: test
+state: review
 issue: "https://github.com/kburson/aitm/issues/25"
 parent: 476
 children: []
@@ -117,3 +117,5 @@ New dependent leaves [C81 / #234](../../002/234/story.md).
 [Scoped manual JIT pickup](plan/2026-11-27-pickup.md).
 
 [Draft #570](https://github.com/kburson/aitm/pull/570) is undergoing exact hosted qualification.
+
+#570 passed both exact hosted workflows and trusted verification before fresh SAR.

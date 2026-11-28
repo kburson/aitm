@@ -13,3 +13,5 @@ The initial draft passed both hosted workflows and its trusted verifier. It retu
 Base `fb23ebeb2b36f61e6c6bdfbc67ccc18df3d81359`, head `7b9c6e04db46a6ccf032ae10fccca3caffff892c`, synthetic merge `8bcd91b5f369ec2f99b2bc5fd0974246a1e6b157`, tree `a87e85f7a7688e4439f667511526d76326246292`.
 
 Draft qualification uses [repository CI](https://github.com/kburson/aitm/actions/runs/46097368082) and [Core CI](https://github.com/kburson/aitm/actions/runs/46097368088).
+
+The new foreign-issue regression failed on the previous source and passed on the revision. All 37 affected local cases passed. Both hosted workflows and trusted verification passed while draft on the revised exact candidate. #570 returned to independent review after these gates. [Exact trusted verifier](2026-11-27-pr-570-7b9c6e04-verifier.json)
