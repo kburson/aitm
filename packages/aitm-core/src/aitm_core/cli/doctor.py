@@ -4,11 +4,13 @@ from pathlib import Path
 from uuid import uuid4
 
 from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutcome
+from aitm_core.services import ServicePorts
 from aitm_core.setup.doctor import doctor
 from aitm_core.setup.init import _active_installation
 from aitm_core.setup.journal import read_proposal, state_directory
 from aitm_core.store.git_backend import ValidationRejected
 from aitm_core.store.objects import GitCommandError, Repository
+from aitm_core.verification.lanes import select_lane
 
 
 def handle(_route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult:
@@ -33,7 +35,7 @@ def handle(_route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult
                 ),
             )
         installation, _ = _active_installation(repo)
-        report = doctor(installation)
+        report = doctor(installation, ServicePorts(lane_selection=select_lane))
         return CommandResult(
             operation_id=operation,
             local=LocalOutcome.COMPLETED,
