@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 27
 title: "[Core C21] Shared local number allocation"
 kind: "story"
-state: ready-for-plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/27"
 parent: 476
 children: []
@@ -106,3 +106,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **50** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #476 with scope entry **C21**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+[Scoped manual JIT pickup](plan/2026-11-27-pickup.md).
