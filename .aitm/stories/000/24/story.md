@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 24
 title: "[Core C19] Ideas, drafts and atomic discard"
 kind: "story"
-state: review
+state: test
 issue: "https://github.com/kburson/aitm/issues/24"
 parent: 476
 children: []
@@ -112,3 +112,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 [Draft #568](https://github.com/kburson/aitm/pull/568) targets the #476 integration branch. Both hosted workflows are required before readiness.
 
 [Exact hosted verification](plan/2026-11-27-pr-568-verification.md) passed and #568 was marked ready for independent SAR.
+
+#568 returned to draft for three intake corrections. The revised source is back in hosted Test.

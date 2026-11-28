@@ -13,3 +13,14 @@ The focused tests first failed because the intake implementation was absent. The
 - The [trusted verifier](2026-11-27-pr-568-verifier.json) confirmed the exact attested repository attempt and both line floors, 18,749/20,685 product statements and 1,060/1,133 helper statements.
 
 #568 was marked ready after those gates passed. The same exact base, head and synthetic merge remained live at readiness. The independent source SAR is the next admission gate.
+
+## Revised candidate
+
+The first candidate was returned to draft after the author reproduced a copied `attachments/draft.md` being mistaken for the canonical document. A second reproduction showed stable retry from a fresh clone reported pending despite the exact receipt already being present on the validated shared ref. The revision restricts entity reads to canonical document depth, keeps retired paths reserved against stale handles, and verifies an already-delivered discard using its retained commit on the validated shared history. No runtime or implementation clock event was recorded.
+
+- Base `0312853be12468a87fda933401f16a1368e76b2b`
+- Revised head `460dc8209a245db013be0e9318cec6b8e103988f`
+- Synthetic merge `8e00e2a7d16fb9144f554dd57b5cd2d88e88a075`
+- Tree `bbc0ba51794afc1d885da75f84372ad4fb420338`
+
+Repository run [46086115199](https://github.com/kburson/aitm/actions/runs/46086115199) and hosted Core run [46086115252](https://github.com/kburson/aitm/actions/runs/46086115252) apply to the revised draft. The earlier hosted and SAR evidence applies solely to the preceding tree.
