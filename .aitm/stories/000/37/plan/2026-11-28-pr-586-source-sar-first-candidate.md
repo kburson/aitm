@@ -1,6 +1,6 @@
-# Initial source SAR for #586
+# Initial source sar for #586
 
-The first candidate remained unmerged. The coordinator returned the PR to draft and published a revision for separate exact qualification. Packet SHA-256 `18bb3e0ea255acc593252677844656b805cc5fc03feb41f5e1a5d5452246000f`.
+The first candidate remained unmerged. The coordinator returned the PR to draft, corrected the reported binding and Plan-admission gaps, and independently requalified the revision. Packet SHA-256 `18bb3e0ea255acc593252677844656b805cc5fc03feb41f5e1a5d5452246000f`.
 
 FAIL
 

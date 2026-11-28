@@ -1,6 +1,6 @@
-# Second source SAR for #586
+# Second source sar for #586
 
-The response describes the addressed requirements and gives no outstanding defect. Its explicit verdict withheld acceptance. The coordinator returned the candidate to draft at the same base, head, synthetic merge, and tree for an independent review. Packet SHA-256 `ce2a853dace51e967f7285839b1556b8eb28216bcf145782fb991f1f3b38d4be`.
+The response described the addressed requirements and gave no outstanding defect, while its explicit verdict withheld acceptance. The candidate returned to draft and retained the exact base, head, synthetic merge and tree for an independent review. Packet SHA-256 `ce2a853dace51e967f7285839b1556b8eb28216bcf145782fb991f1f3b38d4be`.
 
 FAIL
 
