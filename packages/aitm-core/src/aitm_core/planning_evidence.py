@@ -10,7 +10,7 @@ from aitm_core.attempts import attach_attempt_evidence
 from aitm_core.documents import canonicalize
 from aitm_core.estimates import observe_estimate
 from aitm_core.events import StoryState, UnavailableReducer, core_reducers, fold
-from aitm_core.jit import Coverage, record_jit
+from aitm_core.jit import Coverage, prepare_jit
 from aitm_core.models.attempts import AttemptState, SourceSnapshot
 from aitm_core.models.binding import StoryRef
 from aitm_core.models.common import CommandResult, LocalOutcome
@@ -93,7 +93,8 @@ def _persist(
     event_type: str,
     fact: BaseModel,
     *extra_reads: ReadExpectation,
-) -> CommandResult:
+    already_retained: bool = False,
+) -> OperationResult:
     story = context.scope.story
     event = (
         EventEnvelope(
@@ -129,19 +130,23 @@ def _persist(
         ),
         change=RelatedWriteSet(
             read_set=reads,
-            events=(EventAppend(story=story, records=(event,)),),
+            events=()
+            if already_retained
+            else (EventAppend(story=story, records=(event,)),),
         ),
     )
-    result = context.publish(operation, context.snapshot)
-    if result.reason is not None and not result.command.evidence:
-        return result.command.model_copy(update={"evidence": (result.reason,)})
-    return result.command
+    return context.publish(operation, context.snapshot)
 
 
-def run_reconcile(
+def _refuse(context: PlanningContext, error: Exception) -> OperationResult:
+    command = _error(context.operation_id, error)
+    return OperationResult(command, context.snapshot, str(error))
+
+
+def reconcile_attempt(
     context: PlanningContext, *, attempt: str, generation: int
-) -> CommandResult:
-    """Read the exact attempt snapshot and append through normal preflight and CAS."""
+) -> OperationResult:
+    """Attach evidence through normal preflight and CAS."""
     try:
         raw, state, lifecycle = _state(context)
         attempts = state.domains.get("attempts")
@@ -169,12 +174,6 @@ def run_reconcile(
             raise PlanningRefusal(str(error)) from error
         fact = attached.reconciliation
         assert fact is not None
-        if fact == current.reconciliation:
-            return _result(
-                context.operation_id,
-                LocalOutcome.COMPLETED,
-                "Attempt evidence already retained.",
-            )
         return _persist(
             context,
             raw,
@@ -183,12 +182,13 @@ def run_reconcile(
             "core.attempt.reconciled",
             fact,
             proof,
+            already_retained=fact == current.reconciliation,
         )
-    except (PlanningRefusal, UnavailableReducer, ValueError) as error:
-        return _error(context.operation_id, error)
+    except (UnavailableReducer, ValueError) as error:
+        return _refuse(context, error)
 
 
-def run_jit(context: PlanningContext, coverage: Coverage) -> CommandResult:
+def record_jit(context: PlanningContext, coverage: Coverage) -> OperationResult:
     try:
         raw, state, lifecycle = _state(context)
         plan = lifecycle.accepted_documents.get("plan")
@@ -199,26 +199,27 @@ def run_jit(context: PlanningContext, coverage: Coverage) -> CommandResult:
         attempts = state.domains.get("attempts")
         if isinstance(attempts, AttemptState) and attempts.current_attempt:
             current = attempts.attempts[attempts.current_attempt]
-            if not current.closed and (
+            if current.closed or (
                 attempts.current_attempt,
                 current.generation,
             ) != (coverage.attempt, coverage.attempt_generation):
                 raise PlanningRefusal("JIT names a stale attempt or generation.")
         try:
-            fact = record_jit(coverage, plan)
+            fact = prepare_jit(coverage, plan)
         except ValueError as error:
             raise PlanningRefusal(str(error)) from error
-        if fact == lifecycle.jit:
-            return _result(
-                context.operation_id,
-                LocalOutcome.COMPLETED,
-                "JIT evidence already retained.",
-            )
         return _persist(
-            context, raw, state, "jit.record", "core.jit.recorded", fact, proof
+            context,
+            raw,
+            state,
+            "jit.record",
+            "core.jit.recorded",
+            fact,
+            proof,
+            already_retained=fact == lifecycle.jit,
         )
-    except (PlanningRefusal, UnavailableReducer, ValueError) as error:
-        return _error(context.operation_id, error)
+    except (UnavailableReducer, ValueError) as error:
+        return _refuse(context, error)
 
 
 def run_estimate(
@@ -227,7 +228,7 @@ def run_estimate(
     *,
     source: str,
     rationale: str,
-) -> CommandResult:
+) -> OperationResult:
     try:
         raw, state, lifecycle = _state(context)
         proof = (
@@ -250,7 +251,7 @@ def run_estimate(
             context, raw, state, "estimate.record", "core.estimate.set", fact, *proof
         )
     except (PlanningRefusal, UnavailableReducer, ValueError) as error:
-        return _error(context.operation_id, error)
+        return _refuse(context, error)
 
 
 def _error(identity: str, error: Exception) -> CommandResult:

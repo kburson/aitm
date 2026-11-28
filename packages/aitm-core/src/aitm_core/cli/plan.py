@@ -24,9 +24,9 @@ from aitm_core.planning_evidence import (
     PlanningRefusal,
     _result,
     _state,
+    reconcile_attempt,
+    record_jit,
     run_estimate,
-    run_jit,
-    run_reconcile,
 )
 from aitm_core.services import (
     ServicePorts,
@@ -155,42 +155,54 @@ def _run(route: str, arguments: tuple[str, ...], identity: str) -> CommandResult
             source=source,
         )
         if route == "estimate":
-            return run_estimate(
-                context,
-                Estimate(
-                    phase=args.phase,
-                    agent_hours=args.hours,
-                    size=args.size,
-                    priority=args.priority,
-                ),
-                source=args.source,
-                rationale=args.rationale,
+            return _command(
+                run_estimate(
+                    context,
+                    Estimate(
+                        phase=args.phase,
+                        agent_hours=args.hours,
+                        size=args.size,
+                        priority=args.priority,
+                    ),
+                    source=args.source,
+                    rationale=args.rationale,
+                )
             )
         if route == "jit":
             _, _, lifecycle = _state(context)
             plan = lifecycle.accepted_documents.get("plan")
             if plan is None or source is None:
                 raise PlanningRefusal("No current accepted plan or baseline.")
-            return run_jit(
-                context,
-                Coverage(
-                    baseline=Baseline(
-                        kind="deliverable"
-                        if binding.purpose == BindingPurpose.DELIVERABLE
-                        else "source",
-                        snapshot=source,
+            return _command(
+                record_jit(
+                    context,
+                    Coverage(
+                        baseline=Baseline(
+                            kind="deliverable"
+                            if binding.purpose == BindingPurpose.DELIVERABLE
+                            else "source",
+                            snapshot=source,
+                        ),
+                        plan_digest=plan.canonical_digest,
+                        plan_generation=plan.plan_generation,
+                        attempt=args.attempt,
+                        attempt_generation=args.attempt_generation,
+                        paths=tuple(args.coverage),
+                        complete=not args.partial,
                     ),
-                    plan_digest=plan.canonical_digest,
-                    plan_generation=plan.plan_generation,
-                    attempt=args.attempt,
-                    attempt_generation=args.attempt_generation,
-                    paths=tuple(args.coverage),
-                    complete=not args.partial,
-                ),
+                )
             )
-        return run_reconcile(
-            context, attempt=args.attempt, generation=args.attempt_generation
+        return _command(
+            reconcile_attempt(
+                context, attempt=args.attempt, generation=args.attempt_generation
+            )
         )
+
+
+def _command(result: OperationResult) -> CommandResult:
+    if result.reason is not None and not result.command.evidence:
+        return result.command.model_copy(update={"evidence": (result.reason,)})
+    return result.command
 
 
 def handle(route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult:
@@ -200,16 +212,12 @@ def handle(route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult:
     if route in (("attempt", "reconcile"), ("estimate",), ("jit",)):
         try:
             return _run(route[0], arguments, identity)
-        except (UnavailablePort, UnavailableReducer) as error:
+        except (UnavailablePort, UnavailableReducer, GitCommandError, OSError) as error:
             return _result(identity, LocalOutcome.UNAVAILABLE, str(error))
-        except (
-            argparse.ArgumentError,
-            BindingConflict,
-            GitCommandError,
-            OSError,
-            ValueError,
-        ) as error:
+        except (argparse.ArgumentError, BindingConflict, PlanningRefusal) as error:
             return _result(identity, LocalOutcome.REFUSED, str(error))
+        except ValueError as error:
+            return _result(identity, LocalOutcome.INTEGRITY_ERROR, str(error))
     return _result(
         identity,
         LocalOutcome.UNAVAILABLE,

@@ -53,6 +53,17 @@ def test_jit_scope_requires_current_identity_and_complete_related_change_evidenc
     assert not assess(current, descendant=True, changed_paths=("src/core/sub.py",))
     assert not assess(current, descendant=True, changed_paths=("src",))
     assert not assess(current, descendant=True)
+    assert not assess(current, descendant=True, changed_paths=("../outside",))
+    assert not assess_jit(
+        coverage.model_copy(update={"paths": ()}),
+        current,
+        plan_digest=PLAN,
+        plan_generation=1,
+        attempt="a1",
+        attempt_generation=2,
+        descendant=True,
+        changed_paths=("src/other.py",),
+    )
     assert not assess(current, changed_paths=())
     assert not assess(plan_digest="b" * 64)
     assert not assess(plan_generation=2)
@@ -145,14 +156,20 @@ def test_refine_observation_requires_design_and_retains_the_proposal():
     assert "refine" not in current
 
 
-def test_in_process_attempt_reconcile_obeys_transaction_preflight():
+def test_in_process_attempt_reconcile_obeys_transaction_preflight(monkeypatch):
+    from contextlib import nullcontext
     from hashlib import sha256
+    from types import SimpleNamespace
 
-    from aitm_core.cli.plan import run_jit, run_reconcile
+    from typer.testing import CliRunner
+
+    from aitm_core.cli import plan
+    from aitm_core.cli.app import build_cli
     from aitm_core.documents import canonicalize
     from aitm_core.events import core_reducers, fold
+    from aitm_core.models.attempts import BindingPurpose
     from aitm_core.models.binding import StoryRef
-    from aitm_core.models.common import LocalOutcome
+    from aitm_core.models.common import CommandResult, LocalOutcome
     from aitm_core.models.documents import DocumentSchema
     from aitm_core.models.events import EventActor, EventEnvelope
     from aitm_core.models.operations import (
@@ -163,7 +180,11 @@ def test_in_process_attempt_reconcile_obeys_transaction_preflight():
         WriteAuthorization,
         story_event_path,
     )
-    from aitm_core.planning_evidence import PlanningContext
+    from aitm_core.planning_evidence import (
+        PlanningContext,
+        reconcile_attempt,
+        record_jit,
+    )
     from aitm_core.services import ServicePorts
     from aitm_core.store.memory_backend import MemoryBackend
 
@@ -295,21 +316,80 @@ def test_in_process_attempt_reconcile_obeys_transaction_preflight():
     )
     outcome = PreflightOutcome.PASSED
     jit_context = replace(request, operation_id="jit-c27")
-    assert run_jit(jit_context, coverage).local == LocalOutcome.COMPLETED
+    assert record_jit(jit_context, coverage).command.local == LocalOutcome.COMPLETED
     before = store.snapshot()
     request = replace(request, snapshot=before)
-
-    outcome = PreflightOutcome.BLOCKED
-    assert (
-        run_reconcile(request, attempt="a1", generation=1).local == LocalOutcome.REFUSED
+    binding = SimpleNamespace(
+        purpose=BindingPurpose.IMPLEMENTATION, attempt="a1", source=SOURCE
     )
+    repo = SimpleNamespace()
+    workspace = SimpleNamespace(
+        lock=nullcontext,
+        require=lambda *_: binding,
+        repo=repo,
+    )
+    installation = SimpleNamespace(store="fixture")
+    monkeypatch.setattr(plan, "Repository", lambda *_: repo)
+    monkeypatch.setattr(plan, "_active_installation", lambda _: (installation, None))
+    monkeypatch.setattr(plan, "Workspace", lambda _: workspace)
+    monkeypatch.setattr(
+        plan,
+        "preflight_policy",
+        lambda _: SimpleNamespace(
+            outcome=LocalOutcome.COMPLETED,
+            views=SimpleNamespace(planning=SimpleNamespace(observed_commit="fixture")),
+            policy=SimpleNamespace(source=SimpleNamespace(digest=PLAN)),
+        ),
+    )
+    monkeypatch.setattr(
+        plan,
+        "backend",
+        lambda *_: SimpleNamespace(
+            read_tree=lambda _: store.snapshot(),
+            read=store.read,
+        ),
+    )
+    monkeypatch.setattr(
+        plan, "mutate", lambda _, op, expected, **__: store.transact(op, expected)
+    )
+    runner = CliRunner()
+    args = (
+        "--json",
+        "attempt",
+        "reconcile",
+        "--story",
+        str(story),
+        "--attempt",
+        "a1",
+        "--attempt-generation",
+        "1",
+        "--binding",
+        "b",
+        "--generation",
+        "1",
+        "--session",
+        "s",
+    )
+
+    def invoke(arguments=args):
+        result = runner.invoke(build_cli(), arguments)
+        assert result.exception is None or isinstance(result.exception, SystemExit), (
+            result.exception
+        )
+        return CommandResult.model_validate_json(result.stdout)
+
+    binding.purpose = BindingPurpose.PLANNING
+    assert invoke().local == LocalOutcome.REFUSED
+    binding.purpose = BindingPurpose.IMPLEMENTATION
+    binding.attempt = "foreign"
+    assert invoke().local == LocalOutcome.REFUSED
+    binding.attempt = "a1"
+    outcome = PreflightOutcome.BLOCKED
+    assert invoke().local == LocalOutcome.REFUSED
     assert store.snapshot() == before
 
     outcome = PreflightOutcome.PASSED
-    assert (
-        run_reconcile(request, attempt="a1", generation=1).local
-        == LocalOutcome.COMPLETED
-    )
+    assert invoke().local == LocalOutcome.COMPLETED
     persisted = store.read(store.snapshot(), (event_path,))[event_path]
     final = fold(persisted.splitlines(keepends=True), core_reducers())
     attempt = final.domains["attempts"].attempts["a1"]
@@ -321,3 +401,45 @@ def test_in_process_attempt_reconcile_obeys_transaction_preflight():
     assert jit.baseline_snapshot == SOURCE
     assert jit.coverage_paths == ("src",)
     assert jit.attempt_generation == 1
+
+    blocked_context = replace(
+        request, snapshot=store.snapshot(), operation_id="fresh-check"
+    )
+    outcome = PreflightOutcome.BLOCKED
+    assert (
+        reconcile_attempt(blocked_context, attempt="a1", generation=1).command.local
+        == LocalOutcome.REFUSED
+    )
+    assert record_jit(blocked_context, coverage).command.local == LocalOutcome.REFUSED
+
+    assert invoke().local == LocalOutcome.REFUSED
+
+    jit_args = (
+        "--json",
+        "jit",
+        *args[3:],
+        "--coverage",
+        "src",
+        "--baseline",
+        SOURCE.commit,
+    )
+    bad_baseline = (*jit_args[:-1], "no-object")
+    assert invoke(bad_baseline).local == LocalOutcome.REFUSED
+    calls = []
+
+    def resolve(*command):
+        calls.append(command)
+        return (
+            SOURCE.tree.encode()
+            if command[-1].endswith("^{tree}")
+            else SOURCE.commit.encode()
+        )
+
+    repo._git = resolve
+    outcome = PreflightOutcome.PASSED
+    assert invoke((*jit_args, "--partial")).local == LocalOutcome.COMPLETED
+    assert len(calls) == 2
+    persisted = store.read(store.snapshot(), (event_path,))[event_path]
+    final = fold(persisted.splitlines(keepends=True), core_reducers())
+    assert b'"outcome":"hold"' in persisted
+    assert final.domains["lifecycle"].jit is None

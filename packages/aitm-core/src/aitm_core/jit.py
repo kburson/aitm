@@ -33,6 +33,21 @@ class Coverage(AttemptFact):
         return self
 
 
+class JitResult(AttemptFact):
+    applicable: bool
+    reason: Literal[
+        "current",
+        "stale-identity",
+        "incomplete-coverage",
+        "unproven-baseline",
+        "invalid-path",
+        "covered-change",
+    ]
+
+    def __bool__(self) -> bool:
+        return self.applicable
+
+
 def assess_jit(
     coverage: Coverage,
     baseline: Baseline,
@@ -43,36 +58,41 @@ def assess_jit(
     attempt_generation: int,
     descendant: bool = False,
     changed_paths: Iterable[str] | None = None,
-) -> bool:
+) -> JitResult:
     """Accept identical inputs or a proven descendant with no covered changes."""
+    if not coverage.complete or not coverage.paths:
+        return JitResult(applicable=False, reason="incomplete-coverage")
     if (
-        not coverage.complete
-        or coverage.plan_digest != plan_digest
+        coverage.plan_digest != plan_digest
         or coverage.plan_generation != plan_generation
         or coverage.attempt != attempt
         or coverage.attempt_generation != attempt_generation
         or coverage.baseline.kind != baseline.kind
     ):
-        return False
+        return JitResult(applicable=False, reason="stale-identity")
     if coverage.baseline == baseline:
-        return True
+        return JitResult(applicable=True, reason="current")
     if (
         coverage.baseline.snapshot.commit == baseline.snapshot.commit
         or not descendant
         or changed_paths is None
     ):
-        return False
+        return JitResult(applicable=False, reason="unproven-baseline")
     tracked = tuple(PurePosixPath(path) for path in coverage.paths)
-    for raw in changed_paths:
-        path = PurePosixPath(repository_path(raw))
-        if any(
-            path.is_relative_to(item) or item.is_relative_to(path) for item in tracked
-        ):
-            return False
-    return True
+    try:
+        paths = tuple(PurePosixPath(repository_path(raw)) for raw in changed_paths)
+    except (TypeError, ValueError):
+        return JitResult(applicable=False, reason="invalid-path")
+    if any(
+        path.is_relative_to(item) or item.is_relative_to(path)
+        for path in paths
+        for item in tracked
+    ):
+        return JitResult(applicable=False, reason="covered-change")
+    return JitResult(applicable=True, reason="current")
 
 
-def record_jit(coverage: Coverage, plan: DocumentAcceptance) -> JitEvidence:
+def prepare_jit(coverage: Coverage, plan: DocumentAcceptance) -> JitEvidence:
     """Prepare a replayable record for the current accepted plan and exact baseline."""
     if (
         plan.role != "plan"
@@ -81,14 +101,22 @@ def record_jit(coverage: Coverage, plan: DocumentAcceptance) -> JitEvidence:
     ):
         raise ValueError("JIT evidence requires the current accepted plan")
     baseline = coverage.baseline
+    decision = assess_jit(
+        coverage,
+        baseline,
+        plan_digest=plan.canonical_digest,
+        plan_generation=plan.plan_generation,
+        attempt=coverage.attempt,
+        attempt_generation=coverage.attempt_generation,
+    )
     return JitEvidence(
         plan_digest=coverage.plan_digest,
         plan_generation=coverage.plan_generation,
         attempt=coverage.attempt,
         code_baseline=baseline.snapshot.commit,
         coverage_paths=coverage.paths,
-        coverage_status="complete" if coverage.complete else "partial",
-        outcome="accepted" if coverage.complete else "hold",
+        coverage_status="complete" if decision.applicable else "partial",
+        outcome="accepted" if decision.applicable else "hold",
         reviewed_revisions=(baseline.snapshot.commit,),
         baseline_kind=baseline.kind,
         baseline_snapshot=baseline.snapshot,
