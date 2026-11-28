@@ -10,6 +10,7 @@ from pathlib import Path, PurePosixPath
 from typing import Callable, Literal
 from uuid import uuid4
 
+from aitm_core.entities import entity_matches
 from aitm_core.models.attempts import (
     BindingPurpose,
     EvidenceOperation,
@@ -192,7 +193,34 @@ class Workspace:
             raise BindingConflict(
                 "Binding authority belongs to another scope or routing anchor."
             )
+        if value.active and isinstance(scope, EntityRef):
+            current = self.repo.tip()
+            if not entity_matches(
+                scope,
+                self.repo.read_blobs(current.tree, (scope.document,))[scope.document],
+            ):
+                return value.model_copy(update={"active": False})
         return value
+
+    def entity_scope(self, handle: str, identity: str) -> EntityRef:
+        for path in self.state.glob("*.json"):
+            record = Binding.model_validate_json(path.read_bytes())
+            if (
+                record.identity == identity
+                and record.anchor == self.installation.store
+                and isinstance(record.scope, EntityRef)
+                and handle in {record.scope.identity, record.scope.document}
+            ):
+                return record.scope
+        raise BindingConflict("The entity handle and binding receipt do not match.")
+
+    def verify_binding_worktree(self, value: Binding) -> None:
+        root = Path(value.worktree)
+        other = type(self.repo)(root, self.repo.ref)
+        if other.identity != self.repo.identity or Workspace(
+            replace(self.installation, repository=other)
+        )._coordinates() != (value.worktree, value.git_directory):
+            raise BindingConflict("The bound worktree identity cannot be verified.")
 
     def _coordinates(self) -> tuple[str, str]:
         directory = os.fsdecode(
@@ -396,6 +424,12 @@ class Workspace:
             raise BindingConflict(
                 "The binding scope is absent from the pinned planning tree."
             )
+        if isinstance(request.scope, EntityRef) and not entity_matches(
+            request.scope, self.repo.read_blobs(tip.tree, (known,))[known]
+        ):
+            raise BindingConflict(
+                "The planning document has a different entity identity."
+            )
         paths = request.paths
         if (
             not paths
@@ -590,19 +624,7 @@ class Workspace:
                     "The binding recovery identity or generation is stale."
                 )
             root = Path(previous.worktree)
-            old = type(self.repo)(root, self.repo.ref)
-            actual = Path(
-                os.fsdecode(
-                    old._git("rev-parse", "--absolute-git-dir").removesuffix(b"\n")
-                )
-            ).resolve()
-            if (
-                old.identity != self.repo.identity
-                or str(actual) != previous.git_directory
-            ):
-                raise BindingConflict(
-                    "The previous worktree identity cannot be verified."
-                )
+            self.verify_binding_worktree(previous)
             export = (
                 self.state
                 / "recovery"
