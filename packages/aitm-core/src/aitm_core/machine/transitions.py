@@ -19,6 +19,7 @@ from aitm_core.machine.guards import (
     GuardPhase,
     ImplementationBinding,
 )
+from aitm_core.machine.kinds import kind_requirements
 from aitm_core.machine.obligations import (
     HOSTED_DELIVERY,
     DeliveryContract,
@@ -28,9 +29,11 @@ from aitm_core.machine.profile import WorkflowEdge, WorkflowProfile
 from aitm_core.models.attempts import (
     AttemptStarted,
     AttemptState,
+    BindingPurpose,
     ClockChanged,
     SourceSnapshot,
 )
+from aitm_core.models.binding import Binding, StoryRef
 from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutcome
 from aitm_core.models.events import EventEnvelope, validate_envelope
 from aitm_core.models.evidence import ActionScope, GuardEvaluated
@@ -82,6 +85,7 @@ class TransitionRequest:
     source: SourceSnapshot | None = None
     binding_ref: str | None = None
     binding_attempt: str | None = None
+    deliverable_binding: Binding | None = None
     latest_snapshot: Callable[[], Snapshot] | None = None
     before_sync: Phase | None = None
     sync: Phase | None = None
@@ -140,10 +144,21 @@ def _find_edge(request: TransitionRequest, current: str) -> WorkflowEdge | None:
 def _facts(request, snapshot, lifecycle, edge, raw, path, attempt):
     source, target = edge.source, edge.target
     profile_states = {entry.id: entry for entry in request.profile.states}
+    lane = kind_requirements(lifecycle.kind, "implementation")
     related = tuple(
         dict.fromkeys(
             (
                 *(story_event_path(n) for n in lifecycle.relationships.blocked_by),
+                *(
+                    story_event_path(n)
+                    for n in lifecycle.relationships.children
+                    if lane.evidence == "aggregate"
+                ),
+                *(
+                    item.path
+                    for item in lifecycle.deliverables.values()
+                    if lane.evidence == "deliverable"
+                ),
                 *(entry.path for entry in lifecycle.accepted_documents.values()),
             )
         )
@@ -187,7 +202,44 @@ def _facts(request, snapshot, lifecycle, edge, raw, path, attempt):
                 and lifecycle.kind not in slot.scope.story_kinds
             ):
                 continue
-            if slot is None:
+            if (
+                phase == "prepare"
+                and identifier == "core.dev.prepare-binding"
+                and lane.binding != BindingPurpose.IMPLEMENTATION
+            ):
+                continue
+            if identifier == request.contract.binding_guard and lane.binding is None:
+                continue
+            if (
+                identifier == request.contract.binding_guard
+                and lane.binding == BindingPurpose.DELIVERABLE
+            ):
+                local = request.deliverable_binding
+                qualified = (
+                    isinstance(local, Binding)
+                    and local.active
+                    and local.purpose == BindingPurpose.DELIVERABLE
+                    and local.scope == StoryRef(story=request.story)
+                    and local.identity == request.owner.binding
+                    and local.generation == request.owner.generation
+                    and local.source is not None
+                    and local.source == request.source
+                    and (
+                        local.attempt is None
+                        or attempt is None
+                        or local.attempt == attempt
+                    )
+                )
+                if qualified:
+                    binding = local
+                decision = GuardDecision(
+                    "pass" if qualified else "unavailable",
+                    "deliverable-binding-current"
+                    if qualified
+                    else "deliverable-binding-unavailable",
+                )
+                version = str(slot.version) if slot is not None else "unavailable"
+            elif slot is None:
                 decision = GuardDecision("unavailable", "guard-unavailable", identifier)
                 version = "unavailable"
             else:
@@ -248,6 +300,7 @@ def _facts(request, snapshot, lifecycle, edge, raw, path, attempt):
             if (
                 identifier == request.contract.binding_guard
                 and decision.status == "pass"
+                and lane.binding == BindingPurpose.IMPLEMENTATION
             ):
                 candidate = decision.binding
                 valid = (
@@ -401,8 +454,22 @@ def _make_operation(
     attempt = (
         current.started.attempt if current is not None and not current.closed else None
     )
+    lane = kind_requirements(lifecycle.kind, "implementation")
+    if (
+        edge.operation == request.contract.start
+        and not lane.attempt
+        and any(
+            not guard.ok and guard.guard == request.contract.pickup_guard
+            for guard in guards
+        )
+    ):
+        return (
+            None,
+            LocalOutcome.REFUSED,
+            "The exact accepted aggregate child scope is required.",
+        )
     transition_allowed = request.mode == "advisory" or not failed
-    if edge.operation == request.contract.start and transition_allowed:
+    if edge.operation == request.contract.start and transition_allowed and lane.attempt:
         if attempt is not None:
             return (
                 None,
@@ -422,7 +489,9 @@ def _make_operation(
                 LocalOutcome.UNAVAILABLE,
                 "current plan and implementation binding are required",
             )
-        attempt = binding.attempt if binding else f"{request.operation_id}:attempt"
+        attempt = (
+            binding.attempt if binding else None
+        ) or f"{request.operation_id}:attempt"
         if isinstance(attempts, AttemptState) and attempt in attempts.attempts:
             return (
                 None,

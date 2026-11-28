@@ -134,7 +134,7 @@ def _run(route, args, identity, ports):
                 lease.attempt,
             ):
                 raise BindingConflict("Transition binding changed before mutation.")
-            if any(
+            if lease.purpose == BindingPurpose.IMPLEMENTATION and any(
                 guard.guard == HOSTED_DELIVERY.binding_guard and guard.ok
                 for guard in operation.guards
             ):
@@ -165,6 +165,8 @@ def _run(route, args, identity, ports):
             return None
         return ports.implementation_binding(call, lease)
 
+    kind_guard, exit_guard = ports.workflow_guard_ports(lease.source)
+
     def guard(call):
         return core_guard(
             call,
@@ -173,12 +175,8 @@ def _run(route, args, identity, ports):
             planning_capacity=ports.planning_capacity
             if callable(ports.planning_capacity)
             else None,
-            kind_requirements=ports.kind_requirements
-            if callable(ports.kind_requirements)
-            else None,
-            story_exit_guards=ports.story_exit_guards
-            if callable(ports.story_exit_guards)
-            else None,
+            kind_requirements=kind_guard,
+            story_exit_guards=exit_guard,
         )
 
     def authored():
@@ -202,6 +200,9 @@ def _run(route, args, identity, ports):
         source=lease.source,
         binding_ref=lease.branch,
         binding_attempt=lease.attempt,
+        deliverable_binding=lease
+        if lease.purpose == BindingPurpose.DELIVERABLE
+        else None,
         latest_snapshot=latest,
         sync=authored,
         transact=apply,
@@ -210,6 +211,23 @@ def _run(route, args, identity, ports):
         request,
         before_sync=lambda: preflight_transition(request, ports.attempt_preflight),
     )
+    terminal = {
+        "abandon": "abandoned",
+        "supersede": "superseded",
+        "duplicate": "duplicate",
+    }
+    if route[0] in terminal or (route == ("promote",) and args.unverified):
+        from aitm_core.dispositions import DispositionRequest, dispose
+
+        disposition = terminal.get(route[0], "unverified")
+        return dispose(
+            DispositionRequest(
+                request,
+                disposition,
+                args.reason or "",
+                replacement=getattr(args, "replacement", None),
+            )
+        ).command
     if route == ("split",):
         from aitm_core.splitting import SplitRequest, split_leaf
 
@@ -248,7 +266,13 @@ def handle(
     parser.add_argument("--generation", type=int, required=True)
     parser.add_argument("--session", required=True)
     parser.add_argument("--target")
-    parser.add_argument("--reason", required=route == ("split",))
+    parser.add_argument(
+        "--reason", required=route[0] in {"split", "abandon", "supersede", "duplicate"}
+    )
+    if route[0] in {"supersede", "duplicate"}:
+        parser.add_argument("--replacement", required=True, type=int)
+    if route == ("promote",):
+        parser.add_argument("--unverified", action="store_true")
     if route == ("split",):
         parser.add_argument("--scope-file", required=True)
     try:
