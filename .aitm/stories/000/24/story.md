@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 24
 title: "[Core C19] Ideas, drafts and atomic discard"
 kind: "story"
-state: test
+state: review
 issue: "https://github.com/kburson/aitm/issues/24"
 parent: 476
 children: []
@@ -114,3 +114,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 [Exact hosted verification](plan/2026-11-27-pr-568-verification.md) passed and #568 was marked ready for independent SAR.
 
 #568 returned to draft for three intake corrections. The revised source is back in hosted Test.
+
+The revised #568 passed both exact hosted workflows and trusted verification before returning to independent review.

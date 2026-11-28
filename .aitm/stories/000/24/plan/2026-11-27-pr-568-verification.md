@@ -35,3 +35,5 @@ Repository run [46086115199](https://github.com/kburson/aitm/actions/runs/460861
 - Tree `a3c9d44841b21858811029130a864f678dea789c`
 
 The revision remains draft while [repository CI](https://github.com/kburson/aitm/actions/runs/46086369089) and [Core CI](https://github.com/kburson/aitm/actions/runs/46086369032) qualify this exact candidate.
+
+Both runs passed before #568 was marked ready again. Core collected 858 unit and 74 integration tests, all 932 passed, and its tooling test and Ruff passed. Hosted Linux aitm-usage collected 1,644 unit and 142 integration tests. The same 92% floors and coverage gates passed. All nine revised focused Core cases passed locally, including recovery from a lost CAS, a prior evidence event before graduation, retained receipt precedence with an inconsistent later graduation and changed-reason conflict. The [trusted verifier](2026-11-27-pr-568-bca68f1e-verifier.json) qualified the exact repository attempt and tree before the new SAR request.
