@@ -186,6 +186,64 @@ def test_draft_identity(topology, tmp_path, monkeypatch):
     assert changed_reason.command.operation_id == retry["operation_id"]
     assert session().snapshot == before_retry
 
+    push = Publisher._push
+
+    def push_with_unrelated_commit(content):
+        def compete(publisher, tip, expected_shared):
+            monkeypatch.setattr(Publisher, "_push", push)
+            advance(".aitm/README.md", content)
+            push(publisher, tip, expected_shared)
+
+        monkeypatch.setattr(Publisher, "_push", compete)
+
+    push_with_unrelated_commit(b"Unrelated to creation\n")
+    unrelated = session().create_draft(CreateEntity("Unrelated race"))
+    assert unrelated.command.publication == "verified"
+    draft_folder = PurePosixPath(unrelated.document).parent
+    draft_tree = git(remote, "rev-parse", f"{PLANNING}:{draft_folder}")
+    push_with_unrelated_commit(b"An independent planning commit\n")
+    replayed = session().discard_draft(unrelated.identity, "Unrelated change")
+    assert replayed.command.publication == "verified"
+    replayed_tombstone = ".aitm/drafts/discarded/20261127-1455-unrelated-race.json"
+    assert (
+        loads(git(remote, "show", f"{PLANNING}:{replayed_tombstone}"))["draft_tree"]
+        == draft_tree
+    )
+    assert git(remote, "cat-file", "-t", draft_tree) == "tree"
+    assert (
+        git(remote, "show", f"{PLANNING}:.aitm/README.md")
+        == "An independent planning commit"
+    )
+
+    left = session().create_draft(CreateEntity("Concurrent tombstone"))
+    right = session().create_draft(CreateEntity("Concurrent tombstone"))
+    twins = tmp_path / "collision"
+    twins.mkdir()
+    competitor = cloned(topology, twins).policy.installation
+
+    def push_with_tombstone_collision(self, tip, expected_shared):
+        monkeypatch.setattr(Publisher, "_push", push)
+        winner = session(competitor).discard_draft(right.identity, "Competing discard")
+        assert winner.command.publication == "verified"
+        push(self, tip, expected_shared)
+
+    monkeypatch.setattr(Publisher, "_push", push_with_tombstone_collision)
+    pending = session().discard_draft(left.identity, "Competing discard")
+    assert pending.command.publication == "pending" and pending.command.recovery
+    resolved = session().discard_draft(left.identity, "Competing discard")
+    assert resolved.command.publication == "verified"
+    assert resolved.command.operation_id != pending.command.operation_id
+    assert (
+        git(topology.local, "rev-parse", pending.command.recovery)
+        == pending.snapshot.revision
+    )
+    for suffix, ref in (("", right), ("-2", left)):
+        path = f".aitm/drafts/discarded/20261127-1455-concurrent-tombstone{suffix}.json"
+        assert (
+            loads(git(remote, "show", f"{PLANNING}:{path}"))["entity"]["identity"]
+            == ref.identity
+        )
+
     raced = session().create_draft(CreateEntity("Attachment race"))
     raced_attachment = str(
         PurePosixPath(raced.document).parent / "attachments/raced.txt"
@@ -212,5 +270,5 @@ def test_draft_identity(topology, tmp_path, monkeypatch):
         git(remote, "ls-tree", "-r", remote_tip, ".aitm/drafts/discarded").count(
             ".json"
         )
-        == 3
+        == 6
     )

@@ -1,7 +1,7 @@
 """Create unnumbered entities and discard a whole draft in one planning operation."""
 
 from collections.abc import Iterable, Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from hashlib import sha256
 from json import dumps
@@ -72,7 +72,72 @@ class Tombstone(BaseModel):
     discarded_at: datetime
     operation_id: str
     prior_tree: str
+    draft_tree: str
     attachments: dict[str, str]
+
+
+def _read_tombstones(
+    repository: Repository, snapshot: Snapshot, occupied: Iterable[str]
+) -> Iterator[tuple[str, Tombstone]]:
+    paths = tuple(path for path in occupied if path.startswith(_DISCARDED + "/"))
+    for path, raw in repository.read_blobs(snapshot.tree, paths).items():
+        assert raw is not None
+        yield path, Tombstone.model_validate_json(raw)
+
+
+def _graduated(
+    repository: Repository, snapshot: Snapshot, identity: str, occupied: Iterable[str]
+) -> bool:
+    paths = tuple(
+        path
+        for path in occupied
+        if path.endswith("/events.jsonl")
+        and (story := story_scope(path)) is not None
+        and path == story_event_path(story)
+    )
+    for raw in repository.read_blobs(snapshot.tree, paths).values():
+        assert raw is not None
+        for record in raw.splitlines(keepends=True):
+            event = validate_envelope(record)
+            if event.type == "core.story.graduated":
+                source = Graduation.model_validate_json(dumps(event.data))
+                if source.source_kind == "draft" and source.source_id == identity:
+                    return True
+    return False
+
+
+def draft_replay_conflict(
+    repository: Repository, snapshot: Snapshot, operation: Operation
+) -> str | None:
+    """Check the draft namespace facts which cannot be expressed as blob reads."""
+    occupied = _entries(repository, snapshot)
+    if operation.intent.kind == "core.draft.created":
+        (write,) = operation.change.writes
+        folder = str(PurePosixPath(write.path).parent)
+        if folder in occupied or any(
+            path.startswith(folder + "/") for path in occupied
+        ):
+            return "the draft creation folder is occupied"
+        if any(
+            tombstone.entity.document == write.path
+            for _, tombstone in _read_tombstones(repository, snapshot, occupied)
+        ):
+            return "the draft document path has been retired"
+        return None
+
+    tombstone = Tombstone.model_validate_json(operation.intent.payload)
+    folder = str(PurePosixPath(tombstone.entity.document).parent)
+    paths = {path for path in occupied if path.startswith(folder + "/")}
+    if paths != {tombstone.entity.document, *tombstone.attachments}:
+        return "the draft folder manifest changed"
+    draft_tree = (
+        repository._git("rev-parse", f"{snapshot.tree}:{folder}").decode().strip()
+    )
+    if draft_tree != tombstone.draft_tree:
+        return "the draft folder contents changed"
+    if _graduated(repository, snapshot, tombstone.entity.identity, occupied):
+        return "the draft has graduated"
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,7 +220,10 @@ class Intake:
             document = vacant_path(root, stem, ".md", occupied)
         else:
             retired = {
-                tombstone.entity.document for _, tombstone in self._tombstones(occupied)
+                tombstone.entity.document
+                for _, tombstone in _read_tombstones(
+                    self.repository, self.snapshot, occupied
+                )
             }
             folder = vacant_path(root, stem, "", occupied.keys() | retired)
             document = f"{folder}/draft.md"
@@ -222,24 +290,6 @@ class Intake:
             for entity in self._live(kind, _entries(self.repository, self.snapshot))
         )
 
-    def _graduated(self, handle: str, occupied: Iterable[str]) -> bool:
-        paths = (
-            path
-            for path in occupied
-            if path.endswith("/events.jsonl")
-            and (story := story_scope(path)) is not None
-            and path == story_event_path(story)
-        )
-        for raw in self._blobs(paths).values():
-            assert raw is not None
-            for record in raw.splitlines(keepends=True):
-                event = validate_envelope(record)
-                if event.type == "core.story.graduated":
-                    source = Graduation.model_validate_json(dumps(event.data))
-                    if source.source_kind == "draft" and source.source_id == handle:
-                        return True
-        return False
-
     def _failure(
         self, outcome: LocalOutcome, reason: str, identity: str | None = None
     ) -> OperationResult:
@@ -248,18 +298,14 @@ class Intake:
         )
         return OperationResult(command, self.snapshot, reason)
 
-    def _tombstones(self, occupied: Iterable[str]) -> Iterator[tuple[str, Tombstone]]:
-        paths = (path for path in occupied if path.startswith(_DISCARDED + "/"))
-        for path, raw in self._blobs(paths).items():
-            assert raw is not None
-            yield path, Tombstone.model_validate_json(raw)
-
     def _retry(
         self, handle: str, reason: str, occupied: Iterable[str]
     ) -> OperationResult | None:
         from aitm_core.cli.dispatch import publish
 
-        for path, tombstone in self._tombstones(occupied):
+        for path, tombstone in _read_tombstones(
+            self.repository, self.snapshot, occupied
+        ):
             if handle not in {
                 tombstone.entity.identity,
                 tombstone.entity.document,
@@ -312,8 +358,75 @@ class Intake:
                     )
                 else:
                     command = publish(self.installation, identity)
+                    if (
+                        command.publication == PublicationOutcome.PENDING
+                        and command.recovery
+                        and self.snapshot == origin
+                        and prepared.policy is not None
+                        and shared is not None
+                        and shared.status == ContinuityStatus.VERIFIED
+                        and shared.valid_tip is not None
+                    ):
+                        replacement = self._retry_tombstone_collision(
+                            path,
+                            tombstone,
+                            receipt,
+                            origin,
+                            shared.valid_tip,
+                            prepared.policy.source.digest,
+                            command.recovery,
+                        )
+                        if replacement is not None:
+                            return replacement
             return OperationResult(command, origin)
         return None
+
+    def _retry_tombstone_collision(
+        self,
+        path: str,
+        tombstone: Tombstone,
+        receipt: _Record,
+        origin: Snapshot,
+        shared_tip: str,
+        policy_digest: str,
+        recovery: str,
+    ) -> OperationResult | None:
+        from aitm_core.store.publication import Publisher
+        from aitm_core.store.reconcile import Resolution, reconcile
+
+        shared = self.repository.read_tree(shared_tip)
+        occupied = self.repository.read_blobs(shared.tree, (path,))[path]
+        # Preserve any additional unpublished work. Only the one competing
+        # discard can be replaced automatically after selecting the shared tip.
+        if (
+            occupied is None
+            or Tombstone.model_validate_json(occupied).entity.identity
+            == tombstone.entity.identity
+            or self.repository._run(
+                "merge-base", "--is-ancestor", receipt.base, shared_tip
+            ).returncode
+            != 0
+        ):
+            return None
+        original = Publisher(self.installation).request(tombstone.operation_id)
+        if draft_replay_conflict(self.repository, shared, original) is not None:
+            return None
+        selected = reconcile(
+            self.installation,
+            tombstone.operation_id,
+            Resolution(origin.revision, shared_tip),
+        )
+        if selected.command.local != LocalOutcome.COMPLETED:
+            return selected
+        result = replace(
+            self, snapshot=shared, policy_digest=policy_digest
+        ).discard_draft(tombstone.entity.identity, tombstone.reason)
+        return replace(
+            result,
+            command=result.command.model_copy(
+                update={"recovery": result.command.recovery or recovery}
+            ),
+        )
 
     def discard_draft(self, handle: str, reason: str) -> OperationResult:
         reason = reason.strip()
@@ -337,7 +450,12 @@ class Intake:
                 LocalOutcome.CONFLICT, f"Ambiguous draft handle. Choose {choices}."
             )
         entity = candidates[0] if candidates else None
-        if self._graduated(entity.ref.identity if entity else handle, occupied):
+        if _graduated(
+            self.repository,
+            self.snapshot,
+            entity.ref.identity if entity else handle,
+            occupied,
+        ):
             return self._failure(LocalOutcome.REFUSED, "The draft has graduated.")
         if entity is None:
             return self._failure(
@@ -359,6 +477,11 @@ class Intake:
             discarded_at=self.stamp.astimezone(UTC),
             operation_id=identity,
             prior_tree=self.snapshot.tree,
+            draft_tree=self.repository._git(
+                "rev-parse", f"{self.snapshot.tree}:{folder}"
+            )
+            .decode()
+            .strip(),
             attachments={
                 name: sha256(raw).hexdigest()
                 for name, raw in blobs.items()

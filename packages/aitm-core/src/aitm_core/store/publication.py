@@ -219,12 +219,11 @@ class Publisher:
                     "the retained operation requires fresh guard qualification"
                 )
             if operation.intent.kind in {"core.draft.created", "core.draft.discarded"}:
-                # File reads miss new attachments under the draft folder and
-                # graduation records outside it.
-                if current.tree != repo.read_tree(record.base).tree:
-                    raise ReplayConflict(
-                        "the draft namespace requires its original planning tree"
-                    )
+                from aitm_core.drafts import draft_replay_conflict
+
+                conflict = draft_replay_conflict(repo, current, operation)
+                if conflict is not None:
+                    raise ReplayConflict(conflict)
             paths = tuple(item.path for item in operation.change.read_set)
             destinations = {
                 entry.path
