@@ -156,7 +156,7 @@ def test_plan_rework_invalidate_typed_facts_before_returning_to_design(context):
     assert story.jit is None and story.split is None
 
 
-def append_events(raw, owner, story, operation, rows):
+def append_events(raw, owner, story, operation, rows, *, policy=None):
     count = len(raw.splitlines())
     for index, (name, data) in enumerate(rows, 1):
         raw += (
@@ -170,6 +170,7 @@ def append_events(raw, owner, story, operation, rows):
                 operation_id=operation,
                 sequence=count + index,
                 prior_log_digest=sha256(raw).hexdigest(),
+                policy_digest=policy,
                 data=data,
             )
             .model_dump_json(exclude_none=True)
