@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 74
 title: "[Core C74] Entity-scoped editing and graduation handoff"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/74"
 parent: 476
 children: []
 blocking: [25, 26, 27, 40, 50, 66]
 blocked-by: [21, 22, 24]
 created: "2026-11-09T13:42:06Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T01:56:03.144+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -98,3 +98,7 @@ The current accepted parent section is published `bd4adf06c90fcf02bf0930bbdec5d4
 [Draft #569](https://github.com/kburson/aitm/pull/569) targets the #476 integration branch. [Candidate and hosted gates](plan/2026-11-27-pr-569-verification.md).
 
 Both exact hosted workflows and trusted verification passed for #569 before independent SAR.
+
+## Verified delivery
+
+Native [Linked PR #569](https://github.com/kburson/aitm/pull/569). [Independent exact SAR PASS](plan/2026-11-27-pr-569-source-sar.md) · [Delivery sign-off, receipts and Agent Cost](retro/2026-11-27-delivery.md).
