@@ -1,0 +1,28 @@
+{
+  "base": "57beba9316a3ea18f505c87b9ad2b1800b9f4896",
+  "head": "ebc2a3b94c655d2f9c3a3e3cac14390ce7c809a4",
+  "merge": "d883737ae9ea02920a30e5242a14ab41d4b9f9fe",
+  "ordered_parents": [
+    "57beba9316a3ea18f505c87b9ad2b1800b9f4896",
+    "ebc2a3b94c655d2f9c3a3e3cac14390ce7c809a4"
+  ],
+  "tree": "3fca9db15555559b9dfe2d92c58176686f1f6c8b",
+  "model": "grok-4.7-build",
+  "readiness_at": "2026-11-28T19:10:10Z",
+  "started_at": "2026-11-28T19:10:11Z",
+  "packet_bytes": 485866,
+  "packet_sha256": "85a0d69c6f15751e9b2b488d2874e83eaee5ff254e0c668460f1ce138434ef0c",
+  "submitted_packet_sha256": "b8fe840dde6b86c8bde49243fc8eb05aa309aa03e481d44b8b36084e9ed0f844",
+  "complete_packet_verified_in_transcript": true,
+  "stop_reason": "end_turn",
+  "turns": 1,
+  "model_calls": 1,
+  "tool_calls": 0,
+  "verdict": "PASS",
+  "usage": {
+    "cached_input": 3200,
+    "new_input": 131876,
+    "output": 8630,
+    "verified_billed_cost": null
+  }
+}

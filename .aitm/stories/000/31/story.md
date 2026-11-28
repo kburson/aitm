@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 31
 title: "[Core C34] Offline environment provisioning and cache identity"
 kind: "story"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/31"
 parent: 480
 children: []
@@ -112,3 +112,7 @@ Aggregate admission first verifies #590, then #39, #40, #41 and #30 in order. C3
 ## Integration leaf delivery
 
 [Native Linked PR #599](https://github.com/kburson/aitm/pull/599) · [Coordinator sign-off, exact receipts and Agent Cost](retro/2026-11-28-31-leaf-delivery.md).
+
+## Verified trunk delivery
+
+[Linked PR #589](https://github.com/kburson/aitm/pull/589) · [Coordinator sign-off, exact receipts and Agent Cost](retro/2026-11-28-31-aggregate-delivery.md).

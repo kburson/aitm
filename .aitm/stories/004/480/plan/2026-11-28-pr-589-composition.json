@@ -1,0 +1,111 @@
+{
+  "epic": 480,
+  "aggregate_owner": 31,
+  "pr": 589,
+  "base": "57beba9316a3ea18f505c87b9ad2b1800b9f4896",
+  "head": "ebc2a3b94c655d2f9c3a3e3cac14390ce7c809a4",
+  "merge": "d883737ae9ea02920a30e5242a14ab41d4b9f9fe",
+  "tree": "3fca9db15555559b9dfe2d92c58176686f1f6c8b",
+  "ordered_parents": [
+    "57beba9316a3ea18f505c87b9ad2b1800b9f4896",
+    "ebc2a3b94c655d2f9c3a3e3cac14390ce7c809a4"
+  ],
+  "bootstrap": "a49475e75d7e18541f78420e55f7caaa10ae6468",
+  "planning": "fedf2f64932aff09701f92ca5a0a411f02248ef4",
+  "accepted_order": [
+    590,
+    39,
+    594,
+    595,
+    40,
+    41,
+    30,
+    31
+  ],
+  "ordered_product_landings": [
+    {
+      "story": 590,
+      "pr": 591,
+      "landing": "12aee80a478a1f58466f08035429071d9ab3641a",
+      "tree": "36512bbf41d34483c0a3a0107cb5c0ecee643e7a",
+      "ordered_parents": [
+        "a49475e75d7e18541f78420e55f7caaa10ae6468",
+        "19d3516081c7b771ee3dfedd524461e4018d7ce2"
+      ],
+      "planning_path": ".aitm/stories/005/590/plan/2026-11-28-pr-591-delivery.json"
+    },
+    {
+      "story": 39,
+      "pr": 592,
+      "landing": "b20bb65c3b5cfb04773366dd0b68bf18e2ee601c",
+      "tree": "34f6969913c361796080c3ee88f4b31bcc70f815",
+      "ordered_parents": [
+        "12aee80a478a1f58466f08035429071d9ab3641a",
+        "9e0ee317d4f0bc56928b19eb09cc654230b2ce4a"
+      ],
+      "planning_path": ".aitm/stories/000/39/plan/2026-11-28-pr-592-delivery.json"
+    },
+    {
+      "story": 595,
+      "pr": 596,
+      "landing": "c0c105abb93a6ff695ff8c9ce78a6159ccf04b1e",
+      "tree": "0599c00ed3ca4d31aaefdc561b2084c4f129610e",
+      "ordered_parents": [
+        "b20bb65c3b5cfb04773366dd0b68bf18e2ee601c",
+        "1ca22300993f73b7f39ca82b04a087307fc7d14d"
+      ],
+      "planning_path": ".aitm/stories/005/595/plan/2026-11-28-pr-596-delivery.json"
+    },
+    {
+      "story": 40,
+      "pr": 593,
+      "landing": "318f6d116ef4260c1723f94d4078ee7903231425",
+      "tree": "488541686f04aa82465ac83fe2fdc5fe4377bc0f",
+      "ordered_parents": [
+        "c0c105abb93a6ff695ff8c9ce78a6159ccf04b1e",
+        "6f9269e2875057afe0747ec07a2b6523e30364d9"
+      ],
+      "planning_path": ".aitm/stories/000/40/plan/2026-11-28-pr-593-delivery.json"
+    },
+    {
+      "story": 41,
+      "pr": 597,
+      "landing": "0980f174461015f5542ebb4e810cd7b52148393a",
+      "tree": "60ccb57dbb8690629a4c9fc33d6e6f5f9347b252",
+      "ordered_parents": [
+        "318f6d116ef4260c1723f94d4078ee7903231425",
+        "1ddf9d00945407e2339f05bfd42450068d757915"
+      ],
+      "planning_path": ".aitm/stories/000/41/plan/2026-11-28-pr-597-delivery.json"
+    },
+    {
+      "story": 30,
+      "pr": 598,
+      "landing": "99af511224dfa417385b2f3232038109e9e27ffb",
+      "tree": "dd3ba88cbc506d4130f873ac6ebc7ad4a5455317",
+      "ordered_parents": [
+        "0980f174461015f5542ebb4e810cd7b52148393a",
+        "c7d089e0896f08da132ab46a6c327ebb01508780"
+      ],
+      "planning_path": ".aitm/stories/000/30/plan/2026-11-28-pr-598-delivery.json"
+    },
+    {
+      "story": 31,
+      "pr": 599,
+      "landing": "ebc2a3b94c655d2f9c3a3e3cac14390ce7c809a4",
+      "tree": "3fca9db15555559b9dfe2d92c58176686f1f6c8b",
+      "ordered_parents": [
+        "99af511224dfa417385b2f3232038109e9e27ffb",
+        "d655b59c3bc141bd8989a4e7e51bb864107e219a"
+      ],
+      "planning_path": ".aitm/stories/000/31/plan/2026-11-28-pr-599-delivery.json"
+    }
+  ],
+  "planning_spike": {
+    "story": 594,
+    "revision": "822db73049ca414caf0abe30e485c1a6ffc3c609",
+    "path": ".aitm/stories/005/594/plan/2026-11-28-594-findings-scope-proof-plan.md",
+    "sha256": "e6d7acec71adcd5d9c34e0739c35d771b7b8cc3ed0ae033d2c69de9a17ac9a80",
+    "acceptance": "5b65f02f684dedbbf5b209986adaa00918b31305"
+  }
+}

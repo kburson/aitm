@@ -1,0 +1,13 @@
+{
+  "landing": "9b7dedf7bd19ddf379d1f63c4e5ea48fda876b92",
+  "tree": "3fca9db15555559b9dfe2d92c58176686f1f6c8b",
+  "ordered_parents": [
+    "57beba9316a3ea18f505c87b9ad2b1800b9f4896",
+    "ebc2a3b94c655d2f9c3a3e3cac14390ce7c809a4"
+  ],
+  "synthetic_merge": "d883737ae9ea02920a30e5242a14ab41d4b9f9fe",
+  "target_ref": "trunk",
+  "origin_trunk": "9b7dedf7bd19ddf379d1f63c4e5ea48fda876b92",
+  "merged_at": "2026-11-28T19:12:59Z",
+  "github_and_git_verified": true
+}

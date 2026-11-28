@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 480
 title: "[Epic] Core — Attempt control and verification preparation"
 kind: "epic"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/480"
 parent: 1
 children: [30, 31, 39, 40, 41, 590, 594, 595]
@@ -31,7 +31,7 @@ design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":1,"desig
 
 Fence a stopped attempt, prove single-use admission, and prepare exact captured inputs offline.
 
-Parent: #1. Core coordination: #2. State: Ready for Planning.
+Parent: #1. Core coordination: #2. State: Done.
 
 ## Delivery
 
@@ -60,6 +60,10 @@ The delivery order is #590, #39, #40, #41, #30 and #31. The native epic estimate
 
 ## EP11 research and prerequisite
 
-The verified order is #590, #39, #594, #595, #40, #41, #30, #31. [#594](../../005/594/story.md) investigates the authority and recovery boundaries across all original children at rank 14. [#595](../../005/595/story.md) holds rank 15 and blocks #40. The rank-15 scope and 3.5-hour estimate are provisional pending the spike and independent scope review. The previously accepted 21.5-hour implementation baseline remains the estimate of the earlier scope.
+The verified order is #590, #39, #594, #595, #40, #41, #30, #31. [#594](../../005/594/story.md) investigates the authority and recovery boundaries across all original children at rank 14. [#595](../../005/595/story.md) holds rank 15 and blocks #40. Claude Opus 5.5 and Grok 4.7 independently accepted the spike, and #595 landed before #40 resumed. [Exact acceptance and Agent Cost](../../005/594/retro/2026-11-28-594-acceptance.md) · [Rank-15 delivery and Agent Cost](../../005/595/retro/2026-11-28-595-delivery.md). The previously accepted 21.5-hour implementation baseline remains the estimate of the earlier scope.
 
 #31 keeps aggregate admission ownership. Include the accepted spike receipt and the exact #595 production landing with the prior child evidence when qualifying the composed tree. [Native rank and dependency readback](plan/2026-11-28-480-spike-native-readback.json).
+
+## Verified trunk delivery
+
+[Linked PR #589](https://github.com/kburson/aitm/pull/589) · [Coordinator sign-off, exact receipts and Agent Cost](retro/2026-11-28-480-delivery.md).
