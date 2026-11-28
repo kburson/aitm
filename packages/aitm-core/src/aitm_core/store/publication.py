@@ -225,8 +225,16 @@ class Publisher:
                 if conflict is not None:
                     raise ReplayConflict(conflict)
             if operation.intent.kind == "core.graduated":
-                from aitm_core.graduation import graduation_replay_conflict
+                from aitm_core.graduation import (
+                    GraduatedRecord,
+                    graduation_replay_conflict,
+                )
 
+                record_data = GraduatedRecord.model_validate_json(
+                    operation.intent.payload
+                )
+                if record_data.workflow_digest != policy.workflow.digest:
+                    raise ReplayConflict("the committed graduation workflow changed")
                 conflict = graduation_replay_conflict(repo, current, operation)
                 if conflict is not None:
                     raise ReplayConflict(conflict)

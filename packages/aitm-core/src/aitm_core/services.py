@@ -292,6 +292,16 @@ def prepare_mutation(
             outcome=LocalOutcome.CONFLICT,
             reason="The committed policy changed. Rebuild the operation and its guards.",
         )
+    if operation.intent.kind == "core.graduated":
+        from aitm_core.graduation import GraduatedRecord
+
+        record = GraduatedRecord.model_validate_json(operation.intent.payload)
+        if record.workflow_digest != result.policy.workflow.digest:
+            return replace(
+                result,
+                outcome=LocalOutcome.CONFLICT,
+                reason="The committed graduation workflow changed. Rebuild from the current profile.",
+            )
     return result
 
 

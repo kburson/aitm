@@ -207,3 +207,30 @@ def test_graduate_links(topology):
         git(repo.root, "for-each-ref", "--format=%(refname)", "refs/heads")
         == "refs/heads/records\nrefs/heads/trunk"
     )
+
+    drifted = create_draft(install, "Workflow drift")
+    candidate_intent = service.prepare_draft(
+        drifted.identity, "workflow-drift", intent.delivery_target
+    )
+    pinned_policy = service.policy()
+    old_tip = service.snapshot(pinned_policy)
+    workspace = Workspace(install)
+    with workspace.lock():
+        candidate = service.build(
+            candidate_intent,
+            IssueRef(issuer=install.issuer, number=45),
+            old_tip,
+            pinned_policy,
+            ordinary_finalization(),
+            workspace,
+            operation="workflow-drift",
+        )
+        changed_profile = PROFILE.replace('"plan"', '"backlog"').replace(
+            "Ready to implement", "New Backlog"
+        )
+        commit_file(topology.code, WORKFLOW, changed_profile.encode())
+        git(topology.code, "push", "-q", "origin", f"HEAD:{DEFAULT}")
+        rejected = service.commit(candidate, old_tip)
+    assert rejected.command.local == LocalOutcome.CONFLICT
+    assert "workflow changed" in " ".join(rejected.command.evidence)
+    assert repo.tip() == old_tip

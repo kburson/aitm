@@ -26,6 +26,7 @@ from aitm_core.events import StoryState, core_reducers, fold
 from aitm_core.machine.profile import load_profile
 from aitm_core.models.attempts import SourceSnapshot
 from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutcome
+from aitm_core.models.events import DIGEST
 from aitm_core.models.identity import (
     DeliveryTarget,
     DraftSource,
@@ -145,6 +146,7 @@ class GraduatedRecord(IdentityFact):
     intent: GraduationIntent
     issue: IssueRef
     operation: str
+    workflow_digest: DIGEST
     binding_disposition: BindingDisposition | None = None
 
 
@@ -378,6 +380,7 @@ def build_graduation(
         intent=intent,
         issue=issue,
         operation=context.operation,
+        workflow_digest=candidate.initial.revision,
         binding_disposition=candidate.binding_disposition,
     )
     payload = record.model_dump_json().encode()
