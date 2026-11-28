@@ -108,3 +108,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Reviewed graduation prerequisite
 
 Aggregate admission first verifies #590, then #39, #40, #41 and #30 in order. C34 owns the exact composed-tree proof and trunk admission. [Accepted C21/C22 prerequisite plan](https://github.com/kburson/aitm/blob/b4755b0c1c7c4a9c091238efb0d2c8efde9de492/.aitm/stories/004/480/plan/2026-11-28-graduation-prerequisite-proposal.md).
+
+## Integration leaf delivery
+
+[Native Linked PR #599](https://github.com/kburson/aitm/pull/599) · [Coordinator sign-off, exact receipts and Agent Cost](retro/2026-11-28-31-leaf-delivery.md).

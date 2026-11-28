@@ -1,0 +1,13 @@
+{
+  "landing": "ebc2a3b94c655d2f9c3a3e3cac14390ce7c809a4",
+  "tree": "3fca9db15555559b9dfe2d92c58176686f1f6c8b",
+  "ordered_parents": [
+    "99af511224dfa417385b2f3232038109e9e27ffb",
+    "d655b59c3bc141bd8989a4e7e51bb864107e219a"
+  ],
+  "synthetic_merge": "5704bfeb5a87f3b75bb6ffcd2ce94f3b04bf1232",
+  "target_ref": "codex/core-480-integration",
+  "origin_trunk": "57beba9316a3ea18f505c87b9ad2b1800b9f4896",
+  "merged_at": "2026-11-28T19:04:33Z",
+  "github_and_git_verified": true
+}
