@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 43
 title: "[Core C36] macOS contained-lane probe and profile"
 kind: "story"
-state: plan
+state: dev
 issue: "https://github.com/kburson/aitm/issues/43"
 parent: 481
 children: []

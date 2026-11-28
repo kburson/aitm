@@ -9,3 +9,5 @@ The parent read Dev at planning publication `8a8619c78c0059fd6681d33956f7619ee97
 3. Use deterministic tests for profile path rules and capability outcomes. Use one integration node for actual macOS and the installed init, doctor and test routes. Collect that node under the established Core integration path and record its actual macOS run separately from hosted Linux collection and gates.
 
 This manual Planning pickup records applicability to the accepted parent plan. Runtime transition and implementation clock are both false.
+
+Project 24 read Dev for both #481 and #43 at `2026-11-28T19:58:28.121551+00:00`, after the separate child Planning checkpoint. This is manual admission. Runtime transition and implementation clock are both false.
