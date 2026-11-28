@@ -120,7 +120,7 @@ def classify_planning_path(path: str) -> PlanningPath:
         len(parts) == 4
         and parts[1] == "identity"
         and re.fullmatch(r"[0-9a-f]{64}", parts[2])
-        and re.fullmatch(r"(?:reservation|issue|claim-[0-9]+)\.json", parts[3])
+        and re.fullmatch(r"(?:reservation|issue|owner|claim-[0-9]+)\.json", parts[3])
     ):
         return PlanningPath.IDENTITY
     if story_scope(path) is not None:

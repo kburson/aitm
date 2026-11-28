@@ -195,6 +195,13 @@ def test_identity_once(topology, tmp_path):
         right.dispatch_or_observe(retained)
     assert len(issuer.sent) == 3
 
+    foreign_issue = left.reserve_identity(
+        plan_entry("foreign-issue", installation.issuer, key="unrelated")
+    )
+    with pytest.raises(IdentityConflict, match="another semantic reservation"):
+        left.dispatch_or_observe(foreign_issue)
+    assert right.dispatch_or_observe(another).issue.number == 43
+
     assert (
         git(topology.local, "for-each-ref", "--format=%(refname)", "refs/heads")
         == f"{PLANNING}\nrefs/heads/trunk"

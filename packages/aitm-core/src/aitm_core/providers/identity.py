@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from hashlib import sha256
+from json import dumps
 from pathlib import PurePosixPath
 from typing import Literal, Protocol
 from uuid import uuid4
@@ -9,7 +10,7 @@ from uuid import uuid4
 from aitm_core.entities import entity_matches
 from aitm_core.models.common import LocalOutcome, PublicationOutcome
 from aitm_core.models.config import BacklogIssuer, Name
-from aitm_core.models.events import EventActor
+from aitm_core.models.events import DIGEST, EventActor
 from aitm_core.models.identity import DraftSource, IdentityFact
 from aitm_core.models.operations import (
     AuthorityOrigin,
@@ -27,6 +28,7 @@ from aitm_core.providers.backlog import (
     GraduationIntent,
     IdentityReservation,
     IdentityResult,
+    IssueRef,
 )
 from aitm_core.services import ServicePorts, mutate, preflight_policy
 from aitm_core.store.backend import Snapshot
@@ -67,6 +69,19 @@ class IssuedRecord(IdentityFact):
     result: IdentityResult
 
 
+class IssueOwner(IdentityFact):
+    schema_version: Literal["aitm.identity-owner/v1"] = "aitm.identity-owner/v1"
+    issue: IssueRef
+    key: DIGEST
+
+
+def _owner_path(issue: IssueRef) -> str:
+    owner = sha256(
+        dumps(issue.model_dump(mode="json"), sort_keys=True).encode()
+    ).hexdigest()
+    return f"{reservation_root(owner)}/owner.json"
+
+
 class IdentityProvider(Protocol):
     issuer: BacklogIssuer
 
@@ -91,6 +106,10 @@ def validate_identity_record(path: str, content: bytes) -> None:
         source = reservation.intent.source
         if source is None or source.semantic_key != key or reservation.key != key:
             raise ValueError("reservation is outside its prepared semantic source")
+    elif name == "owner.json":
+        owner = IssueOwner.model_validate_json(content)
+        if path != _owner_path(owner.issue):
+            raise ValueError("issuer identity is outside its immutable ownership key")
     elif name == "issue.json":
         record = IssuedRecord.model_validate_json(content)
         if record.result.status != "issued" or record.result.reservation.key != key:
@@ -209,7 +228,22 @@ class IdentityAuthority:
             )
         ):
             raise IdentityConflict("The retained identity evidence is inconsistent.")
+        if issue is not None:
+            assert issue.result.issue is not None
+            owner = self._issue_owner(view, issue.result.issue)
+            if owner is None or owner.key != key:
+                raise IdentityConflict(
+                    "Issued evidence lacks its matching ownership claim."
+                )
         return _State(reservation, predecessor, issue)
+
+    def _issue_owner(self, view: _View, issue: IssueRef) -> IssueOwner | None:
+        path = _owner_path(issue)
+        raw = self.repo.read_blobs(view.snapshot.tree, (path,))[path]
+        if raw is None:
+            return None
+        validate_identity_record(path, raw)
+        return IssueOwner.model_validate_json(raw)
 
     def _check_source(self, view: _View, intent: GraduationIntent) -> None:
         source = intent.source
@@ -251,11 +285,21 @@ class IdentityAuthority:
                     )
 
     def _write(
-        self, view: _View, path: str, value: IdentityFact, identity: str, pin=()
+        self,
+        view: _View,
+        path: str,
+        value: IdentityFact,
+        identity: str,
+        pin: tuple[str, ...] = (),
+        *,
+        ownership: IssueOwner | None = None,
     ) -> bool:
-        paths = (path, *pin)
-        bodies = self.repo.read_blobs(view.snapshot.tree, paths)
-        if bodies[path] is not None:
+        payload = value.model_dump_json().encode()
+        writes = {path: payload}
+        if ownership is not None:
+            writes[_owner_path(ownership.issue)] = ownership.model_dump_json().encode()
+        bodies = self.repo.read_blobs(view.snapshot.tree, (*writes, *pin))
+        if any(bodies[destination] is not None for destination in writes):
             return False
         reads = tuple(
             ReadExpectation(
@@ -263,9 +307,12 @@ class IdentityAuthority:
             )
             for key, raw in bodies.items()
         )
-        payload = value.model_dump_json().encode()
         change = RelatedWriteSet(
-            read_set=reads, writes=(BlobWrite(path=path, content=payload),)
+            read_set=reads,
+            writes=tuple(
+                BlobWrite(path=destination, content=raw)
+                for destination, raw in writes.items()
+            ),
         )
         owner = OperationOwner(actor=EventActor(kind="tool", harness="core-identity"))
         operation = Operation(
@@ -416,6 +463,12 @@ class IdentityAuthority:
         root = reservation_root(reservation.key)
         view = self._view(reservation.intent)
         path = f"{root}/issue.json"
+        assert result.issue is not None
+        owner = self._issue_owner(view, result.issue)
+        if owner is not None and owner.key != reservation.key:
+            raise IdentityConflict(
+                "The provider issue belongs to another semantic reservation."
+            )
         state = self._state(view, reservation.key)
         if state.claim != claim or state.reservation != reservation:
             raise IdentityConflict(
@@ -432,8 +485,15 @@ class IdentityAuthority:
                     f"{root}/claim-{claim.generation}.json",
                     f"{root}/claim-{claim.generation + 1}.json",
                 ),
+                ownership=IssueOwner(issue=result.issue, key=reservation.key),
             )
-        durable = self._state(self._view(reservation.intent), reservation.key).issue
+        current = self._view(reservation.intent)
+        owner = self._issue_owner(current, result.issue)
+        if owner is not None and owner.key != reservation.key:
+            raise IdentityConflict(
+                "The provider issue belongs to another semantic reservation."
+            )
+        durable = self._state(current, reservation.key).issue
         if durable is None:
             return self._pending(
                 reservation, "Issuance was observed. Durable publication is pending."
