@@ -10,6 +10,7 @@ from aitm_core.models.events import EventEnvelope
 from aitm_core.models.lifecycle import (
     Deliverable,
     Description,
+    DesignInvalidated,
     DocumentAcceptance,
     Estimate,
     Graduation,
@@ -26,6 +27,7 @@ from aitm_core.models.lifecycle import (
 _SCHEMAS: dict[str, type[LifecycleFact]] = {
     "core.story.graduated": Graduation,
     "core.kind.changed": KindSplit,
+    "core.design.invalidated": DesignInvalidated,
     "core.state.changed": StateChange,
     "core.link.changed": LinkChange,
     "core.description.set": Description,
@@ -100,23 +102,25 @@ def _split(state: LifecycleState, fact: KindSplit) -> LifecycleState:
         or not fact.decomposition_required
     ):
         raise LifecycleIntegrityError("invalid recorded bounded kind split")
+    return _invalidate(state, fact).model_copy(update={"kind": "epic", "split": fact})
+
+
+def _invalidate(
+    state: LifecycleState, fact: KindSplit | DesignInvalidated
+) -> LifecycleState:
     digests = sorted(
         item.canonical_digest for item in state.accepted_documents.values()
     )
-    if sorted(fact.invalidated_acceptances) != digests or sorted(
-        fact.invalidated_estimates
-    ) != sorted(state.estimates):
+    if (
+        state.workflow_state.terminal
+        or sorted(fact.invalidated_acceptances) != digests
+        or sorted(fact.invalidated_estimates) != sorted(state.estimates)
+    ):
         raise LifecycleIntegrityError(
-            "kind split disagrees with acceptance or estimate invalidations"
+            "design invalidation disagrees with retained applicability"
         )
     return state.model_copy(
-        update={
-            "kind": fact.to_kind,
-            "split": fact,
-            "accepted_documents": {},
-            "estimates": {},
-            "jit": None,
-        }
+        update={"accepted_documents": {}, "estimates": {}, "jit": None}
     )
 
 
@@ -126,6 +130,8 @@ def _update(
     match fact:
         case KindSplit():
             return _split(state, fact)
+        case DesignInvalidated():
+            return _invalidate(state, fact)
         case StateChange():
             return _transition(state, fact, event.story)
         case LinkChange():

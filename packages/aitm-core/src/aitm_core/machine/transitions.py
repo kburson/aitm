@@ -10,7 +10,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from aitm_core.events import UnavailableReducer, core_reducers, fold
+from aitm_core.events import StoryState, UnavailableReducer, core_reducers, fold
 from aitm_core.ext.api import DirectiveRegistration
 from aitm_core.ext.registry import Registry
 from aitm_core.machine.guards import (
@@ -323,6 +323,41 @@ def _result(
     )
 
 
+def event_records(
+    request: TransitionRequest,
+    raw: bytes,
+    state: StoryState,
+    read_digest: str,
+    events: list[tuple[str, str, BaseModel]],
+) -> tuple[bytes, ...]:
+    """Serialize a typed event batch against the exact existing log prefix."""
+    digest = sha256(raw if raw.endswith(b"\n") else raw + b"\n")
+    records = []
+    for sequence, (kind, identity, record) in enumerate(events, state.next_sequence):
+        event = (
+            EventEnvelope(
+                v=1,
+                id=identity,
+                ts=request.at,
+                type=kind,
+                story=request.story,
+                actor=request.owner.actor,
+                operation_id=request.operation_id,
+                sequence=sequence,
+                prior_log_digest=digest.hexdigest(),
+                policy_digest=request.policy_digest,
+                read_set_digest=read_digest,
+                data=record.model_dump(mode="json", by_alias=True),
+            )
+            .model_dump_json(exclude_none=True)
+            .encode()
+        )
+        digest.update(event + b"\n")
+        records.append(event)
+
+    return tuple(records)
+
+
 def _make_operation(
     request,
     edge,
@@ -485,29 +520,7 @@ def _make_operation(
                     )
                 )
 
-    digest = sha256(raw if raw.endswith(b"\n") else raw + b"\n")
-    records = []
-    for sequence, (kind, identity, record) in enumerate(append, state.next_sequence):
-        event = (
-            EventEnvelope(
-                v=1,
-                id=identity,
-                ts=request.at,
-                type=kind,
-                story=request.story,
-                actor=request.owner.actor,
-                operation_id=request.operation_id,
-                sequence=sequence,
-                prior_log_digest=digest.hexdigest(),
-                policy_digest=request.policy_digest,
-                read_set_digest=read_digest,
-                data=record.model_dump(mode="json", by_alias=True),
-            )
-            .model_dump_json(exclude_none=True)
-            .encode()
-        )
-        digest.update(event + b"\n")
-        records.append(event)
+    records = event_records(request, raw, state, read_digest, append)
 
     operation = Operation(
         operation_id=request.operation_id,
