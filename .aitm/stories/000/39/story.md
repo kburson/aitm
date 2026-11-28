@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 39
 title: "[Core C30] Expansion reservation and resolution"
 kind: "story"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/39"
 parent: 480
 children: []
@@ -109,3 +109,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Reviewed graduation prerequisite
 
 #590 is a direct pickup dependency. C30 uses the candidate-aware finalizer when building reciprocal facts. [Accepted C21/C22 prerequisite plan](https://github.com/kburson/aitm/blob/b4755b0c1c7c4a9c091238efb0d2c8efde9de492/.aitm/stories/004/480/plan/2026-11-28-graduation-prerequisite-proposal.md).
+
+## Delivery
+
+[Linked PR #592](https://github.com/kburson/aitm/pull/592) · [Coordinator sign-off, receipts and Agent Cost](retro/2026-11-28-delivery.md).
