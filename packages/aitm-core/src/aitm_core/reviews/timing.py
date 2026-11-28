@@ -108,12 +108,11 @@ def _union_time(intervals: list[Interval]) -> timedelta | None:
     return _duration(span for span, _ in _partition((span, True) for span in intervals))
 
 
-def _turn_bound(turn: DocumentReviewTurn) -> Interval | None:
+def _turn_bound(turn: DocumentReviewTurn, submitted: datetime) -> Interval | None:
     if turn.start_basis == "unknown" or not turn.started_at or not turn.start_ref:
         return None
     start = datetime.fromisoformat(turn.started_at)
-    end = datetime.fromisoformat(turn.submitted_at)
-    return (start, end) if start <= end else None
+    return (start, submitted) if start <= submitted else None
 
 
 def _add_span(spans: list[Interval], span: Interval) -> None:
@@ -128,7 +127,8 @@ def _turn_timing(
     evidence: TurnTimingEvidence, states: tuple[StateWindow, ...]
 ) -> TurnTiming:
     turn = evidence.turn
-    bound = _turn_bound(turn)
+    submitted = datetime.fromisoformat(turn.submitted_at)
+    bound = _turn_bound(turn, submitted)
     proxy = turn.start_basis == "prior-submit"
     inputs = [
         *((span, "covered") for span in evidence.covered),
@@ -138,21 +138,21 @@ def _turn_timing(
     if bound and bound[0] < bound[1]:
         inputs.append((bound, "bound"))
     portions: dict[TimingCategory, list[Interval]] = defaultdict(list)
-    for span, labels in _partition(inputs):
-        if bound is not None and "bound" not in labels:
+    for (start, end), labels in _partition(inputs):
+        if start >= submitted or (bound is not None and "bound" not in labels):
             continue
         category: TimingCategory
         if "excluded" in labels:
             category = "excluded"
         elif "interrupted" in labels:
             category = "interrupted"
-        elif bound is not None and not proxy and "covered" in labels:
+        elif "covered" in labels:
             category = "qualified"
         elif bound is not None:
             category = "unknown"
         else:
             continue
-        _add_span(portions[category], span)
+        _add_span(portions[category], (start, min(end, submitted)))
     qualified = tuple(portions["qualified"])
     unknown = tuple(portions["unknown"])
     duration = None if bound is None or proxy or unknown else _duration(qualified)
@@ -222,7 +222,11 @@ def _attribute(
 def summarize_review_timing(
     evidence: Iterable[TurnTimingEvidence], *, states: Iterable[StateWindow] = ()
 ) -> ReviewTimingSummary:
-    """Combine validated turn evidence without inferring work from outer bounds."""
+    """Combine validated turn evidence without inferring work from outer bounds.
+
+    Independent exact-turn coverage can establish partial elapsed work even
+    when a sourced start is missing or the only start is a fallback proxy.
+    """
     windows = tuple(states)
     for window in windows:
         _check_interval(window.interval)

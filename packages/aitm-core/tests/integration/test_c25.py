@@ -107,7 +107,29 @@ def test_live_backfill_same_fact(topology, tmp_path):
             }
         )
     )
+    late = folder / "ahead-of-predecessor.md"
     response = folder / "reviewer-response-1.md"
+    late.write_bytes(response.read_bytes().replace(b"round: 1", b"round: 2"))
+    ahead = _invoke(
+        topology, options, "turn", "--record", record_id, "--response", str(late)
+    )
+    assert ahead["local"] == "conflict", ahead
+    source = response.read_bytes()
+    response.write_bytes(
+        source.replace(digest(FUR).encode(), digest(b"different").encode())
+    )
+    misplaced = _invoke(
+        topology, options, "turn", "--record", record_id, "--response", str(response)
+    )
+    assert misplaced["local"] == "conflict", misplaced
+    response.write_bytes(
+        source.replace(b"role: reviewer", b"role: reviewer\npatch: patch-001.diff")
+    )
+    patched = _invoke(
+        topology, options, "turn", "--record", record_id, "--response", str(response)
+    )
+    assert patched["local"] == "integrity-error", patched
+    response.write_bytes(source)
     turn = _invoke(
         topology, options, "turn", "--record", record_id, "--response", str(response)
     )

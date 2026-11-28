@@ -93,6 +93,65 @@ def test_unqualified_anchors_never_become_measured(
     assert result.wall_time is None
 
 
+def test_proxy_retains_independently_observed_response_work_within_its_bound():
+    result = timing.summarize_review_timing(
+        [
+            timing.TurnTimingEvidence(
+                _turn(2, 10, basis="prior-submit"),
+                covered=(_interval(0, 3), _interval(4, 12)),
+                excluded=(_interval(5, 6),),
+                interrupted=(_interval(7, 8),),
+            )
+        ],
+        states=[timing.StateWindow("Plan", _interval(0, 11))],
+    )
+    (turn,) = result.turns
+    assert turn.bound == _interval(2, 10)
+    assert turn.response_duration is None
+    assert turn.qualified == (
+        _interval(2, 3),
+        _interval(4, 5),
+        _interval(6, 7),
+        _interval(8, 10),
+    )
+    assert turn.unknown == (_interval(3, 4),)
+    assert turn.excluded == (_interval(5, 6),)
+    assert turn.interrupted == (_interval(7, 8),)
+    assert result.basis_counts == {"prior-submit": 1}
+    assert result.actor_time == result.wall_time == timedelta(seconds=5)
+    assert result.attributed_time == {
+        ("Plan", "sar", "reviewer", "provider", "model"): timedelta(seconds=5)
+    }
+
+
+@pytest.mark.parametrize(
+    ("basis", "start", "changes"),
+    [
+        ("unknown", None, {}),
+        ("recorded", 0, {"start_ref": None}),
+        ("claim", 12, {}),
+    ],
+)
+def test_missing_or_invalid_start_keeps_response_coverage_without_inventing_a_bound(
+    basis, start, changes
+):
+    result = timing.summarize_review_timing(
+        [
+            timing.TurnTimingEvidence(
+                _turn(start, 10, basis=basis, **changes),
+                covered=(_interval(4, 7), _interval(8, 12), _interval(13, 14)),
+                excluded=(_interval(5, 6), _interval(9, 11)),
+            )
+        ]
+    )
+    (turn,) = result.turns
+    assert turn.bound is None
+    assert turn.response_duration is None
+    assert turn.qualified == (_interval(4, 5), _interval(6, 7), _interval(8, 9))
+    assert turn.excluded == (_interval(5, 6), _interval(9, 10))
+    assert result.actor_time == result.wall_time == timedelta(seconds=3)
+
+
 def test_partial_claim_coverage_retains_unknown_without_counting_it():
     result = timing.summarize_review_timing(
         [

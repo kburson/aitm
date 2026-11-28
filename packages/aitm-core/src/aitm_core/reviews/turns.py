@@ -295,34 +295,44 @@ def _fact(
     path = _turn_path(level, response)
     decision = None
     if response.role == "reviewer":
+        if response.patch is not None or response.answered_finding_ids:
+            raise ReviewError("reviewer cannot declare an author patch or dispositions")
         verdict = _decision(document, _TurnClaims.model_validate(header))
         if verdict is None:
             raise ReviewError("reviewer response lacks an explicit decision")
         decision = "pass" if verdict == "accepted" else "changes"
-    elif response.patch != f"patch-{response.round:03d}.diff":
-        raise ReviewError("author response lacks its own numbered patch reference")
+    elif response.patch != f"patch-{response.round:03d}.diff" or response.finding_ids:
+        raise ReviewError(
+            "author response requires its numbered patch and cannot open findings"
+        )
     session = getattr(response, f"{response.role}_session")
     identity_kind = header.get("session_identity_kind")
     basis, started, reference = "unknown", None, None
-    if native_anchor is not None and native_anchor.source is not None:
-        basis, started = native_anchor.basis, native_anchor.started_at
-        reference = (
-            f"{level.capsule}/{native_anchor.source.path}#{native_anchor.source.digest}"
-        )
-        if native_anchor.claim_id:
-            reference += f"/{native_anchor.claim_id}"
-    elif response.start_basis == "recorded" and response.started_at is not None:
-        basis, started = "recorded", response.started_at
-        reference = f"{path}#{original.raw_digest}/started_at"
-    elif response.start_basis == "prior-submit" and predecessor is not None:
-        prior = _parse_record(predecessor.raw, PortableResponse, predecessor.name)
-        if (
-            response.start_source == predecessor.name
-            and response.started_at == prior.submitted_at
-            and prior.submitted_at is not None
-        ):
-            basis, started = "prior-submit", prior.submitted_at
-            reference = f"{level.capsule}/{predecessor.name}#{predecessor.raw_digest}"
+    if native_anchor is not None:
+        if native_anchor.source is not None:
+            basis, started = native_anchor.basis, native_anchor.started_at
+            reference = f"{level.capsule}/{native_anchor.source.path}#{native_anchor.source.digest}"
+            if native_anchor.claim_id:
+                reference += f"/{native_anchor.claim_id}"
+    elif identity_kind != "native-fingerprint":
+        if response.start_basis == "recorded" and response.started_at is not None:
+            basis, started = "recorded", response.started_at
+            reference = f"{path}#{original.raw_digest}/started_at"
+        elif response.start_basis == "prior-submit" and predecessor is not None:
+            prior = _parse_record(predecessor.raw, PortableResponse, predecessor.name)
+            if header.get("start_source_digest") not in (None, predecessor.raw_digest):
+                raise ReviewConflict(
+                    "review timing references a different predecessor digest"
+                )
+            if (
+                response.start_source == predecessor.name
+                and response.started_at == prior.submitted_at
+                and prior.submitted_at is not None
+            ):
+                basis, started = "prior-submit", prior.submitted_at
+                reference = (
+                    f"{level.capsule}/{predecessor.name}#{predecessor.raw_digest}"
+                )
     if started is not None and datetime.fromisoformat(started) > datetime.fromisoformat(
         response.submitted_at
     ):
@@ -376,14 +386,57 @@ def record_turn(level: LevelRecord, response: bytes) -> OperationResult:
         raise ReviewConflict("review turn identity has different source bytes")
     if existing.completion is not None and prior is None:
         raise ReviewConflict("completed review cannot acquire a new provisional turn")
+    if existing.opening is None and prior is None:
+        raise ReviewConflict("new provisional review turn needs a retained opening")
+    reads = []
+    if parsed.role == "reviewer" and parsed.round == 1 and existing.opening is not None:
+        base_path = f"{level.capsule}/base.md"
+        base = level.context.backend.read(level.context.snapshot, (base_path,))[
+            base_path
+        ]
+        if base is None or sha256(base).hexdigest() != existing.opening.raw_digest:
+            raise ReviewConflict("opened review base bytes do not match their evidence")
+        if parsed.artifact_digest != f"sha256:{existing.opening.raw_digest}":
+            raise ReviewConflict(
+                "first reviewer input differs from the opened review base"
+            )
+        reads.append(base_path)
     predecessor_name = _predecessor_name(parsed)
     predecessor = None
     if predecessor_name is not None:
         absolute = f"{level.capsule}/{predecessor_name}"
+        reads.append(absolute)
         value = level.context.backend.read(level.context.snapshot, (absolute,))[
             absolute
         ]
-        predecessor = Original(predecessor_name, value) if value is not None else None
+        previous_key = (
+            (parsed.round, "reviewer")
+            if parsed.role == "author"
+            else (parsed.round - 1, "author")
+        )
+        previous = existing.turns.get(previous_key)
+        if previous is not None:
+            if value is None or sha256(value).hexdigest() != previous.source_digest:
+                raise ReviewConflict(
+                    "predecessor response bytes do not match their evidence"
+                )
+            if (
+                parsed.role == "reviewer"
+                and parsed.artifact_digest != f"sha256:{previous.output_digest}"
+            ):
+                raise ReviewConflict(
+                    "reviewer input differs from the preceding author revision"
+                )
+            if parsed.role == "author" and (
+                set(parsed.answered_finding_ids) != set(previous.finding_ids)
+                or len(parsed.answered_finding_ids) != len(previous.finding_ids)
+            ):
+                raise ReviewConflict(
+                    "author response does not disposition the known reviewer findings"
+                )
+            predecessor = Original(predecessor_name, value)
+        elif prior is None or value is not None:
+            raise ReviewConflict("provisional turn needs its retained predecessor fact")
     fact = _fact(level, parsed, original, predecessor)
     return _persist(
         level,
@@ -392,9 +445,7 @@ def record_turn(level: LevelRecord, response: bytes) -> OperationResult:
         {path: response},
         () if prior is not None else (("submitted", fact.submitted_at, fact),),
         intent="turn",
-        additional_reads=(f"{level.capsule}/{predecessor_name}",)
-        if predecessor_name
-        else (),
+        additional_reads=tuple(reads),
     )
 
 
@@ -422,6 +473,8 @@ def complete_review(
     files = {}
     for name, original in originals.items():
         repository_path(name)
+        if name == "base.md" or PurePosixPath(name).parts[0] == "timing":
+            raise ReviewConflict("review original overlaps generated capsule evidence")
         path = f"{level.capsule}/{name}"
         files[path] = original.raw
     if existing.opening is not None:
