@@ -224,6 +224,12 @@ class Publisher:
                 conflict = draft_replay_conflict(repo, current, operation)
                 if conflict is not None:
                     raise ReplayConflict(conflict)
+            if operation.intent.kind == "core.graduated":
+                from aitm_core.graduation import graduation_replay_conflict
+
+                conflict = graduation_replay_conflict(repo, current, operation)
+                if conflict is not None:
+                    raise ReplayConflict(conflict)
             paths = tuple(item.path for item in operation.change.read_set)
             destinations = {
                 entry.path

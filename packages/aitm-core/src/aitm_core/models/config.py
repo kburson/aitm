@@ -53,6 +53,11 @@ class BacklogIssuer(ConfigSection):
     numbering_namespace: Name
 
 
+class DeliveryTarget(ConfigSection):
+    repository: Name
+    ref: Annotated[str, Field(pattern=r"^refs/heads/[^\s]+$")]
+
+
 class ProviderConfig(BacklogIssuer):
     githost: Name
 

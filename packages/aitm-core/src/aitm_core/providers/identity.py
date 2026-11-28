@@ -194,6 +194,8 @@ class IdentityAuthority:
         claims = {}
         issue = None
         for path, raw in blobs.items():
+            if path == f"{root}/graduated.json":
+                continue
             assert raw is not None
             validate_identity_record(path, raw)
             if path == f"{root}/reservation.json":
@@ -503,6 +505,22 @@ class IdentityAuthority:
                 "The issuer returned conflicting permanent identities."
             )
         return durable.result
+
+    def issued_reads(
+        self, snapshot: Snapshot, reservation: IdentityReservation, issue: IssueRef
+    ) -> tuple[str, ...]:
+        root = reservation_root(reservation.key)
+        paths = (f"{root}/reservation.json", f"{root}/issue.json", _owner_path(issue))
+        state = self._state(_View(snapshot, ""), reservation.key)
+        if (
+            state.reservation != reservation
+            or state.issue is None
+            or state.issue.result.issue != issue
+        ):
+            raise IdentityConflict(
+                "The pinned finalization source lacks authoritative issuance."
+            )
+        return paths
 
     def dispatch_or_observe(self, reservation: IdentityReservation) -> IdentityResult:
         return self._advance(reservation, send=True)
