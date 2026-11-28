@@ -293,7 +293,8 @@ def test_installed_local_expansion_fences_proposed_child_on_no_issuance(
         "writer",
     )
     pin = repo.tip()
-    assert handle(("expand",), args).local == LocalOutcome.UNAVAILABLE
+    absent = handle(("expand",), args, ports=ServicePorts(attempt_preflight=None))
+    assert absent.local == LocalOutcome.UNAVAILABLE
     assert repo.tip() == pin
 
     build = GraduationService.build

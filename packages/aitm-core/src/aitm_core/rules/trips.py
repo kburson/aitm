@@ -16,7 +16,12 @@ from aitm_core.models.attempts import (
     AttemptState,
     ClockChanged,
 )
-from aitm_core.models.evidence import PivotRecorded, TripDecided, TripRecorded
+from aitm_core.models.evidence import (
+    ExpansionCustody,
+    PivotRecorded,
+    TripDecided,
+    TripRecorded,
+)
 from aitm_core.models.lifecycle import (
     LinkChange,
     StateChange,
@@ -35,6 +40,15 @@ from aitm_core.models.operations import (
     RelatedWriteSet,
     story_event_path,
     story_scope,
+)
+from aitm_core.providers.backlog import GraduationIntent
+from aitm_core.providers.identity import (
+    DispatchClaim,
+    IssuedRecord,
+    IssueOwner,
+    ReservationRecord,
+    _owner_path,
+    reservation_root,
 )
 from aitm_core.reducers.evidence import EvidenceState
 from aitm_core.relationships import EventContext, StoryGraph
@@ -118,6 +132,15 @@ def expansion_child(state: StoryState, attempt: str) -> int | None:
         for item in facts(state, "core.trip.decided")
         if item.expansion_disposition == "continue"
     }
+    attempts = state.domains.get("attempts")
+    if isinstance(attempts, AttemptState):
+        continued.update(
+            key
+            for key, prior in attempts.attempts.items()
+            if prior.closed
+            and prior.closures
+            and prior.closures[-1].disposition == "pivot"
+        )
     links = state.domains["lifecycle"].relationships.blocked_by
     children = [
         item.child
@@ -128,6 +151,19 @@ def expansion_child(state: StoryState, attempt: str) -> int | None:
         )
     ]
     return children[-1] if children else None
+
+
+def _expansion_parent(graph: StoryGraph, story: int) -> int | None:
+    return next(
+        (
+            number
+            for number, state in sorted(graph.states.items())
+            if (attempt := current_attempt(state)) is not None
+            and not attempt.closed
+            and expansion_child(state, attempt.started.attempt) == story
+        ),
+        None,
+    )
 
 
 def _scope(context: OperationContext, graph: StoryGraph) -> tuple[int, ...]:
@@ -180,26 +216,20 @@ def preflight_attempt(
             continue
         key = attempt.started.attempt
         if proposed is not None:
-            for origin, origin_state in sorted(graph.states.items()):
-                origin_attempt = current_attempt(origin_state)
-                if (
-                    origin_attempt is not None
-                    and not origin_attempt.closed
-                    and expansion_child(origin_state, origin_attempt.started.attempt)
-                    == story
-                ):
-                    return TripResult(
-                        _preflight(
-                            PreflightOutcome.BLOCKED
-                            if mode == "enforce"
-                            else PreflightOutcome.PASSED,
-                            "nested-expansion",
-                        ),
-                        origin,
+            origin = _expansion_parent(graph, story)
+            if origin is not None:
+                return TripResult(
+                    _preflight(
+                        PreflightOutcome.BLOCKED
+                        if mode == "enforce"
+                        else PreflightOutcome.PASSED,
                         "nested-expansion",
-                        story,
-                        proof=(f"planning:{context.snapshot.revision}",),
-                    )
+                    ),
+                    origin,
+                    "nested-expansion",
+                    story,
+                    proof=(f"planning:{context.snapshot.revision}",),
+                )
             reservations = tuple(
                 item
                 for item in facts(state, "core.expansion.reserved")
@@ -241,6 +271,7 @@ def preflight_attempt(
                     and item.observation.attempt == key
                     and item.observation.generation == attempt.generation
                 )
+                parent = _expansion_parent(graph, story)
                 return TripResult(
                     _preflight(
                         PreflightOutcome.BLOCKED
@@ -248,9 +279,9 @@ def preflight_attempt(
                         else PreflightOutcome.PASSED,
                         "time-limit",
                     ),
-                    story,
+                    story if parent is None else parent,
                     "time-limit",
-                    expansion_child(state, key),
+                    expansion_child(state, key) if parent is None else story,
                     measured.measured_millis,
                     proof,
                 )
@@ -267,25 +298,24 @@ def preflight_attempt(
             return TripResult(
                 _preflight(PreflightOutcome.BLOCKED, "Expansion resolution is pending.")
             )
-    open_scope = [
-        number
-        for number in scope
-        if (attempt := current_attempt(graph.states[number])) is not None
-        and not attempt.closed
-    ]
-    if observations is None and (
-        (not scope and any(not attempt.closed for attempt in context.attempts))
-        or (
-            open_scope
-            and not any(
-                facts(graph.states[number], "core.expansion.reserved")
-                for number in open_scope
+    if observations is None:
+        unqualified_scope = not scope and any(
+            not attempt.closed for attempt in context.attempts
+        )
+        provisional = any(
+            (attempt := current_attempt(graph.states[number])) is not None
+            and not attempt.closed
+            and attempt.started.provisional
+            and attempt.reconciliation is None
+            for number in scope
+        )
+        if unqualified_scope or provisional:
+            return TripResult(
+                _preflight(
+                    PreflightOutcome.UNAVAILABLE, "attempt-preflight-unavailable"
+                )
             )
-        )
-    ):
-        return TripResult(
-            _preflight(PreflightOutcome.UNAVAILABLE, "attempt-preflight-unavailable")
-        )
+        return TripResult(_preflight(PreflightOutcome.PASSED, "activity-unknown"))
     return TripResult(_preflight(PreflightOutcome.PASSED))
 
 
@@ -620,6 +650,140 @@ def expansion_disposition(
         )
 
 
+def stopped_custody_inputs(repository, snapshot, state, attempt):
+    """Read exact custody and issuer evidence that a new decision must pin."""
+    reserved = [
+        row
+        for row in facts(state, "core.expansion.reserved")
+        if (row.attempt, row.generation)
+        == (attempt.started.attempt, attempt.generation)
+    ]
+    linked_or_retired = {
+        row.reservation
+        for row in facts(state, "core.expansion.reservation-resolved")
+        if (row.attempt, row.generation)
+        == (attempt.started.attempt, attempt.generation)
+    }
+    expanded = expansion_child(state, attempt.started.attempt)
+    reads = {}
+    unlinked_issued = False
+    for hold in reserved:
+        if hold.reservation in linked_or_retired:
+            continue
+        proof = next(
+            (
+                row
+                for row in facts(state, "core.expansion.custody-recorded")
+                if row.reservation == hold.reservation
+                and row.disposition != "sender-fenced"
+            ),
+            None,
+        )
+        if proof is None or repository is None:
+            raise ValueError(
+                "Reconcile the still-pending identity before deciding child scope."
+            )
+        intent = GraduationIntent.model_validate_json(hold.intent)
+        if (
+            not isinstance(proof, ExpansionCustody)
+            or intent.source is None
+            or proof.semantic_key != intent.source.semantic_key
+            or (proof.attempt, proof.generation) != (hold.attempt, hold.generation)
+            or expanded is not None
+        ):
+            raise ValueError("Stopped custody contradicts the exact held reservation.")
+        root = reservation_root(proof.semantic_key)
+        issuer_path = f"{root}/issue.json"
+        reservation_path = f"{root}/reservation.json"
+        finalized_path = f"{root}/graduated.json"
+        first_claim = f"{root}/claim-1.json"
+        blobs = repository.read_blobs(
+            snapshot.tree, (issuer_path, reservation_path, finalized_path, first_claim)
+        )
+        if blobs[finalized_path] is not None:
+            raise ValueError(
+                "Stopped custody cannot consume an already finalized child."
+            )
+        if proof.authority == "provider-claim":
+            raw_reservation = blobs[reservation_path]
+            if raw_reservation is None:
+                raise ValueError("Stopped custody lacks its provider reservation.")
+            identity = ReservationRecord.model_validate_json(
+                raw_reservation
+            ).reservation
+            if identity.key != proof.semantic_key or identity.intent != intent:
+                raise ValueError(
+                    "The provider reservation no longer matches stopped custody."
+                )
+            records = repository._git(
+                "ls-tree", "-r", "--name-only", "-z", snapshot.tree, root
+            )
+            claim_paths = tuple(
+                path
+                for raw in records.split(b"\0")
+                if raw
+                if (path := raw.decode()).startswith(f"{root}/claim-")
+            )
+            claims = repository.read_blobs(snapshot.tree, claim_paths)
+            latest = max(
+                (
+                    DispatchClaim.model_validate_json(raw)
+                    for raw in claims.values()
+                    if raw
+                ),
+                default=None,
+                key=lambda claim: claim.generation,
+            )
+            if (
+                latest is None
+                or latest.key != proof.semantic_key
+                or latest.token != proof.claim
+            ):
+                raise ValueError("The provider claim changed after stopped custody.")
+            next_claim = f"{root}/claim-{latest.generation + 1}.json"
+            blobs.update(claims)
+            blobs.update(repository.read_blobs(snapshot.tree, (next_claim,)))
+            if blobs[next_claim] is not None:
+                raise ValueError(
+                    "The provider claimed a new generation after stopped custody."
+                )
+        elif blobs[first_claim] is not None or (
+            proof.authority == "local-allocation"
+            and blobs[reservation_path] is not None
+        ):
+            raise ValueError(
+                "External claim evidence contradicts the no-send custody proof."
+            )
+        if proof.disposition == "issued":
+            if blobs[issuer_path] is None:
+                raise ValueError(
+                    "The retained issued identity lacks current issuer proof."
+                )
+            issued = IssuedRecord.model_validate_json(blobs[issuer_path])
+            issue = issued.result.issue
+            if (
+                issue is None
+                or issue.number != proof.issue
+                or issued.claim != proof.claim
+                or issued.result.reservation.intent != intent
+            ):
+                raise ValueError(
+                    "The retained issue no longer matches stopped custody."
+                )
+            owner_path = _owner_path(issue)
+            owner_blobs = repository.read_blobs(snapshot.tree, (owner_path,))
+            if not owner_blobs[owner_path] or IssueOwner.model_validate_json(
+                owner_blobs[owner_path]
+            ) != IssueOwner(issue=issue, key=proof.semantic_key):
+                raise ValueError("The retained issue lacks its exact ownership record.")
+            blobs.update(owner_blobs)
+            unlinked_issued = True
+        elif blobs[issuer_path] is not None:
+            raise ValueError("Positive issuance contradicts terminal no-child custody.")
+        reads.update(blobs)
+    return reads, unlinked_issued
+
+
 def decide_trip(
     repository,
     snapshot,
@@ -674,26 +838,22 @@ def decide_trip(
             "The trip analysis is absent from the pinned planning history."
         )
     child = expansion_child(graph.states[origin], key)
-    held = [
-        row
-        for row in facts(graph.states[origin], "core.expansion.reserved")
-        if row.attempt == key
-    ]
-    retired = {
-        row.reservation
-        for row in facts(graph.states[origin], "core.expansion.reservation-resolved")
-    }
-    if child is None and any(row.reservation not in retired for row in held):
+    custody_reads, unlinked_issued = stopped_custody_inputs(
+        repository, snapshot, graph.states[origin], active
+    )
+    pinned.update(custody_reads)
+    if unlinked_issued and expansion not in {"continue", "fold", "abandon"}:
         raise ValueError(
-            "Reconcile the still-pending identity before deciding child scope."
+            "Give an explicit scope decision for the retained unlinked issue."
         )
     events = EventContext(
         uuid4().hex, owner, (at or datetime.now(UTC)).isoformat(), digest
     )
     additions = {origin: [("core.trip.decided", fact, "decision")]}
-    expansion_disposition(
-        graph, profile, origin, child, mode, expansion, rationale, additions
-    )
+    if not unlinked_issued:
+        expansion_disposition(
+            graph, profile, origin, child, mode, expansion, rationale, additions
+        )
     return _operation(
         events,
         graph,

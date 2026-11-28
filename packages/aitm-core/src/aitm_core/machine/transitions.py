@@ -145,7 +145,7 @@ def _find_edge(request: TransitionRequest, current: str) -> WorkflowEdge | None:
     return eligible[0] if len(eligible) == 1 else None
 
 
-def _facts(request, snapshot, lifecycle, edge, raw, path, attempt):
+def _facts(request, snapshot, lifecycle, edge, raw, path, attempt, extra_inputs=None):
     source, target = edge.source, edge.target
     profile_states = {entry.id: entry for entry in request.profile.states}
     lane = kind_requirements(lifecycle.kind, "implementation")
@@ -167,7 +167,11 @@ def _facts(request, snapshot, lifecycle, edge, raw, path, attempt):
             )
         )
     )
-    inputs = {**request.backend.read(snapshot, related), path: raw}
+    inputs = {
+        **request.backend.read(snapshot, related),
+        **(extra_inputs or {}),
+        path: raw,
+    }
     pinned_blobs = MappingProxyType(inputs)
     initial_reads = tuple(
         ReadExpectation(
@@ -496,7 +500,7 @@ def _make_operation(
                     item.attempt == current.started.attempt
                     for item in facts(state, "core.trip.decided")
                 )
-                previous = current.started.plan_generation
+                previous = current.plan_generation
                 if (
                     plan_generation is None
                     or plan is None
@@ -719,10 +723,37 @@ def _evaluate(request: TransitionRequest, snapshot: Snapshot) -> _Evaluation:
         attempt = (
             attempts.current_attempt if isinstance(attempts, AttemptState) else None
         )
+        custody = {}
         if attempt is not None and attempts.attempts[attempt].closed:
+            previous = attempts.attempts[attempt]
+            if (
+                edge.operation == request.contract.start
+                and previous.closures
+                and previous.closures[-1].disposition in {"trip", "pivot"}
+            ):
+                from aitm_core.rules.trips import stopped_custody_inputs
+
+                try:
+                    custody, _ = stopped_custody_inputs(
+                        getattr(request.backend, "repository", None),
+                        snapshot,
+                        state,
+                        previous,
+                    )
+                except ValueError as error:
+                    return _Evaluation(
+                        TransitionExplanation(
+                            snapshot,
+                            edge.source,
+                            edge.target,
+                            edge.operation,
+                            outcome=LocalOutcome.REFUSED,
+                            reason=str(error),
+                        )
+                    )
             attempt = None
         reads, digest, observation, guards, generation, binding = _facts(
-            request, snapshot, lifecycle, edge, raw, path, attempt
+            request, snapshot, lifecycle, edge, raw, path, attempt, custody
         )
         operation, outcome, reason = _make_operation(
             request,
