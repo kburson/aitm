@@ -61,6 +61,12 @@ class AttemptStarted(AttemptBoundary):
     provisional: bool = False
 
 
+class AttemptReconciled(AttemptBoundary):
+    plan_generation: Positive
+    source: SourceSnapshot
+    binding: Text
+
+
 class AttemptClosed(AttemptBoundary):
     from_clock: ClockMode
     disposition: Literal[
@@ -135,11 +141,24 @@ class AttemptRecord(AttemptFact):
     closures: tuple[AttemptClosed, ...] = ()
     closed: bool = False
     recovery: RecoveryAuthority | None = None
+    reconciliation: AttemptReconciled | None = None
     recovery_bound: bool = False
     recovery_generations: dict[Positive, RecoveryAuthority] = Field(
         default_factory=dict
     )
     executions: dict[str, tuple[ExecutionRecorded, ...]] = Field(default_factory=dict)
+
+    @property
+    def source(self) -> SourceSnapshot | None:
+        return (
+            self.reconciliation.source if self.reconciliation else self.started.source
+        )
+
+    @property
+    def plan_generation(self) -> int | None:
+        if self.reconciliation:
+            return self.reconciliation.plan_generation
+        return self.started.plan_generation
 
     @property
     def clock_mode(self) -> ClockMode | None:

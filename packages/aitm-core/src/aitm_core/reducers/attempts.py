@@ -7,10 +7,12 @@ from json import dumps
 
 from pydantic import ValidationError
 
+from aitm_core.attempts import attach_attempt_evidence
 from aitm_core.events import StoryState
 from aitm_core.models.attempts import (
     AttemptBoundary,
     AttemptClosed,
+    AttemptReconciled,
     AttemptRecord,
     AttemptReopened,
     AttemptStarted,
@@ -25,6 +27,7 @@ from aitm_core.models.events import EventEnvelope
 
 _SCHEMAS: dict[str, type[AttemptBoundary]] = {
     "core.attempt.started": AttemptStarted,
+    "core.attempt.reconciled": AttemptReconciled,
     "core.attempt.closed": AttemptClosed,
     "core.attempt.reopened": AttemptReopened,
     "core.attempt.clock.changed": ClockChanged,
@@ -142,7 +145,7 @@ def _reopen(record: AttemptRecord, fact: AttemptReopened) -> AttemptRecord:
         or last.disposition != "unverified"
         or last.reason != fact.closure_reason
         or record.recovery is not None
-        or fact.source != record.started.source
+        or fact.source != record.source
         or authority.source != fact.source
         or authority.attempt != fact.attempt
         or authority.ended_generation != record.generation
@@ -215,7 +218,7 @@ def _record_execution(record: AttemptRecord, fact: ExecutionRecorded) -> Attempt
         or "managed-verification" not in authority.allowed
     ):
         raise AttemptIntegrityError("execution exceeds its retained recovery scope")
-    if fact.source != record.started.source:
+    if fact.source != record.source:
         raise AttemptIntegrityError(
             "execution phase disagrees with the retained source"
         )
@@ -263,6 +266,13 @@ def _update(record: AttemptRecord, fact: AttemptBoundary) -> AttemptRecord:
     if fact.generation != record.generation:
         raise AttemptIntegrityError("attempt generation is stale or unrecognized")
     match fact:
+        case AttemptReconciled():
+            try:
+                return attach_attempt_evidence(
+                    record, **fact.model_dump() | {"source": fact.source}
+                )
+            except ValueError as error:
+                raise AttemptIntegrityError(str(error)) from error
         case AttemptClosed():
             if record.closed or fact.from_clock != record.clock_mode:
                 raise AttemptIntegrityError("closure disagrees with the current clock")
