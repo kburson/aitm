@@ -10,6 +10,7 @@ from aitm_core.models.attempts import AttemptRecord, AttemptState
 from aitm_core.models.common import CommandResult, LocalOutcome
 from aitm_core.models.events import validate_envelope
 from aitm_core.models.evidence import GuardEvaluated
+from aitm_core.models.lifecycle import StateChange
 from aitm_core.models.operations import (
     EventAppend,
     Operation,
@@ -152,6 +153,51 @@ def _preflight(context: OperationContext, ports: ServicePorts) -> PreflightResul
     return outcome
 
 
+def _advisory_transition(op: Operation, failures: tuple[GuardEvaluated, ...]) -> bool:
+    if (
+        op.intent.kind != "state.transition"
+        or op.owner.extension is not None
+        or op.change.writes
+        or op.pending_actions
+        or len(op.change.events) != 1
+        or any(
+            guard.mode != "advisory" or guard.slot == "prepare" for guard in failures
+        )
+    ):
+        return False
+    try:
+        change = StateChange.model_validate_json(op.intent.payload)
+        if (
+            change.mode != "advisory"
+            or change.edge.kind != "normal"
+            or change.to_state.terminal
+        ):
+            return False
+        records = tuple(validate_envelope(raw) for raw in op.change.events[0].records)
+        if any(
+            event.type
+            not in {
+                "core.guard.evaluated",
+                "core.attempt.started",
+                "core.attempt.clock.changed",
+                "core.state.changed",
+            }
+            for event in records
+        ):
+            return False
+        observed = tuple(
+            event.data for event in records if event.type == "core.guard.evaluated"
+        )
+        transitions = tuple(
+            event.data for event in records if event.type == "core.state.changed"
+        )
+        return transitions == (
+            change.model_dump(mode="json", by_alias=True),
+        ) and observed == tuple(guard.model_dump(mode="json") for guard in op.guards)
+    except ValueError:
+        return False
+
+
 def evaluate_operation(
     op: Operation,
     snapshot: Snapshot,
@@ -228,7 +274,8 @@ def evaluate_operation(
             preflight,
             authorization,
         )
-    if any(not guard.ok for guard in op.guards):
+    failures = tuple(guard for guard in op.guards if not guard.ok)
+    if failures and not _advisory_transition(op, failures):
         return OperationEvaluation(
             LocalOutcome.REFUSED,
             "guard-refused",

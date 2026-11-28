@@ -44,6 +44,8 @@ ServicePortName = Literal[
     "entity_sync",
     "lane_selection",
     "kind_requirements",
+    "planning_capacity",
+    "implementation_binding",
     "aggregate_evidence",
     "story_exit_guards",
 ]
@@ -71,6 +73,8 @@ class ServicePorts:
     action_retry: object | None = None
     lane_selection: object | None = None
     kind_requirements: object | None = None
+    planning_capacity: object | None = None
+    implementation_binding: object | None = None
     aggregate_evidence: object | None = None
     story_exit_guards: object | None = None
     extension_declarations: tuple[Extension, ...] = ()
@@ -303,6 +307,19 @@ def prepare_mutation(
                 result,
                 outcome=LocalOutcome.CONFLICT,
                 reason="The committed graduation workflow changed. Rebuild from the current profile.",
+            )
+    if isinstance(operation, Operation) and operation.intent.kind == "state.transition":
+        from aitm_core.models.lifecycle import StateChange
+
+        change = StateChange.model_validate_json(operation.intent.payload)
+        if (
+            change.to_state.revision != result.policy.workflow.digest
+            or change.mode != result.policy.config.enforcement.mode
+        ):
+            return replace(
+                result,
+                outcome=LocalOutcome.CONFLICT,
+                reason="The committed workflow or guard mode changed. Rebuild the transition.",
             )
     return result
 
