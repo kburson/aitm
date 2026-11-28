@@ -3,24 +3,25 @@ schema: "aitm.story/v0"
 id: 502
 title: "[Core C94] Material child-JIT change reconciliation"
 kind: "story"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/502"
 parent: 478
 children: []
 blocking: [37, 237, 479, 480, 484, 485, 486, 487, 488, 508]
 blocked-by: [35, 501]
 created: "2026-11-27T04:49:07Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T07:33:59.168661+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md"
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C94"}
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-28-pickup.md", "plan/2026-11-28-pr-583-verification.md", "plan/2026-11-28-pr-583-source-sar.md", "plan/2026-11-28-pr-583-hosted.json", "plan/2026-11-28-pr-583-verifier.json", "plan/2026-11-28-pr-583-premerge-verifier.json", "plan/2026-11-28-pr-583-source-sar.json", "plan/2026-11-28-pr-583-branch-gates.json", "plan/2026-11-28-pr-583-delivery.json", "plan/2026-11-28-pr-583-native-link.json", "plan/2026-11-28-pr-583-readiness.json"], "attachments": []}
 expansions: []
 trips: []
 design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":478,"design_sources":[2],"scope_entry":"C94","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
+linked-pr: "https://github.com/kburson/aitm/pull/583"
 ---
 
 # [Core C94] Material child-JIT change reconciliation
@@ -42,3 +43,8 @@ Parent: #478. Core coordination: #2. State: Ready for Planning.
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **40** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #478 with scope entry **C94**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+
+## Verified delivery
+
+[Scoped JIT](plan/2026-11-28-pickup.md) · [Coordinator sign-off and Agent Cost](retro/2026-11-28-delivery.md) · [Native Linked PR #583](https://github.com/kburson/aitm/pull/583).

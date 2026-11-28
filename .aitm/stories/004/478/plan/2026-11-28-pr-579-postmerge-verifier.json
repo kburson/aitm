@@ -1,0 +1,26 @@
+{
+  "id": 46121478452,
+  "run_attempt": 1,
+  "workflow_id": 412848571,
+  "event": "push",
+  "head_branch": "trunk",
+  "head_sha": "4ad5d16a49c1af8f5a812c60bc27098f8c7ce445",
+  "status": "completed",
+  "conclusion": "success",
+  "html_url": "https://github.com/kburson/aitm/actions/runs/46121478452",
+  "updated_at": "2026-11-28T07:33:35Z",
+  "delivered_tree": "64458f71e55822ce8cc821fcebc181375e78486f",
+  "ordered_parents": [
+    "d50ae9b2bc2731aa8e31aff8d6754c80db1f6f35",
+    "f841e183aa92bd6613cbc90cfd9a7e137d5d6f1b"
+  ],
+  "live_trunk": "4ad5d16a49c1af8f5a812c60bc27098f8c7ce445",
+  "jobs": {
+    "quality": "success",
+    "file-checks": "success",
+    "python": "success",
+    "python-base": "skipped",
+    "collect-evidence": "success",
+    "aitm-ci": "skipped"
+  }
+}
