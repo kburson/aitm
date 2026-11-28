@@ -42,7 +42,7 @@ core.kind.changed core.design.invalidated core.state.changed core.guard.evaluate
 core.action.completed core.action.failed core.session.started core.session.ended
 core.attempt.started core.attempt.reconciled core.attempt.closed core.attempt.reopened core.attempt.clock.changed
 core.execution.recorded core.estimate.set core.doc.accepted core.jit.recorded
-core.expansion.reserved core.expansion.reservation-resolved core.expansion.recorded
+core.expansion.reserved core.expansion.reservation-resolved core.expansion.recorded core.expansion.custody-recorded
 core.expansion.resolved core.trip.recorded core.trip.decided core.pivot.recorded core.test.receipt
 core.review.recorded core.review.activated core.review.invalidated core.doc-review.opened
 core.doc-review.submitted core.doc-review.completed core.signoff.recorded core.link.changed

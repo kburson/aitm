@@ -23,6 +23,7 @@ from aitm_core.models.evidence import (
     DocumentReviewTurn,
     DraftObserved,
     EvidenceSessionStarted,
+    ExpansionCustody,
     ExpansionRecorded,
     ExpansionReservationResolved,
     ExpansionReserved,
@@ -56,6 +57,7 @@ _SCHEMAS = {
     "core.expansion.reserved": ExpansionReserved,
     "core.expansion.reservation-resolved": ExpansionReservationResolved,
     "core.expansion.recorded": ExpansionRecorded,
+    "core.expansion.custody-recorded": ExpansionCustody,
     "core.expansion.resolved": ExpansionResolved,
     "core.trip.recorded": TripRecorded,
     "core.trip.decided": TripDecided,
@@ -360,6 +362,61 @@ def _structured_observation(
     return state
 
 
+def _check_expansion_custody(
+    state: StoryState, evidence: EvidenceState, fact: ExpansionCustody
+) -> None:
+    from aitm_core.models.attempts import AttemptState
+
+    attempts = state.domains.get("attempts")
+    active = (
+        attempts.attempts.get(fact.attempt)
+        if isinstance(attempts, AttemptState)
+        else None
+    )
+    if (
+        active is None
+        or active.generation != fact.generation
+        or active.clock_mode != "terminal-closed"
+        or not active.closed
+    ):
+        raise EvidenceIntegrityError(
+            "Expansion custody requires the exact stopped attempt."
+        )
+    held = [
+        row.payload
+        for row in evidence.facts.get("core.expansion.reserved", ())
+        if row.payload.reservation == fact.reservation
+    ]
+    if len(held) != 1 or (held[0].attempt, held[0].generation) != (
+        fact.attempt,
+        fact.generation,
+    ):
+        raise EvidenceIntegrityError("Expansion custody lacks the exact reservation.")
+    previous = [
+        row.payload
+        for row in evidence.facts.get("core.expansion.custody-recorded", ())
+        if row.payload.reservation == fact.reservation
+    ]
+    if previous and (
+        len(previous) != 1
+        or previous[0].disposition != "sender-fenced"
+        or fact.disposition == "sender-fenced"
+        or previous[0].claim != fact.claim
+        or previous[0].semantic_key != fact.semantic_key
+    ):
+        raise EvidenceIntegrityError(
+            "Expansion custody conflicts with a retained fact."
+        )
+    if (
+        fact.authority == "provider-claim"
+        and fact.disposition == "no-child"
+        and (not previous or previous[0].fence != fact.fence)
+    ):
+        raise EvidenceIntegrityError(
+            "Provider absence requires its previously published fence."
+        )
+
+
 def fold_evidence(state: StoryState, event: EventEnvelope) -> StoryState:
     """Fold one C56-owned fact into the evidence projection."""
     current = state.domains.get("evidence", EvidenceState(event.story))
@@ -369,6 +426,8 @@ def fold_evidence(state: StoryState, event: EventEnvelope) -> StoryState:
         raise EvidenceIntegrityError("evidence event belongs to another story")
 
     fact = _decode(event)
+    if isinstance(fact, ExpansionCustody):
+        _check_expansion_custody(state, current, fact)
     updated = _structured_observation(current, fact, event)
     row = ObservedFact(event, fact)
     facts = {**updated.facts, event.type: (*updated.facts.get(event.type, ()), row)}
