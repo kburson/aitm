@@ -273,12 +273,14 @@ def preflight_attempt(
         if (attempt := current_attempt(graph.states[number])) is not None
         and not attempt.closed
     ]
-    if (
-        observations is None
-        and open_scope
-        and not any(
-            facts(graph.states[number], "core.expansion.reserved")
-            for number in open_scope
+    if observations is None and (
+        (not scope and any(not attempt.closed for attempt in context.attempts))
+        or (
+            open_scope
+            and not any(
+                facts(graph.states[number], "core.expansion.reserved")
+                for number in open_scope
+            )
         )
     ):
         return TripResult(
