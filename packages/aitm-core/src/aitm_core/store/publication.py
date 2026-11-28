@@ -218,6 +218,12 @@ class Publisher:
                 raise ReplayConflict(
                     "the retained operation requires fresh guard qualification"
                 )
+            if operation.intent.kind in {"core.draft.created", "core.draft.discarded"}:
+                from aitm_core.drafts import draft_replay_conflict
+
+                conflict = draft_replay_conflict(repo, current, operation)
+                if conflict is not None:
+                    raise ReplayConflict(conflict)
             paths = tuple(item.path for item in operation.change.read_set)
             destinations = {
                 entry.path

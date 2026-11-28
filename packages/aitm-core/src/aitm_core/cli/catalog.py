@@ -17,6 +17,7 @@ ROUTES = MappingProxyType(
         ("idea", "open"): "aitm_core.cli.drafts",
         ("idea", "list"): "aitm_core.cli.drafts",
         ("draft", "new"): "aitm_core.cli.drafts",
+        ("draft", "list"): "aitm_core.cli.drafts",
         ("draft", "open"): "aitm_core.cli.drafts",
         ("draft", "discard"): "aitm_core.cli.drafts",
         ("graduate",): "aitm_core.cli.stories",
