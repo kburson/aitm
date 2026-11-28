@@ -603,10 +603,11 @@ def expand(
     child = completed_record(
         service.installation.repository, result.snapshot, intent.source
     )
-    return ExpansionResult(
-        result.command,
-        child.issue if child is not None and child.intent == intent else None,
-    )
+    if child is None or child.intent != intent:
+        raise GraduationConflict(
+            "The verified expansion has no matching child receipt."
+        )
+    return ExpansionResult(result.command, child.issue)
 
 
 def resolve_expansion(

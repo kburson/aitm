@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 from datetime import UTC, datetime
-from json import loads
+from json import dumps, loads
 from pathlib import Path
 
 import pytest
@@ -329,6 +329,41 @@ def test_installed_local_expansion_fences_proposed_child_on_no_issuance(
         LocalBacklog(service).graduate(intent, intent.finalization.to_intent())
     assert set(read_graph(repo, repo.tip()).stories) == {16}
     assert handle(("expand",), args, ports=ports).local == LocalOutcome.REFUSED
+
+    another_origin = 17
+    initial = loads(graduated())
+    initial["story"] = another_origin
+    pin = repo.tip()
+    active = with_attempt(dumps(initial).encode() + b"\n", another_origin)
+    seeded = repo.create_commit(
+        pin, {story_event_path(another_origin): active}, "another local attempt"
+    )
+    repo._git("update-ref", repo.ref, seeded.revision, pin.revision)
+    another_draft = Intake(
+        installation,
+        repo.tip(),
+        policy.source.digest,
+        OWNER,
+        datetime(2026, 11, 27, tzinfo=UTC),
+    ).create_draft(
+        CreateEntity("Allocate a verified local child", "Reach the local authority.")
+    )
+    service = expansion_graduation(installation, owner, ports)
+    finalized = expand(
+        service, another_origin, another_draft.identity, "story", "Local allocation"
+    )
+    assert finalized.command.local == LocalOutcome.COMPLETED
+    assert finalized.command.publication == PublicationOutcome.NOT_APPLICABLE
+    assert finalized.issue is not None and finalized.issue.number == 18
+    final_graph = read_graph(repo, repo.tip())
+    assert final_graph.stories[another_origin].relationships.blocked_by == (18,)
+    assert final_graph.stories[18].relationships.blocking == (another_origin,)
+    pending = read_graph(repo, repo.read_tree(repo.parent(repo.tip())))
+    assert 18 not in pending.stories
+    attempt = (
+        pending.states[another_origin].domains["attempts"].attempts["fixture-attempt"]
+    )
+    assert attempt.clock_mode == "expansion-paused"
 
 
 def test_external_expansion_keeps_pause_through_lost_issuance_response(topology):
