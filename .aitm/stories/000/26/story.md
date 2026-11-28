@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 26
 title: "[Core C22] Graduation and atomic relationships"
 kind: "story"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/26"
 parent: 476
 children: []
@@ -116,3 +116,5 @@ New dependent leaves [C81 / #234](../../002/234/story.md).
 **Ready for Planning** · rank **40** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #476 with scope entry **C22**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
 
 [Scoped manual JIT pickup](plan/2026-11-27-pickup.md).
+
+[Draft #571 and exact candidate verification](plan/2026-11-27-pr-571-verification.md).
