@@ -15,6 +15,7 @@ from aitm_core.models.operations import (
     PreflightResult,
     story_event_path,
 )
+from aitm_core.providers.backlog import IssueRef
 from aitm_core.providers.identity import (
     DispatchClaim,
     IdentityAuthority,
@@ -98,7 +99,9 @@ def close_origin(topology, service, number=16):
     )
 
 
-def test_stop_before_claim_cannot_send_or_publish_claim(topology, tmp_path, monkeypatch):
+def test_stop_before_claim_cannot_send_or_publish_claim(
+    topology, tmp_path, monkeypatch
+):
     service, draft = expansion_fixture(topology)
     repository = service.installation.repository
     provider = Issuer(service.installation.issuer)
@@ -231,3 +234,75 @@ def test_lost_reply_reconciles_exact_issue_on_closed_origin(topology):
         == "terminal-closed"
     )
     assert repository.read_blobs(graph_snapshot.tree, (draft.document,))[draft.document]
+
+    second = loads(graduated())
+    second["story"] = 17
+    git(topology.planning, "pull", "-q", "--ff-only", "origin", PLANNING)
+    topology.advance_planning(
+        story_event_path(17), with_attempt(dumps(second).encode() + b"\n", 17)
+    )
+    another = create_draft(
+        service.installation, "Custody requires ordered fence evidence"
+    )
+
+    class FencedIssuer(Issuer):
+        def verify_sender_fence(self, reservation, claim, proof):
+            return (
+                self.fenced
+                and claim == self.sent[0]
+                and proof == "prior-sender-terminated"
+            )
+
+    fenced = FencedIssuer(service.installation.issuer)
+    authority = IdentityAuthority(service.installation, fenced)
+    pending = expand(
+        service, 17, another.identity, "story", "Fence and observe", external=authority
+    )
+    assert pending.command.publication == PublicationOutcome.PENDING
+    close_origin(topology, service, 17)
+    graph = read_graph(repository, service.snapshot(service.policy()))
+    held = (
+        graph.states[17].domains["evidence"].facts["core.expansion.reserved"][0].payload
+    )
+
+    still_unknown = reconcile_stopped_expansion(
+        service, 17, held.reservation, external=authority
+    )
+    assert still_unknown.command.local == LocalOutcome.UNAVAILABLE
+    fenced.fenced = True
+    stopped = reconcile_stopped_expansion(
+        service, 17, held.reservation, external=authority
+    )
+    assert stopped.command.local == LocalOutcome.COMPLETED, stopped.reason
+    graph = read_graph(repository, service.snapshot(service.policy()))
+    observed = (
+        graph.states[17].domains["evidence"].facts["core.expansion.custody-recorded"]
+    )
+    assert [row.payload.disposition for row in observed] == [
+        "sender-fenced",
+        "no-child",
+    ]
+    assert (
+        graph.states[17].domains["attempts"].attempts["fixture-attempt"].clock_mode
+        == "terminal-closed"
+    )
+
+    # A contradicting provider is deliberately misbehaving. Retain its positive
+    # evidence and keep the historical terminal fact immutable.
+    fenced.issue = IssueRef(issuer=fenced.issuer, number=43)
+    with pytest.raises(IdentityConflict, match="contradicts retained terminal custody"):
+        reconcile_stopped_expansion(service, 17, held.reservation, external=authority)
+    snapshot = service.snapshot(service.policy())
+    after = read_graph(repository, snapshot)
+    assert set(after.stories) == {16, 17}
+    assert len(fenced.sent) == 1
+    assert (
+        after.states[17].domains["evidence"].facts["core.expansion.custody-recorded"]
+        == observed
+    )
+    from aitm_core.providers.backlog import GraduationIntent
+
+    positive = authority.observe_stopped(
+        GraduationIntent.model_validate_json(held.intent)
+    )
+    assert positive.issue == fenced.issue
