@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 74
 title: "[Core C74] Entity-scoped editing and graduation handoff"
 kind: "story"
-state: ready-for-plan
+state: develop
 issue: "https://github.com/kburson/aitm/issues/74"
 parent: 476
 children: []
@@ -17,7 +17,7 @@ estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c74-entity-scoped-editing-and-graduation-handoff"
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C74", "parent": 476}
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md"], "attachments": []}
 expansions: []
 trips: []
 design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":476,"design_sources":[2],"scope_entry":"C74","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
@@ -90,3 +90,7 @@ The current accepted parent section is published `bd4adf06c90fcf02bf0930bbdec5d4
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **20** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #476 with scope entry **C74**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Scoped JIT pickup
+
+[Manual bootstrap pickup](plan/2026-11-27-pickup.md) under the owner’s #476 assignment. Develop is a manual projection. No runtime transition or implementation clock was started.
