@@ -50,7 +50,11 @@ from aitm_core.models.operations import (
     RelatedWriteSet,
     story_event_path,
 )
-from aitm_core.services import ServicePorts, UnavailablePort
+from aitm_core.services import (
+    INSTALLED_ATTEMPT_PREFLIGHT,
+    ServicePorts,
+    UnavailablePort,
+)
 from aitm_core.store.backend import (
     Backend,
     OperationContext,
@@ -141,7 +145,7 @@ def _find_edge(request: TransitionRequest, current: str) -> WorkflowEdge | None:
     return eligible[0] if len(eligible) == 1 else None
 
 
-def _facts(request, snapshot, lifecycle, edge, raw, path, attempt):
+def _facts(request, snapshot, lifecycle, edge, raw, path, attempt, extra_inputs=None):
     source, target = edge.source, edge.target
     profile_states = {entry.id: entry for entry in request.profile.states}
     lane = kind_requirements(lifecycle.kind, "implementation")
@@ -163,7 +167,11 @@ def _facts(request, snapshot, lifecycle, edge, raw, path, attempt):
             )
         )
     )
-    inputs = {**request.backend.read(snapshot, related), path: raw}
+    inputs = {
+        **request.backend.read(snapshot, related),
+        **(extra_inputs or {}),
+        path: raw,
+    }
     pinned_blobs = MappingProxyType(inputs)
     initial_reads = tuple(
         ReadExpectation(
@@ -483,6 +491,28 @@ def _make_operation(
             and plan.policy_digest == request.policy_digest
         ):
             plan_generation = plan.plan_generation
+        if current is not None and current.closed and current.closures:
+            stopped = current.closures[-1]
+            if stopped.disposition in {"trip", "pivot"}:
+                from aitm_core.rules.trips import facts
+
+                recorded = any(
+                    item.attempt == current.started.attempt
+                    for item in facts(state, "core.trip.decided")
+                )
+                previous = current.plan_generation
+                if (
+                    plan_generation is None
+                    or plan is None
+                    or plan.plan_generation != plan_generation
+                    or (previous is not None and plan_generation <= previous)
+                    or (stopped.disposition == "trip" and not recorded)
+                ):
+                    return (
+                        None,
+                        LocalOutcome.REFUSED,
+                        "A fresh accepted plan and the applicable stop decision are required.",
+                    )
         if not (plan_generation and binding) and request.mode == "enforce":
             return (
                 None,
@@ -693,10 +723,37 @@ def _evaluate(request: TransitionRequest, snapshot: Snapshot) -> _Evaluation:
         attempt = (
             attempts.current_attempt if isinstance(attempts, AttemptState) else None
         )
+        custody = {}
         if attempt is not None and attempts.attempts[attempt].closed:
+            previous = attempts.attempts[attempt]
+            if (
+                edge.operation == request.contract.start
+                and previous.closures
+                and previous.closures[-1].disposition in {"trip", "pivot"}
+            ):
+                from aitm_core.rules.trips import stopped_custody_inputs
+
+                try:
+                    custody, _ = stopped_custody_inputs(
+                        getattr(request.backend, "repository", None),
+                        snapshot,
+                        state,
+                        previous,
+                    )
+                except ValueError as error:
+                    return _Evaluation(
+                        TransitionExplanation(
+                            snapshot,
+                            edge.source,
+                            edge.target,
+                            edge.operation,
+                            outcome=LocalOutcome.REFUSED,
+                            reason=str(error),
+                        )
+                    )
             attempt = None
         reads, digest, observation, guards, generation, binding = _facts(
-            request, snapshot, lifecycle, edge, raw, path, attempt
+            request, snapshot, lifecycle, edge, raw, path, attempt, custody
         )
         operation, outcome, reason = _make_operation(
             request,
@@ -767,12 +824,57 @@ def preflight_transition(
             payload=lifecycle.workflow_state.model_dump_json().encode(),
         ),
     )
-    result = _preflight(
-        OperationContext(
-            operation, snapshot, (attempts.attempts[attempts.current_attempt],)
-        ),
-        ServicePorts(attempt_preflight=port),
+    context = OperationContext(
+        operation, snapshot, (attempts.attempts[attempts.current_attempt],)
     )
+    if port is INSTALLED_ATTEMPT_PREFLIGHT and hasattr(request.backend, "repository"):
+        from aitm_core.rules.trips import record_trip
+        from aitm_core.services import installed_attempt_observation
+
+        at = datetime.fromisoformat(request.at)
+        services = request.backend._ports
+        finding, graph = installed_attempt_observation(
+            request.backend.repository,
+            context,
+            request.profile,
+            request.mode,
+            services,
+            at,
+        )
+        result = finding.preflight
+        if finding.cause is not None:
+            stop = record_trip(
+                context,
+                finding,
+                graph,
+                request.profile,
+                request.mode,
+                at,
+                repository=request.backend.repository,
+            )
+            if stop is not None:
+                if request.transact is None:
+                    return CommandResult(
+                        operation_id=request.operation_id,
+                        local=LocalOutcome.UNAVAILABLE,
+                        evidence=("The trip publication route is unavailable.",),
+                    )
+                recorded = request.transact(stop, snapshot).command
+                if (
+                    recorded.local != LocalOutcome.COMPLETED
+                    or recorded.publication == PublicationOutcome.PENDING
+                ):
+                    return recorded
+                if request.mode == "advisory":
+                    return None
+                return CommandResult(
+                    operation_id=request.operation_id,
+                    local=LocalOutcome.REFUSED,
+                    publication=recorded.publication,
+                    evidence=(finding.cause,),
+                )
+    else:
+        result = _preflight(context, ServicePorts(attempt_preflight=port))
     if result.outcome in (PreflightOutcome.BLOCKED, PreflightOutcome.UNAVAILABLE):
         return CommandResult(
             operation_id=request.operation_id,

@@ -27,7 +27,12 @@ from aitm_core.models.operations import (
     repository_path,
     story_event_path,
 )
-from aitm_core.services import ServicePorts, mutate, preflight_policy
+from aitm_core.services import (
+    INSTALLED_ATTEMPT_PREFLIGHT,
+    ServicePorts,
+    mutate,
+    preflight_policy,
+)
 from aitm_core.store.backend import Blobs, Snapshot
 from aitm_core.store.continuity import ContinuityStatus
 from aitm_core.store.gate import _atomic_write
@@ -413,9 +418,6 @@ def _sync(
         and binding.scope.document in selected.deletions
     ):
         raise BindingConflict("Finalize the entity to remove its canonical document.")
-    retried = _retry_pending(workspace, binding, ports)
-    if retried is not None:
-        return retried
     authority = preflight_policy(workspace.installation, ports=ports)
     if authority.outcome != LocalOutcome.COMPLETED or authority.policy is None:
         return SyncResult(
@@ -431,6 +433,54 @@ def _sync(
     current = repo.tip()
     if authority.views.planning.observed_commit != current.revision:
         raise BindingConflict("The planning view changed while authoring was pinned.")
+    if (
+        isinstance(binding.scope, StoryRef)
+        and ports.attempt_preflight is INSTALLED_ATTEMPT_PREFLIGHT
+    ):
+        from aitm_core.models.operations import PreflightOutcome
+        from aitm_core.store.backend import OperationContext, _preflight, _read_attempts
+
+        event = story_event_path(binding.scope.story)
+        pinned = repo.read_blobs(current.tree, (event,))
+        attempts = _read_attempts(pinned)
+        if attempts:
+            probe = _operation(
+                binding, authority.policy.source.digest, pinned, {}, identity
+            )
+            checked = _preflight(
+                OperationContext(probe, current, attempts),
+                replace(ports, attempt_installation=workspace.installation),
+            )
+            if checked.outcome in {
+                PreflightOutcome.BLOCKED,
+                PreflightOutcome.UNAVAILABLE,
+            }:
+                return SyncResult(
+                    CommandResult(
+                        operation_id=identity,
+                        local=LocalOutcome.REFUSED
+                        if checked.outcome == PreflightOutcome.BLOCKED
+                        else LocalOutcome.UNAVAILABLE,
+                        evidence=(
+                            checked.reason or "Attempt preflight did not admit sync.",
+                        ),
+                    ),
+                    binding,
+                )
+            if repo.tip() != current:
+                return SyncResult(
+                    CommandResult(
+                        operation_id=identity,
+                        local=LocalOutcome.CONFLICT,
+                        evidence=(
+                            "The attempt observation advanced planning. Retry sync.",
+                        ),
+                    ),
+                    binding,
+                )
+    retried = _retry_pending(workspace, binding, ports)
+    if retried is not None:
+        return retried
     shared = {
         **repo.read_blobs(current.tree, paths),
         **_entity_source(workspace, binding, current),

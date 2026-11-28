@@ -87,7 +87,7 @@ def test_expansion_gap_and_production_finalizer_registration(
     missing = expand(unregistered, origin, draft.identity, "defect", "Unregistered")
     assert missing.command.local == LocalOutcome.UNAVAILABLE
     assert missing.issue is None and repository.tip() == before
-    absent = replace(service, ports=ServicePorts())
+    absent = replace(service, ports=ServicePorts(attempt_preflight=None))
     missing = expand(absent, origin, draft.identity, "defect", "Unavailable")
     assert missing.command.local == LocalOutcome.UNAVAILABLE
     assert missing.issue is None and repository.tip() == before
@@ -293,7 +293,8 @@ def test_installed_local_expansion_fences_proposed_child_on_no_issuance(
         "writer",
     )
     pin = repo.tip()
-    assert handle(("expand",), args).local == LocalOutcome.UNAVAILABLE
+    absent = handle(("expand",), args, ports=ServicePorts(attempt_preflight=None))
+    assert absent.local == LocalOutcome.UNAVAILABLE
     assert repo.tip() == pin
 
     build = GraduationService.build

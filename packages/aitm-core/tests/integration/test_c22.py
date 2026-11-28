@@ -300,7 +300,10 @@ def test_graduate_links(topology):
     origin_bytes = repo.read_blobs(repo.tip().tree, (origin_path,))[origin_path]
     topology.advance_planning(origin_path, with_attempt(origin_bytes, 43))
     before_attempt = pinned_service.snapshot(pinned_service.policy())
-    denied = pinned_service.finalize_external_identity(authority, entry, finalization)
+    unregistered = replace(
+        pinned_service, ports=replace(pinned_service.ports, attempt_preflight=None)
+    )
+    denied = unregistered.finalize_external_identity(authority, entry, finalization)
     assert denied.command.local == LocalOutcome.UNAVAILABLE
     assert denied.preflight.outcome == PreflightOutcome.UNAVAILABLE
     assert repo.tip() == before_attempt
