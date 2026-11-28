@@ -3,24 +3,25 @@ schema: "aitm.story/v0"
 id: 38
 title: "[Core C29] Kind-specific guards and terminal dispositions"
 kind: "story"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/38"
 parent: 479
 children: []
 blocking: [39, 40, 45, 49, 52, 63, 79, 81, 504, 507, 510]
 blocked-by: [37, 76]
 created: "2026-11-09T08:02:06Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T09:00:15.763400+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c29-kind-specific-guards-and-terminal-dispositions"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-28-pickup.md", "plan/2026-11-28-pr-588-verification.md", "plan/2026-11-28-pr-588-source-sar.md", "plan/2026-11-28-pr-588-hosted.json", "plan/2026-11-28-pr-588-verifier.json", "plan/2026-11-28-pr-588-premerge-verifier.json", "plan/2026-11-28-pr-588-source-sar.json", "plan/2026-11-28-pr-588-branch-gates.json", "plan/2026-11-28-pr-588-delivery.json", "plan/2026-11-28-pr-588-native-link.json", "plan/2026-11-28-pr-588-readiness.json"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C29", "parent": 479}
 design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":479,"design_sources":[2],"scope_entry":"C29","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
+linked-pr: "https://github.com/kburson/aitm/pull/588"
 ---
 
 # [Core C29] Kind-specific guards and terminal dispositions
@@ -104,3 +105,8 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **40** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #479 with scope entry **C29**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+
+## Verified delivery
+
+[Scoped JIT](plan/2026-11-28-pickup.md) · [Coordinator sign-off and Agent Cost](retro/2026-11-28-delivery.md) · [Native Linked PR #588](https://github.com/kburson/aitm/pull/588).
