@@ -304,6 +304,19 @@ def prepare_mutation(
                 outcome=LocalOutcome.CONFLICT,
                 reason="The committed graduation workflow changed. Rebuild from the current profile.",
             )
+    if isinstance(operation, Operation) and operation.intent.kind == "state.transition":
+        from aitm_core.models.lifecycle import StateChange
+
+        change = StateChange.model_validate_json(operation.intent.payload)
+        if (
+            change.to_state.revision != result.policy.workflow.digest
+            or change.mode != result.policy.config.enforcement.mode
+        ):
+            return replace(
+                result,
+                outcome=LocalOutcome.CONFLICT,
+                reason="The committed workflow or guard mode changed. Rebuild the transition.",
+            )
     return result
 
 
