@@ -70,13 +70,19 @@ class Graduation(LifecycleFact):
 
 
 class KindSplit(LifecycleFact):
-    from_kind: Literal["story"] = Field(alias="from")
+    from_kind: Literal["story", "defect", "spike"] = Field(alias="from")
     to_kind: Literal["epic"] = Field(alias="to")
     reason: Text
     scope_digest: Digest
     invalidated_acceptances: tuple[Digest, ...]
     invalidated_estimates: tuple[EstimatePhase, ...]
     decomposition_required: bool
+
+
+class DesignInvalidated(LifecycleFact):
+    reason: Text
+    invalidated_acceptances: tuple[Digest, ...]
+    invalidated_estimates: tuple[EstimatePhase, ...]
 
 
 class StateChange(LifecycleFact):

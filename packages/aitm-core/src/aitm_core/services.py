@@ -44,6 +44,8 @@ ServicePortName = Literal[
     "entity_sync",
     "lane_selection",
     "kind_requirements",
+    "planning_capacity",
+    "implementation_binding",
     "aggregate_evidence",
     "story_exit_guards",
 ]
@@ -71,6 +73,8 @@ class ServicePorts:
     action_retry: object | None = None
     lane_selection: object | None = None
     kind_requirements: object | None = None
+    planning_capacity: object | None = None
+    implementation_binding: object | None = None
     aggregate_evidence: object | None = None
     story_exit_guards: object | None = None
     extension_declarations: tuple[Extension, ...] = ()
@@ -81,6 +85,33 @@ class ServicePorts:
         if implementation is None:
             raise UnavailablePort(port)
         return implementation
+
+    def workflow_guard_ports(self, source):
+        """Compose the installed kind policy with any qualified provider ports."""
+        from aitm_core.machine.kinds import KIND_EXIT_RULES, evaluate_kind_guard
+
+        def kind(call):
+            return evaluate_kind_guard(
+                call,
+                source=source,
+                aggregate=self.aggregate_evidence
+                if callable(self.aggregate_evidence)
+                else None,
+            )
+
+        def exit_guard(call):
+            if (
+                call.story.kind in {"epic", "spike"}
+                and call.identifier in KIND_EXIT_RULES
+            ):
+                return kind(call)
+            if callable(self.story_exit_guards):
+                return self.story_exit_guards(call)
+            return kind(call)
+
+        return self.kind_requirements if callable(
+            self.kind_requirements
+        ) else kind, exit_guard
 
 
 def backend(
@@ -303,6 +334,24 @@ def prepare_mutation(
                 result,
                 outcome=LocalOutcome.CONFLICT,
                 reason="The committed graduation workflow changed. Rebuild from the current profile.",
+            )
+    if isinstance(operation, Operation) and operation.intent.kind in {
+        "state.transition",
+        "state.split",
+        "state.design-rework",
+        "state.non-delivery",
+    }:
+        from aitm_core.models.lifecycle import StateChange
+
+        change = StateChange.model_validate_json(operation.intent.payload)
+        if (
+            change.to_state.revision != result.policy.workflow.digest
+            or change.mode != result.policy.config.enforcement.mode
+        ):
+            return replace(
+                result,
+                outcome=LocalOutcome.CONFLICT,
+                reason="The committed workflow or guard mode changed. Rebuild the transition.",
             )
     return result
 
