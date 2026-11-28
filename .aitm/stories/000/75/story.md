@@ -3,24 +3,25 @@ schema: "aitm.story/v0"
 id: 75
 title: "[Core C72] Typed decomposition descriptors and applicability"
 kind: "story"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/75"
 parent: 478
 children: []
 blocking: [37, 53, 82, 501]
 blocked-by: [5, 12, 25, 35, 36]
 created: "2026-11-09T13:42:07Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T07:04:00.478764+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c72-typed-decomposition-descriptors-and-applicability"
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C72", "parent": 478}
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-28-pickup.md", "plan/2026-11-28-pr-581-verification.md", "plan/2026-11-28-pr-581-source-sar.md", "plan/2026-11-28-pr-581-hosted.json", "plan/2026-11-28-pr-581-verifier.json", "plan/2026-11-28-pr-581-premerge-verifier.json", "plan/2026-11-28-pr-581-source-sar.json", "plan/2026-11-28-pr-581-branch-gates.json", "plan/2026-11-28-pr-581-delivery.json", "plan/2026-11-28-pr-581-native-link.json", "plan/2026-11-28-pr-581-readiness.json"], "attachments": []}
 expansions: []
 trips: []
 design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":478,"design_sources":[2],"scope_entry":"C72","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
+linked-pr: "https://github.com/kburson/aitm/pull/581"
 ---
 
 # [Core C72] Typed decomposition descriptors and applicability
@@ -90,3 +91,8 @@ The current accepted parent section is published `bd4adf06c90fcf02bf0930bbdec5d4
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **20** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #478 with scope entry **C72**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+
+## Scoped manual pickup and verified delivery
+
+[Scoped JIT](plan/2026-11-28-pickup.md) · [Coordinator sign-off and Agent Cost](retro/2026-11-28-delivery.md) · [Native Linked PR #581](https://github.com/kburson/aitm/pull/581).
