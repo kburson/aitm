@@ -33,6 +33,7 @@ class FrozenDecomposition:
     parent: int
     design_digest: str
     plan_digest: str
+    plan_generation: int
     _entries: MappingProxyType[str, PlanEntry]
     reads: tuple[ReadExpectation, ...]
 
@@ -87,7 +88,7 @@ def _accepted_inputs(
     return design, plan, (ReadExpectation(path=path, digest=sha256(raw).hexdigest()),)
 
 
-def _document(
+def pin_accepted_document(
     parent: int, doc: DocumentAcceptance, raw: bytes | None
 ) -> tuple[dict, ReadExpectation]:
     if raw is None:
@@ -117,8 +118,8 @@ def prepare_decomposition(
     if plan.canonical_digest != expected_plan:
         raise ValueError("expected plan disagrees with the accepted parent plan")
     documents = store.read(snapshot, (design.path, plan.path))
-    _, design_read = _document(parent, design, documents[design.path])
-    plan_header, plan_read = _document(parent, plan, documents[plan.path])
+    _, design_read = pin_accepted_document(parent, design, documents[design.path])
+    plan_header, plan_read = pin_accepted_document(parent, plan, documents[plan.path])
     fields = plan_header.get("decomposition")
     if fields is None:
         raise DecompositionUnavailable(
@@ -130,6 +131,7 @@ def prepare_decomposition(
         parent,
         design.canonical_digest,
         plan.canonical_digest,
+        plan.plan_generation,
         MappingProxyType(descriptors.root),
         (*event_reads, design_read, plan_read),
     )
@@ -196,20 +198,9 @@ def plan_entry_applicability(
     design_coverage: str | None,
 ) -> ApplicabilityResult:
     """C26 port: qualify frozen issuance plus its current reviewed parent inputs."""
-    if design_coverage != "own-document":
-        return ApplicabilityResult(
-            "unavailable", reason="own-document design coverage is required"
-        )
-    if graduation.source_kind != "plan-entry" or graduation.parent is None:
-        return ApplicabilityResult(
-            "stale", reason="child has no declared plan entry source"
-        )
-    parent_id, _, key = graduation.source_id.partition(":")
-    if parent_id != str(graduation.parent) or not key:
-        return ApplicabilityResult(
-            "stale", reason="malformed child plan entry identity"
-        )
     try:
+        if graduation.parent is None:
+            return ApplicabilityResult("stale", reason="child has no declared parent")
         _, plan, _ = _accepted_inputs(
             context.backend, context.snapshot, graduation.parent, context.policy_digest
         )
@@ -220,9 +211,45 @@ def plan_entry_applicability(
             plan.canonical_digest,
             context.policy_digest,
         )
+        return assess_issued_entry(
+            context.backend,
+            parent,
+            graduation,
+            document.story,
+            design_coverage=design_coverage,
+        )
+    except (DecompositionUnavailable, UnavailableReducer) as error:
+        return ApplicabilityResult("unavailable", reason=str(error))
+    except ValueError as error:
+        return ApplicabilityResult("stale", reason=str(error))
+
+
+def assess_issued_entry(
+    store: Backend,
+    parent: FrozenDecomposition,
+    graduation: Graduation,
+    story: int,
+    *,
+    design_coverage: str | None,
+) -> ApplicabilityResult:
+    """Look up the permanent child and compare its issuance with the pinned map."""
+    if design_coverage != "own-document":
+        return ApplicabilityResult(
+            "unavailable", reason="own-document design coverage is required"
+        )
+    if graduation.source_kind != "plan-entry" or graduation.parent != parent.parent:
+        return ApplicabilityResult(
+            "stale", reason="child has no matching declared plan entry source"
+        )
+    parent_id, _, key = graduation.source_id.partition(":")
+    if parent_id != str(parent.parent) or not key:
+        return ApplicabilityResult(
+            "stale", reason="malformed child plan entry identity"
+        )
+    try:
         source = prepare_plan_entry(parent, key)
         path = graduation_path(source)
-        raw = context.backend.read(context.snapshot, (path,))[path]
+        raw = store.read(parent.snapshot, (path,))[path]
         if raw is None:
             raise DecompositionUnavailable("retained child issuance is unavailable")
         validate_graduated_record(path, raw)
@@ -230,7 +257,7 @@ def plan_entry_applicability(
         issued = record.intent.source
         if (
             not isinstance(issued, PlanEntrySource)
-            or record.issue.number != document.story
+            or record.issue.number != story
             or record.intent.kind != graduation.kind
             or record.intent.parent != graduation.parent
             or issued.identity != graduation.source_id
