@@ -40,7 +40,7 @@ _MONTH = re.compile(r"[0-9]{4}-(?:0[1-9]|1[0-2])")
 _SCHEMA = re.compile(r"aitm\.[a-z0-9.-]+/v1")
 _EXTENSION_DIRECTORY = re.compile(r"[a-z][a-z0-9-]*")
 CORE_ROOT_NAMES = frozenset(
-    {"README.md", "store.json", "operations", "repairs", "ideas", "drafts"}
+    {"README.md", "store.json", "operations", "repairs", "ideas", "drafts", "identity"}
 )
 CORE_STORY_NAMES = frozenset(
     {
@@ -63,6 +63,7 @@ class PlanningPath(StrEnum):
     EXTENSION_DATA = "extension-data"
     STORE = "store"
     OPERATION = "operation"
+    IDENTITY = "identity"
     REPAIR = "repair"
     EVENTS = "events"
 
@@ -115,6 +116,13 @@ def classify_planning_path(path: str) -> PlanningPath:
             return PlanningPath.OPERATION
         if parts[1] == "repairs":
             return PlanningPath.REPAIR
+    if (
+        len(parts) == 4
+        and parts[1] == "identity"
+        and re.fullmatch(r"[0-9a-f]{64}", parts[2])
+        and re.fullmatch(r"(?:reservation|issue|claim-[0-9]+)\.json", parts[3])
+    ):
+        return PlanningPath.IDENTITY
     if story_scope(path) is not None:
         tail = parts[4:]
         if tail == ("events.jsonl",):
@@ -219,7 +227,7 @@ def _check_tree(
         role = classify_planning_path(path)
         if role is PlanningPath.EXTENSION_DATA:
             extension_changes.add(path)
-        if role in {PlanningPath.OPERATION, PlanningPath.REPAIR}:
+        if role in {PlanningPath.OPERATION, PlanningPath.REPAIR, PlanningPath.IDENTITY}:
             raise ValueError(f"retained planning record changed: {path}")
         if role == PlanningPath.EVENTS:
             if path not in new:
@@ -243,6 +251,10 @@ def _check_tree(
                 raise ValueError(f"event stream belongs to a different story: {path}")
             continue
         row = _typed_json(content, path)
+        if role == PlanningPath.IDENTITY:
+            from aitm_core.providers.identity import validate_identity_record
+
+            validate_identity_record(path, content)
         if role == PlanningPath.STORE:
             if (
                 row.get("schema") != "aitm.store/v1"
