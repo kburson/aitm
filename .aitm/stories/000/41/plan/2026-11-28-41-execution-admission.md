@@ -17,4 +17,8 @@ The native rank is 30. #17, #21 and #40 are Closed/Completed. Their landed commi
 
 Run affected C55, C09, C16 and C31 tests plus Ruff. Keep any PR draft until both exact hosted qualifications and the trusted verifier pass. Require the complete exact independent post-readiness Grok review, trusted reviewed-tree verification, branch checks and Git/GitHub landing readback before close.
 
+The implementation binds holder and session into the retained admission address. A spent admission accepts an exact diagnostic report through a separate observation call. A failed result, a cancelled result and a result on a stale candidate still run the installed activity check after authoritative retention. The activity event retains its provenance so the check can rebuild from planning history. If publication remains unverified, preserve the diagnostic report and the existing planning recovery result.
+
+The installed case stages a competing admission in the second clone, publishes a C31 stop before its real push, and checks that the losing admission is absent on the authority ref. It also checks the stale disconnected clone, a distinct local-only installation and a cancellation waiting at the actual launch boundary. One real Git test node owns this authority contract. Two deterministic tests qualify retained receipt compatibility and holder identity.
+
 This pickup is manual bootstrap evidence. Runtime transition and implementation clock are both false.
