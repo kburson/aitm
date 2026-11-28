@@ -37,3 +37,14 @@ Repository run [46086115199](https://github.com/kburson/aitm/actions/runs/460861
 The revision remains draft while [repository CI](https://github.com/kburson/aitm/actions/runs/46086369089) and [Core CI](https://github.com/kburson/aitm/actions/runs/46086369032) qualify this exact candidate.
 
 Both runs passed before #568 was marked ready again. Core collected 858 unit and 74 integration tests, all 932 passed, and its tooling test and Ruff passed. Hosted Linux aitm-usage collected 1,644 unit and 142 integration tests. The same 92% floors and coverage gates passed. All nine revised focused Core cases passed locally, including recovery from a lost CAS, a prior evidence event before graduation, retained receipt precedence with an inconsistent later graduation and changed-reason conflict. The [trusted verifier](2026-11-27-pr-568-bca68f1e-verifier.json) qualified the exact repository attempt and tree before the new SAR request.
+
+## Candidate after independent round 2
+
+[Independent Grok round 2](2026-11-27-pr-568-source-sar-r2.md) verified the five round-1 fixes and requested draft-specific replay preconditions and collision recovery. An independent shared write reproduced the pending result on the superseded candidate. The revision checks the exact draft folder manifest and subtree plus graduation or retired-path evidence during replay. It still detects newly added attachments and preserves history. A locally committed unpublished discard may move to a new checked tombstone suffix on retry when the conflicting path belongs to another entity and the original operation is the sole unpublished local commit. It uses the verified shared prefix and preserves the original recovery ref. The committed tombstone records the retained draft subtree independently of the original full planning tree.
+
+- Base `0312853be12468a87fda933401f16a1368e76b2b`
+- Head `03940479b3edacec4a5b8d457b76208695470b12`
+- Synthetic merge `7ac6ca55b19979641db58196dc20ffea2d26b1f6`
+- Tree `72db6a6e0f76267d70a656382e6e3b429589f08d`
+
+#568 remains draft for [repository CI](https://github.com/kburson/aitm/actions/runs/46088111605) and [Core CI](https://github.com/kburson/aitm/actions/runs/46088111684).
