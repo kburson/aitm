@@ -1,0 +1,45 @@
+{
+  "status": "pass",
+  "commit": "ba19b589ca3fa679f26611dbbd81d84357caad4b",
+  "tree": "9e0d32c2946893f6a1177beef91e08a15479391f",
+  "ordered_parents": [
+    "4ad5d16a49c1af8f5a812c60bc27098f8c7ce445",
+    "388cb834ccb263ef34f55a8be7621d20aa52230b"
+  ],
+  "passed": 8,
+  "cases": [
+    {
+      "classname": "tests.unit.test_c105",
+      "name": "test_composed_workflow_loads_and_routes_the_resolved_operations[parking]"
+    },
+    {
+      "classname": "tests.unit.test_c105",
+      "name": "test_composed_workflow_loads_and_routes_the_resolved_operations[housekeeping]"
+    },
+    {
+      "classname": "tests.integration.test_c90",
+      "name": "test_profiles_follow_literal_default_history_from_a_story_worktree"
+    },
+    {
+      "classname": "tests.integration.test_c90",
+      "name": "test_invalid_workflow_is_refused_after_c07_resolves_its_committed_bytes[duplicate-state]"
+    },
+    {
+      "classname": "tests.integration.test_c90",
+      "name": "test_invalid_workflow_is_refused_after_c07_resolves_its_committed_bytes[unsupported-version]"
+    },
+    {
+      "classname": "tests.integration.test_c28",
+      "name": "test_installed_transition_fences_started_attempts_and_keeps_authored_sync_on_refusal"
+    },
+    {
+      "classname": "tests.integration.test_c71",
+      "name": "test_installed_split_publishes_scope_and_invalidations_in_one_commit"
+    },
+    {
+      "classname": "tests.integration.test_c29",
+      "name": "test_installed_epic_uses_accepted_scope_and_explicit_nondelivery"
+    }
+  ],
+  "scope": "Two workflow shapes, typed rework routing with its producer unavailable, actual split and non-delivery, and installed Git contracts for pinned loader, preflight and authored sync, split and terminal disposition."
+}

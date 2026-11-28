@@ -1,0 +1,24 @@
+{
+  "base": "4ad5d16a49c1af8f5a812c60bc27098f8c7ce445",
+  "head": "388cb834ccb263ef34f55a8be7621d20aa52230b",
+  "merge": "ba19b589ca3fa679f26611dbbd81d84357caad4b",
+  "tree": "9e0d32c2946893f6a1177beef91e08a15479391f",
+  "model": "grok-4.7-build",
+  "readiness_at": "2026-11-28T09:06:35Z",
+  "started_at": "2026-11-28T09:06:38.153000+00:00",
+  "packet_bytes": 205283,
+  "complete_packet_verified_in_transcript": true,
+  "submitted_packet_sha256": "4e9b1ccb5485eb48020fe3b65b5386d0f0565e0960921ecc258635a6b64afabe",
+  "packet_sha256": "a42401f82231d0ebdc619c015a0e3bde8c932847888609811a77c1ba326041b1",
+  "stop_reason": "end_turn",
+  "turns": 1,
+  "model_calls": 1,
+  "tool_calls": 0,
+  "verdict": "PASS",
+  "usage": {
+    "cached_input": 1152,
+    "new_input": 70470,
+    "output": 7290,
+    "verified_billed_cost": null
+  }
+}
