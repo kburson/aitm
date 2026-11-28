@@ -11,6 +11,7 @@ from aitm_core.setup.journal import state_directory
 from aitm_core.store.gate import RefIdentity, _atomic_write, _worktrees
 from aitm_core.store.installation import Installation
 from aitm_core.store.validation import validate_history
+from aitm_core.verification.lanes import select_lane
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,7 +145,13 @@ def doctor(context: Installation, ports: ServicePorts | None = None) -> Readines
     if b".aitm/" in patterns:
         evidence.append("The unanchored .aitm/ entry also hides nested fixture paths.")
     lane = getattr(ports.lane_selection, "probe", None)
-    if callable(lane):
+    if ports.lane_selection is select_lane and preflight.policy is not None:
+        assurance = preflight.policy.config.test.assurance
+        capability = select_lane(assurance).probe()
+        evidence.append(capability.reason)
+        if capability.assurance != assurance:
+            pending.append("lane-probe")
+    elif callable(lane):
         evidence.extend(lane(context))
     else:
         pending.append("lane-probe")
@@ -154,4 +161,4 @@ def doctor(context: Installation, ports: ServicePorts | None = None) -> Readines
 
 class InstallationDoctor:
     def check(self, context: Installation) -> tuple[str, ...]:
-        return doctor(context).evidence
+        return doctor(context, ServicePorts(lane_selection=select_lane)).evidence

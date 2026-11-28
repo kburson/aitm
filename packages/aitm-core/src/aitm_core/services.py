@@ -27,6 +27,7 @@ if TYPE_CHECKING:
         ForwardRepairVerifier,
         ValidationReport,
     )
+    from aitm_core.verification.guards import CandidateVerification
 
 ServicePortName = Literal[
     "policy_resolution",
@@ -50,6 +51,7 @@ ServicePortName = Literal[
     "implementation_binding",
     "aggregate_evidence",
     "story_exit_guards",
+    "candidate_verification",
 ]
 
 
@@ -87,6 +89,7 @@ class ServicePorts:
     story_exit_guards: object | None = None
     extension_declarations: tuple[Extension, ...] = ()
     entity_sync: object | None = None
+    candidate_verification: CandidateVerification | None = None
 
     def require(self, port: ServicePortName) -> object:
         implementation = getattr(self, port)
@@ -113,6 +116,11 @@ class ServicePorts:
                 and call.identifier in KIND_EXIT_RULES
             ):
                 return kind(call)
+            if (
+                call.identifier == "core.dev.review-candidate-current"
+                and self.candidate_verification is not None
+            ):
+                return self.candidate_verification(call)
             if callable(self.story_exit_guards):
                 return self.story_exit_guards(call)
             return kind(call)
