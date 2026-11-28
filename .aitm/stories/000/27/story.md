@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 27
 title: "[Core C21] Shared local number allocation"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/27"
 parent: 476
 children: []
 blocking: [37, 39, 58, 65, 82, 478, 479, 480, 483, 484, 485, 487]
 blocked-by: [22, 26, 74]
 created: "2026-11-09T08:01:19Z"
-updated: "2026-11-28T03:05:58.433+00:00"
+updated: "2026-11-28T03:25:42.789+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -112,3 +112,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 [Draft #572 and exact candidate verification](plan/2026-11-27-pr-572-verification.md).
 
 [#572 exact hosted qualification before SAR](plan/2026-11-27-pr-572-verification.md).
+
+[Native Linked PR #572](https://github.com/kburson/aitm/pull/572) · [Delivery sign-off and Agent Cost](retro/2026-11-27-delivery.md).
