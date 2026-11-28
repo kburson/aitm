@@ -1,9 +1,9 @@
 """Typed evidence and provenance payloads for the installed Core event registry."""
 
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
 
 from aitm_core.models.attempts import (
     BindingPurpose,
@@ -136,6 +136,55 @@ class ExpansionReservationResolved(AttemptObservation):
     disposition: Literal["linked", "no-child"]
     child: Positive | None = None
     proof_refs: Proofs
+
+
+class ExpansionCustody(AttemptObservation):
+    reservation: Text
+    semantic_key: Digest
+    disposition: Literal["sender-fenced", "issued", "no-child"]
+    authority: Literal["local-allocation", "protocol-no-send", "provider-claim"]
+    verified_at: Commit
+    claim: Text | None = None
+    issue: Positive | None = None
+    fence: Text | None = None
+    absence: Text | None = None
+    proof_refs: Proofs
+
+    @model_validator(mode="after")
+    def exact_proof_shape(self) -> Self:
+        if self.authority != "provider-claim":
+            valid = self.disposition == "no-child" and all(
+                field is None
+                for field in (self.claim, self.issue, self.fence, self.absence)
+            )
+        elif self.claim is None:
+            valid = False
+        elif self.disposition == "issued":
+            valid = (
+                self.issue is not None and self.fence is None and self.absence is None
+            )
+        elif self.disposition == "sender-fenced":
+            valid = (
+                self.issue is None and self.fence is not None and self.absence is None
+            )
+        else:
+            valid = (
+                self.issue is None
+                and self.fence is not None
+                and self.absence is not None
+            )
+        proof = {
+            "local-allocation": f"local-allocation-fenced:{self.verified_at}",
+            "protocol-no-send": f"protocol-no-send:{self.verified_at}",
+            "provider-claim": {
+                "sender-fenced": f"provider-fence:{self.fence}",
+                "issued": f"issued-ownership:{self.verified_at}",
+                "no-child": f"ordered-provider-observation:{self.verified_at}",
+            }[self.disposition],
+        }[self.authority]
+        if not valid or self.proof_refs != (proof,):
+            raise ValueError("The custody disposition and authority proof disagree.")
+        return self
 
 
 class ExpansionRecorded(AttemptObservation):
