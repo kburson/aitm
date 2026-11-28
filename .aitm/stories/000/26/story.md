@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 26
 title: "[Core C22] Graduation and atomic relationships"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/26"
 parent: 476
 children: []
 blocking: [27, 37, 39, 63, 65, 76, 82, 234]
 blocked-by: [16, 25, 74]
 created: "2026-11-09T08:01:14Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T02:50:44.916+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -120,3 +120,5 @@ New dependent leaves [C81 / #234](../../002/234/story.md).
 [Draft #571 and exact candidate verification](plan/2026-11-27-pr-571-verification.md).
 
 #571 passed exact hosted workflows and trusted verification before independent SAR.
+
+[Native Linked PR #571](https://github.com/kburson/aitm/pull/571) · [Delivery sign-off and Agent Cost](retro/2026-11-27-delivery.md).
