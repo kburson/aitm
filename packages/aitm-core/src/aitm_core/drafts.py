@@ -9,9 +9,14 @@ from pathlib import PurePosixPath
 from typing import Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from aitm_core.documents import DocumentError, _parse
+from aitm_core.entities import (
+    ENTITY_SCHEMA,
+    BindingDisposition,
+    finalize_entity_binding,
+)
 from aitm_core.models.binding import EntityRef
 from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutcome
 from aitm_core.models.events import EventActor, validate_envelope
@@ -37,9 +42,9 @@ from aitm_core.store.git_backend import _Record, _record_path
 from aitm_core.store.installation import Installation
 from aitm_core.store.objects import Repository
 from aitm_core.store.validation import _entries
+from aitm_core.store.workspace import BindingConflict, Workspace
 
 _DISCARDED = ".aitm/drafts/discarded"
-_ENTITY_SCHEMA = "aitm.intake/v1"
 type EntityKind = Literal["idea", "draft"]
 
 
@@ -74,6 +79,9 @@ class Tombstone(BaseModel):
     prior_tree: str
     draft_tree: str
     attachments: dict[str, str]
+    binding_disposition: BindingDisposition | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 def _read_tombstones(
@@ -145,6 +153,13 @@ class _LiveEntity:
     ref: EntityRef
     title: str
     slug: str
+
+
+def _ambiguous(kind: EntityKind, candidates: tuple[_LiveEntity, ...]) -> str:
+    choices = ", ".join(
+        f"{entity.ref.identity} ({entity.ref.document})" for entity in candidates
+    )
+    return f"Ambiguous {kind} handle. Choose {choices}."
 
 
 @dataclass(frozen=True, slots=True)
@@ -229,7 +244,7 @@ class Intake:
             document = f"{folder}/draft.md"
         identity = uuid4().hex
         metadata = {
-            "schema": _ENTITY_SCHEMA,
+            "schema": ENTITY_SCHEMA,
             "event": f"core.{kind}.created",
             "identity": identity,
             "title": title,
@@ -268,7 +283,7 @@ class Intake:
                 header = _parse(raw).header
             except DocumentError:
                 continue
-            if header.get("schema") != _ENTITY_SCHEMA:
+            if header.get("schema") != ENTITY_SCHEMA:
                 continue
             identity, title, slug = (
                 header.get(key) for key in ("identity", "title", "slug")
@@ -289,6 +304,27 @@ class Intake:
             entity.ref
             for entity in self._live(kind, _entries(self.repository, self.snapshot))
         )
+
+    def _matching(
+        self, kind: EntityKind, handle: str, occupied: Iterable[str]
+    ) -> tuple[_LiveEntity, ...]:
+        entities = self._live(kind, occupied)
+        exact = tuple(
+            entity
+            for entity in entities
+            if handle in (entity.ref.identity, entity.ref.document)
+        )
+        return exact or tuple(entity for entity in entities if entity.slug == handle)
+
+    def resolve_entity(self, kind: EntityKind, handle: str) -> EntityRef:
+        candidates = self._matching(
+            kind, handle, _entries(self.repository, self.snapshot)
+        )
+        if len(candidates) > 1:
+            raise BindingConflict(_ambiguous(kind, candidates))
+        if not candidates:
+            raise BindingConflict(f"No live {kind} matches that handle.")
+        return candidates[0].ref
 
     def _failure(
         self, outcome: LocalOutcome, reason: str, identity: str | None = None
@@ -420,7 +456,9 @@ class Intake:
             return selected
         result = replace(
             self, snapshot=shared, policy_digest=policy_digest
-        ).discard_draft(tombstone.entity.identity, tombstone.reason)
+        )._discard_draft(
+            tombstone.entity.identity, tombstone.reason, Workspace(self.installation)
+        )
         return replace(
             result,
             command=result.command.model_copy(
@@ -429,6 +467,13 @@ class Intake:
         )
 
     def discard_draft(self, handle: str, reason: str) -> OperationResult:
+        workspace = Workspace(self.installation)
+        with workspace.lock():
+            return self._discard_draft(handle, reason, workspace)
+
+    def _discard_draft(
+        self, handle: str, reason: str, workspace: Workspace
+    ) -> OperationResult:
         reason = reason.strip()
         if not reason:
             raise ValueError("discard requires a nonempty reason")
@@ -436,19 +481,9 @@ class Intake:
         retained = self._retry(handle, reason, occupied)
         if retained is not None:
             return retained
-        live = self._live("draft", occupied)
-        candidates = tuple(
-            e for e in live if handle in (e.ref.identity, e.ref.document)
-        )
-        if not candidates:
-            candidates = tuple(e for e in live if e.slug == handle)
+        candidates = self._matching("draft", handle, occupied)
         if len(candidates) > 1:
-            choices = ", ".join(
-                f"{e.ref.identity} ({e.ref.document})" for e in candidates
-            )
-            return self._failure(
-                LocalOutcome.CONFLICT, f"Ambiguous draft handle. Choose {choices}."
-            )
+            return self._failure(LocalOutcome.CONFLICT, _ambiguous("draft", candidates))
         entity = candidates[0] if candidates else None
         if _graduated(
             self.repository,
@@ -469,8 +504,12 @@ class Intake:
         # Only the committed tombstone fixes the operation ID. A lost CAS can
         # leave an outbound request retained without a matching store receipt.
         identity = f"draft-discard-{entity.ref.identity}-{uuid4().hex}"
+        disposition = finalize_entity_binding(
+            workspace, entity.ref, "discarded", self.snapshot, operation_id=identity
+        )
         tombstone = Tombstone(
             entity=entity.ref,
+            binding_disposition=disposition,
             title=entity.title,
             reason=reason,
             discarded_by=self.owner.actor,
@@ -489,10 +528,30 @@ class Intake:
             },
         )
         raw = tombstone.model_dump_json().encode()
-        return self._apply(
+        result = self._apply(
             identity,
             tombstone.event,
             raw,
             {**blobs, path: None},
             {**dict.fromkeys(blobs), path: raw},
         )
+        if disposition is not None and disposition.recovery:
+            location = (
+                workspace.state
+                / "sync-recovery"
+                / disposition.binding
+                / disposition.recovery
+            )
+            return replace(
+                result,
+                command=result.command.model_copy(
+                    update={
+                        "evidence": (
+                            *result.command.evidence,
+                            f"Retained unsynced entity edits at {location}.",
+                        ),
+                        "recovery": result.command.recovery or str(location),
+                    }
+                ),
+            )
+        return result

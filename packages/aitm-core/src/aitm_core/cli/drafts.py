@@ -6,12 +6,15 @@ from pathlib import Path
 from uuid import uuid4
 
 from aitm_core.drafts import CreateEntity, CreationFailed, Intake
+from aitm_core.entities import open_entity
 from aitm_core.models.binding import EntityRef
 from aitm_core.models.common import CommandResult, LocalOutcome, StoreAnchor
 from aitm_core.models.events import EventActor
 from aitm_core.models.operations import OperationOwner
 from aitm_core.services import UnavailablePort, load_installation, preflight_policy
+from aitm_core.setup.init import _active_installation
 from aitm_core.store.objects import GitCommandError, Repository
+from aitm_core.store.workspace import BindingConflict, Workspace
 
 
 class IntakeResult(CommandResult):
@@ -23,8 +26,7 @@ def handle(route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult:
     identity = uuid4().hex
     kind = route[0]
     action = route[-1]
-    # C74 owns the installed open command and editor binding.
-    if action not in {"add", "new", "discard", "list"}:
+    if action not in {"add", "new", "discard", "list", "open"}:
         return CommandResult(
             operation_id=identity,
             local=LocalOutcome.UNAVAILABLE,
@@ -38,19 +40,25 @@ def handle(route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult:
         parser.add_argument("title")
         parser.add_argument("--body-file", type=Path)
         parser.add_argument("--tag", action="append", default=[])
-    if action == "discard":
+    if action in {"discard", "open"}:
         parser.add_argument("handle")
+    if action == "discard":
         parser.add_argument("--reason", required=True)
+    if action == "open":
+        parser.add_argument("--session", required=True)
+        parser.add_argument("--path", action="append", default=[])
     parser.add_argument("--anchor", type=Path)
     parser.add_argument("--repository", type=Path, default=Path.cwd())
     parser.add_argument("--installation", type=Path)
     try:
         options = parser.parse_args(arguments)
-        if options.anchor is None:
+        if options.anchor is None and action != "open":
             raise UnavailablePort("Supply the trusted store anchor with --anchor.")
         return _apply(identity, kind, action, options)
     except CreationFailed as error:
         return error.command
+    except BindingConflict as error:
+        outcome, reason = LocalOutcome.CONFLICT, str(error)
     except (argparse.ArgumentError, ValueError) as error:
         outcome, reason = LocalOutcome.INTEGRITY_ERROR, str(error)
     except (GitCommandError, OSError, UnavailablePort) as error:
@@ -61,9 +69,15 @@ def handle(route: tuple[str, ...], arguments: tuple[str, ...]) -> CommandResult:
 def _apply(
     identity: str, kind: str, action: str, options: argparse.Namespace
 ) -> CommandResult:
-    anchor = StoreAnchor.model_validate_json(options.anchor.read_bytes())
-    repository = Repository(options.repository, anchor.planning_ref)
-    installation = load_installation(repository, anchor, options.installation)
+    if options.anchor is None:
+        installation, _ = _active_installation(
+            Repository(options.repository, "refs/heads/aitm-entity-probe")
+        )
+        repository = installation.repository
+    else:
+        anchor = StoreAnchor.model_validate_json(options.anchor.read_bytes())
+        repository = Repository(options.repository, anchor.planning_ref)
+        installation = load_installation(repository, anchor, options.installation)
     prepared = preflight_policy(installation)
     if prepared.outcome != LocalOutcome.COMPLETED:
         return CommandResult(
@@ -89,6 +103,17 @@ def _apply(
             local=LocalOutcome.COMPLETED,
             entities=entities,
             evidence=tuple(f"{ref.identity} {ref.document}" for ref in entities),
+        )
+    if action == "open":
+        ref = intake.resolve_entity(kind, options.handle)
+        binding = open_entity(
+            Workspace(installation), ref, options.session, tuple(options.path)
+        )
+        return IntakeResult(
+            operation_id=binding.identity,
+            local=LocalOutcome.COMPLETED,
+            entity=ref,
+            evidence=(binding.model_dump_json(),),
         )
     if action == "discard":
         result = intake.discard_draft(options.handle, options.reason)
