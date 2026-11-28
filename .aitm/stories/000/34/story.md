@@ -3,20 +3,20 @@ schema: "aitm.story/v0"
 id: 34
 title: "[Core C25] Live review capsules and qualified turn timing"
 kind: "story"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/34"
 parent: 477
 children: []
 blocking: [35, 53, 229]
 blocked-by: [17, 28, 33]
 created: "2026-11-09T08:01:49Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T05:37:08.339399+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c25-live-review-capsules-and-qualified-turn-timing"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md", "plan/2026-11-27-pr-577-verification.md", "plan/2026-11-27-pr-577-source-sar.md", "plan/2026-11-27-pr-577-hosted.json", "plan/2026-11-27-pr-577-verifier.json", "plan/2026-11-27-pr-577-premerge-verifier.json", "plan/2026-11-27-pr-577-source-sar.json", "plan/2026-11-27-pr-577-branch-gates.json", "plan/2026-11-27-pr-577-delivery.json"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C25", "parent": 477}
@@ -102,3 +102,8 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **40** · **P1/S** · **3 agent-hours**. Design accepted for this manual workflow through issue #477 with scope entry **C25**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+
+## Scoped manual pickup and verified delivery
+
+[Scoped JIT](plan/2026-11-27-pickup.md) · [Coordinator sign-off and Agent Cost](retro/2026-11-27-delivery.md) · [Native Linked PR #577](https://github.com/kburson/aitm/pull/577).
