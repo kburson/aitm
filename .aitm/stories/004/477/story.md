@@ -3,21 +3,21 @@ schema: "aitm.story/v0"
 id: 477
 title: "[Epic] Core — Design and plan review evidence"
 kind: "epic"
-state: develop
+state: done
 issue: "https://github.com/kburson/aitm/issues/477"
 parent: 1
 children: [29, 32, 33, 34, 35]
 blocking: []
 blocked-by: [8, 15, 23, 500]
 created: "2026-11-27T04:48:45Z"
-updated: "2026-11-28T03:32:31.562516+00:00"
+updated: "2026-11-28T06:13:59.239027+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 15.0, "size": "Feature"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md"
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "EP08"}
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md", "plan/2026-11-28-pr-573-verification.md", "plan/2026-11-28-pr-573-source-sar.md", "plan/2026-11-28-pr-573-hosted.json", "plan/2026-11-28-pr-573-verifier.json", "plan/2026-11-28-pr-573-premerge-verifier.json", "plan/2026-11-28-pr-573-source-sar.json", "plan/2026-11-28-pr-573-branch-gates.json", "plan/2026-11-28-pr-573-delivery.json", "plan/2026-11-28-pr-573-ep08-composition.json", "plan/2026-11-28-pr-573-postmerge-verifier.json", "plan/2026-11-28-pr-573-native-link.json", "plan/2026-11-28-pr-573-readiness.json"], "attachments": []}
 expansions: []
 trips: []
 design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":1,"design_sources":[1,2],"scope_entry":"EP08","evidence":".aitm/stories/000/2/plan/2026-11-27-core-kickoff/refinement-readback.json"}
@@ -56,3 +56,8 @@ Estimate: **15 implementation agent-hours**, including verification and review. 
 ## Active manual pickup
 
 [Scoped pickup and evidence](plan/2026-11-27-pickup.md). This records manual bootstrap work without a runtime transition or implementation clock.
+
+
+## Verified delivery
+
+[Scoped JIT](plan/2026-11-27-pickup.md) · [Coordinator sign-off and Agent Cost](retro/2026-11-28-delivery.md) · [Native Linked PR #573](https://github.com/kburson/aitm/pull/573).
