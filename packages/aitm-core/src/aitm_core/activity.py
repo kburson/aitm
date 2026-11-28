@@ -3,9 +3,12 @@
 from collections.abc import Iterable
 from dataclasses import dataclass, fields
 from datetime import datetime, timedelta
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from aitm_core.ext.api import ProducerRef
+
+if TYPE_CHECKING:
+    from aitm_core.models.evidence import ActivityRecorded
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +62,40 @@ def ingest_activity(
         reason = _ineligibility(producer, observation)
         records.append(ActivityEvidence(producer, observation, reason is None, reason))
     return EventBatch(tuple(records))
+
+
+def retained_activity(record: "ActivityRecorded") -> ActivityEvidence | None:
+    """Re-qualify a durable observation using its exact original producer and proof."""
+    proof = record.provenance
+    if (
+        proof is None
+        or record.session is None
+        or record.attempt is None
+        or record.recorded_at is None
+    ):
+        return None
+    producer = ProducerRef(
+        id=record.producer,
+        version=proof.producer_version,
+        measurement_contract=proof.measurement_contract,
+        coverage_class=record.coverage,
+    )
+    observation = ActivityObservation(
+        source_id=proof.source_id,
+        actor=proof.actor,
+        actor_kind=proof.actor_kind,
+        session=record.session,
+        attempt=record.attempt,
+        generation=proof.generation,
+        binding=proof.binding,
+        observed_at=datetime.fromisoformat(record.observed_at),
+        recorded_at=datetime.fromisoformat(record.recorded_at),
+        ended_at=datetime.fromisoformat(record.ended_at)
+        if record.ended_at is not None
+        else None,
+        evidence=proof.proof_refs,
+    )
+    return ingest_activity(producer, (observation,)).records[0]
 
 
 def _same_observation(left: ActivityObservation, right: ActivityObservation) -> bool:

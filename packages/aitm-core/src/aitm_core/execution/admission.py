@@ -11,6 +11,7 @@ import rfc8785
 from aitm_core.models.attempts import (
     AttemptBoundary,
     AttemptRecord,
+    AttemptState,
     BindingPurpose,
     ExecutionCandidate,
     ExecutionRecorded,
@@ -28,6 +29,8 @@ from aitm_core.models.operations import (
     Operation,
     OperationCategory,
     OperationOwner,
+    PreflightOutcome,
+    PreflightResult,
     ReadExpectation,
     RelatedWriteSet,
     WriteAuthorization,
@@ -56,7 +59,16 @@ class ExecutionRequest(AttemptBoundary):
     @property
     def execution_id(self) -> str:
         return sha256(
-            rfc8785.dumps([self.story, self.attempt, self.generation, self.request_id])
+            rfc8785.dumps(
+                [
+                    self.story,
+                    self.attempt,
+                    self.generation,
+                    self.binding,
+                    self.session,
+                    self.request_id,
+                ]
+            )
         ).hexdigest()
 
 
@@ -93,7 +105,7 @@ class AdmissionService:
     def workspace(self) -> Workspace:
         return Workspace(self.installation)
 
-    def _view(self, request: ExecutionRequest) -> _View:
+    def _view(self, request: ExecutionRequest, *, historical: bool = False) -> _View:
         policy = preflight_policy(self.installation, ports=self.ports)
         repo = self.installation.repository
         snapshot = repo.tip()
@@ -115,11 +127,21 @@ class AdmissionService:
         graph = read_graph(repo, snapshot)
         state = graph.states.get(request.story)
         attempt = current_attempt(state) if state is not None else None
+        if historical and state is not None:
+            domain = state.domains.get("attempts")
+            attempt = (
+                domain.attempts.get(request.attempt)
+                if isinstance(domain, AttemptState)
+                else None
+            )
         if (
             attempt is None
             or attempt.started.attempt != request.attempt
-            or attempt.generation != request.generation
-            or attempt.binding != request.binding
+            or (
+                not historical
+                and (attempt.generation, attempt.binding)
+                != (request.generation, request.binding)
+            )
         ):
             raise BindingConflict(
                 "Execution requires the current attempt and generation."
@@ -170,6 +192,7 @@ class AdmissionService:
             first = history[0]
             if (
                 first.request_id != request.request_id
+                or first.generation != request.generation
                 or first.action_key != request.action_key
                 or first.executor != request.executor
                 or first.candidate != request.candidate
@@ -189,7 +212,15 @@ class AdmissionService:
             request, fact.execution_id, fact.authority_store, fact.authority_ref, commit
         )
 
-    def _build(self, view: _View, request: ExecutionRequest, kind: str, *facts):
+    def _build(
+        self,
+        view: _View,
+        request: ExecutionRequest,
+        kind: str,
+        *facts,
+        observations=(),
+        category=OperationCategory.NORMAL,
+    ):
         owner = OperationOwner(
             actor=EventActor(kind="tool", harness="aitm-core", session=request.session),
             binding=request.binding,
@@ -205,13 +236,20 @@ class AdmissionService:
             context,
             view.graph.states[request.story],
             raw,
-            [("core.execution.recorded", fact, fact.phase) for fact in facts],
+            [
+                *(("core.execution.recorded", fact, fact.phase) for fact in facts),
+                *(
+                    ("core.activity.recorded", fact, f"activity-{i}")
+                    for i, fact in enumerate(observations)
+                ),
+            ],
+            include_null_data=bool(observations),
         )
         return Operation(
             operation_id=context.operation,
             owner=owner,
             policy_digest=view.policy,
-            category=OperationCategory.NORMAL,
+            category=category,
             intent=FinalizationIntent(
                 kind=kind,
                 version=1,
@@ -228,11 +266,27 @@ class AdmissionService:
                 origin=AuthorityOrigin.REGISTERED,
             )
 
+        ports = replace(self.ports, write_authorization=authorize)
+        categories = None
+        if operation.category == OperationCategory.STOP_RECONCILIATION:
+
+            def check(context):
+                return PreflightResult(
+                    outcome=PreflightOutcome.PASSED
+                    if context.operation == operation
+                    else PreflightOutcome.BLOCKED,
+                    origin=AuthorityOrigin.REGISTERED,
+                )
+
+            ports = replace(ports, attempt_preflight=check)
+            categories = {(operation.intent.kind, 1): operation.category}
+
         return mutate(
             self.installation,
             operation,
             view.snapshot,
-            ports=replace(self.ports, write_authorization=authorize),
+            ports=ports,
+            categories=categories,
         )
 
     def _published(self, command: CommandResult) -> bool:

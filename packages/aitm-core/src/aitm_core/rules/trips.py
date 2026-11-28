@@ -324,12 +324,21 @@ def _append(
     state: StoryState,
     raw: bytes,
     rows: list[tuple[str, object, str]],
+    *,
+    include_null_data: bool = False,
 ) -> EventAppend:
     assert state.story_id is not None
     digest = sha256(raw if raw.endswith(b"\n") else raw + b"\n")
     records = []
     for event, payload, label in rows:
-        wire = events.encode(state.story_id, event, state, payload, label)
+        wire = events.encode(
+            state.story_id,
+            event,
+            state,
+            payload,
+            label,
+            include_null_data=include_null_data,
+        )
         records.append(wire)
         digest.update(wire + b"\n")
         state = replace(

@@ -389,10 +389,10 @@ def prepare_mutation(
 
 def installed_attempt_observation(repository, context, profile, mode, ports, at):
     """Resolve qualified observations and pinned attempt facts for C31."""
-    from aitm_core.activity import ActivityEvidence
+    from aitm_core.activity import ActivityEvidence, retained_activity
     from aitm_core.models.operations import PreflightOutcome, PreflightResult
     from aitm_core.relationships import read_graph
-    from aitm_core.rules.trips import TripResult, preflight_attempt
+    from aitm_core.rules.trips import TripResult, facts, preflight_attempt
 
     graph = read_graph(repository, context.snapshot)
     fence = ports.post_delivery_fence
@@ -413,6 +413,22 @@ def installed_attempt_observation(repository, context, profile, mode, ports, at)
         isinstance(row, ActivityEvidence) for row in observations
     ):
         raise ValueError("Attempt activity producer returned untyped observations.")
+    scoped_attempts = {
+        (attempt.started.attempt, attempt.generation, attempt.binding)
+        for attempt in context.attempts
+    }
+    retained = tuple(
+        item
+        for state in graph.states.values()
+        for fact in facts(state, "core.activity.recorded")
+        if fact.provenance is not None
+        and (fact.attempt, fact.provenance.generation, fact.provenance.binding)
+        in scoped_attempts
+        and (item := retained_activity(fact)) is not None
+        and item.qualified
+    )
+    if retained:
+        observations = (*retained, *(observations or ()))
     return preflight_attempt(context, graph, observations, at, mode), graph
 
 
