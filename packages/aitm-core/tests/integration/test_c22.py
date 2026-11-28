@@ -3,38 +3,48 @@
 from dataclasses import replace
 from datetime import UTC, datetime
 from hashlib import sha256
-from json import loads
+from json import dumps, loads
 from pathlib import PurePosixPath
 
 import pytest
 
 from aitm_core.drafts import CreateEntity, Intake
 from aitm_core.entities import open_entity
+from aitm_core.events import FoldIntegrityError, core_reducers, fold
 from aitm_core.graduation import (
     FinalizerRegistry,
+    GraduationConflict,
     GraduationService,
     ordinary_finalization,
 )
+from aitm_core.models.attempts import AttemptStarted, ClockChanged, SourceSnapshot
 from aitm_core.models.binding import EntityRef
 from aitm_core.models.common import LocalOutcome, PublicationOutcome
-from aitm_core.models.events import EventActor
+from aitm_core.models.events import EventActor, validate_envelope
 from aitm_core.models.identity import (
     DeliveryTarget,
     FrozenFinalization,
     PlanEntrySource,
     SourceDescription,
 )
+from aitm_core.models.lifecycle import LinkChange
 from aitm_core.models.operations import (
+    AuthorityOrigin,
+    BlobWrite,
+    EventAppend,
     FinalizationIntent,
+    OperationCategory,
     OperationOwner,
+    PreflightOutcome,
+    PreflightResult,
     ReadExpectation,
     RelatedWriteSet,
     story_event_path,
 )
 from aitm_core.providers.backlog import GraduationIntent, IssueRef
 from aitm_core.providers.identity import IdentityAuthority
-from aitm_core.relationships import GraphConflict, LinkRequest, read_graph
-from aitm_core.services import preflight_policy
+from aitm_core.relationships import EventContext, GraphConflict, LinkRequest, read_graph
+from aitm_core.services import ServicePorts, preflight_policy
 from aitm_core.store.workspace import Workspace
 from tests.integration.test_c08 import DEFAULT, WORKFLOW, commit_file, git
 from tests.integration.test_c08 import topology as topology
@@ -68,9 +78,67 @@ def create_draft(installation, title):
     return EntityRef(identity=created.identity, document=created.document)
 
 
-def test_graduate_links(topology):
-    from json import dumps
+def with_attempt(raw, story):
+    context = EventContext("fixture-attempt", OWNER, STAMP, "a" * 64)
+    opened = (
+        context.encode(
+            story,
+            "core.attempt.started",
+            fold(raw.splitlines(keepends=True), core_reducers()),
+            AttemptStarted(
+                attempt="fixture-attempt",
+                generation=1,
+                plan_generation=1,
+                source=SourceSnapshot(commit="b" * 40, tree="c" * 40),
+                binding="fixture-binding",
+                allowance_millis=3000,
+            ),
+            "open",
+        )
+        + b"\n"
+    )
+    # The open event requires its clock in the same batch. Capture its prefix
+    # using the already-validated input and the exact open envelope bytes.
+    tail = fold(raw.splitlines(keepends=True), core_reducers())
+    started = validate_envelope(opened)
+    after_open = replace(
+        tail,
+        next_sequence=started.sequence + 1,
+        prior_log_digest=sha256(raw + opened).hexdigest(),
+    )
+    clock = context.encode(
+        story,
+        "core.attempt.clock.changed",
+        after_open,
+        ClockChanged(
+            attempt="fixture-attempt",
+            generation=1,
+            cause_event_id=started.id,
+            **{"from": None, "to": "active"},
+            observed_at=datetime.fromisoformat(STAMP),
+            used_millis=0,
+        ),
+        "clock",
+    )
+    clock = loads(clock)
+    clock["data"]["from"] = None
+    return raw + opened + dumps(clock, separators=(",", ":")).encode() + b"\n"
 
+
+def graduation_preflight(calls, outcome=PreflightOutcome.PASSED):
+    def check(context):
+        assert context.operation.category == OperationCategory.NORMAL
+        assert context.operation.intent.kind == "core.graduated"
+        assert tuple(attempt.started.attempt for attempt in context.attempts) == (
+            "fixture-attempt",
+        )
+        calls.append(context.operation.operation_id)
+        return PreflightResult(outcome=outcome, origin=AuthorityOrigin.FIXTURE)
+
+    return ServicePorts(attempt_preflight=check)
+
+
+def test_graduate_links(topology):
     install_profile(topology)
     install = topology.policy.installation
     repo = install.repository
@@ -157,10 +225,43 @@ def test_graduate_links(topology):
             ),
         ),
     )
-    registry = FinalizerRegistry().register_finalizer(
-        finalization.kind,
-        finalization.version,
-        lambda _request, _child, _snapshot: RelatedWriteSet(read_set=()),
+    candidates = []
+
+    def finalize(request, candidate):
+        assert request == finalization
+        assert candidate.child == 44
+        events = []
+        reads = []
+        for number, key, other in ((43, "blocked_by", 44), (44, "blocking", 43)):
+            path = story_event_path(number)
+            body = repo.read_blobs(candidate.snapshot.tree, (path,))[path]
+            reads.append(
+                ReadExpectation(
+                    path=path,
+                    digest=sha256(body).hexdigest() if body is not None else None,
+                )
+            )
+            tail = candidate.tails[number]
+            before = tail.domains["lifecycle"].relationships
+            link = LinkChange(
+                before=before,
+                after=before.model_copy(update={key: (*getattr(before, key), other)}),
+            )
+            events.append(
+                EventAppend(
+                    story=number,
+                    records=(
+                        candidate.events.encode(
+                            number, "core.link.changed", tail, link, "related"
+                        ),
+                    ),
+                )
+            )
+        candidates.append(candidate)
+        return RelatedWriteSet(read_set=tuple(reads), events=tuple(events))
+
+    registry = FinalizerRegistry().register_candidate_finalizer(
+        finalization.kind, finalization.version, finalize
     )
     pinned_service = replace(service, registry=registry)
     source = PlanEntrySource(
@@ -195,11 +296,43 @@ def test_graduate_links(topology):
     assert 44 not in read_graph(repo, repo.tip()).stories
     git(topology.planning, "pull", "--ff-only", "-q")
     topology.advance_planning(".aitm/README.md", b"Expected")
+    origin_path = story_event_path(43)
+    origin_bytes = repo.read_blobs(repo.tip().tree, (origin_path,))[origin_path]
+    topology.advance_planning(origin_path, with_attempt(origin_bytes, 43))
+    before_attempt = pinned_service.snapshot(pinned_service.policy())
+    unregistered = replace(
+        pinned_service, ports=replace(pinned_service.ports, attempt_preflight=None)
+    )
+    denied = unregistered.finalize_external_identity(authority, entry, finalization)
+    assert denied.command.local == LocalOutcome.UNAVAILABLE
+    assert denied.preflight.outcome == PreflightOutcome.UNAVAILABLE
+    assert repo.tip() == before_attempt
+    assert 44 not in read_graph(repo, repo.tip()).stories
+
+    preflight_calls = []
+    pinned_service = replace(
+        pinned_service, ports=graduation_preflight(preflight_calls)
+    )
     result = pinned_service.finalize_external_identity(authority, entry, finalization)
     assert result.command.local == LocalOutcome.COMPLETED
     child = read_graph(repo, repo.tip()).stories[44]
     assert child.graduation.source_kind == "plan-entry"
     assert child.description.title == "Plan entry"
+    assert child.relationships.blocking == (43,)
+    assert read_graph(repo, repo.tip()).stories[43].relationships.blocked_by == (16, 44)
+    assert len(candidates) == 2
+    denied_candidate, selected = candidates
+    assert denied_candidate.events.operation != selected.events.operation
+    assert preflight_calls == [selected.events.operation]
+    assert repo.parent(repo.tip()) == selected.snapshot.revision
+    child_path = story_event_path(44)
+    origin_path = story_event_path(43)
+    view_path = child_path.replace("events.jsonl", "story.md")
+    published = repo.read_blobs(repo.tip().tree, (origin_path, child_path, view_path))
+    for event_path in (origin_path, child_path):
+        envelope = validate_envelope(published[event_path].splitlines()[-1])
+        assert envelope.operation_id == selected.events.operation
+    assert b'"blocking": [\n    43\n  ]' in published[view_path]
     path = ".aitm/stories/000/44/draft.md"
     assert repo.read_blobs(repo.tip().tree, (path,))[path] is None
     assert len(provider.sent) == 2
@@ -216,6 +349,68 @@ def test_graduate_links(topology):
     old_tip = service.snapshot(pinned_policy)
     workspace = Workspace(install)
     with workspace.lock():
+        invalid_intent = FinalizationIntent(
+            kind="fixture.invalid-candidate",
+            version=1,
+            related_preconditions=(),
+            payload=b"fixture",
+        )
+
+        def invalid_output(write_projection):
+            def build_related(_intent, proposed):
+                number = proposed.child
+                event_path = story_event_path(number)
+                if write_projection:
+                    view_path = event_path.replace("events.jsonl", "story.md")
+                    return RelatedWriteSet(
+                        read_set=(
+                            ReadExpectation(path=event_path, digest=None),
+                            ReadExpectation(path=view_path, digest=None),
+                        ),
+                        writes=(
+                            BlobWrite(
+                                path=view_path, content=b"overlapping projection"
+                            ),
+                        ),
+                    )
+                tail = proposed.tails[number]
+                current = tail.domains["lifecycle"].relationships
+                row = proposed.events.encode(
+                    number,
+                    "core.link.changed",
+                    replace(tail, next_sequence=1),
+                    LinkChange(before=current, after=current),
+                    "invalid-sequence",
+                )
+                return RelatedWriteSet(
+                    read_set=(ReadExpectation(path=event_path, digest=None),),
+                    events=(EventAppend(story=number, records=(row,)),),
+                )
+
+            return build_related
+
+        prepared_invalid = candidate_intent.model_copy(
+            update={"finalization": FrozenFinalization.from_intent(invalid_intent)}
+        )
+        for write_projection, failure in (
+            (False, FoldIntegrityError),
+            (True, GraduationConflict),
+        ):
+            invalid_registry = FinalizerRegistry().register_candidate_finalizer(
+                invalid_intent.kind, 1, invalid_output(write_projection)
+            )
+            with pytest.raises(failure):
+                replace(service, registry=invalid_registry).build(
+                    prepared_invalid,
+                    IssueRef(issuer=install.issuer, number=45),
+                    old_tip,
+                    pinned_policy,
+                    invalid_intent,
+                    workspace,
+                    operation="invalid",
+                )
+            assert repo.tip() == old_tip
+
         candidate = service.build(
             candidate_intent,
             IssueRef(issuer=install.issuer, number=45),
