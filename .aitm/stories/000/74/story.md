@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 74
 title: "[Core C74] Entity-scoped editing and graduation handoff"
 kind: "story"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/74"
 parent: 476
 children: []
@@ -94,3 +94,5 @@ The current accepted parent section is published `bd4adf06c90fcf02bf0930bbdec5d4
 ## Scoped JIT pickup
 
 [Manual bootstrap pickup](plan/2026-11-27-pickup.md) under the owner’s #476 assignment. Develop is a manual projection. No runtime transition or implementation clock was started.
+
+[Draft #569](https://github.com/kburson/aitm/pull/569) targets the #476 integration branch. [Candidate and hosted gates](plan/2026-11-27-pr-569-verification.md).
