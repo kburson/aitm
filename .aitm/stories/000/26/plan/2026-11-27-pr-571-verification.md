@@ -9,3 +9,5 @@ Base `d5662440356b911383c4135cffc25305777577af`, head `69c94e961bb85a95edfd121e5
 The initial full Core run found six C08 preflight fixtures with a read-set-only operation shape. The workflow fence now applies to typed graduation operations while preserving the existing preflight path. No existing test changed. All 42 local C08 and C22 cases passed, including the workflow-only drift rejection.
 
 Revised draft head `ffa741b13ae950eae1c2eeee4250ac6830ea46da`, synthetic merge `6ed39292740b2e03758beaf72cbc343fc81a6344`, tree `49f7278caec15162a9d7b473633f58c306d74d25`. [Repository CI](https://github.com/kburson/aitm/actions/runs/46099245295) and [Core CI](https://github.com/kburson/aitm/actions/runs/46099245549) apply to this candidate.
+
+Both exact hosted workflows and trusted verification passed while #571 was draft. The full hosted Core suite passed 971 product and one tooling case, with 894 of 971 classified as unit. The 92% floors and signed repository controls remain in force. The PR was marked ready before requesting independent review. [Trusted verifier](2026-11-27-pr-571-ffa741b1-verifier.json)

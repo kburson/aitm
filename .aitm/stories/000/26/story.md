@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 26
 title: "[Core C22] Graduation and atomic relationships"
 kind: "story"
-state: test
+state: review
 issue: "https://github.com/kburson/aitm/issues/26"
 parent: 476
 children: []
@@ -118,3 +118,5 @@ New dependent leaves [C81 / #234](../../002/234/story.md).
 [Scoped manual JIT pickup](plan/2026-11-27-pickup.md).
 
 [Draft #571 and exact candidate verification](plan/2026-11-27-pr-571-verification.md).
+
+#571 passed exact hosted workflows and trusted verification before independent SAR.
