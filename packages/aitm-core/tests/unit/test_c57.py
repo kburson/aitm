@@ -50,9 +50,10 @@ def _response(level, role, index, content, claims, session, provider, namespace)
         + digest
         + b"\n"
         + f"{role}_session: {session}\n".encode()
-        + f"session_identity_kind: {namespace}\n".encode()
         + f"agent: {{host: fixture, provider: {provider}, model_id: model, effort: high}}\n".encode()
     )
+    if namespace:
+        header += f"session_identity_kind: {namespace}\n".encode()
     if role == "author":
         header += f"patch: patch-{index:03d}.diff\n".encode()
     attributes, _, body = claims.partition(b"---\n")
@@ -74,6 +75,7 @@ def _record(
     reviewer=REVIEWER,
     final_actor=None,
     final_output=b"reviewed",
+    final_input=b"reviewed",
 ):
     base, revised = b"base", b"reviewed"
     manifest_raw = (
@@ -91,7 +93,7 @@ def _record(
     rounds = []
     for index, input_bytes, output_bytes, review, answer, actor in (
         (1, base, revised, first_reviewer, first_author, reviewer),
-        (2, revised, final_output, final_reviewer, b"", final_actor or reviewer),
+        (2, final_input, final_output, final_reviewer, b"", final_actor or reviewer),
     ):
         response, response_original = _response(
             level,
@@ -253,4 +255,38 @@ def test_typed_decision_cannot_override_a_conflicting_portable_decision():
         final_reviewer=b"reviewer_decision: accepted\n---\n## Decision\nrevisions-requested\n",
     )
     with pytest.raises(ReviewRefusal, match="contradictory reviewer decision"):
+        validate_review(record, POLICY)
+
+
+def test_missing_identity_namespace_is_unknown():
+    record = _record(reviewer=replace(REVIEWER, namespace=""))
+    with pytest.raises(ReviewRefusal, match="identity is unknown"):
+        validate_review(record, POLICY)
+
+
+def test_policy_explicitly_maps_a_legacy_identity_namespace():
+    record = _record(reviewer=replace(REVIEWER, namespace=""))
+    policy = replace(POLICY, legacy_session_namespace="recorded-session")
+    assert validate_review(record, policy).record is record
+
+
+def test_final_bytes_cannot_change_under_retained_digests():
+    record = _record()
+    first, last = record.rounds
+    last = replace(last, input_bytes=b"tampered", output_bytes=b"tampered")
+    with pytest.raises(ReviewRefusal, match="digest"):
+        validate_review(
+            replace(record, rounds=(first, last), final_bytes=b"tampered"), POLICY
+        )
+
+
+def test_matching_round_digests_cannot_hide_a_gap_in_the_chain():
+    record = _record(final_input=b"different file", final_output=b"different file")
+    with pytest.raises(ReviewRefusal, match="byte chain"):
+        validate_review(record, POLICY)
+
+
+def test_typed_acceptance_requires_a_recorded_portable_decision():
+    record = _record(final_reviewer=b"reviewer_decision: accepted\n---\nNo decision.\n")
+    with pytest.raises(ReviewRefusal, match="reviewer decision"):
         validate_review(record, POLICY)

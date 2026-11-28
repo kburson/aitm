@@ -15,6 +15,7 @@ from aitm_core.reviews.portable import (
     PortableResponse,
     ReconstructedReview,
     ReviewError,
+    _digest,
 )
 from aitm_core.reviews.topology import (
     IdentityBinding,
@@ -41,6 +42,7 @@ class ReviewPolicy:
     assurances: tuple[DocumentAssurance, ...]
     identities: IdentityMapping
     allow_participant_replacements: bool = False
+    legacy_session_namespace: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,7 +75,7 @@ class _ManifestClaims(BaseModel):
 class _TurnClaims(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True, extra="ignore")
 
-    session_identity_kind: Text = "recorded-session"
+    session_identity_kind: Text | None = None
     reviewer_decision: Literal["accepted", "revisions-requested"] | None = None
 
 
@@ -146,25 +148,24 @@ def _decision(document: _Document, claims: _TurnClaims) -> str | None:
             pending = True
     if pending or (
         claims.reviewer_decision is not None
-        and markdown_decision is not None
         and claims.reviewer_decision != markdown_decision
     ):
         raise ReviewRefusal("incomplete or contradictory reviewer decision")
-    return claims.reviewer_decision or markdown_decision
+    return markdown_decision
 
 
 def _participant(
-    response: PortableResponse, claims: _TurnClaims, mapping: IdentityMapping
+    response: PortableResponse, namespace: str | None, mapping: IdentityMapping
 ) -> IdentityBinding:
     session = (
         response.reviewer_session
         if response.role == "reviewer"
         else response.author_session
     )
-    if session is None or response.agent is None:
+    if namespace is None or session is None or response.agent is None:
         raise ReviewRefusal(f"{response.role} identity is unknown")
     result = resolve_participant(
-        Participant(claims.session_identity_kind, session, response.agent.provider),
+        Participant(namespace, session, response.agent.provider),
         mapping,
     )
     if isinstance(result, IdentityRelation):
@@ -224,6 +225,11 @@ def validate_review(
         )
     if len(record.rounds) != manifest.rounds:
         raise ReviewRefusal("review round count conflicts with the manifest")
+    if (
+        _digest(record.base_bytes) != manifest.base_digest
+        or _digest(record.final_bytes) != manifest.final_digest
+    ):
+        raise ReviewRefusal("base or final digest conflicts with the manifest")
     originals = {item.name: item.raw for item in record.originals}
     if len(originals) != len(record.originals):
         raise ReviewRefusal("duplicate retained review original")
@@ -240,18 +246,35 @@ def validate_review(
             raise ReviewRefusal(
                 "participant continuity requires policy-permitted replacements"
             )
+        # Missing historical kinds require an explicit, documented policy binding.
+        legacy_namespace = (
+            claims.session_identity_kind or policy.legacy_session_namespace
+        )
+        current = record.base_bytes
         previous: dict[Role, IdentityBinding] = {}
         for index, turn in enumerate(record.rounds, 1):
             reviewer, author = turn.reviewer, turn.author
             if reviewer.round != index or author.round != index:
                 raise ReviewRefusal(f"round order conflicts at round {index}")
+            if turn.input_bytes != current:
+                raise ReviewRefusal(f"byte chain is discontinuous at round {index}")
+            if (
+                _digest(turn.input_bytes) != reviewer.artifact_digest
+                or _digest(turn.output_bytes) != author.artifact_digest
+            ):
+                raise ReviewRefusal(f"response digest conflicts at round {index}")
+            current = turn.output_bytes
             _findings(reviewer, author, index)
             for role, response in (("reviewer", reviewer), ("author", author)):
                 if response.role != role:
                     raise ReviewRefusal(f"unexpected {response.role} in {role} turn")
                 document = _original(originals, f"{role}-response-{index}.md", response)
                 turn_claims = _TurnClaims.model_validate(document.header)
-                binding = _participant(response, turn_claims, policy.identities)
+                binding = _participant(
+                    response,
+                    turn_claims.session_identity_kind or legacy_namespace,
+                    policy.identities,
+                )
                 prior = previous.get(role)
                 if prior is None:
                     _check_manifest_participant(role, claims, binding)
