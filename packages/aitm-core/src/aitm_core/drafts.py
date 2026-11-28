@@ -1,6 +1,6 @@
 """Create unnumbered entities and discard a whole draft in one planning operation."""
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict
 
 from aitm_core.documents import DocumentError, _parse
 from aitm_core.models.binding import EntityRef
-from aitm_core.models.common import CommandResult, LocalOutcome
+from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutcome
 from aitm_core.models.events import EventActor, validate_envelope
 from aitm_core.models.lifecycle import Graduation
 from aitm_core.models.operations import (
@@ -26,10 +26,13 @@ from aitm_core.models.operations import (
     ReadExpectation,
     RelatedWriteSet,
     WriteAuthorization,
+    story_event_path,
+    story_scope,
 )
 from aitm_core.paths import intake_location, intake_slug, vacant_path
-from aitm_core.services import ServicePorts, mutate
+from aitm_core.services import ServicePorts, mutate, preflight_policy
 from aitm_core.store.backend import Blobs, OperationResult, Snapshot
+from aitm_core.store.continuity import ContinuityStatus
 from aitm_core.store.git_backend import _Record, _record_path
 from aitm_core.store.installation import Installation
 from aitm_core.store.objects import Repository
@@ -151,7 +154,10 @@ class Intake:
         if kind == "idea":
             document = vacant_path(root, stem, ".md", occupied)
         else:
-            folder = vacant_path(root, stem, "", occupied)
+            retired = {
+                tombstone.entity.document for _, tombstone in self._tombstones(occupied)
+            }
+            folder = vacant_path(root, stem, "", occupied.keys() | retired)
             document = f"{folder}/draft.md"
         identity = uuid4().hex
         metadata = {
@@ -184,6 +190,7 @@ class Intake:
             path
             for path in sorted(occupied)
             if path.startswith(f".aitm/{kind}s/")
+            and path.count("/") == (3 if kind == "idea" else 4)
             and path.endswith(".md" if kind == "idea" else "/draft.md")
         )
         entities = []
@@ -219,7 +226,9 @@ class Intake:
         paths = (
             path
             for path in occupied
-            if path.startswith(".aitm/stories/") and path.endswith("/events.jsonl")
+            if path.endswith("/events.jsonl")
+            and (story := story_scope(path)) is not None
+            and path == story_event_path(story)
         )
         for raw in self._blobs(paths).values():
             assert raw is not None
@@ -241,16 +250,18 @@ class Intake:
         )
         return OperationResult(command, self.snapshot, reason)
 
+    def _tombstones(self, occupied: Iterable[str]) -> Iterator[tuple[str, Tombstone]]:
+        paths = (path for path in occupied if path.startswith(_DISCARDED + "/"))
+        for path, raw in self._blobs(paths).items():
+            assert raw is not None
+            yield path, Tombstone.model_validate_json(raw)
+
     def _retry(
-        self, handle: str, reason: str, occupied: Mapping[str, object]
+        self, handle: str, reason: str, occupied: Iterable[str]
     ) -> OperationResult:
         from aitm_core.cli.dispatch import publish
 
-        for path, raw in self._blobs(
-            path for path in occupied if path.startswith(_DISCARDED + "/")
-        ).items():
-            assert raw is not None
-            tombstone = Tombstone.model_validate_json(raw)
+        for path, tombstone in self._tombstones(occupied):
             if handle not in {tombstone.entity.identity, tombstone.operation_id}:
                 continue
             identity = tombstone.operation_id
@@ -280,7 +291,25 @@ class Intake:
                 )
             command = receipt.command
             if self.installation.store.planning_remote is not None:
-                command = publish(self.installation, identity)
+                prepared = preflight_policy(self.installation)
+                shared = prepared.views.shared
+                # A fresh clone lacks the original outbound request. The validated
+                # shared history can independently prove publication of its receipt.
+                if (
+                    prepared.outcome == LocalOutcome.COMPLETED
+                    and shared is not None
+                    and shared.status == ContinuityStatus.VERIFIED
+                    and shared.valid_tip is not None
+                    and self.repository._run(
+                        "merge-base", "--is-ancestor", origin.revision, shared.valid_tip
+                    ).returncode
+                    == 0
+                ):
+                    command = command.model_copy(
+                        update={"publication": PublicationOutcome.VERIFIED}
+                    )
+                else:
+                    command = publish(self.installation, identity)
             return OperationResult(command, origin)
         return self._failure(LocalOutcome.REFUSED, "No live draft matches that handle.")
 

@@ -14,7 +14,7 @@ from aitm_core.services import preflight_policy
 from aitm_core.store.publication import Publisher
 from tests.integration.test_c08 import PLANNING, PLANNING_REMOTE, git
 from tests.integration.test_c08 import topology as topology
-from tests.integration.test_c09 import describe_args
+from tests.integration.test_c09 import cloned, describe_args
 from tests.unit.test_c15 import EVENTS, graduated
 
 
@@ -35,12 +35,12 @@ def test_draft_identity(topology, tmp_path, monkeypatch):
         assert process.stdout, process.stderr
         return loads(process.stdout)
 
-    def session():
-        preflight = preflight_policy(installation)
+    def session(anchor=installation):
+        preflight = preflight_policy(anchor)
         assert preflight.policy is not None
-        snapshot = installation.repository.tip()
+        snapshot = anchor.repository.tip()
         return Intake(
-            installation,
+            anchor,
             snapshot,
             preflight.policy.source.digest,
             OperationOwner(actor=EventActor(kind="tool", harness="test")),
@@ -66,8 +66,13 @@ def test_draft_identity(topology, tmp_path, monkeypatch):
         git(topology.planning, "pull", "--ff-only", "-q")
         return topology.advance_planning(path, contents)
 
-    attachment = str(PurePosixPath(second.document).parent / "attachments/input.txt")
-    advance(attachment, b"retained input\n")
+    attachment = str(PurePosixPath(second.document).parent / "attachments/draft.md")
+    second_tree = session().snapshot.tree
+    attached = installation.repository.read_blobs(second_tree, (second.document,))[
+        second.document
+    ]
+    assert attached is not None
+    advance(attachment, attached)
     # Pick a separate source with the same title so the tombstone stem collides.
     first_result = session().discard_draft(first.identity, "Superseded")
     assert first_result.command.publication == "verified"
@@ -77,7 +82,7 @@ def test_draft_identity(topology, tmp_path, monkeypatch):
     after = second_result.snapshot
     assert installation.repository.parent(after) == before.revision
     retained = installation.repository.read_blobs(before.tree, (attachment,))
-    assert retained[attachment] == b"retained input\n"
+    assert retained[attachment] == attached
     files = git(topology.local, "ls-tree", "-r", "--name-only", after.tree).splitlines()
     assert second.document not in files and attachment not in files
     tombstone = ".aitm/drafts/discarded/20261127-1455-one-idea-2.json"
@@ -88,7 +93,7 @@ def test_draft_identity(topology, tmp_path, monkeypatch):
         second.identity,
         before.tree,
     )
-    assert saved["attachments"] == {attachment: sha256(b"retained input\n").hexdigest()}
+    assert saved["attachments"] == {attachment: sha256(attached).hexdigest()}
     assert (
         invoke("draft", "discard", "one-idea", "--reason", "Superseded")["local"]
         == "refused"
@@ -100,6 +105,23 @@ def test_draft_identity(topology, tmp_path, monkeypatch):
         second_result.command.operation_id,
     )
     assert session().snapshot == after
+
+    retry_by_operation = session().discard_draft(
+        second_result.command.operation_id, "Superseded"
+    )
+    assert retry_by_operation.command.operation_id == retry["operation_id"]
+
+    other = cloned(topology, tmp_path).policy.installation
+    recovered = session(other).discard_draft(second.identity, "Superseded")
+    assert recovered.command.publication == "verified"
+    assert recovered.command.operation_id == retry["operation_id"]
+    assert other.repository.tip().revision == after.revision
+    replacement = session().create_draft(CreateEntity("One idea"))
+    assert "/20261127-1455-one-idea-3/" in replacement.document
+    before_stale_handle = session().snapshot
+    stale = session().discard_draft(first.document, "Superseded")
+    assert stale.command.local == "refused"
+    assert session().snapshot == before_stale_handle
 
     third = session().create_draft(CreateEntity("Graduated"))
     event = loads(graduated())
