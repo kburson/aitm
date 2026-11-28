@@ -1,0 +1,88 @@
+{
+  "data": {
+    "repository": {
+      "epic": {
+        "subIssues": {
+          "nodes": [
+            {
+              "number": 590
+            },
+            {
+              "number": 39
+            },
+            {
+              "number": 40
+            },
+            {
+              "number": 41
+            },
+            {
+              "number": 30
+            },
+            {
+              "number": 31
+            }
+          ]
+        }
+      },
+      "prereq": {
+        "parent": {
+          "number": 480
+        },
+        "blockedBy": {
+          "nodes": [
+            {
+              "number": 27,
+              "state": "CLOSED"
+            },
+            {
+              "number": 26,
+              "state": "CLOSED"
+            }
+          ]
+        },
+        "blocking": {
+          "nodes": [
+            {
+              "number": 39
+            }
+          ]
+        }
+      },
+      "c30": {
+        "blockedBy": {
+          "nodes": [
+            {
+              "number": 590,
+              "state": "OPEN"
+            },
+            {
+              "number": 38,
+              "state": "CLOSED"
+            },
+            {
+              "number": 37,
+              "state": "CLOSED"
+            },
+            {
+              "number": 28,
+              "state": "CLOSED"
+            },
+            {
+              "number": 27,
+              "state": "CLOSED"
+            },
+            {
+              "number": 26,
+              "state": "CLOSED"
+            },
+            {
+              "number": 25,
+              "state": "CLOSED"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

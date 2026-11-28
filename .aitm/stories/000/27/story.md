@@ -7,7 +7,7 @@ state: done
 issue: "https://github.com/kburson/aitm/issues/27"
 parent: 476
 children: []
-blocking: [37, 39, 58, 65, 82, 478, 479, 480, 483, 484, 485, 487]
+blocking: [37, 39, 58, 65, 82, 478, 479, 480, 483, 484, 485, 487, 590]
 blocked-by: [22, 26, 74]
 created: "2026-11-09T08:01:19Z"
 updated: "2026-11-28T03:25:42.789+00:00"

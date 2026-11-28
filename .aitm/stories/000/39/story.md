@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/39"
 parent: 480
 children: []
 blocking: [40, 59, 60, 61]
-blocked-by: [25, 26, 27, 28, 37, 38]
+blocked-by: [25, 26, 27, 28, 37, 38, 590]
 created: "2026-11-09T08:02:10Z"
 updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
@@ -105,3 +105,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **10** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #480 with scope entry **C30**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Reviewed graduation prerequisite
+
+#590 is a direct pickup dependency. C30 uses the candidate-aware finalizer when building reciprocal facts. [Accepted C21/C22 prerequisite plan](https://github.com/kburson/aitm/blob/b4755b0c1c7c4a9c091238efb0d2c8efde9de492/.aitm/stories/004/480/plan/2026-11-28-graduation-prerequisite-proposal.md).

@@ -104,3 +104,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **50** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #480 with scope entry **C34**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Reviewed graduation prerequisite
+
+Aggregate admission first verifies #590, then #39, #40, #41 and #30 in order. C34 owns the exact composed-tree proof and trunk admission. [Accepted C21/C22 prerequisite plan](https://github.com/kburson/aitm/blob/b4755b0c1c7c4a9c091238efb0d2c8efde9de492/.aitm/stories/004/480/plan/2026-11-28-graduation-prerequisite-proposal.md).
