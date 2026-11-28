@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 25
 title: "[Core C20] Semantic identity reservations and uncertain dispatch"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/25"
 parent: 476
 children: []
 blocking: [26, 39, 75, 234]
 blocked-by: [14, 17, 24, 74]
 created: "2026-11-09T08:01:10Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T02:27:50.137+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -119,3 +119,5 @@ New dependent leaves [C81 / #234](../../002/234/story.md).
 [Draft #570](https://github.com/kburson/aitm/pull/570) is undergoing exact hosted qualification.
 
 #570 passed both exact hosted workflows and trusted verification before fresh SAR.
+
+[Native Linked PR #570](https://github.com/kburson/aitm/pull/570) · [Delivery sign-off and Agent Cost](retro/2026-11-27-delivery.md).
