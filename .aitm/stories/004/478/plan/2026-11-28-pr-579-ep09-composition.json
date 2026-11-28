@@ -1,0 +1,104 @@
+{
+  "issue": 478,
+  "aggregate": 579,
+  "integration_owner": 502,
+  "base": "d50ae9b2bc2731aa8e31aff8d6754c80db1f6f35",
+  "head": "f841e183aa92bd6613cbc90cfd9a7e137d5d6f1b",
+  "synthetic_merge": "e18df5d15e6f8c5e1b5ca4b90039aad6a7ec0d85",
+  "tree": "64458f71e55822ce8cc821fcebc181375e78486f",
+  "resource_only_bootstrap": {
+    "commit": "33516757c6bb3ee2397a5827dc249184d6bfc835",
+    "base": "d50ae9b2bc2731aa8e31aff8d6754c80db1f6f35",
+    "tree": "5b7f3c7d4e7f4d8bea30e5449a0816d51747336a"
+  },
+  "ordered_leaves": [
+    {
+      "issue": 36,
+      "pr": 580,
+      "base": "33516757c6bb3ee2397a5827dc249184d6bfc835",
+      "head": "ab5d9c4d00d7648b978cf4c780277138cf7914f6",
+      "synthetic_merge": "b0a3466398820a822264c77fac2129451ca7ab6d",
+      "tree": "fd705f42963691ecfc8f82eabffa9d69e59eeaf9",
+      "landing": "765b99d23e4e407d98e83e76d5b6b325e9b9048a",
+      "repository_ci": "https://github.com/kburson/aitm/actions/runs/46117807950/attempts/1",
+      "independent_source_sar": "pass"
+    },
+    {
+      "issue": 75,
+      "pr": 581,
+      "base": "765b99d23e4e407d98e83e76d5b6b325e9b9048a",
+      "head": "24b681ee6819f3e3fb3550c58bf95b1b2e8e9e42",
+      "synthetic_merge": "28675f8e4574fc76cfe3f1641ed63f23a4b3fe7f",
+      "tree": "e192ebbf16bd052fd61c37c98efad1c034761db2",
+      "landing": "faa339e76a6fdd5b9aec026fe5594635cb4c123d",
+      "repository_ci": "https://github.com/kburson/aitm/actions/runs/46118743396/attempts/1",
+      "independent_source_sar": "pass"
+    },
+    {
+      "issue": 501,
+      "pr": 582,
+      "base": "faa339e76a6fdd5b9aec026fe5594635cb4c123d",
+      "head": "bf44d734d536d210f840923903803764b3843b44",
+      "synthetic_merge": "298d6b753258287ac8584dc10acef4f600ea70e5",
+      "tree": "f860803aa120568ecc60b7250d45893da0382afa",
+      "landing": "e448e077f3f8358f0285ff85546e2e53df470ed3",
+      "repository_ci": "https://github.com/kburson/aitm/actions/runs/46119724387/attempts/1",
+      "independent_source_sar": "pass"
+    },
+    {
+      "issue": 502,
+      "pr": 583,
+      "base": "e448e077f3f8358f0285ff85546e2e53df470ed3",
+      "head": "e47e576341e5dcba70c9a4d1d5886545bb7295e0",
+      "synthetic_merge": "436c1cf58db2f4c2e8b42b5de369e17dfa807aef",
+      "tree": "64458f71e55822ce8cc821fcebc181375e78486f",
+      "landing": "f841e183aa92bd6613cbc90cfd9a7e137d5d6f1b",
+      "repository_ci": "https://github.com/kburson/aitm/actions/runs/46120523944/attempts/1",
+      "independent_source_sar": "pass"
+    }
+  ],
+  "upstream_verified_ancestors": [
+    {
+      "issue": 8,
+      "pr": 529,
+      "landing": "8aa608cc1e64ed5986c5b6a8371df5a4c5b3f3e6",
+      "tree": "d3cc0f30a7e1483ae16e28c327d48d8a3240c217"
+    },
+    {
+      "issue": 13,
+      "pr": 547,
+      "landing": "63f88bc8c244ebe1342a20ee2e51b11dacb8a6e9",
+      "tree": "b64deff54133478d157b7c890cb1efe94576112f"
+    },
+    {
+      "issue": 15,
+      "pr": 554,
+      "landing": "e8259e9501387731f4f081ef345c06fdfb26e1c1",
+      "tree": "15403516ddb0ed9e39fad0455156aabfbd7ca2b3"
+    },
+    {
+      "issue": 27,
+      "pr": 572,
+      "landing": "e987753747fa05eb29884fb58d6180911c805dfc",
+      "tree": "765f88bb1191c2e945ed8091ae2c1a1a14d6370a"
+    },
+    {
+      "issue": 35,
+      "pr": 578,
+      "landing": "5151beaed72122410e4e794f8c09b358be56b161",
+      "tree": "5b7f3c7d4e7f4d8bea30e5449a0816d51747336a"
+    },
+    {
+      "issue": 500,
+      "pr": 565,
+      "landing": "16560373b2b7056117627d2c23a0f6f5487cd472",
+      "tree": "7df87e1cfaaf9ca742dac2f317847d1472f6ba1f"
+    },
+    {
+      "issue": 500,
+      "pr": 566,
+      "landing": "a0cf28c88c4315b478343e4b557ee3b21e0771c4",
+      "tree": "d6b2490cefa6f70edbb458564795ab67af3c7ddf"
+    }
+  ]
+}
