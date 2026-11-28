@@ -22,6 +22,7 @@ from aitm_core.providers.identity import (
     IdentityProvider,
     ReservationRecord,
 )
+from aitm_core.providers.local import LocalBacklog
 from aitm_core.relationships import GraphConflict, LinkRequest
 from aitm_core.setup.init import _active_installation
 from aitm_core.store.objects import GitCommandError, Repository
@@ -53,9 +54,7 @@ def handle(
         parser.add_argument("operation")
     else:
         parser.add_argument("--draft", required=True)
-        parser.add_argument(
-            "--kind", choices=("story", "defect", "spike", "epic"), default="story"
-        )
+        parser.add_argument("--kind", choices=("story", "defect", "spike", "epic"))
         parser.add_argument("--parent", type=int)
         parser.add_argument("--target")
     identity = uuid4().hex
@@ -76,11 +75,21 @@ def handle(
                     story=args.story, other=other, relation=relation, remove=args.remove
                 )
             ).command
+        allocator = (
+            LocalBacklog(service) if installation.issuer.backlog == "local" else None
+        )
         if route == ("graduate", "resume"):
+            if allocator is not None and identity_provider is None:
+                resumed = allocator.resume(args.operation)
+                if resumed is None:
+                    raise GraduationConflict(
+                        "The retained local graduation intent was not found."
+                    )
+                return _command(resumed)
             if identity_provider is None:
                 return _unavailable(identity)
             return resume_external(service, identity_provider, args.operation)
-        if local_authority is None and identity_provider is None:
+        if local_authority is None and identity_provider is None and allocator is None:
             return _unavailable(identity)
         target = DeliveryTarget(
             repository=installation.code_repository,
@@ -88,7 +97,25 @@ def handle(
             or installation.code_remote_ref
             or installation.store.code_default_ref,
         )
-        kind: StoryKind = args.kind
+        if (
+            allocator is not None
+            and local_authority is None
+            and identity_provider is None
+        ):
+            resumed = allocator.resume(args.draft, source_handle=True)
+            if resumed is not None:
+                intent = resumed.intent
+                if (
+                    (args.kind is not None and args.kind != intent.kind)
+                    or (args.parent is not None and args.parent != intent.parent)
+                    or (args.target is not None and target != intent.delivery_target)
+                ):
+                    raise GraduationConflict(
+                        "The supplied scope differs from the completed graduation."
+                    )
+                return _command(resumed)
+            local_authority = allocator
+        kind: StoryKind = args.kind or "story"
         intent = service.prepare_draft(
             args.draft, identity, target, kind=kind, parent=args.parent
         )

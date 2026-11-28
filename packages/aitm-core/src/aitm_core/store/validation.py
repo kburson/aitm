@@ -121,7 +121,8 @@ def classify_planning_path(path: str) -> PlanningPath:
         and parts[1] == "identity"
         and re.fullmatch(r"[0-9a-f]{64}", parts[2])
         and re.fullmatch(
-            r"(?:reservation|issue|owner|graduated|claim-[0-9]+)\.json", parts[3]
+            r"(?:reservation|issue|owner|graduated|projection|claim-[0-9]+)\.json",
+            parts[3],
         )
     ):
         return PlanningPath.IDENTITY
@@ -258,6 +259,24 @@ def _check_tree(
                 from aitm_core.graduation import validate_graduated_record
 
                 validate_graduated_record(path, content)
+            elif path.endswith("/projection.json"):
+                from aitm_core.graduation import GraduatedRecord
+                from aitm_core.providers.local import ProjectionRecord
+
+                marker = path.removesuffix("projection.json") + "graduated.json"
+                issued = repository.read_blobs(candidate.tree, (marker,))[marker]
+                if issued is None:
+                    raise ValueError("Local projection requires an issued story.")
+                story = GraduatedRecord.model_validate_json(issued)
+                projected = ProjectionRecord.model_validate_json(content).result
+                if (
+                    projected.status != "completed"
+                    or projected.action.action_id != "project-backlog"
+                    or projected.action.operation_id != story.intent.operation_id
+                    or projected.publication.issue != story.issue
+                    or story.issue.issuer.backlog != "local"
+                ):
+                    raise ValueError("Invalid local projection receipt.")
             else:
                 from aitm_core.providers.identity import validate_identity_record
 

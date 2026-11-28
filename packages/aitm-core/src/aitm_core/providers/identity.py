@@ -194,7 +194,7 @@ class IdentityAuthority:
         claims = {}
         issue = None
         for path, raw in blobs.items():
-            if path == f"{root}/graduated.json":
+            if path in {f"{root}/graduated.json", f"{root}/projection.json"}:
                 continue
             assert raw is not None
             validate_identity_record(path, raw)
@@ -358,12 +358,24 @@ class IdentityAuthority:
         key = intent.source.semantic_key
         path = f"{reservation_root(key)}/reservation.json"
         view = self._view(intent)
+        graduated = f"{reservation_root(key)}/graduated.json"
         existing = self._state(view, key).reservation
         if existing is None:
+            if (
+                self.repo.read_blobs(view.snapshot.tree, (graduated,))[graduated]
+                is not None
+            ):
+                raise IdentityConflict(
+                    "The prepared source already has a permanent story."
+                )
             self._check_source(view, intent)
             proposal = IdentityReservation(intent=intent, key=key)
             self._write(
-                view, path, ReservationRecord(reservation=proposal), uuid4().hex
+                view,
+                path,
+                ReservationRecord(reservation=proposal),
+                uuid4().hex,
+                (graduated,),
             )
             existing = self._state(self._view(intent), key).reservation
         if existing is None:
