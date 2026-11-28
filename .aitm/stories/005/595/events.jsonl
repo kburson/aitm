@@ -1,0 +1,1 @@
+{"v":0,"ts":"2026-11-28T16:02:02Z","story":595,"type":"core.epic-supplement.recorded","actor":{"kind":"agent","harness":"codex","on-behalf-of":"kburson"},"provenance":{"route":"manual-bootstrap","runtime_transition":false,"implementation_clock":false},"data":{"parent":480,"rank":15,"blocked-by":[594],"blocking":[40],"source_base":"b20bb65c3b5cfb04773366dd0b68bf18e2ee601c"}}

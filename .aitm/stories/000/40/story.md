@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/40"
 parent: 480
 children: []
 blocking: [41, 42, 50, 59, 61, 65, 79, 82, 506, 507]
-blocked-by: [15, 22, 28, 36, 37, 38, 39, 74, 76]
+blocked-by: [15, 22, 28, 36, 37, 38, 39, 74, 76, 595]
 created: "2026-11-09T08:02:14Z"
 updated: "2026-11-27T06:32:11.294Z"
 last-branch: "planning"
@@ -109,3 +109,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Current delivery hold
 
 [Draft #593 and the exact custody hold receipt](plan/2026-11-28-pr-593-custody-hold.md) document two reproduced failures across the C20 issuer and the C30 expansion boundary. Delivery remains paused at #40.
+
+[#595](../../005/595/story.md) is the direct implementation prerequisite at rank 15. [#594](../../005/594/story.md) provides the research and rescope evidence that #595 requires. Continue the held candidate only after the prerequisite lands, its receipt is verified, and the exact new base is pinned.

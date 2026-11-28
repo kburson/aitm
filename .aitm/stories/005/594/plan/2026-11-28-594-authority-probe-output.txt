@@ -1,0 +1,4 @@
+stop first: stale grant CAS lost; fresh view has no send authority
+grant first: stop retains the same grant; three custody outcomes preserve the closed clock
+candidate CAS: only the winning child and reciprocal facts became visible
+preparation identity: immutable Git bytes survived ref movement; stale source/lock/inventory missed the cache

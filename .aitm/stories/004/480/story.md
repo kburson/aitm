@@ -6,7 +6,7 @@ kind: "epic"
 state: ready-for-plan
 issue: "https://github.com/kburson/aitm/issues/480"
 parent: 1
-children: [30, 31, 39, 40, 41, 590]
+children: [30, 31, 39, 40, 41, 590, 594, 595]
 blocking: []
 blocked-by: [13, 15, 23, 27, 500, 502, 504]
 created: "2026-11-27T04:48:47Z"
@@ -57,3 +57,9 @@ Estimate: **21.5 implementation agent-hours**, including verification and review
 ## Reviewed graduation prerequisite
 
 The delivery order is #590, #39, #40, #41, #30 and #31. The native epic estimate is 21.5 agent-hours. [Accepted C21/C22 prerequisite plan](https://github.com/kburson/aitm/blob/b4755b0c1c7c4a9c091238efb0d2c8efde9de492/.aitm/stories/004/480/plan/2026-11-28-graduation-prerequisite-proposal.md).
+
+## EP11 research and prerequisite
+
+The verified order is #590, #39, #594, #595, #40, #41, #30, #31. [#594](../../005/594/story.md) investigates the authority and recovery boundaries across all original children at rank 14. [#595](../../005/595/story.md) holds rank 15 and blocks #40. The rank-15 scope and 3.5-hour estimate are provisional pending the spike and independent scope review. The previously accepted 21.5-hour implementation baseline remains the estimate of the earlier scope.
+
+#31 keeps aggregate admission ownership. Include the accepted spike receipt and the exact #595 production landing with the prior child evidence when qualifying the composed tree. [Native rank and dependency readback](plan/2026-11-28-480-spike-native-readback.json).

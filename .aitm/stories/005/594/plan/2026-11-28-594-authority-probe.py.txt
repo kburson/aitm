@@ -1,0 +1,102 @@
+"""Throwaway EP11 hypothesis probe, using one real Git ref per authority ordering."""
+
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+from tempfile import TemporaryDirectory
+
+
+def run(repo, *args, data=None, check=True):
+    env = os.environ | {
+        "GIT_AUTHOR_NAME": "EP11 fixture", "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+        "GIT_COMMITTER_NAME": "EP11 fixture", "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+    }
+    return subprocess.run(
+        ("git", "-C", str(repo), *args), input=data, capture_output=True, env=env, check=check
+    )
+
+
+def git(repo, *args, data=None):
+    return run(repo, *args, data=data).stdout.strip().decode()
+
+
+def record(repo, data, parent=None):
+    blob = git(repo, "hash-object", "-w", "--stdin", data=json.dumps(data, sort_keys=True).encode())
+    tree = git(repo, "mktree", data=f"100644 blob {blob}\tstate.json\n".encode())
+    parents = () if parent is None else ("-p", parent)
+    return git(repo, "commit-tree", tree, *parents, "-m", "fixture transaction")
+
+
+def read(repo, revision):
+    return json.loads(git(repo, "show", f"{revision}:state.json"))
+
+
+def publish(repo, ref, candidate, expected):
+    return run(repo, "update-ref", ref, candidate, expected, check=False).returncode == 0
+
+
+def fingerprint(*values):
+    return hashlib.sha256(json.dumps(values, sort_keys=True).encode()).hexdigest()
+
+
+with TemporaryDirectory(prefix="aitm-594-") as path:
+    repo = Path(path)
+    git(repo, "init", "--bare", "-q")
+    state = {"origin": [16, "attempt-a", 1, "reservation-a"], "clock": "expansion-paused",
+             "grant": None, "custody": None}
+    base = record(repo, state)
+    zero = "0" * len(base)
+    ref = "refs/heads/stop-first"
+    assert publish(repo, ref, base, zero)
+    stopped = record(repo, state | {"clock": "terminal-closed"}, base)
+    grant = record(repo, state | {"grant": "grant-a"}, base)
+    assert publish(repo, ref, stopped, base)
+    assert not publish(repo, ref, grant, base)
+    fresh = read(repo, ref)
+    assert fresh["clock"] == "terminal-closed" and fresh["grant"] is None
+    print("stop first: stale grant CAS lost; fresh view has no send authority")
+
+    ref = "refs/heads/grant-first"
+    assert publish(repo, ref, base, zero)
+    assert publish(repo, ref, grant, base)
+    assert not publish(repo, ref, stopped, base)
+    granted = read(repo, ref)
+    stopped = record(repo, granted | {"clock": "terminal-closed"}, grant)
+    assert publish(repo, ref, stopped, grant)
+    assert read(repo, ref)["grant"] == "grant-a"
+    for result in ("unknown", "issued:42", "terminal-absence"):
+        custody_ref = f"refs/heads/{result.replace(':', '-')}"
+        assert publish(repo, custody_ref, stopped, zero)
+        retained = read(repo, custody_ref)
+        assert retained["clock"] == "terminal-closed" and retained["custody"] is None
+        if result != "unknown":
+            disposition = record(repo, retained | {"custody": result}, stopped)
+            assert publish(repo, custody_ref, disposition, stopped)
+            assert not publish(repo, custody_ref, disposition, stopped)
+        latest = read(repo, custody_ref)
+        assert latest["clock"] == "terminal-closed"
+        assert latest["grant"] == "grant-a"
+        assert latest["custody"] == (None if result == "unknown" else result)
+        assert "child" not in latest
+    print("grant first: stop retains the same grant; three custody outcomes preserve the closed clock")
+
+    ref = "refs/heads/candidate-publication"
+    assert publish(repo, ref, base, zero)
+    loser = record(repo, state | {"child": 17, "origin_blocks": 17, "child_blocks": 16}, base)
+    winner = record(repo, state | {"child": 18, "origin_blocks": 18, "child_blocks": 16}, base)
+    assert publish(repo, ref, winner, base)
+    assert not publish(repo, ref, loser, base)
+    published = read(repo, ref)
+    assert published["child"] == published["origin_blocks"] == 18
+    assert published["child_blocks"] == 16
+    print("candidate CAS: only the winning child and reciprocal facts became visible")
+
+    captured = git(repo, "show", f"{base}:state.json")
+    original_cache = fingerprint(base, captured, "lock-a", "tool-a", "policy-a", "inventory-a")
+    assert git(repo, "show", f"{base}:state.json") == captured
+    assert original_cache != fingerprint(grant, captured, "lock-a", "tool-a", "policy-a", "inventory-a")
+    assert original_cache != fingerprint(base, captured, "lock-b", "tool-a", "policy-a", "inventory-a")
+    assert original_cache != fingerprint(base, captured, "lock-a", "tool-a", "policy-a", "inventory-b")
+    print("preparation identity: immutable Git bytes survived ref movement; stale source/lock/inventory missed the cache")
