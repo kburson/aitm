@@ -210,6 +210,28 @@ def _run(route, args, identity, ports):
         request,
         before_sync=lambda: preflight_transition(request, ports.attempt_preflight),
     )
+    if route == ("split",):
+        from aitm_core.splitting import SplitRequest, split_leaf
+
+        if lease.purpose != BindingPurpose.PLANNING:
+            raise BindingConflict("A current planning binding is required for split.")
+        scope_text = Path(args.scope_file).read_bytes().decode("utf-8")
+        return split_leaf(
+            SplitRequest(
+                request,
+                scope_text,
+                args.reason,
+                policy.config.limits.leaf_agent_hours,
+            )
+        ).command
+    if route == ("demote",) and args.target == profile.recovery.design_rework:
+        from aitm_core.splitting import rework_design
+
+        if lease.purpose != BindingPurpose.PLANNING:
+            raise BindingConflict(
+                "A current planning binding is required for Design rework."
+            )
+        return rework_design(request).command
     return transition(request).command
 
 
@@ -226,7 +248,9 @@ def handle(
     parser.add_argument("--generation", type=int, required=True)
     parser.add_argument("--session", required=True)
     parser.add_argument("--target")
-    parser.add_argument("--reason")
+    parser.add_argument("--reason", required=route == ("split",))
+    if route == ("split",):
+        parser.add_argument("--scope-file", required=True)
     try:
         return _run(
             route, parser.parse_args(arguments), identity, ports or ServicePorts()

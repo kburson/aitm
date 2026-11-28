@@ -308,7 +308,11 @@ def prepare_mutation(
                 outcome=LocalOutcome.CONFLICT,
                 reason="The committed graduation workflow changed. Rebuild from the current profile.",
             )
-    if isinstance(operation, Operation) and operation.intent.kind == "state.transition":
+    if isinstance(operation, Operation) and operation.intent.kind in {
+        "state.transition",
+        "state.split",
+        "state.design-rework",
+    }:
         from aitm_core.models.lifecycle import StateChange
 
         change = StateChange.model_validate_json(operation.intent.payload)
