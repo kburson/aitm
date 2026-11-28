@@ -3,20 +3,20 @@ schema: "aitm.story/v0"
 id: 29
 title: "[Core C24] Portable review schemas and patch reconstruction"
 kind: "story"
-state: develop
+state: done
 issue: "https://github.com/kburson/aitm/issues/29"
 parent: 477
 children: []
 blocking: [32]
 blocked-by: [4, 5, 8]
 created: "2026-11-09T08:01:28Z"
-updated: "2026-11-28T03:32:31.562516+00:00"
+updated: "2026-11-28T03:53:01.282856+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c24-portable-review-schemas-and-patch-reconstruction"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md", "plan/2026-11-27-pr-574-verification.md", "plan/2026-11-27-pr-574-verifier.json", "plan/2026-11-27-pr-574-premerge-verifier.json", "plan/2026-11-27-pr-574-source-sar-r1.md", "plan/2026-11-27-pr-574-source-sar.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C24", "parent": 477}
@@ -106,3 +106,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Active manual pickup
 
 [Scoped pickup and evidence](plan/2026-11-27-pickup.md). This records manual bootstrap work without a runtime transition or implementation clock.
+
+## Verified delivery
+
+[Coordinator sign-off and Agent Cost](retro/2026-11-27-delivery.md) for [native Linked PR #574](https://github.com/kburson/aitm/pull/574).
