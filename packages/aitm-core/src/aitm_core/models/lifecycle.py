@@ -5,6 +5,7 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
+from aitm_core.models.attempts import SourceSnapshot
 from aitm_core.models.config import DeliveryTarget
 from aitm_core.models.events import EventActor
 
@@ -115,6 +116,8 @@ class Estimate(LifecycleFact):
     agent_hours: Annotated[float, Field(ge=0, allow_inf_nan=False)]
     size: Text
     priority: Literal["P0", "P1", "P2", "P3"]
+    source: Text | None = None
+    rationale: Text | None = None
 
 
 class DocumentAcceptance(LifecycleFact):
@@ -139,6 +142,9 @@ class JitEvidence(LifecycleFact):
     coverage_status: Literal["complete", "partial", "unavailable"]
     outcome: Literal["accepted", "hold", "requires-review"]
     reviewed_revisions: tuple[Commit, ...]
+    baseline_kind: Literal["source", "deliverable"] = "source"
+    baseline_snapshot: SourceSnapshot | None = None
+    attempt_generation: Positive | None = None
 
 
 class Deliverable(LifecycleFact):

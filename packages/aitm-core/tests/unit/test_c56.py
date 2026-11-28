@@ -40,7 +40,7 @@ CORE_TYPES = set(
 core.idea.created core.draft.created core.draft.discarded core.story.graduated
 core.kind.changed core.state.changed core.guard.evaluated core.action.pending
 core.action.completed core.action.failed core.session.started core.session.ended
-core.attempt.started core.attempt.closed core.attempt.reopened core.attempt.clock.changed
+core.attempt.started core.attempt.reconciled core.attempt.closed core.attempt.reopened core.attempt.clock.changed
 core.execution.recorded core.estimate.set core.doc.accepted core.jit.recorded
 core.expansion.reserved core.expansion.reservation-resolved core.expansion.recorded
 core.expansion.resolved core.trip.recorded core.trip.decided core.pivot.recorded core.test.receipt

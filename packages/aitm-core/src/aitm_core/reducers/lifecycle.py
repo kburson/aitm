@@ -157,7 +157,9 @@ def _update(
                 raise LifecycleIntegrityError(
                     "JIT evidence disagrees with the current accepted plan"
                 )
-            return state.model_copy(update={"jit": fact})
+            return state.model_copy(
+                update={"jit": fact if fact.outcome == "accepted" else None}
+            )
         case Deliverable():
             previous = state.deliverables.get(fact.deliverable_id)
             if previous is not None and previous != fact:
