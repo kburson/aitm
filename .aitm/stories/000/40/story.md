@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 40
 title: "[Core C31] Trip ordering, replan decisions and human pivots"
 kind: "story"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/40"
 parent: 480
 children: []
@@ -111,3 +111,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 [Draft #593 and the exact custody hold receipt](plan/2026-11-28-pr-593-custody-hold.md) document two reproduced failures across the C20 issuer and the C30 expansion boundary. Delivery remains paused at #40.
 
 [#595](../../005/595/story.md) is the direct implementation prerequisite at rank 15. [#594](../../005/594/story.md) provides the research and rescope evidence that #595 requires. Continue the held candidate only after the prerequisite lands, its receipt is verified, and the exact new base is pinned.
+
+## Delivery
+
+[Native Linked PR #593](https://github.com/kburson/aitm/pull/593) · [Coordinator sign-off, exact receipts and Agent Cost](retro/2026-11-28-40-delivery.md).

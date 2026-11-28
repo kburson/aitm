@@ -1,0 +1,82 @@
+{
+  "baseRefOid": "c0c105abb93a6ff695ff8c9ce78a6159ccf04b1e",
+  "headRefOid": "6f9269e2875057afe0747ec07a2b6523e30364d9",
+  "isDraft": false,
+  "mergeStateStatus": "CLEAN",
+  "potentialMergeCommit": {
+    "oid": "03cf1e34f301a0c6bd0874238276f68481eb7d71"
+  },
+  "state": "OPEN",
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-28T17:27:25Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/kburson/aitm/actions/runs/46170462966/job/141057472278",
+      "name": "python-base",
+      "startedAt": "2026-11-28T17:26:14Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-28T17:31:05Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/kburson/aitm/actions/runs/46170463008/job/141057471730",
+      "name": "Core Python",
+      "startedAt": "2026-11-28T17:26:14Z",
+      "status": "COMPLETED",
+      "workflowName": "Core CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-28T17:30:38Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/kburson/aitm/actions/runs/46170462966/job/141057472251",
+      "name": "python",
+      "startedAt": "2026-11-28T17:26:14Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-28T17:26:36Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/kburson/aitm/actions/runs/46170462966/job/141057472106",
+      "name": "quality",
+      "startedAt": "2026-11-28T17:26:14Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-28T17:26:32Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/kburson/aitm/actions/runs/46170462966/job/141057472330",
+      "name": "file-checks",
+      "startedAt": "2026-11-28T17:26:15Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-28T17:30:50Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/kburson/aitm/actions/runs/46170462966/job/141058710977",
+      "name": "collect-evidence",
+      "startedAt": "2026-11-28T17:30:41Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-11-28T17:31:01Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/kburson/aitm/actions/runs/46170462966/job/141058766889",
+      "name": "aitm-ci",
+      "startedAt": "2026-11-28T17:30:52Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    }
+  ]
+}
