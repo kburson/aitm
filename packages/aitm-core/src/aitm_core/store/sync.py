@@ -27,7 +27,12 @@ from aitm_core.models.operations import (
     repository_path,
     story_event_path,
 )
-from aitm_core.services import ServicePorts, mutate, preflight_policy
+from aitm_core.services import (
+    INSTALLED_ATTEMPT_PREFLIGHT,
+    ServicePorts,
+    mutate,
+    preflight_policy,
+)
 from aitm_core.store.backend import Blobs, Snapshot
 from aitm_core.store.continuity import ContinuityStatus
 from aitm_core.store.gate import _atomic_write
@@ -428,7 +433,10 @@ def _sync(
     current = repo.tip()
     if authority.views.planning.observed_commit != current.revision:
         raise BindingConflict("The planning view changed while authoring was pinned.")
-    if isinstance(binding.scope, StoryRef) and ports.attempt_preflight == "installed":
+    if (
+        isinstance(binding.scope, StoryRef)
+        and ports.attempt_preflight is INSTALLED_ATTEMPT_PREFLIGHT
+    ):
         from aitm_core.models.operations import PreflightOutcome
         from aitm_core.store.backend import OperationContext, _preflight, _read_attempts
 

@@ -23,7 +23,11 @@ from aitm_core.models.operations import (
     story_event_path,
     story_scope,
 )
-from aitm_core.services import ServicePorts, UnavailablePort
+from aitm_core.services import (
+    INSTALLED_ATTEMPT_PREFLIGHT,
+    ServicePorts,
+    UnavailablePort,
+)
 
 type Blobs = Mapping[str, bytes | None]
 type OperationCategories = Mapping[tuple[str, int], OperationCategory]
@@ -151,7 +155,7 @@ def _preflight(context: OperationContext, ports: ServicePorts) -> PreflightResul
     if not context.attempts:
         return PreflightResult(outcome=PreflightOutcome.NOT_APPLICABLE)
     check = ports.attempt_preflight
-    if check == "installed" and ports.attempt_installation is not None:
+    if check is INSTALLED_ATTEMPT_PREFLIGHT and ports.attempt_installation is not None:
         from aitm_core.services import bound_attempt_check
 
         return bound_attempt_check(context, ports)

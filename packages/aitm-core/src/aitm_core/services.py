@@ -53,6 +53,9 @@ ServicePortName = Literal[
 ]
 
 
+INSTALLED_ATTEMPT_PREFLIGHT = object()
+
+
 class UnavailablePort(RuntimeError):
     def __init__(self, port: ServicePortName):
         self.port = port
@@ -66,7 +69,7 @@ class ServicePorts:
     validation_gate: object | None = None
     forward_repair_verifier: object | None = "default"
     write_authorization: object | None = None
-    attempt_preflight: object | None = "installed"
+    attempt_preflight: object | None = INSTALLED_ATTEMPT_PREFLIGHT
     activity_observations: object | None = None
     post_delivery_fence: object | None = None
     attempt_installation: Installation | None = None
@@ -87,7 +90,7 @@ class ServicePorts:
 
     def require(self, port: ServicePortName) -> object:
         implementation = getattr(self, port)
-        if implementation is None:
+        if implementation is None or implementation is INSTALLED_ATTEMPT_PREFLIGHT:
             raise UnavailablePort(port)
         return implementation
 
@@ -431,7 +434,7 @@ def _compose_attempt_policy(anchor, prepared, ports):
 
     from aitm_core.machine.profile import load_profile
 
-    if ports.attempt_preflight != "installed":
+    if ports.attempt_preflight is not INSTALLED_ATTEMPT_PREFLIGHT:
         return ports
     assert prepared.policy is not None
 
@@ -520,7 +523,7 @@ def _stop_before_dispatch(anchor, operation, expected, prepared, ports):
     )
 
     if (
-        ports.attempt_preflight != "installed"
+        ports.attempt_preflight is not INSTALLED_ATTEMPT_PREFLIGHT
         or operation.category == OperationCategory.STOP_RECONCILIATION
     ):
         return None
