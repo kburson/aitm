@@ -24,3 +24,14 @@ The first candidate was returned to draft after the author reproduced a copied `
 - Tree `bbc0ba51794afc1d885da75f84372ad4fb420338`
 
 Repository run [46086115199](https://github.com/kburson/aitm/actions/runs/46086115199) and hosted Core run [46086115252](https://github.com/kburson/aitm/actions/runs/46086115252) apply to the revised draft. The earlier hosted and SAR evidence applies solely to the preceding tree.
+
+## Candidate after independent round 1
+
+[Independent Grok round 1](2026-11-27-pr-568-source-sar-r1.md) requested changes on the first candidate. The intermediate draft had already addressed nested attachments and document path reuse and added fresh-clone recovery. Before ready, that draft was superseded to cover the remaining findings. A real Git reproduction confirmed that the stale retained request after a lost CAS blocked a later retry. The revision gives each uncommitted discard attempt its own operation ID and uses the successful tombstone as the durable retry identity. The graduation scan checks the complete canonical stream. A verified retained discard takes precedence over any subsequent graduation record or reused handle.
+
+- Base `0312853be12468a87fda933401f16a1368e76b2b`
+- Head `bca68f1e5deac62995dc4f63fb012b17902b116c`
+- Synthetic merge `6d56615769c1943849db88a4a8f085c8136cd108`
+- Tree `a3c9d44841b21858811029130a864f678dea789c`
+
+The revision remains draft while [repository CI](https://github.com/kburson/aitm/actions/runs/46086369089) and [Core CI](https://github.com/kburson/aitm/actions/runs/46086369032) qualify this exact candidate.
