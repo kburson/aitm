@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 27
 title: "[Core C21] Shared local number allocation"
 kind: "story"
-state: develop
+state: test
 issue: "https://github.com/kburson/aitm/issues/27"
 parent: 476
 children: []
 blocking: [37, 39, 58, 65, 82, 478, 479, 480, 483, 484, 485, 487]
 blocked-by: [22, 26, 74]
 created: "2026-11-09T08:01:19Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T03:02:07.217+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -108,3 +108,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 **Ready for Planning** · rank **50** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #476 with scope entry **C21**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
 
 [Scoped manual JIT pickup](plan/2026-11-27-pickup.md).
+
+[Draft #572 and exact candidate verification](plan/2026-11-27-pr-572-verification.md).
