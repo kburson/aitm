@@ -69,16 +69,20 @@ def derive_anchor(
         if claim.role == response.role
         and claim.host == response.host
         and claim.session_fingerprint == response.fingerprint
-        and (
-            claim.turn == response.round or (claim.turn is None and response.round == 1)
-        )
         and _instant(claim.claimed_at) <= end
-        and (previous is None or previous <= _instant(claim.claimed_at))
+        and (
+            claim.turn == response.round
+            or (
+                claim.turn is None
+                and response.round == 1
+                and (previous is None or previous <= _instant(claim.claimed_at))
+            )
+        )
     )
     if len(matches) == 1:
         claim = matches[0]
         return TimingAnchor("claim", claim.claimed_at, manifest, claim.claim_id)
-    if predecessor is not None:
+    if not matches and predecessor is not None:
         return TimingAnchor(
             "prior-submit", predecessor.submitted_at, predecessor.source
         )

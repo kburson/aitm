@@ -67,3 +67,98 @@ def test_native_nonaccepting_status_refuses_before_any_provenance_is_claimed(sta
     source = Original(MANIFEST.path, f"```json\n{json.dumps(record)}\n```\n".encode())
     with pytest.raises(ReviewError, match="unaccepted native manifest"):
         map_native((source,))
+
+
+def test_ambiguous_exact_turn_claims_have_unknown_start():
+    next_response = replace(REVIEWER, round=2, submitted_at="2026-11-08T00:05:00Z")
+    first = CLAIM.model_copy(update={"turn": 2, "claimed_at": "2026-11-08T00:02:00Z"})
+    second = first.model_copy(
+        update={
+            "claim_id": "claim-second",
+            "claimed_at": "2026-11-08T00:03:00Z",
+        }
+    )
+    result = derive_anchor(next_response, REVIEWER, (first, second), MANIFEST)
+    assert (result.basis, result.started_at, result.source) == ("unknown", None, None)
+
+
+def test_bound_claim_can_precede_another_participants_submit():
+    author = replace(REVIEWER, role="author", submitted_at="2026-11-08T00:04:00Z")
+    previous = replace(REVIEWER, submitted_at="2026-11-08T00:03:00Z")
+    claim = CLAIM.model_copy(
+        update={
+            "role": "author",
+            "turn": 1,
+            "claimed_at": "2026-11-08T00:01:00Z",
+        }
+    )
+    result = derive_anchor(author, previous, (claim,), MANIFEST)
+    assert result.basis == "claim"
+    assert result.started_at == claim.claimed_at
+
+
+def _timed_turn(start_source, source_digest):
+    from aitm_core.reviews.anchors import TimingAnchor
+    from aitm_core.reviews.native import NativeTurn
+    from aitm_core.reviews.portable import PortableResponse
+
+    predecessor = SourceReference("native/review-c58-author-response-1.md", FINGERPRINT)
+    raw_source = SourceReference(
+        "native/review-c58-reviewer-response-2.md", FINGERPRINT
+    )
+    anchor = TimingAnchor("prior-submit", REVIEWER.submitted_at, predecessor)
+    submission = replace(
+        REVIEWER, round=2, submitted_at="2026-11-08T00:02:00Z", source=raw_source
+    )
+    header = {
+        "schema": "aitm.review-response/v0",
+        "level": "xpr",
+        "story": 2,
+        "role": "reviewer",
+        "round": 2,
+        "artifact_path": "design.md",
+        "artifact_digest": FINGERPRINT,
+        "reviewer_session": FINGERPRINT,
+        "agent": {
+            "provider": "fixture",
+            "host": "fixture",
+            "model_id": "fixture",
+            "effort": "high",
+        },
+        "session_identity_kind": "native-fingerprint",
+        "native_source": raw_source.path,
+        "native_source_digest": raw_source.digest,
+        "started_at": anchor.started_at,
+        "submitted_at": submission.submitted_at,
+        "start_basis": "prior-submit",
+        "start_source": start_source,
+        "start_source_digest": source_digest,
+    }
+    return (
+        PortableResponse.model_validate(header),
+        header,
+        NativeTurn(
+            submission,
+            anchor,
+            "fixture",
+            "fixture",
+            "b" * 40,
+            "c" * 40,
+            FINGERPRINT,
+            (),
+            (),
+        ),
+    )
+
+
+def test_native_predecessor_path_with_exact_hash_qualifies():
+    from aitm_core.reviews.native import _bind_turn
+
+    _bind_turn(*_timed_turn("native/review-c58-author-response-1.md", FINGERPRINT))
+
+
+def test_legacy_predecessor_path_cannot_hide_a_conflicting_hash():
+    from aitm_core.reviews.native import _bind_turn
+
+    with pytest.raises(ReviewError, match="start source"):
+        _bind_turn(*_timed_turn("author-response-1.md", "sha256:" + "b" * 64))

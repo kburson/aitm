@@ -361,7 +361,12 @@ def _git_blob_matches(content: bytes, expected: str) -> bool:
     return digest.hexdigest() == expected
 
 
-def _bind_turn(response: PortableResponse, header: dict, native: NativeTurn) -> None:
+def _bind_turn(
+    response: PortableResponse,
+    header: dict,
+    native: NativeTurn,
+    originals: dict[str, dict] | None = None,
+) -> None:
     agent = response.agent
     if (
         agent is None
@@ -381,16 +386,32 @@ def _bind_turn(response: PortableResponse, header: dict, native: NativeTurn) -> 
     anchor = native.anchor
     if response.start_basis != anchor.basis or response.started_at != anchor.started_at:
         raise ReviewError("portable timing contradicts its native anchor")
-    if anchor.basis == "claim":
-        assert anchor.source is not None
+    stated_hash = header.get("start_source_digest")
+    if anchor.source is None:
+        matches = response.start_source is None and stated_hash is None
+    elif anchor.basis == "claim":
         expected_source = f"{anchor.source.path}#claim-{anchor.claim_id}"
-    elif anchor.basis == "prior-submit":
+        matches = response.start_source == expected_source and stated_hash in (
+            None,
+            anchor.source.digest,
+        )
+    else:
         role = "reviewer" if response.role == "author" else "author"
         index = response.round if response.role == "author" else response.round - 1
-        expected_source = f"{role}-response-{index}.md"
-    else:
-        expected_source = None
-    if response.start_source != expected_source:
+        alias = f"{role}-response-{index}.md"
+        predecessor = originals.get(alias) if originals is not None else None
+        # Legacy aliases are read through their retained native source identity.
+        matches = (
+            response.start_source == anchor.source.path
+            and stated_hash == anchor.source.digest
+        ) or (
+            response.start_source == alias
+            and predecessor is not None
+            and predecessor.get("native_source") == anchor.source.path
+            and predecessor.get("native_source_digest") == anchor.source.digest
+            and stated_hash in (None, anchor.source.digest)
+        )
+    if not matches:
         raise ReviewError("portable start source disagrees with its native anchor")
 
 
@@ -441,12 +462,16 @@ def _bind_bundle(
     native_turns = {
         (turn.response.round, turn.response.role): turn for turn in facts.turns
     }
+    headers = {
+        f"{response.role}-response-{response.round}.md": value
+        for response, value in turns
+    }
     for response, value in turns:
         index = response.round
         native = native_turns.get((index, response.role))
         incoming = facts.revisions[index - 1]
         if native is not None:
-            _bind_turn(response, value, native)
+            _bind_turn(response, value, native, headers)
         elif (
             index != len(record.rounds)
             or response.role != "author"
