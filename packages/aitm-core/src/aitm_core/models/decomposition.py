@@ -24,6 +24,7 @@ class PlanEntry(IdentityFact):
     verification: Text
     acceptance_criteria: tuple[Text, ...]
     dependencies: tuple[EntryKey, ...] = ()
+    cross_child_commitments: tuple[Text, ...] = ()
 
     @model_validator(mode="after")
     def check_descriptor(self):
@@ -35,7 +36,14 @@ class PlanEntry(IdentityFact):
 
     @property
     def digest(self) -> str:
-        return sha256(rfc8785.dumps(self.model_dump(mode="json"))).hexdigest()
+        # Preserve the original canonical entry identity when the optional
+        # cross-child commitments are absent.
+        exclude = (
+            {"cross_child_commitments"} if not self.cross_child_commitments else None
+        )
+        return sha256(
+            rfc8785.dumps(self.model_dump(mode="json", exclude=exclude))
+        ).hexdigest()
 
     @property
     def proposal(self) -> Estimate:
