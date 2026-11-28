@@ -672,3 +672,23 @@ def stage_shared_graduation(
         "The candidate remains provisional until shared readback.",
         recovery,
     )
+
+
+def expansion_graduation(installation, owner, ports: ServicePorts | None = None):
+    """Compose the production expansion finalizer with the selected Core ports."""
+    from functools import partial
+
+    from aitm_core.graduation import FinalizerRegistry, GraduationService
+    from aitm_core.rules.expansion import EXPANSION_FINALIZER, build_expansion_related
+
+    registry = FinalizerRegistry().register_candidate_finalizer(
+        EXPANSION_FINALIZER,
+        1,
+        partial(build_expansion_related, installation.repository),
+    )
+    return GraduationService(
+        installation,
+        owner,
+        registry=registry,
+        ports=ports if ports is not None else ServicePorts(),
+    )
