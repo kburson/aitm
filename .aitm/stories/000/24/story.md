@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 24
 title: "[Core C19] Ideas, drafts and atomic discard"
 kind: "story"
-state: review
+state: done
 issue: "https://github.com/kburson/aitm/issues/24"
 parent: 476
 children: []
 blocking: [25, 65, 74]
 blocked-by: [16, 17]
 created: "2026-11-09T08:01:06Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T00:39:52.405+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
@@ -120,3 +120,7 @@ The revised #568 passed both exact hosted workflows and trusted verification bef
 #568 returned to draft after independent round 2. The revised replay and collision recovery are in hosted Test.
 
 The replay and collision fixes passed hosted qualification. #568 returned to independent review on the new exact tree.
+
+## Verified delivery
+
+Native [Linked PR #568](https://github.com/kburson/aitm/pull/568). [Independent exact SAR PASS](plan/2026-11-27-pr-568-source-sar.md) · [Delivery sign-off, receipts and Agent Cost](retro/2026-11-27-delivery.md).
