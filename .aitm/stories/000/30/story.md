@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 30
 title: "[Core C33] Private immutable input capture"
 kind: "story"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/30"
 parent: 480
 children: []
@@ -102,3 +102,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **40** · **P1/S** · **3 agent-hours**. Design accepted for this manual workflow through issue #480 with scope entry **C33**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Delivery
+
+[Native Linked PR #598](https://github.com/kburson/aitm/pull/598) · [Coordinator sign-off, exact receipts and Agent Cost](retro/2026-11-28-30-delivery.md).
