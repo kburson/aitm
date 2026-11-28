@@ -50,7 +50,11 @@ from aitm_core.models.operations import (
     RelatedWriteSet,
     story_event_path,
 )
-from aitm_core.services import ServicePorts, UnavailablePort
+from aitm_core.services import (
+    INSTALLED_ATTEMPT_PREFLIGHT,
+    ServicePorts,
+    UnavailablePort,
+)
 from aitm_core.store.backend import (
     Backend,
     OperationContext,
@@ -792,7 +796,7 @@ def preflight_transition(
     context = OperationContext(
         operation, snapshot, (attempts.attempts[attempts.current_attempt],)
     )
-    if port == "installed" and hasattr(request.backend, "repository"):
+    if port is INSTALLED_ATTEMPT_PREFLIGHT and hasattr(request.backend, "repository"):
         from aitm_core.rules.trips import record_trip
         from aitm_core.services import installed_attempt_observation
 
