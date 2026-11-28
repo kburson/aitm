@@ -12,3 +12,7 @@ The owner clarified that #481 must move through Planning to Dev before starting 
 #42's [reviewed delivery](../../../000/42/retro/2026-11-28-42-delivery.md) landed on the integration branch at `cf814522221adf8f7782778feccb11e9cca155f9` while #481 was Ready for Planning. #43 had two local test drafts and no product commit or PR when paused. Both facts are recorded in their actual order. The remaining children require verified parent Dev before work begins or resumes.
 
 This updates the board and planning record manually. Runtime transition and implementation clock are both false.
+
+## Dev admission
+
+After verifying the Planning checkpoint on origin/planning, the coordinator set native Project 24 status to Dev and verified readback at `2026-11-28T19:57:30.838673+00:00`. At admission, #600 was still draft at exact head `cf814522221adf8f7782778feccb11e9cca155f9` and trunk base `9b7dedf7bd19ddf379d1f63c4e5ea48fda876b92`. #43, #44 and #505 were still Ready for Planning. Remaining child work may proceed in rank order after its own pickup. Runtime transition and implementation clock are both false.

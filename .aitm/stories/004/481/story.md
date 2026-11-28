@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 481
 title: "[Epic] Core — Managed local verification"
 kind: "epic"
-state: plan
+state: dev
 issue: "https://github.com/kburson/aitm/issues/481"
 parent: 1
 children: [42, 43, 44, 505]
@@ -31,7 +31,7 @@ design-acceptance: {"mode":"owner-directed-manual-inheritance","parent":1,"desig
 
 Run exact-candidate baseline and selector fixtures in captured and qualified contained environments.
 
-Parent: #1. Core coordination: #2. State: Planning.
+Parent: #1. Core coordination: #2. State: Dev.
 
 ## Delivery
 
