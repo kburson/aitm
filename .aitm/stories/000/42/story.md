@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 42
 title: "[Core C35] Captured-export test execution and receipts"
 kind: "story"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/42"
 parent: 481
 children: []
@@ -104,3 +104,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **10** · **P1/S** · **3.5 agent-hours**. Design accepted for this manual workflow through issue #481 with scope entry **C35**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Delivery
+
+[Native Linked PR #601](https://github.com/kburson/aitm/pull/601) · [Coordinator sign-off, exact receipts and Agent Cost](retro/2026-11-28-42-delivery.md).
