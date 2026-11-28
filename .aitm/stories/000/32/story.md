@@ -3,20 +3,20 @@ schema: "aitm.story/v0"
 id: 32
 title: "[Core C57] Review finding closure, topology and policy assurance"
 kind: "story"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/32"
 parent: 477
 children: []
 blocking: [33, 77]
 blocked-by: [29]
 created: "2026-11-09T08:01:40Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T04:27:57.071533+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c57-review-finding-closure-topology-and-policy-assurance"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md", "plan/2026-11-27-pr-575-verification.md", "plan/2026-11-27-pr-575-source-sar-r1.md", "plan/2026-11-27-pr-575-source-sar.md", "plan/2026-11-27-pr-575-hosted.json", "plan/2026-11-27-pr-575-verifier.json", "plan/2026-11-27-pr-575-premerge-verifier.json", "plan/2026-11-27-pr-575-source-sar.json", "plan/2026-11-27-pr-575-branch-gates.json"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C57", "parent": 477}
@@ -102,3 +102,12 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **20** · **P1/S** · **2.5 agent-hours**. Design accepted for this manual workflow through issue #477 with scope entry **C57**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+
+## Scoped manual pickup
+
+[Manual bootstrap JIT](plan/2026-11-27-pickup.md) records the exact prerequisite and scoped assignment. No runtime transition or implementation clock is recorded.
+
+## Verified delivery
+
+[Coordinator sign-off and Agent Cost](retro/2026-11-27-delivery.md) for [native Linked PR #575](https://github.com/kburson/aitm/pull/575).
