@@ -1,7 +1,7 @@
 """Join current local verification with an authenticated hosted observation."""
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from hashlib import sha256
 from typing import Literal
 
@@ -120,8 +120,5 @@ class CandidateVerification:
         decision = candidate_guard(current, self.local, self.hosted)
         if decision.status != "pass":
             return decision
-        return GuardDecision(
-            "pass",
-            decision.reason,
-            reads=(ReadExpectation(path=path, digest=sha256(raw).hexdigest()),),
-        )
+        read = ReadExpectation(path=path, digest=sha256(raw).hexdigest())
+        return replace(decision, reads=(*decision.reads, read))

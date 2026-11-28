@@ -112,3 +112,109 @@ def test_recording_an_unknown_launch_does_not_report_verification_complete():
     result = verification_command(observed, None)
     assert result.local == LocalOutcome.UNAVAILABLE
     assert result.publication == PublicationOutcome.VERIFIED
+
+
+def test_configured_candidate_guard_retains_code_and_story_read():
+    from datetime import datetime
+    from hashlib import sha256
+
+    from aitm_core.events import core_reducers, fold
+    from aitm_core.machine.guards import GuardCall, core_guard
+    from aitm_core.machine.profile import WorkflowEdge
+    from aitm_core.models.attempts import (
+        AttemptStarted,
+        ClockChanged,
+        ExecutionCandidate,
+        SourceSnapshot,
+    )
+    from aitm_core.models.operations import ReadExpectation, story_event_path
+    from aitm_core.relationships import EventContext
+    from aitm_core.rules.trips import _append
+    from aitm_core.services import ServicePorts
+    from aitm_core.store.memory_backend import MemoryBackend
+    from aitm_core.verification.guards import (
+        CandidateVerification,
+        HostedCandidate,
+        LocalCandidateProof,
+        VerificationBasis,
+    )
+    from tests.unit.test_c15 import OWNER, STAMP, graduated
+
+    policy = "f" * 64
+    source = SourceSnapshot(commit="a" * 40, tree="b" * 40)
+    candidate = ExecutionCandidate(source=source, capture_manifest="e" * 64)
+    tested = SourceSnapshot(commit="c" * 40, tree="d" * 40)
+    target = HostedCandidate(
+        "owner/repo", 601, "refs/heads/trunk", "1" * 40, source, tested
+    )
+    raw = graduated()
+    reducers = core_reducers()
+    state = fold([raw], reducers)
+    attempt = AttemptStarted(
+        attempt="attempt-1",
+        generation=1,
+        plan_generation=1,
+        source=source,
+        binding="binding-1",
+        allowance_millis=1000,
+    )
+    clock = ClockChanged(
+        attempt=attempt.attempt,
+        generation=attempt.generation,
+        cause_event_id="attempt-open:started:16",
+        **{"from": None, "to": "active"},
+        observed_at=datetime.fromisoformat(STAMP),
+        used_millis=0,
+    )
+    appended = _append(
+        EventContext("attempt-open", OWNER, STAMP, policy),
+        state,
+        raw,
+        [
+            ("core.attempt.started", attempt, "started"),
+            ("core.attempt.clock.changed", clock, "clock"),
+        ],
+        include_null_data=True,
+    )
+    raw += b"".join(record + b"\n" for record in appended.records)
+    path = story_event_path(16)
+    backend = MemoryBackend({path: raw})
+    lifecycle = fold(raw.splitlines(keepends=True), reducers).domains["lifecycle"]
+    call = GuardCall(
+        "core.dev.review-candidate-current",
+        1,
+        "onEnter",
+        backend.snapshot(),
+        lifecycle,
+        WorkflowEdge.model_validate({"from": "dev", "to": "review"}),
+        {path: raw},
+        policy,
+    )
+
+    port = CandidateVerification(
+        basis=lambda _: VerificationBasis(
+            16,
+            attempt.attempt,
+            attempt.generation,
+            candidate,
+            policy,
+            "story-tagged",
+            True,
+            target,
+        ),
+        local=lambda _: LocalCandidateProof(
+            16, attempt.attempt, attempt.generation, candidate, policy, "passed"
+        ),
+        hosted=lambda observed: (observed, "passed"),
+    )
+    kind, exit_guard = ServicePorts(candidate_verification=port).workflow_guard_ports(
+        source
+    )
+    result = core_guard(
+        call, leaf_hours=4, kind_requirements=kind, story_exit_guards=exit_guard
+    )
+    assert (result.status, result.code) == (
+        "pass",
+        "exact-candidate-verification-current",
+    )
+    assert result.reads == (ReadExpectation(path=path, digest=sha256(raw).hexdigest()),)
