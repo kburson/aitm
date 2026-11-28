@@ -4,7 +4,8 @@ import argparse
 from pathlib import Path
 from uuid import uuid4
 
-from aitm_core.models.binding import StoryRef
+from aitm_core.entities import sync_entity
+from aitm_core.models.binding import EntityRef, StoryRef
 from aitm_core.models.common import CommandResult, LocalOutcome
 from aitm_core.services import ServicePorts
 from aitm_core.setup.init import _active_installation
@@ -38,28 +39,23 @@ def handle(
     identity = uuid4().hex
     try:
         args = parser.parse_args(arguments)
-        if args.entity is not None:
-            if args.story is not None:
-                raise ValueError("Select one binding scope.")
-            adapter = services.entity_sync
-            if not callable(adapter):
-                return CommandResult(
-                    operation_id=identity,
-                    local=LocalOutcome.UNAVAILABLE,
-                    evidence=("Entity sync adapter is unavailable.",),
-                )
-            result = adapter(route, arguments)
+        if (args.entity is None) == (args.story is None):
+            raise ValueError("Select one story or entity binding scope.")
+        if args.entity is not None and callable(services.entity_sync):
+            result = services.entity_sync(route, arguments)
             if not isinstance(result, CommandResult):
                 raise ValueError("Entity sync returned unqualified evidence.")
             return result
-        if not (args.story and args.binding and args.generation and args.session):
-            raise ValueError(
-                "Provide the story, binding identity, generation and session."
-            )
+        if not (args.binding and args.generation and args.session):
+            raise ValueError("Provide the binding identity, generation and session.")
         repo = Repository(Path.cwd(), "refs/heads/aitm-sync-probe")
         installation, _ = _active_installation(repo)
         workspace = Workspace(installation)
-        scope = StoryRef(story=args.story)
+        scope = (
+            workspace.entity_scope(args.entity, args.binding)
+            if args.entity is not None
+            else StoryRef(story=args.story)
+        )
         binding = workspace.require(scope, args.binding, args.generation, args.session)
         selection = PathSelection(tuple(args.path), tuple(args.delete))
         if args.reconcile:
@@ -87,6 +83,14 @@ def handle(
             raise ValueError("Resolution options require --reconcile.")
         # The normal service always attempts bounded hosted publication. --push
         # selects that same route and never dispatches a second operation.
+        if isinstance(scope, EntityRef):
+            return sync_entity(
+                workspace,
+                binding,
+                selection,
+                release=route == ("unbind",),
+                ports=services,
+            ).command
         operation = unbind if route == ("unbind",) else sync
         return operation(workspace, binding, selection, ports=services).command
     except (BindingConflict, ReplayConflict) as error:

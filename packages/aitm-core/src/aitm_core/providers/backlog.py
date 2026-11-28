@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutcome
 from aitm_core.models.config import BacklogIssuer, Name, Oid
 from aitm_core.models.events import DIGEST
+from aitm_core.models.identity import DeliveryTarget, FrozenFinalization, FrozenSource
 from aitm_core.models.operations import FinalizationIntent, Positive
 
 
@@ -42,11 +43,33 @@ class BacklogObservation(_BacklogContract):
 
 class GraduationIntent(_BacklogContract):
     operation_id: Name
-    source_kind: Literal["draft", "plan-entry"]
-    source_id: Name
-    source_digest: DIGEST
+    source_kind: Literal["draft", "plan-entry"] | None = None
+    source_id: Name | None = None
+    source_digest: DIGEST | None = None
     issuer: BacklogIssuer
     shared: bool
+    source: FrozenSource | None = None
+    delivery_target: DeliveryTarget | None = None
+    kind: Literal["story", "defect", "spike", "epic"] = "story"
+    parent: Positive | None = None
+    finalization: FrozenFinalization | None = None
+
+    @model_validator(mode="after")
+    def check_source(self) -> Self:
+        if self.source is None:
+            if None in (self.source_kind, self.source_id, self.source_digest):
+                raise ValueError("graduation requires source coordinates")
+            return self
+        for field, value in (
+            ("source_kind", self.source.kind),
+            ("source_id", self.source.identity),
+            ("source_digest", self.source.digest),
+        ):
+            current = getattr(self, field)
+            if current is not None and current != value:
+                raise ValueError("source coordinates disagree with the frozen source")
+            object.__setattr__(self, field, value)
+        return self
 
 
 class IdentityReservation(_BacklogContract):

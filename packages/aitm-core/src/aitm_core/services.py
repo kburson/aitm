@@ -276,6 +276,8 @@ def prepare_mutation(
     ports: ServicePorts | None = None,
 ) -> PolicyPreflight:
     """Refresh and pin before dispatching into the clone's operation guard."""
+    from aitm_core.models.operations import Operation
+
     result = preflight_policy(anchor, ports=ports)
     result = replace(result, expected=expected, read_set=operation.change.read_set)
     if result.outcome != LocalOutcome.COMPLETED:
@@ -292,6 +294,16 @@ def prepare_mutation(
             outcome=LocalOutcome.CONFLICT,
             reason="The committed policy changed. Rebuild the operation and its guards.",
         )
+    if isinstance(operation, Operation) and operation.intent.kind == "core.graduated":
+        from aitm_core.graduation import GraduatedRecord
+
+        record = GraduatedRecord.model_validate_json(operation.intent.payload)
+        if record.workflow_digest != result.policy.workflow.digest:
+            return replace(
+                result,
+                outcome=LocalOutcome.CONFLICT,
+                reason="The committed graduation workflow changed. Rebuild from the current profile.",
+            )
     return result
 
 
@@ -492,4 +504,122 @@ def load_installation(
         issuer=issuer,
         legacy_root=LegacyRoot.model_validate(legacy) if legacy is not None else None,
         **settings,
+    )
+
+
+def stage_shared_graduation(
+    anchor: Installation,
+    operation: Operation,
+    expected: Snapshot,
+    *,
+    ports: ServicePorts,
+) -> OperationResult:
+    """Validate a complete candidate and send it without advancing the local planning ref."""
+    from aitm_core.ext.ownership import ExtensionWriteAuthorizer
+    from aitm_core.ext.registry import load_extensions
+    from aitm_core.store.backend import OperationResult, evaluate_operation
+    from aitm_core.store.continuity import ContinuityStatus
+    from aitm_core.store.fetch import Freshness
+    from aitm_core.store.git_backend import ValidationRejected, _record_path
+    from aitm_core.store.objects import GitCommandError
+    from aitm_core.store.publication import Publisher
+
+    prepared = prepare_mutation(anchor, operation, expected, ports=ports)
+    repo = anchor.repository
+
+    def result(
+        local: LocalOutcome, message: str, recovery: str | None = None
+    ) -> OperationResult:
+        return OperationResult(
+            CommandResult(
+                operation_id=operation.operation_id,
+                local=local,
+                publication=PublicationOutcome.PENDING,
+                evidence=(message,),
+                recovery=recovery,
+            ),
+            expected,
+            message,
+        )
+
+    shared = prepared.views.shared
+    code = prepared.views.local
+    code_ref = anchor.policy_ref(code)
+    if (
+        operation.intent.kind != "core.graduated"
+        or anchor.store.planning_remote is None
+        or prepared.outcome != LocalOutcome.COMPLETED
+        or prepared.policy is None
+        or shared is None
+        or shared.status != ContinuityStatus.VERIFIED
+        or shared.valid_tip != expected.revision
+        or prepared.views.code_freshness not in {Freshness.FRESH, Freshness.LOCAL_ONLY}
+        or code_ref is None
+        or code.observed_commit is None
+    ):
+        return result(
+            LocalOutcome.CONFLICT,
+            prepared.reason or "The verified shared graduation frontier moved.",
+        )
+
+    recovery = None
+    try:
+        registry = load_extensions(prepared.policy, ports.extension_declarations)
+        authorize = ports.write_authorization
+        services = replace(
+            ports,
+            write_authorization=ExtensionWriteAuthorizer(
+                registry,
+                core=authorize if callable(authorize) else None,
+            ),
+        )
+        store = anchor.store.model_copy(update={"code_default_ref": code_ref})
+        target = backend(
+            repo, store, ports=services, code_pin=(code_ref, code.observed_commit)
+        )
+        publisher = Publisher(anchor, services)
+        with target._gate(repo, repo.ref) as validate:
+            current = target.snapshot()
+            if current != expected:
+                return result(
+                    LocalOutcome.CONFLICT,
+                    "The local planning view moved before staging.",
+                )
+            validate(current, None)
+            paths = tuple(item.path for item in operation.change.read_set)
+            pinned = repo.read_blobs(current.tree, paths)
+            evaluation = evaluate_operation(
+                operation, current, pinned, ports=services, categories={}
+            )
+            if evaluation.outcome != LocalOutcome.COMPLETED:
+                return result(
+                    evaluation.outcome,
+                    evaluation.reason or "Graduation candidate was refused.",
+                )
+            digest = operation.request_digest
+            record = target._record(operation, digest, current, evaluation)
+            staged = repo.create_commit(
+                current,
+                {
+                    **evaluation.writes,
+                    _record_path(
+                        operation.operation_id
+                    ): record.model_dump_json().encode(),
+                },
+                operation.operation_id,
+            )
+            validate(current, staged)
+            publisher.retain_request(operation)
+            reference = publisher._recovery_ref(staged.revision)
+            publisher._retain_ref(reference, staged.revision)
+            recovery = reference
+            publisher._push(staged.revision, current.revision)
+    except ValidationRejected as error:
+        return result(LocalOutcome.CONFLICT, str(error), recovery)
+    except (GitCommandError, OSError, ValueError) as error:
+        return result(LocalOutcome.UNAVAILABLE, str(error), recovery)
+    return result(
+        LocalOutcome.COMPLETED,
+        "The candidate remains provisional until shared readback.",
+        recovery,
     )

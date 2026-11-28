@@ -196,5 +196,8 @@ def test_sync_and_reconcile(topology, tmp_path, monkeypatch):
     assert released["local"] == "completed", released
     stale = cli(local, "sync", *options, "--path", PLAN)
     assert stale["local"] == "conflict", stale
-    unavailable = cli(local, "sync", "--entity", "entity-without-adapter")
-    assert unavailable["local"] == "unavailable", unavailable
+    missing_coordinates = cli(local, "sync", "--entity", "entity-without-binding")
+    assert missing_coordinates["local"] == "integrity-error", missing_coordinates
+    assert missing_coordinates["evidence"] == [
+        "Provide the binding identity, generation and session."
+    ]

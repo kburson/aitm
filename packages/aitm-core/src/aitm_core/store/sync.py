@@ -8,8 +8,9 @@ from typing import Iterable
 from uuid import uuid4
 
 from aitm_core.documents import _GENERATED_KEYS, _parse, canonicalize
+from aitm_core.entities import entity_matches, validate_entity_authorship
 from aitm_core.models.attempts import BindingPurpose
-from aitm_core.models.binding import Binding, StoryRef, allows_authored
+from aitm_core.models.binding import Binding, EntityRef, StoryRef, allows_authored
 from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutcome
 from aitm_core.models.documents import DocumentSchema
 from aitm_core.models.events import EventActor
@@ -27,7 +28,7 @@ from aitm_core.models.operations import (
     story_event_path,
 )
 from aitm_core.services import ServicePorts, mutate, preflight_policy
-from aitm_core.store.backend import Snapshot
+from aitm_core.store.backend import Blobs, Snapshot
 from aitm_core.store.continuity import ContinuityStatus
 from aitm_core.store.gate import _atomic_write
 from aitm_core.store.publication import PublicationStatus, Publisher
@@ -77,6 +78,11 @@ def _select(binding: Binding, selected: PathSelection) -> tuple[str, ...]:
 def _validate_authored(
     binding: Binding, path: str, previous: bytes | None, content: bytes
 ) -> None:
+    if isinstance(binding.scope, EntityRef):
+        if path == binding.scope.document:
+            content.decode("utf-8")
+            validate_entity_authorship(binding.scope, previous, content)
+        return
     if not path.endswith(".md"):
         return
     content.decode("utf-8")
@@ -385,11 +391,28 @@ def _retry_pending(
     )
 
 
+def _entity_source(workspace: Workspace, binding: Binding, snapshot: Snapshot) -> Blobs:
+    scope = binding.scope
+    if not isinstance(scope, EntityRef):
+        return {}
+    pinned = workspace.repo.read_blobs(snapshot.tree, (scope.document,))
+    if not entity_matches(scope, pinned[scope.document]):
+        raise BindingConflict(
+            "The entity is finalized or its document identity has changed."
+        )
+    return pinned
+
+
 def _sync(
     workspace: Workspace, binding: Binding, selected: PathSelection, ports: ServicePorts
 ) -> SyncResult:
     identity = uuid4().hex
     paths = _select(binding, selected)
+    if (
+        isinstance(binding.scope, EntityRef)
+        and binding.scope.document in selected.deletions
+    ):
+        raise BindingConflict("Finalize the entity to remove its canonical document.")
     retried = _retry_pending(workspace, binding, ports)
     if retried is not None:
         return retried
@@ -408,7 +431,10 @@ def _sync(
     current = repo.tip()
     if authority.views.planning.observed_commit != current.revision:
         raise BindingConflict("The planning view changed while authoring was pinned.")
-    shared = repo.read_blobs(current.tree, paths)
+    shared = {
+        **repo.read_blobs(current.tree, paths),
+        **_entity_source(workspace, binding, current),
+    }
     evidence = _diagnostics(binding, current, workspace)
     base = {item.path: item.digest for item in binding.paths}
     root = Path(binding.worktree)
@@ -658,7 +684,14 @@ def reconcile_sync(
                 ),
                 binding,
             )
-        bodies = dict(shared)
+        bodies = {**shared, **_entity_source(workspace, binding, published)}
+        if (
+            isinstance(binding.scope, EntityRef)
+            and binding.scope.document in selected.deletions
+        ):
+            raise BindingConflict(
+                "Finalize the entity to remove its canonical document."
+            )
         writes = {}
         for path in sorted(paths):
             content = read_workspace(Path(binding.worktree), path)
