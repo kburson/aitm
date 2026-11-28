@@ -12,7 +12,7 @@ blocked-by: [594]
 created: "2026-11-28T16:02:02Z"
 updated: "2026-11-28T16:02:02Z"
 last-branch: "planning"
-estimate: {"agent-hours": 3.5, "size": "S"}
+estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/005/594/plan/2026-11-28-594-ep11-authority-spike.md"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -22,6 +22,6 @@ trips: []
 
 # [Core] Close expansion authority and custody gaps before attempt control
 
-Project 24 rank **15**, P1/S. Provisional implementation scope and estimate. This story depends on [#594](../594/story.md) and blocks #40. Its current hypothesis is exact issuer-claim ordering against the stop plus closed-attempt identity reconciliation. The accepted spike and independent scope review will determine the final files, dependencies and production proofs.
+Project 24 rank **15**, P1/S. The accepted implementation scope is estimated at four agent-hours. This story depends on [#594](../594/story.md) and blocks #40. Its current hypothesis is exact issuer-claim ordering against the stop plus closed-attempt identity reconciliation. See the [accepted spike and independent scope reviews](../594/retro/2026-11-28-594-acceptance.md) for the exact boundaries, dependencies and production proofs.
 
 This is manual bootstrap evidence. Runtime transition and implementation clock are both false.
