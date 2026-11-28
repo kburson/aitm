@@ -483,6 +483,28 @@ def _make_operation(
             and plan.policy_digest == request.policy_digest
         ):
             plan_generation = plan.plan_generation
+        if current is not None and current.closed and current.closures:
+            stopped = current.closures[-1]
+            if stopped.disposition in {"trip", "pivot"}:
+                from aitm_core.rules.trips import facts
+
+                recorded = any(
+                    item.attempt == current.started.attempt
+                    for item in facts(state, "core.trip.decided")
+                )
+                previous = current.started.plan_generation
+                if (
+                    plan_generation is None
+                    or plan is None
+                    or plan.plan_generation != plan_generation
+                    or (previous is not None and plan_generation <= previous)
+                    or (stopped.disposition == "trip" and not recorded)
+                ):
+                    return (
+                        None,
+                        LocalOutcome.REFUSED,
+                        "A fresh accepted plan and the applicable stop decision are required.",
+                    )
         if not (plan_generation and binding) and request.mode == "enforce":
             return (
                 None,
@@ -767,12 +789,57 @@ def preflight_transition(
             payload=lifecycle.workflow_state.model_dump_json().encode(),
         ),
     )
-    result = _preflight(
-        OperationContext(
-            operation, snapshot, (attempts.attempts[attempts.current_attempt],)
-        ),
-        ServicePorts(attempt_preflight=port),
+    context = OperationContext(
+        operation, snapshot, (attempts.attempts[attempts.current_attempt],)
     )
+    if port == "installed" and hasattr(request.backend, "repository"):
+        from aitm_core.rules.trips import record_trip
+        from aitm_core.services import installed_attempt_observation
+
+        at = datetime.fromisoformat(request.at)
+        services = request.backend._ports
+        finding, graph = installed_attempt_observation(
+            request.backend.repository,
+            context,
+            request.profile,
+            request.mode,
+            services,
+            at,
+        )
+        result = finding.preflight
+        if finding.cause is not None:
+            stop = record_trip(
+                context,
+                finding,
+                graph,
+                request.profile,
+                request.mode,
+                at,
+                repository=request.backend.repository,
+            )
+            if stop is not None:
+                if request.transact is None:
+                    return CommandResult(
+                        operation_id=request.operation_id,
+                        local=LocalOutcome.UNAVAILABLE,
+                        evidence=("The trip publication route is unavailable.",),
+                    )
+                recorded = request.transact(stop, snapshot).command
+                if (
+                    recorded.local != LocalOutcome.COMPLETED
+                    or recorded.publication == PublicationOutcome.PENDING
+                ):
+                    return recorded
+                if request.mode == "advisory":
+                    return None
+                return CommandResult(
+                    operation_id=request.operation_id,
+                    local=LocalOutcome.REFUSED,
+                    publication=recorded.publication,
+                    evidence=(finding.cause,),
+                )
+    else:
+        result = _preflight(context, ServicePorts(attempt_preflight=port))
     if result.outcome in (PreflightOutcome.BLOCKED, PreflightOutcome.UNAVAILABLE):
         return CommandResult(
             operation_id=request.operation_id,

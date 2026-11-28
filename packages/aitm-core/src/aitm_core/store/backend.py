@@ -132,9 +132,29 @@ def _apply_events(
 
 
 def _preflight(context: OperationContext, ports: ServicePorts) -> PreflightResult:
+    if context.operation.category == OperationCategory.STOP_RECONCILIATION:
+        from aitm_core.models.operations import AuthorityOrigin
+        from aitm_core.rules.trips import STOP_CATEGORIES, qualified_stop
+
+        key = context.operation.intent.kind, context.operation.intent.version
+        if key in STOP_CATEGORIES:
+            return (
+                PreflightResult(
+                    outcome=PreflightOutcome.PASSED, origin=AuthorityOrigin.REGISTERED
+                )
+                if qualified_stop(context.operation)
+                else PreflightResult(
+                    outcome=PreflightOutcome.BLOCKED,
+                    reason="stop-reconciliation-out-of-scope",
+                )
+            )
     if not context.attempts:
         return PreflightResult(outcome=PreflightOutcome.NOT_APPLICABLE)
     check = ports.attempt_preflight
+    if check == "installed" and ports.attempt_installation is not None:
+        from aitm_core.services import bound_attempt_check
+
+        return bound_attempt_check(context, ports)
     if not callable(check):
         return PreflightResult(
             outcome=PreflightOutcome.UNAVAILABLE, reason="attempt-preflight-unavailable"

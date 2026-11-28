@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, replace
-from json import loads
+from json import dumps, loads
 from os import fsdecode
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
@@ -35,6 +35,8 @@ ServicePortName = Literal[
     "forward_repair_verifier",
     "write_authorization",
     "attempt_preflight",
+    "activity_observations",
+    "post_delivery_fence",
     "init_hooks",
     "init_doctor",
     "init_provider",
@@ -64,7 +66,10 @@ class ServicePorts:
     validation_gate: object | None = None
     forward_repair_verifier: object | None = "default"
     write_authorization: object | None = None
-    attempt_preflight: object | None = None
+    attempt_preflight: object | None = "installed"
+    activity_observations: object | None = None
+    post_delivery_fence: object | None = None
+    attempt_installation: Installation | None = None
     init_hooks: object | None = None
     init_doctor: object | None = None
     init_provider: object | None = None
@@ -335,6 +340,29 @@ def prepare_mutation(
                 outcome=LocalOutcome.CONFLICT,
                 reason="The committed graduation workflow changed. Rebuild from the current profile.",
             )
+    if isinstance(operation, Operation) and operation.category == "stop_reconciliation":
+        from aitm_core.models.events import validate_envelope
+        from aitm_core.models.lifecycle import StateChange
+        from aitm_core.rules.trips import STOP_CATEGORIES
+
+        if (operation.intent.kind, operation.intent.version) in STOP_CATEGORIES:
+            for record in (
+                validate_envelope(raw)
+                for append in operation.change.events
+                for raw in append.records
+            ):
+                if record.type != "core.state.changed":
+                    continue
+                state = StateChange.model_validate_json(dumps(record.data))
+                if (
+                    state.to_state.revision != result.policy.workflow.digest
+                    or state.mode != result.policy.config.enforcement.mode
+                ):
+                    return replace(
+                        result,
+                        outcome=LocalOutcome.CONFLICT,
+                        reason="The configured recovery workflow changed before the stop.",
+                    )
     if isinstance(operation, Operation) and operation.intent.kind in {
         "state.transition",
         "state.split",
@@ -354,6 +382,213 @@ def prepare_mutation(
                 reason="The committed workflow or guard mode changed. Rebuild the transition.",
             )
     return result
+
+
+def installed_attempt_observation(repository, context, profile, mode, ports, at):
+    """Resolve qualified observations and pinned attempt facts for C31."""
+    from aitm_core.activity import ActivityEvidence
+    from aitm_core.models.operations import PreflightOutcome, PreflightResult
+    from aitm_core.relationships import read_graph
+    from aitm_core.rules.trips import TripResult, preflight_attempt
+
+    graph = read_graph(repository, context.snapshot)
+    fence = ports.post_delivery_fence
+    if callable(fence):
+        admission = fence(context)
+        if not isinstance(admission, PreflightResult):
+            raise ValueError(
+                "Post-delivery authority returned an unqualified decision."
+            )
+        if admission.outcome in (
+            PreflightOutcome.BLOCKED,
+            PreflightOutcome.UNAVAILABLE,
+        ):
+            return TripResult(admission), graph
+    probe = ports.activity_observations
+    observations = tuple(probe(context)) if callable(probe) else None
+    if observations is not None and not all(
+        isinstance(row, ActivityEvidence) for row in observations
+    ):
+        raise ValueError("Attempt activity producer returned untyped observations.")
+    return preflight_attempt(context, graph, observations, at, mode), graph
+
+
+def _trip_categories(operation, categories):
+    from aitm_core.models.operations import OperationCategory
+    from aitm_core.rules.trips import STOP_CATEGORIES
+
+    key = operation.intent.kind, operation.intent.version
+    if (
+        operation.category == OperationCategory.STOP_RECONCILIATION
+        and key in STOP_CATEGORIES
+    ):
+        return {**(categories or {}), key: STOP_CATEGORIES[key]}
+    return categories
+
+
+def _compose_attempt_policy(anchor, prepared, ports):
+    from datetime import UTC, datetime
+
+    from aitm_core.machine.profile import load_profile
+
+    if ports.attempt_preflight != "installed":
+        return ports
+    assert prepared.policy is not None
+
+    def check(context):
+        policy_snapshot = prepared.policy
+        assert policy_snapshot is not None
+        result, _ = installed_attempt_observation(
+            anchor.repository,
+            context,
+            load_profile(policy_snapshot),
+            policy_snapshot.config.enforcement.mode,
+            ports,
+            datetime.now(UTC),
+        )
+        return result.preflight
+
+    return replace(ports, attempt_preflight=check)
+
+
+def bound_attempt_check(context, ports):
+    """Enforce a typed pre-dispatch check for a composed operation adapter."""
+    from datetime import UTC, datetime
+
+    from aitm_core.machine.profile import load_profile
+    from aitm_core.models.operations import (
+        AuthorityOrigin,
+        PreflightOutcome,
+        PreflightResult,
+    )
+
+    anchor = ports.attempt_installation
+    assert anchor is not None
+    prepared = preflight_policy(anchor, ports=ports)
+    if (
+        prepared.outcome != LocalOutcome.COMPLETED
+        or prepared.policy is None
+        or prepared.views.planning.observed_commit != context.snapshot.revision
+        or prepared.policy.source.digest != context.operation.policy_digest
+    ):
+        return PreflightResult(
+            outcome=PreflightOutcome.UNAVAILABLE, reason="attempt-preflight-unavailable"
+        )
+    policy_snapshot = prepared.policy
+    finding, _ = installed_attempt_observation(
+        anchor.repository,
+        context,
+        load_profile(policy_snapshot),
+        policy_snapshot.config.enforcement.mode,
+        ports,
+        datetime.now(UTC),
+    )
+    if finding.cause is not None:
+        stopped = _stop_before_dispatch(
+            anchor, context.operation, context.snapshot, prepared, ports
+        )
+        if stopped is not None and (
+            stopped.command.publication == PublicationOutcome.PENDING
+            or stopped.command.local
+            not in {LocalOutcome.REFUSED, LocalOutcome.CONFLICT}
+        ):
+            return PreflightResult(
+                outcome=PreflightOutcome.BLOCKED,
+                origin=AuthorityOrigin.REGISTERED,
+                reason="The trip outcome is not verified.",
+            )
+    return finding.preflight
+
+
+def _stop_before_dispatch(anchor, operation, expected, prepared, ports):
+    from datetime import UTC, datetime
+
+    from aitm_core.machine.profile import load_profile
+    from aitm_core.models.operations import (
+        AuthorityOrigin,
+        OperationCategory,
+        PreflightOutcome,
+        WriteAuthorization,
+        story_event_path,
+        story_scope,
+    )
+    from aitm_core.rules.trips import record_trip
+    from aitm_core.store.backend import (
+        OperationContext,
+        OperationResult,
+        _read_attempts,
+    )
+
+    if (
+        ports.attempt_preflight != "installed"
+        or operation.category == OperationCategory.STOP_RECONCILIATION
+    ):
+        return None
+    paths = tuple(
+        read.path
+        for read in operation.change.read_set
+        if (story := story_scope(read.path)) is not None
+        and read.path == story_event_path(story)
+    )
+    reader = getattr(anchor.repository, "read_blobs", None)
+    if not paths or not callable(reader):
+        return None
+    attempts = _read_attempts(reader(expected.tree, paths))
+    if not attempts:
+        return None
+    assert prepared.policy is not None
+    profile = load_profile(prepared.policy)
+    mode = prepared.policy.config.enforcement.mode
+    now = datetime.now(UTC)
+    context = OperationContext(operation, expected, attempts)
+    finding, graph = installed_attempt_observation(
+        anchor.repository, context, profile, mode, ports, now
+    )
+    if finding.cause is None:
+        return None
+    stop = record_trip(
+        context, finding, graph, profile, mode, now, repository=anchor.repository
+    )
+    if stop is None:
+        return None
+
+    def authorize(owner, change):
+        return WriteAuthorization(
+            allowed=owner == stop.owner and change == stop.change,
+            origin=AuthorityOrigin.REGISTERED,
+        )
+
+    stopped = mutate(
+        anchor, stop, expected, ports=replace(ports, write_authorization=authorize)
+    )
+    if (
+        stopped.command.local != LocalOutcome.COMPLETED
+        or stopped.command.publication == PublicationOutcome.PENDING
+    ):
+        return stopped
+    if finding.preflight.outcome == PreflightOutcome.PASSED:
+        return OperationResult(
+            CommandResult(
+                operation_id=operation.operation_id,
+                local=LocalOutcome.CONFLICT,
+                publication=stopped.command.publication,
+                evidence=(
+                    "Advisory trip recorded. Re-evaluate against the updated planning snapshot.",
+                ),
+            ),
+            stopped.snapshot,
+        )
+    return OperationResult(
+        CommandResult(
+            operation_id=operation.operation_id,
+            local=LocalOutcome.REFUSED,
+            publication=stopped.command.publication,
+            evidence=(finding.preflight.reason or "attempt-trip",),
+        ),
+        stopped.snapshot,
+        finding.preflight.reason,
+        preflight=finding.preflight,
+    )
 
 
 def mutate(
@@ -387,6 +622,13 @@ def mutate(
         services = ports if ports is not None else ServicePorts()
         assert prepared.policy is not None
         try:
+            stopped = _stop_before_dispatch(
+                anchor, operation, expected, prepared, services
+            )
+            if stopped is not None:
+                return stopped
+            categories = _trip_categories(operation, categories)
+            services = _compose_attempt_policy(anchor, prepared, services)
             registry = load_extensions(prepared.policy, services.extension_declarations)
             core = services.write_authorization
             authorizer = ExtensionWriteAuthorizer(
@@ -575,6 +817,11 @@ def stage_shared_graduation(
 
     prepared = prepare_mutation(anchor, operation, expected, ports=ports)
     repo = anchor.repository
+    if prepared.outcome == LocalOutcome.COMPLETED:
+        stopped = _stop_before_dispatch(anchor, operation, expected, prepared, ports)
+        if stopped is not None:
+            return stopped
+        ports = _compose_attempt_policy(anchor, prepared, ports)
 
     def result(
         local: LocalOutcome, message: str, recovery: str | None = None
@@ -686,9 +933,10 @@ def expansion_graduation(installation, owner, ports: ServicePorts | None = None)
         1,
         partial(build_expansion_related, installation.repository),
     )
+    supplied = ports if ports is not None else ServicePorts()
     return GraduationService(
         installation,
         owner,
         registry=registry,
-        ports=ports if ports is not None else ServicePorts(),
+        ports=replace(supplied, attempt_installation=installation),
     )
