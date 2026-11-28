@@ -1,0 +1,9 @@
+PASS
+
+The findings support one rank-15 #595 prerequisite on the pinned EP11 base: C20 pins the frozen C30 origin into every new claim read set, rechecks the authoritative snapshot immediately before send, and exposes observe-only custody; C30 adds one clock-neutral stopped-origin fact and a narrow reconciliation append. Graduation, capture, provisioning, execution, projection, and v1 wire records stay put. #594 blocks #595 and #595 blocks #40, with no reverse edge. The Git CAS probe and the two reproduced #40 faults justify that bound and do not count as a production fix.
+
+The proof plan catches the four risks. Stale and concurrent claims are covered by stop-before-CAS, lost-reply single recovery, claim-then-stop from a stale clone with zero dispatches and Unknown, no replacement generation, and observe-only legacy claims that lack the origin pin. False terminal absence is covered by refusing pre-fence or unqualified observations, requiring a verified fence plus a fresh claim-qualified absence, limiting a no-claim result to protocol history after the stop, and holding a later positive issue against an intact no-child fact. Unauthorized custody is covered by operation-scoped claim preflight and stopped-origin append only, refusal of other kinds, origins, generations, providers, bundled writes, activation, execution, and live origins, plus an explicit probe that no global allow or category bypass exists. Downstream gaps stay owned downstream: #40 consumes closed custody and proves Unknown versus unregistered preflight; #41 keeps baseline and candidate distinct; #30 and #31 prove preparation identity and staleness; C103 and C35 stay later.
+
+Packet commit be88c9bee686ffd2b6bf7bec72e3a5d29bd476d4. Packet SHA-256 8dc7de6efb130f62d73dc5533146ae89a518dbb29517a9a60c01ac3a5bb167d8.
+
+REVIEW COMPLETE
