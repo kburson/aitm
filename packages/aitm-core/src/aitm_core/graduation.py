@@ -1,6 +1,6 @@
 """Construct and finalize a numbered story without provisioning work resources."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from hashlib import sha256
 from json import dumps
@@ -36,6 +36,7 @@ from aitm_core.models.identity import (
 )
 from aitm_core.models.lifecycle import (
     Graduation,
+    LifecycleState,
     Relationships,
     StoryKind,
     WorkflowObservation,
@@ -59,6 +60,7 @@ from aitm_core.relationships import (
     EventContext,
     GraphConflict,
     LinkRequest,
+    StoryGraph,
     checked_relations,
     link_changes,
     read_graph,
@@ -100,7 +102,20 @@ def _check_finalization(
         raise GraduationConflict("The finalization differs from the frozen intent.")
 
 
+@dataclass(frozen=True, slots=True)
+class CandidateFinalization:
+    """The authoritative event tails after the base graduation appends."""
+
+    child: int
+    snapshot: Snapshot
+    events: EventContext
+    tails: Mapping[int, StoryState]
+
+
 Finalizer = Callable[[FinalizationIntent, int, Snapshot], RelatedWriteSet]
+CandidateFinalizer = Callable[
+    [FinalizationIntent, CandidateFinalization], RelatedWriteSet
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,34 +123,74 @@ class FinalizerRegistry:
     handlers: Mapping[tuple[str, int], Finalizer] = field(
         default_factory=lambda: MappingProxyType({})
     )
+    candidate_handlers: Mapping[tuple[str, int], CandidateFinalizer] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
-    def register_finalizer(
-        self, kind: str, version: int, handler: Finalizer
-    ) -> "FinalizerRegistry":
+    def _registration_key(self, kind: str, version: int) -> tuple[str, int]:
         key = kind, version
         if (
             not kind.strip()
             or version < 1
             or key in self.handlers
+            or key in self.candidate_handlers
             or key == ("core.graduation.ordinary", 1)
         ):
             raise ValueError("Invalid or duplicate finalizer registration.")
-        return FinalizerRegistry(MappingProxyType({**self.handlers, key: handler}))
+        return key
 
-    def materialize_finalization(
-        self, intent: FinalizationIntent, chosen_child: int, pinned_snapshot: Snapshot
-    ) -> RelatedWriteSet:
-        handler = self.require_finalizer(intent)
-        if handler is None:
-            return RelatedWriteSet(read_set=())
-        return RelatedWriteSet.model_validate(
-            handler(intent, chosen_child, pinned_snapshot)
+    def register_finalizer(
+        self, kind: str, version: int, handler: Finalizer
+    ) -> "FinalizerRegistry":
+        key = self._registration_key(kind, version)
+        return replace(self, handlers=MappingProxyType({**self.handlers, key: handler}))
+
+    def register_candidate_finalizer(
+        self, kind: str, version: int, handler: CandidateFinalizer
+    ) -> "FinalizerRegistry":
+        key = self._registration_key(kind, version)
+        return replace(
+            self,
+            candidate_handlers=MappingProxyType(
+                {**self.candidate_handlers, key: handler}
+            ),
         )
 
-    def require_finalizer(self, intent: FinalizationIntent) -> Finalizer | None:
+    def materialize_finalization(
+        self,
+        intent: FinalizationIntent,
+        chosen_child: int,
+        pinned_snapshot: Snapshot,
+        *,
+        candidate: CandidateFinalization | None = None,
+    ) -> RelatedWriteSet:
+        self.require_finalizer(intent)
+        key = intent.kind, intent.version
+        handler = self.candidate_handlers.get(key)
+        if handler is not None:
+            if (
+                candidate is None
+                or candidate.child != chosen_child
+                or candidate.snapshot != pinned_snapshot
+            ):
+                raise GraduationConflict(
+                    "The finalizer requires matching candidate context."
+                )
+            return RelatedWriteSet.model_validate(handler(intent, candidate))
+        legacy = self.handlers.get(key)
+        if legacy is not None:
+            return RelatedWriteSet.model_validate(
+                legacy(intent, chosen_child, pinned_snapshot)
+            )
+        return RelatedWriteSet(read_set=())
+
+    def require_finalizer(
+        self, intent: FinalizationIntent
+    ) -> Finalizer | CandidateFinalizer | None:
         if intent == ordinary_finalization():
             return None
-        handler = self.handlers.get((intent.kind, intent.version))
+        key = intent.kind, intent.version
+        handler = self.handlers.get(key, self.candidate_handlers.get(key))
         if handler is None:
             raise GraduationConflict("The semantic finalizer is unregistered.")
         return handler
@@ -248,6 +303,28 @@ def _pin(bodies: Mapping[str, bytes | None]) -> tuple[ReadExpectation, ...]:
         )
         for path, raw in sorted(bodies.items())
     )
+
+
+def _fold_append(graph: StoryGraph, append: EventAppend) -> StoryState:
+    before = graph.logs.get(append.path) or b""
+    if before and not before.endswith(b"\n"):
+        before += b"\n"
+    records = tuple(raw.removesuffix(b"\n") + b"\n" for raw in append.records)
+    return fold((*before.splitlines(keepends=True), *records), core_reducers())
+
+
+def _merge_related_events(
+    base: tuple[EventAppend, ...], related: tuple[EventAppend, ...]
+) -> tuple[EventAppend, ...]:
+    streams = {append.story: append for append in base}
+    for append in related:
+        earlier = streams.get(append.story)
+        streams[append.story] = (
+            EventAppend(story=append.story, records=earlier.records + append.records)
+            if earlier is not None
+            else append
+        )
+    return tuple(streams.values())
 
 
 def build_graduation(
@@ -374,8 +451,6 @@ def build_graduation(
                 }
             )
             writes[path] = f"---\n{header}\n---\n{descriptor.scope}\n".encode()
-    state = fold(tuple(row + b"\n" for row in story_events), core_reducers())
-    writes.update(render(ViewState(state), description, DocumentSchema()))
     record = GraduatedRecord(
         intent=intent,
         issue=issue,
@@ -400,13 +475,54 @@ def build_graduation(
         origin[item.path] != item.digest for item in finalization.related_preconditions
     ):
         raise GraduationConflict("The related finalization requirements are fenced.")
-    related = registry.materialize_finalization(finalization, number, snapshot)
-    if {write.path for write in related.writes} & writes.keys() or {
-        append.path for append in related.events
-    } & {append.path for append in events}:
+    candidate_scoped = (
+        finalization.kind,
+        finalization.version,
+    ) in registry.candidate_handlers
+    child_state = _fold_append(graph, events[0])
+    candidate_context = None
+    if candidate_scoped:
+        tails = {**graph.states, number: child_state}
+        tails.update(
+            {append.story: _fold_append(graph, append) for append in events[1:]}
+        )
+        candidate_context = CandidateFinalization(
+            number, snapshot, context, MappingProxyType(tails)
+        )
+    related = registry.materialize_finalization(
+        finalization, number, snapshot, candidate=candidate_context
+    )
+    if candidate_scoped:
+        events = _merge_related_events(events, related.events)
+        if related.events:
+            final_states = {
+                append.story: _fold_append(graph, append) for append in events
+            }
+            child_state = final_states[number]
+            related_relationships = {}
+            for story, final_state in final_states.items():
+                life = final_state.domains.get("lifecycle")
+                if (
+                    not isinstance(life, LifecycleState)
+                    or final_state.story_id != story
+                ):
+                    raise GraduationConflict(
+                        "Related events require an initialized story stream."
+                    )
+                related_relationships[story] = life.relationships
+            checked_relations(graph, related_relationships, (number, intent.kind))
+    else:
+        if {append.path for append in related.events} & {
+            append.path for append in events
+        }:
+            raise GraduationConflict(
+                "Related finalization overlaps the base graduation."
+            )
+        events += related.events
+    writes.update(render(ViewState(child_state), description, DocumentSchema()))
+    if {write.path for write in related.writes} & writes.keys():
         raise GraduationConflict("Related finalization overlaps the base graduation.")
     writes.update({write.path: write.content for write in related.writes})
-    events += related.events
     expected = (*finalization.related_preconditions, *related.read_set)
     paths = {
         *graph.logs,
@@ -448,9 +564,10 @@ class GraduationService:
     owner: OperationOwner
     stamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     registry: FinalizerRegistry = FinalizerRegistry()
+    ports: ServicePorts = ServicePorts()
 
     def policy(self) -> PolicyPreflight:
-        prepared = preflight_policy(self.installation)
+        prepared = preflight_policy(self.installation, ports=self.ports)
         if (
             prepared.outcome != LocalOutcome.COMPLETED
             or prepared.policy is None
@@ -594,7 +711,7 @@ class GraduationService:
             intent, intent.source, proposed, finalization, self.registry
         )
 
-    def commit(self, operation: Operation, snapshot: Snapshot) -> OperationResult:
+    def commit_ports(self, operation: Operation) -> ServicePorts:
         def authorize(
             owner: OperationOwner, change: RelatedWriteSet
         ) -> WriteAuthorization:
@@ -603,11 +720,14 @@ class GraduationService:
                 origin=AuthorityOrigin.REGISTERED,
             )
 
+        return replace(self.ports, write_authorization=authorize)
+
+    def commit(self, operation: Operation, snapshot: Snapshot) -> OperationResult:
         return mutate(
             self.installation,
             operation,
             snapshot,
-            ports=ServicePorts(write_authorization=authorize),
+            ports=self.commit_ports(operation),
         )
 
     def result(

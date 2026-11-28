@@ -18,14 +18,12 @@ from aitm_core.graduation import (
 from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutcome
 from aitm_core.models.identity import DraftSource, IdentityFact
 from aitm_core.models.operations import (
-    AuthorityOrigin,
     BlobWrite,
     FinalizationIntent,
     Operation,
     OperationCategory,
     ReadExpectation,
     RelatedWriteSet,
-    WriteAuthorization,
     story_event_path,
     story_scope,
 )
@@ -38,7 +36,7 @@ from aitm_core.providers.backlog import (
     PublishedStory,
 )
 from aitm_core.providers.identity import reservation_root
-from aitm_core.services import ServicePorts, stage_shared_graduation
+from aitm_core.services import stage_shared_graduation
 from aitm_core.store.backend import Snapshot
 from aitm_core.store.validation import _entries
 from aitm_core.store.workspace import BindingConflict, Workspace
@@ -222,19 +220,11 @@ class LocalBacklog:
                     )
                     self._retain_intent(intent)
                     if intent.shared:
-
-                        def authorize(owner, change):
-                            return WriteAuthorization(
-                                allowed=owner == operation.owner
-                                and change == operation.change,
-                                origin=AuthorityOrigin.REGISTERED,
-                            )
-
                         staged = stage_shared_graduation(
                             self.installation,
                             operation,
                             snapshot,
-                            ports=ServicePorts(write_authorization=authorize),
+                            ports=self.service.commit_ports(operation),
                         )
                     else:
                         staged = self.service.commit(operation, snapshot)
