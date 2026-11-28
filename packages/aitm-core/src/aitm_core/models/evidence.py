@@ -348,6 +348,17 @@ class UsageRecorded(EvidenceFact):
     proof_refs: tuple[Text, ...]
 
 
+class ActivityProvenance(EvidenceFact):
+    source_id: Text
+    actor: Text
+    actor_kind: Literal["agent", "human", "tool"]
+    binding: Text
+    generation: Positive
+    producer_version: Positive
+    measurement_contract: Text
+    proof_refs: tuple[Text, ...]
+
+
 class ActivityRecorded(EvidenceFact):
     producer: Text
     session: Text | None
@@ -357,3 +368,6 @@ class ActivityRecorded(EvidenceFact):
     recorded_at: UtcText | None
     coverage: Text
     freshness: Text
+    provenance: ActivityProvenance | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )

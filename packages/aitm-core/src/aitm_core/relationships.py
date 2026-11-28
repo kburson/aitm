@@ -185,7 +185,14 @@ class EventContext:
     policy_digest: str
 
     def encode(
-        self, story: int, name: str, state: StoryState, fact: LifecycleFact, label: str
+        self,
+        story: int,
+        name: str,
+        state: StoryState,
+        fact: LifecycleFact,
+        label: str,
+        *,
+        include_null_data: bool = False,
     ) -> bytes:
         return (
             EventEnvelope(
@@ -199,7 +206,9 @@ class EventContext:
                 sequence=state.next_sequence,
                 prior_log_digest=state.prior_log_digest,
                 policy_digest=self.policy_digest,
-                data=fact.model_dump(mode="json", by_alias=True, exclude_none=True),
+                data=fact.model_dump(
+                    mode="json", by_alias=True, exclude_none=not include_null_data
+                ),
             )
             .model_dump_json(exclude_none=True)
             .encode()
