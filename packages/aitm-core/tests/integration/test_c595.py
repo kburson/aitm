@@ -23,8 +23,10 @@ from aitm_core.providers.identity import (
 from aitm_core.relationships import EventContext, read_graph
 from aitm_core.rules.expansion import _append, expand, reconcile_stopped_expansion
 from aitm_core.services import ServicePorts, expansion_graduation
+from aitm_core.store.publication import Publisher
 from tests.integration.test_c08 import PLANNING, git
 from tests.integration.test_c08 import topology as topology
+from tests.integration.test_c09 import cloned
 from tests.integration.test_c20 import Issuer
 from tests.integration.test_c22 import (
     OWNER,
@@ -96,7 +98,7 @@ def close_origin(topology, service, number=16):
     )
 
 
-def test_stop_before_claim_cannot_send_or_publish_claim(topology, monkeypatch):
+def test_stop_before_claim_cannot_send_or_publish_claim(topology, tmp_path, monkeypatch):
     service, draft = expansion_fixture(topology)
     repository = service.installation.repository
     provider = Issuer(service.installation.issuer)
@@ -104,10 +106,22 @@ def test_stop_before_claim_cannot_send_or_publish_claim(topology, monkeypatch):
     write = IdentityAuthority._write
     stopped = []
 
+    push = Publisher._push
+
     def stop_then_write(issuer, view, destination, *args, **kwargs):
-        if destination.endswith("/claim-1.json"):
-            stopped.append((close_origin(topology, service), destination))
-        return write(issuer, view, destination, *args, **kwargs)
+        if not destination.endswith("/claim-1.json"):
+            return write(issuer, view, destination, *args, **kwargs)
+
+        def stop_before_push(publisher, candidate, expected):
+            if not stopped:
+                staged = repository.read_tree(candidate)
+                assert repository.read_blobs(staged.tree, (destination,))[destination]
+                stopped.append((close_origin(topology, service), destination))
+            return push(publisher, candidate, expected)
+
+        with monkeypatch.context() as patch:
+            patch.setattr(Publisher, "_push", stop_before_push)
+            return write(issuer, view, destination, *args, **kwargs)
 
     monkeypatch.setattr(IdentityAuthority, "_write", stop_then_write)
     outcome = expand(
@@ -118,7 +132,10 @@ def test_stop_before_claim_cannot_send_or_publish_claim(topology, monkeypatch):
     ((stop, claim),) = stopped
     pinned = repository.read_tree(stop)
     assert repository.read_blobs(pinned.tree, (claim,))[claim] is None
-    state = read_graph(repository, service.snapshot(service.policy())).states[16]
+    latest = service.snapshot(service.policy())
+    repository._git("merge-base", "--is-ancestor", stop, latest.revision)
+    assert repository.read_blobs(latest.tree, (claim,))[claim] is None
+    state = read_graph(repository, latest).states[16]
     first_reservation = (
         state.domains["evidence"].facts["core.expansion.reserved"][0].payload
     )
@@ -138,7 +155,11 @@ def test_stop_before_claim_cannot_send_or_publish_claim(topology, monkeypatch):
     topology.advance_planning(
         story_event_path(17), with_attempt(dumps(second).encode() + b"\n", 17)
     )
-    another = create_draft(service.installation, "Stop after a claim but before send")
+    other = cloned(topology, tmp_path).policy.installation
+    service = replace(service, installation=other)
+    repository = other.repository
+    authority = IdentityAuthority(other, provider)
+    another = create_draft(other, "Stop after a claim but before send")
     stopped.clear()
 
     def write_then_stop(issuer, view, destination, *args, **kwargs):
