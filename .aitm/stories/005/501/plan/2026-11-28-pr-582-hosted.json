@@ -1,0 +1,34 @@
+{
+  "base": "faa339e76a6fdd5b9aec026fe5594635cb4c123d",
+  "head": "bf44d734d536d210f840923903803764b3843b44",
+  "merge": "298d6b753258287ac8584dc10acef4f600ea70e5",
+  "tree": "f860803aa120568ecc60b7250d45893da0382afa",
+  "ordered_parents": [
+    "faa339e76a6fdd5b9aec026fe5594635cb4c123d",
+    "bf44d734d536d210f840923903803764b3843b44"
+  ],
+  "linux_full_collections": {
+    "aitm-core": {
+      "unit": 1038,
+      "integration": 84,
+      "total": 1122
+    },
+    "aitm-usage": {
+      "unit": 1644,
+      "integration": 142,
+      "total": 1786
+    }
+  },
+  "hosted_runs": {
+    "core": {
+      "id": 46119724344,
+      "attempt": 1,
+      "url": "https://github.com/kburson/aitm/actions/runs/46119724344"
+    },
+    "repository": {
+      "id": 46119724387,
+      "attempt": 1,
+      "url": "https://github.com/kburson/aitm/actions/runs/46119724387"
+    }
+  }
+}
