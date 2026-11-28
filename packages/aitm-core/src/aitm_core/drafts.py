@@ -232,10 +232,8 @@ class Intake:
         )
         for raw in self._blobs(paths).values():
             assert raw is not None
-            # A typed story's initial event records the permanent draft source.
-            records = raw.splitlines()
-            if records:
-                event = validate_envelope(records[0])
+            for record in raw.splitlines(keepends=True):
+                event = validate_envelope(record)
                 if event.type == "core.story.graduated":
                     source = Graduation.model_validate_json(dumps(event.data))
                     if source.source_kind == "draft" and source.source_id == handle:
@@ -258,11 +256,15 @@ class Intake:
 
     def _retry(
         self, handle: str, reason: str, occupied: Iterable[str]
-    ) -> OperationResult:
+    ) -> OperationResult | None:
         from aitm_core.cli.dispatch import publish
 
         for path, tombstone in self._tombstones(occupied):
-            if handle not in {tombstone.entity.identity, tombstone.operation_id}:
+            if handle not in {
+                tombstone.entity.identity,
+                tombstone.entity.document,
+                tombstone.operation_id,
+            }:
                 continue
             identity = tombstone.operation_id
             if tombstone.reason != reason:
@@ -311,13 +313,16 @@ class Intake:
                 else:
                     command = publish(self.installation, identity)
             return OperationResult(command, origin)
-        return self._failure(LocalOutcome.REFUSED, "No live draft matches that handle.")
+        return None
 
     def discard_draft(self, handle: str, reason: str) -> OperationResult:
         reason = reason.strip()
         if not reason:
             raise ValueError("discard requires a nonempty reason")
         occupied = _entries(self.repository, self.snapshot)
+        retained = self._retry(handle, reason, occupied)
+        if retained is not None:
+            return retained
         live = self._live("draft", occupied)
         candidates = tuple(
             e for e in live if handle in (e.ref.identity, e.ref.document)
@@ -335,13 +340,17 @@ class Intake:
         if self._graduated(entity.ref.identity if entity else handle, occupied):
             return self._failure(LocalOutcome.REFUSED, "The draft has graduated.")
         if entity is None:
-            return self._retry(handle, reason, occupied)
+            return self._failure(
+                LocalOutcome.REFUSED, "No live draft matches that handle."
+            )
 
         folder = str(PurePosixPath(entity.ref.document).parent)
         blobs = self._blobs(path for path in occupied if path.startswith(folder + "/"))
         _, stem = intake_location(self.stamp, entity.slug)
         path = vacant_path(_DISCARDED, stem, ".json", occupied)
-        identity = f"draft-discard-{entity.ref.identity}"
+        # Only the committed tombstone fixes the operation ID. A lost CAS can
+        # leave an outbound request retained without a matching store receipt.
+        identity = f"draft-discard-{entity.ref.identity}-{uuid4().hex}"
         tombstone = Tombstone(
             entity=entity.ref,
             title=entity.title,

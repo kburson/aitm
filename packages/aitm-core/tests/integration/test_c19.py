@@ -9,8 +9,9 @@ from subprocess import run
 
 from aitm_core.drafts import CreateEntity, Intake
 from aitm_core.models.events import EventActor
-from aitm_core.models.operations import OperationOwner
+from aitm_core.models.operations import OperationOwner, story_event_path
 from aitm_core.services import preflight_policy
+from aitm_core.store.objects import Repository
 from aitm_core.store.publication import Publisher
 from tests.integration.test_c08 import PLANNING, PLANNING_REMOTE, git
 from tests.integration.test_c08 import topology as topology
@@ -46,6 +47,30 @@ def test_draft_identity(topology, tmp_path, monkeypatch):
             OperationOwner(actor=EventActor(kind="tool", harness="test")),
             datetime(2026, 11, 27, 14, 55, tzinfo=UTC),
         )
+
+    recoverable = session().create_draft(CreateEntity("Retry after losing CAS"))
+    compare_and_swap = Repository.compare_and_swap
+
+    def lose_discard_cas(repo, new, expected):
+        assert "AITM operation draft-discard-" in git(
+            repo.root, "show", "-s", "--format=%s", new
+        )
+        monkeypatch.setattr(Repository, "compare_and_swap", compare_and_swap)
+        contender = repo.create_commit(
+            repo.read_tree(expected),
+            {".aitm/README.md": b"Concurrent change\n"},
+            "contender",
+        )
+        assert compare_and_swap(repo, contender.revision, expected)
+        return False
+
+    monkeypatch.setattr(Repository, "compare_and_swap", lose_discard_cas)
+    failed = session().discard_draft(recoverable.identity, "Replaced")
+    assert failed.command.local == "conflict"
+    restarted = session().discard_draft(recoverable.identity, "Replaced")
+    assert restarted.command.local == "completed"
+    assert restarted.command.publication == "verified"
+    assert restarted.command.operation_id != failed.command.operation_id
 
     idea = invoke("idea", "add", "Sketch", "--tag", "intake")
     assert idea["publication"] == "verified"
@@ -120,13 +145,25 @@ def test_draft_identity(topology, tmp_path, monkeypatch):
     assert "/20261127-1455-one-idea-3/" in replacement.document
     before_stale_handle = session().snapshot
     stale = session().discard_draft(first.document, "Superseded")
-    assert stale.command.local == "refused"
+    assert stale.command.operation_id == first_result.command.operation_id
+    assert stale.command.local == "completed"
     assert session().snapshot == before_stale_handle
 
     third = session().create_draft(CreateEntity("Graduated"))
     event = loads(graduated())
+    before_event = {
+        **event,
+        "id": "c19-prior-evidence",
+        "type": "core.idea.created",
+        "operation_id": "c19-prior-evidence",
+        "data": {"path": entity["document"]},
+    }
+    earlier = (dumps(before_event) + "\n").encode()
+    advance(EVENTS, earlier)
     event["data"]["source_id"] = third.identity
-    advance(EVENTS, (dumps(event) + "\n").encode())
+    event["sequence"] = 2
+    event["prior_log_digest"] = sha256(earlier).hexdigest()
+    advance(EVENTS, earlier + (dumps(event) + "\n").encode())
     before_refusal = session().snapshot
     rejected = invoke("draft", "discard", third.identity, "--reason", "Too late")
     assert rejected["local"] == "refused"
@@ -134,6 +171,20 @@ def test_draft_identity(topology, tmp_path, monkeypatch):
     assert session().snapshot == before_refusal
     remote = Path(git(topology.local, "remote", "get-url", PLANNING_REMOTE))
     assert git(remote, "rev-parse", PLANNING) == before_refusal.revision
+
+    already_discarded = loads(graduated())
+    already_discarded["story"] = 17
+    already_discarded["data"]["source_id"] = second.identity
+    advance(story_event_path(17), (dumps(already_discarded) + "\n").encode())
+    before_retry = session().snapshot
+    assert (
+        session().discard_draft(second.identity, "Superseded").command.operation_id
+        == retry["operation_id"]
+    )
+    changed_reason = session().discard_draft(second.identity, "Changed")
+    assert changed_reason.command.local == "conflict"
+    assert changed_reason.command.operation_id == retry["operation_id"]
+    assert session().snapshot == before_retry
 
     raced = session().create_draft(CreateEntity("Attachment race"))
     raced_attachment = str(
@@ -161,5 +212,5 @@ def test_draft_identity(topology, tmp_path, monkeypatch):
         git(remote, "ls-tree", "-r", remote_tip, ".aitm/drafts/discarded").count(
             ".json"
         )
-        == 2
+        == 3
     )
