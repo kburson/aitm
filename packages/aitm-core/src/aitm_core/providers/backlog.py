@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutcome
 from aitm_core.models.config import BacklogIssuer, Name, Oid
 from aitm_core.models.events import DIGEST
-from aitm_core.models.identity import DeliveryTarget, FrozenSource
+from aitm_core.models.identity import DeliveryTarget, FrozenFinalization, FrozenSource
 from aitm_core.models.operations import FinalizationIntent, Positive
 
 
@@ -50,6 +50,9 @@ class GraduationIntent(_BacklogContract):
     shared: bool
     source: FrozenSource | None = None
     delivery_target: DeliveryTarget | None = None
+    kind: Literal["story", "defect", "spike", "epic"] = "story"
+    parent: Positive | None = None
+    finalization: FrozenFinalization | None = None
 
     @model_validator(mode="after")
     def check_source(self) -> Self:

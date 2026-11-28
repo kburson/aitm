@@ -276,6 +276,8 @@ def prepare_mutation(
     ports: ServicePorts | None = None,
 ) -> PolicyPreflight:
     """Refresh and pin before dispatching into the clone's operation guard."""
+    from aitm_core.models.operations import Operation
+
     result = preflight_policy(anchor, ports=ports)
     result = replace(result, expected=expected, read_set=operation.change.read_set)
     if result.outcome != LocalOutcome.COMPLETED:
@@ -292,6 +294,16 @@ def prepare_mutation(
             outcome=LocalOutcome.CONFLICT,
             reason="The committed policy changed. Rebuild the operation and its guards.",
         )
+    if isinstance(operation, Operation) and operation.intent.kind == "core.graduated":
+        from aitm_core.graduation import GraduatedRecord
+
+        record = GraduatedRecord.model_validate_json(operation.intent.payload)
+        if record.workflow_digest != result.policy.workflow.digest:
+            return replace(
+                result,
+                outcome=LocalOutcome.CONFLICT,
+                reason="The committed graduation workflow changed. Rebuild from the current profile.",
+            )
     return result
 
 

@@ -120,7 +120,9 @@ def classify_planning_path(path: str) -> PlanningPath:
         len(parts) == 4
         and parts[1] == "identity"
         and re.fullmatch(r"[0-9a-f]{64}", parts[2])
-        and re.fullmatch(r"(?:reservation|issue|owner|claim-[0-9]+)\.json", parts[3])
+        and re.fullmatch(
+            r"(?:reservation|issue|owner|graduated|claim-[0-9]+)\.json", parts[3]
+        )
     ):
         return PlanningPath.IDENTITY
     if story_scope(path) is not None:
@@ -252,9 +254,14 @@ def _check_tree(
             continue
         row = _typed_json(content, path)
         if role == PlanningPath.IDENTITY:
-            from aitm_core.providers.identity import validate_identity_record
+            if path.endswith("/graduated.json"):
+                from aitm_core.graduation import validate_graduated_record
 
-            validate_identity_record(path, content)
+                validate_graduated_record(path, content)
+            else:
+                from aitm_core.providers.identity import validate_identity_record
+
+                validate_identity_record(path, content)
         if role == PlanningPath.STORE:
             if (
                 row.get("schema") != "aitm.store/v1"

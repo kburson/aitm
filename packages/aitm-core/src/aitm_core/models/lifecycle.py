@@ -5,6 +5,7 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
+from aitm_core.models.config import DeliveryTarget
 from aitm_core.models.events import EventActor
 
 Text = Annotated[str, Field(min_length=1)]
@@ -64,6 +65,7 @@ class Graduation(LifecycleFact):
     parent: Positive | None = None
     source_intent: Text | None = None
     initial_state: WorkflowObservation
+    delivery_target: DeliveryTarget | None = None
 
 
 class KindSplit(LifecycleFact):
