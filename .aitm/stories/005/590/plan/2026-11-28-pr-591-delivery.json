@@ -1,0 +1,39 @@
+{
+  "base": "a49475e75d7e18541f78420e55f7caaa10ae6468",
+  "head": "19d3516081c7b771ee3dfedd524461e4018d7ce2",
+  "merge": "d0f58aa1313b80a7d21d48d2b1e3affd689ad4ef",
+  "tree": "36512bbf41d34483c0a3a0107cb5c0ecee643e7a",
+  "ordered_parents": [
+    "a49475e75d7e18541f78420e55f7caaa10ae6468",
+    "19d3516081c7b771ee3dfedd524461e4018d7ce2"
+  ],
+  "hosted_runs": {
+    "core": {
+      "id": 46150269944,
+      "attempt": 1,
+      "url": "https://github.com/kburson/aitm/actions/runs/46150269944"
+    },
+    "repository": {
+      "id": 46150269912,
+      "attempt": 1,
+      "url": "https://github.com/kburson/aitm/actions/runs/46150269912"
+    }
+  },
+  "linux_full_collections": {
+    "aitm-core": {
+      "unit": 1104,
+      "integration": 87,
+      "total": 1191
+    },
+    "aitm-usage": {
+      "unit": 1644,
+      "integration": 142,
+      "total": 1786
+    }
+  },
+  "landing": "12aee80a478a1f58466f08035429071d9ab3641a",
+  "pr": 591,
+  "issue": 590,
+  "target": "codex/core-480-integration",
+  "merged_at": "2026-11-28T13:45:03Z"
+}

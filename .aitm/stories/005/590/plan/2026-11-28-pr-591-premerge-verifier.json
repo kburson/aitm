@@ -1,0 +1,46 @@
+{
+  "archive_digest": "sha256:803cbafb248bdaafe29a45b019ff8dee8eadece45f9aa58e14b76cbac529edde",
+  "artifact_id": 15265432509,
+  "base": "a49475e75d7e18541f78420e55f7caaa10ae6468",
+  "controls": {
+    "gate": "e3f3c1bf5207cae58aa7445d2362d666a600acd9",
+    "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+    "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+    "policy": "b2bef5b180d17fca3f135c45e2eeb98c64a508db",
+    "verifier": "88603331939ce61557f0abcd93a4df6d5c45ea4f",
+    "workflow": "e7f12ef681b626cd269834d0d3f97343e0c85c58"
+  },
+  "coverage": {
+    "helpers": {
+      "covered_lines": 1060,
+      "num_statements": 1133
+    },
+    "product": {
+      "covered_lines": 18749,
+      "num_statements": 20685
+    }
+  },
+  "head": "19d3516081c7b771ee3dfedd524461e4018d7ce2",
+  "jobs": {
+    "aitm-ci": 140996275316,
+    "collect-evidence": 140996183332,
+    "file-checks": 140995167970,
+    "python": 140995167791,
+    "python-base": 140995168168,
+    "quality": 140995167995
+  },
+  "pr": 591,
+  "repository": "kburson/aitm",
+  "repository_id": 1450406435,
+  "reviewed_tree": "36512bbf41d34483c0a3a0107cb5c0ecee643e7a",
+  "run": "https://github.com/kburson/aitm/actions/runs/46150269912/attempts/1",
+  "run_attempt": 1,
+  "run_id": 46150269912,
+  "status": "pass",
+  "subject_digest": "a75bab74d96bc827b61da1e4210c9b9e104b74b2a4521479ec0f892017fc2bf9",
+  "target": "codex/core-480-integration",
+  "tested": "d0f58aa1313b80a7d21d48d2b1e3affd689ad4ef",
+  "tree": "36512bbf41d34483c0a3a0107cb5c0ecee643e7a",
+  "verified_at": "2026-11-28T13:44:49.291065+00:00",
+  "workflow_id": 412848571
+}
