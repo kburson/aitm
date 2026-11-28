@@ -3,20 +3,20 @@ schema: "aitm.story/v0"
 id: 33
 title: "[Core C58] Native review lineage and timing anchor adapters"
 kind: "story"
-state: ready-for-plan
+state: done
 issue: "https://github.com/kburson/aitm/issues/33"
 parent: 477
 children: []
 blocking: [34, 35, 53]
 blocked-by: [32]
 created: "2026-11-09T08:01:45Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T05:17:49.600819+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c58-native-review-lineage-and-timing-anchor-adapters"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-27-pickup.md", "plan/2026-11-27-pr-576-verification.md", "plan/2026-11-27-pr-576-source-sar.md", "plan/2026-11-27-pr-576-source-sar-round-1.md", "plan/2026-11-27-pr-576-source-sar-round-2-unqualified.md", "plan/2026-11-27-pr-576-source-sar-round-3.md", "plan/2026-11-27-pr-576-hosted.json", "plan/2026-11-27-pr-576-verifier.json", "plan/2026-11-27-pr-576-premerge-verifier.json", "plan/2026-11-27-pr-576-source-sar.json", "plan/2026-11-27-pr-576-branch-gates.json", "plan/2026-11-27-pr-576-delivery.json"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"story": 2, "publication": "0945941c6c024b6dd621202b2456696ae1df0154", "path": ".aitm/stories/000/2/plan/2026-11-26-configured-workflow-implementation-plan.md", "ledger-sha256": "0a2c7e2fba1085745032f6e2a6f4c758bda0885e728c6a40042415633d755893", "runtime-acceptance": false, "key": "C58", "parent": 477}
@@ -102,3 +102,8 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **30** · **P1/S** · **2.5 agent-hours**. Design accepted for this manual workflow through issue #477 with scope entry **C58**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+
+## Scoped manual pickup and verified delivery
+
+[Scoped JIT](plan/2026-11-27-pickup.md) · [Coordinator sign-off and Agent Cost](retro/2026-11-27-delivery.md) · [Native Linked PR #576](https://github.com/kburson/aitm/pull/576).
