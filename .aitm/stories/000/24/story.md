@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 24
 title: "[Core C19] Ideas, drafts and atomic discard"
 kind: "story"
-state: test
+state: review
 issue: "https://github.com/kburson/aitm/issues/24"
 parent: 476
 children: []
@@ -118,3 +118,5 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 The revised #568 passed both exact hosted workflows and trusted verification before returning to independent review.
 
 #568 returned to draft after independent round 2. The revised replay and collision recovery are in hosted Test.
+
+The replay and collision fixes passed hosted qualification. #568 returned to independent review on the new exact tree.

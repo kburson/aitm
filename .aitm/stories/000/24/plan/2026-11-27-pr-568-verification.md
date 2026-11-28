@@ -48,3 +48,5 @@ Both runs passed before #568 was marked ready again. Core collected 858 unit and
 - Tree `72db6a6e0f76267d70a656382e6e3b429589f08d`
 
 #568 remains draft for [repository CI](https://github.com/kburson/aitm/actions/runs/46088111605) and [Core CI](https://github.com/kburson/aitm/actions/runs/46088111684).
+
+Both exact hosted workflows passed while the PR was draft. Hosted Core passed all 932 product tests and one tooling test, plus Ruff. Its 858/932 core unit count and the repository job's 1,644/1,786 aitm-usage count meet the unchanged 92% floors. All nine focused local cases passed, including disjoint creation and discard replay, preserved subtree access, two-clone tombstone collision recovery, and the attachment race staying pending. The [trusted verifier](2026-11-27-pr-568-03940479-verifier.json) passed before readiness and a fresh Grok SAR.
