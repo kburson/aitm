@@ -7,6 +7,8 @@ from pathlib import PurePosixPath
 from typing import Literal, Protocol
 from uuid import uuid4
 
+from pydantic import Field
+
 from aitm_core.entities import entity_matches
 from aitm_core.models.common import LocalOutcome, PublicationOutcome
 from aitm_core.models.config import BacklogIssuer, Name
@@ -20,6 +22,8 @@ from aitm_core.models.operations import (
     OperationCategory,
     OperationOwner,
     Positive,
+    PreflightOutcome,
+    PreflightResult,
     ReadExpectation,
     RelatedWriteSet,
     WriteAuthorization,
@@ -61,6 +65,9 @@ class DispatchClaim(IdentityFact):
     generation: Positive
     token: Name
     prior: DispatchObservation | None = None
+    origin_digest: DIGEST | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class IssuedRecord(IdentityFact):
@@ -93,6 +100,29 @@ class IdentityProvider(Protocol):
     ) -> DispatchObservation:
         """A fence proof certifies no delayed request from this claim can issue."""
         ...
+
+
+class FencedIdentityProvider(IdentityProvider, Protocol):
+    def verify_sender_fence(
+        self, reservation: IdentityReservation, claim: DispatchClaim, proof: str
+    ) -> bool:
+        """Verify an enforced provider guarantee covering requests already in flight."""
+        ...
+
+
+def _qualified_stopped_absence(provider, reservation, claim, observation):
+    if (
+        observation is None
+        or observation.claim != claim.token
+        or observation.result.reservation != reservation
+        or observation.result.status != "absent-with-proof"
+        or not observation.fence_proof
+    ):
+        return False
+    verify = getattr(provider, "verify_sender_fence", None)
+    return (
+        callable(verify) and verify(reservation, claim, observation.fence_proof) is True
+    )
 
 
 def reservation_root(key: str) -> str:
@@ -143,6 +173,15 @@ class _State:
     reservation: IdentityReservation | None
     claim: DispatchClaim | None
     issue: IssuedRecord | None
+
+
+@dataclass(frozen=True, slots=True)
+class StoppedIdentityObservation:
+    snapshot: Snapshot
+    reads: tuple[str, ...]
+    claim: DispatchClaim | None = None
+    issue: IssueRef | None = None
+    absence: DispatchObservation | None = None
 
 
 class IdentityAuthority:
@@ -295,12 +334,15 @@ class IdentityAuthority:
         pin: tuple[str, ...] = (),
         *,
         ownership: IssueOwner | None = None,
+        origin_pin: ReadExpectation | None = None,
+        claim_intent: GraduationIntent | None = None,
     ) -> bool:
         payload = value.model_dump_json().encode()
         writes = {path: payload}
         if ownership is not None:
             writes[_owner_path(ownership.issue)] = ownership.model_dump_json().encode()
-        bodies = self.repo.read_blobs(view.snapshot.tree, (*writes, *pin))
+        origin = (origin_pin.path,) if origin_pin is not None else ()
+        bodies = self.repo.read_blobs(view.snapshot.tree, (*writes, *pin, *origin))
         if any(bodies[destination] is not None for destination in writes):
             return False
         reads = tuple(
@@ -309,6 +351,8 @@ class IdentityAuthority:
             )
             for key, raw in bodies.items()
         )
+        if origin_pin is not None and origin_pin not in reads:
+            return False
         change = RelatedWriteSet(
             read_set=reads,
             writes=tuple(
@@ -337,11 +381,33 @@ class IdentityAuthority:
                 origin=AuthorityOrigin.REGISTERED,
             )
 
+        def preflight(context):
+            from aitm_core.rules.expansion import expansion_claim_pin
+
+            allowed = (
+                isinstance(value, DispatchClaim)
+                and origin_pin is not None
+                and value.origin_digest == origin_pin.digest
+                and claim_intent is not None
+                and context.operation == operation
+                and expansion_claim_pin(self.repo, context.snapshot, claim_intent)
+                == origin_pin
+            )
+            return PreflightResult(
+                outcome=PreflightOutcome.PASSED
+                if allowed
+                else PreflightOutcome.BLOCKED,
+                origin=AuthorityOrigin.REGISTERED,
+            )
+
         result = mutate(
             self.installation,
             operation,
             view.snapshot,
-            ports=ServicePorts(write_authorization=authorize),
+            ports=ServicePorts(
+                write_authorization=authorize,
+                attempt_preflight=preflight if origin_pin is not None else None,
+            ),
         ).command
         expected = (
             PublicationOutcome.VERIFIED
@@ -534,6 +600,67 @@ class IdentityAuthority:
             )
         return paths
 
+    def observe_stopped(self, intent: GraduationIntent) -> StoppedIdentityObservation:
+        """Observe the exact stopped reservation without ever acquiring send authority."""
+        from aitm_core.rules.expansion import stopped_expansion_claim
+
+        view = self._view(intent)
+        stopped_expansion_claim(self.repo, view.snapshot, intent)
+        assert intent.source is not None
+        key = intent.source.semantic_key
+        root = reservation_root(key)
+        state = self._state(view, key)
+        reservation = state.reservation
+        claim = state.claim
+        found = StoppedIdentityObservation(
+            view.snapshot,
+            (f"{root}/reservation.json", f"{root}/issue.json", f"{root}/claim-1.json"),
+        )
+        if reservation is None:
+            return found
+        if reservation.intent != intent:
+            raise IdentityConflict(
+                "The stopped intent differs from the retained issuer reservation."
+            )
+        if claim is None:
+            return found
+        reads = (
+            *found.reads[:2],
+            f"{root}/claim-{claim.generation}.json",
+            f"{root}/claim-{claim.generation + 1}.json",
+        )
+        if state.issue is not None:
+            assert state.issue.result.issue is not None
+            issue = state.issue.result.issue
+            return StoppedIdentityObservation(
+                view.snapshot, (*reads, _owner_path(issue)), claim, issue
+            )
+
+        retained = self._retained_observation(reservation, claim)
+        observation = retained.result if retained is not None else None
+        observed = self._observe(reservation, claim) if observation is None else None
+        if observed is not None:
+            observation = observed.result
+        assert observation is not None
+        if observation.status == "issued":
+            result = self._retain_issue(observation, claim)
+            if result.issue is None:
+                return StoppedIdentityObservation(view.snapshot, reads, claim)
+            current = self._view(intent)
+            paths = self.issued_reads(current.snapshot, reservation, result.issue)
+            return StoppedIdentityObservation(
+                current.snapshot,
+                tuple(dict.fromkeys((*reads, *paths))),
+                claim,
+                result.issue,
+            )
+        qualified = _qualified_stopped_absence(
+            self.provider, reservation, claim, observed
+        )
+        return StoppedIdentityObservation(
+            view.snapshot, reads, claim, absence=observed if qualified else None
+        )
+
     def dispatch_or_observe(self, reservation: IdentityReservation) -> IdentityResult:
         return self._advance(reservation, send=True)
 
@@ -574,29 +701,58 @@ class IdentityAuthority:
             return self._pending(
                 reservation, "Cancellation requires a recorded terminal disposition."
             )
+        from aitm_core.rules.expansion import expansion_claim_pin
+
         try:
             self._check_source(view, intent)
+            origin_pin = expansion_claim_pin(self.repo, view.snapshot, intent)
         except GitCommandError as error:
             raise IdentityConflict("The prepared source cannot be verified.") from error
+        if origin_pin is not None and claim is not None and claim.origin_digest is None:
+            return self._pending(
+                reservation, "Historical expansion claims are observe-only."
+            )
         root = reservation_root(reservation.key)
         generation = claim.generation + 1 if claim is not None else 1
         token = uuid4().hex
         proposed = DispatchClaim(
-            key=reservation.key, generation=generation, token=token, prior=prior
+            key=reservation.key,
+            generation=generation,
+            token=token,
+            prior=prior,
+            origin_digest=origin_pin.digest if origin_pin is not None else None,
         )
         pins = (f"{root}/reservation.json", f"{root}/issue.json")
         if claim is not None:
             pins += (f"{root}/claim-{claim.generation}.json",)
         if not self._write(
-            view, f"{root}/claim-{generation}.json", proposed, token, pins
+            view,
+            f"{root}/claim-{generation}.json",
+            proposed,
+            token,
+            pins,
+            origin_pin=origin_pin,
+            claim_intent=intent,
         ):
             return self._pending(
                 reservation, "Dispatch authority was not verified for this sender."
             )
         current = self._view(intent)
-        if self._state(current, reservation.key) != _State(reservation, proposed, None):
+        if current.policy != view.policy or self._state(
+            current, reservation.key
+        ) != _State(reservation, proposed, None):
             return self._pending(reservation, "Dispatch authority changed before send.")
         self._check_source(current, intent)
+        if origin_pin is not None:
+            try:
+                rechecked = expansion_claim_pin(self.repo, current.snapshot, intent)
+            except IdentityConflict:
+                rechecked = None
+            if rechecked != origin_pin or proposed.origin_digest != origin_pin.digest:
+                return self._pending(
+                    reservation,
+                    "Expansion fenced before send. Custody remains unknown.",
+                )
         try:
             result = self.provider.dispatch(reservation, proposed)
         except OSError:

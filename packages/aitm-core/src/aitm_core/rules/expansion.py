@@ -6,17 +6,19 @@ from hashlib import sha256
 from typing import Literal
 from uuid import uuid4
 
-from aitm_core.events import StoryState
+from aitm_core.events import StoryState, core_reducers, fold
 from aitm_core.graduation import (
     CandidateFinalization,
     GraduationConflict,
     GraduationService,
     completed_record,
+    graduation_path,
 )
 from aitm_core.models.attempts import AttemptRecord, AttemptState, ClockChanged
 from aitm_core.models.common import CommandResult, LocalOutcome, PublicationOutcome
 from aitm_core.models.config import DeliveryTarget
 from aitm_core.models.evidence import (
+    ExpansionCustody,
     ExpansionRecorded,
     ExpansionReservationResolved,
     ExpansionReserved,
@@ -25,6 +27,7 @@ from aitm_core.models.evidence import (
 from aitm_core.models.identity import DraftSource, FrozenFinalization
 from aitm_core.models.lifecycle import LinkChange
 from aitm_core.models.operations import (
+    AuthorityOrigin,
     EventAppend,
     FinalizationIntent,
     Operation,
@@ -32,15 +35,21 @@ from aitm_core.models.operations import (
     OperationFact,
     Positive,
     PreflightOutcome,
+    PreflightResult,
     ReadExpectation,
     RelatedWriteSet,
     story_event_path,
 )
 from aitm_core.providers.backlog import GraduationIntent, IssueRef
-from aitm_core.providers.identity import IdentityAuthority, reservation_root
+from aitm_core.providers.identity import (
+    IdentityAuthority,
+    IdentityConflict,
+    reservation_root,
+)
 from aitm_core.providers.local import LocalBacklog
 from aitm_core.reducers.evidence import EvidenceState
 from aitm_core.relationships import EventContext, StoryGraph, read_graph
+from aitm_core.services import mutate
 from aitm_core.store.backend import (
     OperationContext,
     OperationResult,
@@ -143,6 +152,79 @@ def _view(service, origin):
         policy.source.digest,
         policy.config.limits.expansions_per_attempt,
     )
+
+
+def _origin_attempt(
+    repository: Repository, snapshot: Snapshot, intent: GraduationIntent
+):
+    if intent.finalization is None or not isinstance(intent.source, DraftSource):
+        raise IdentityConflict("Expansion needs its exact frozen draft and intent.")
+    spec = _spec(intent.finalization.to_intent())
+    path = story_event_path(spec.origin)
+    raw = repository.read_blobs(snapshot.tree, (path,))[path]
+    if raw is None:
+        raise IdentityConflict("The exact expansion origin is unavailable.")
+    state = fold(raw.splitlines(keepends=True), core_reducers())
+    attempt_state = state.domains.get("attempts")
+    if not isinstance(attempt_state, AttemptState):
+        raise IdentityConflict("The origin has no retained attempt.")
+    active = attempt_state.attempts.get(spec.attempt)
+    if active is None or active.generation != spec.generation:
+        raise IdentityConflict("Expansion attempt generation changed.")
+    held = _reservation(state, active)
+    if (
+        held is None
+        or held.reservation != spec.reservation
+        or held.generation != spec.generation
+        or spec.reservation != intent.operation_id
+        or GraduationIntent.model_validate_json(held.intent) != intent
+    ):
+        raise IdentityConflict(
+            "Expansion reservation is outside the exact held intent."
+        )
+    return path, raw, state, attempt_state, active, held
+
+
+def expansion_claim_pin(
+    repository: Repository,
+    snapshot: Snapshot,
+    intent: GraduationIntent,
+) -> ReadExpectation | None:
+    """Pin the authoritative live expansion origin for a new C20 claim."""
+    if intent.finalization is None or intent.finalization.kind != EXPANSION_FINALIZER:
+        return None
+    path, raw, state, attempts, active, held = _origin_attempt(
+        repository, snapshot, intent
+    )
+    spec = _spec(intent.finalization.to_intent())
+    if (
+        spec.issuer_route != "external"
+        or active.closed
+        or active.recovery_bound
+        or attempts.current_attempt != held.attempt
+        or active.clock_mode != "expansion-paused"
+        or (active.binding is not None and held.holder != active.binding)
+        or any(
+            row.reservation == held.reservation
+            for row in _facts(state, "core.expansion.reservation-resolved")
+        )
+    ):
+        raise IdentityConflict(
+            "The expansion origin is fenced from new issuer authority."
+        )
+    return ReadExpectation(path=path, digest=sha256(raw).hexdigest())
+
+
+def stopped_expansion_claim(
+    repository: Repository, snapshot: Snapshot, intent: GraduationIntent
+):
+    """Read the exact historical stopped origin, without reopening its clock."""
+    path, raw, state, _, active, held = _origin_attempt(repository, snapshot, intent)
+    if not active.closed or active.clock_mode != "terminal-closed":
+        raise IdentityConflict(
+            "Custody reconciliation requires the exact closed origin."
+        )
+    return path, raw, state, held
 
 
 def _context(service, digest):
@@ -772,3 +854,280 @@ def resolve_expansion(
         (origin_append, *related),
     )
     return service.commit(operation, view.snapshot)
+
+
+_CUSTODY_EVENT = "core.expansion.custody-recorded"
+_CUSTODY_OPERATION = ("core.expansion.reconcile-stopped", 1)
+
+
+def _append_custody(service, snapshot, policy_digest, intent, fact, evidence_paths):
+    repository = service.installation.repository
+    path, raw, state, _ = stopped_expansion_claim(repository, snapshot, intent)
+    context = _context(service, policy_digest)
+    reads = _pins(
+        repository.read_blobs(
+            snapshot.tree, tuple(dict.fromkeys((path, *evidence_paths)))
+        )
+    )
+    append = _append(context, state, raw, ((_CUSTODY_EVENT, fact, "custody"),))
+    operation = _operation(
+        context,
+        _CUSTODY_OPERATION[0],
+        fact.model_dump_json().encode(),
+        reads,
+        (append,),
+    ).model_copy(update={"category": OperationCategory.STOP_RECONCILIATION})
+
+    def preflight(candidate):
+        matches = candidate.operation == operation
+        if matches:
+            try:
+                current_path, current_raw, _, _ = stopped_expansion_claim(
+                    repository, candidate.snapshot, intent
+                )
+                matches = (current_path, current_raw) == (path, raw)
+            except IdentityConflict:
+                matches = False
+        return PreflightResult(
+            outcome=PreflightOutcome.PASSED if matches else PreflightOutcome.BLOCKED,
+            origin=AuthorityOrigin.REGISTERED,
+        )
+
+    return mutate(
+        service.installation,
+        operation,
+        snapshot,
+        ports=replace(service.commit_ports(operation), attempt_preflight=preflight),
+        categories={_CUSTODY_OPERATION: OperationCategory.STOP_RECONCILIATION},
+    )
+
+
+def reconcile_stopped_expansion(
+    service: GraduationService,
+    origin: int,
+    reservation: str,
+    *,
+    external: IdentityAuthority | None = None,
+) -> OperationResult:
+    """Retain verified stopped-origin custody without granting a send or attaching a child."""
+    prepared = service.policy()
+    return _reconcile_custody(
+        service, prepared, origin, reservation, external, refresh_after_fence=True
+    )
+
+
+def _reconcile_custody(
+    service, prepared, origin, reservation, external, *, refresh_after_fence
+):
+    repository = service.installation.repository
+    snapshot = service.snapshot(prepared)
+    assert prepared.policy is not None
+    policy = prepared.policy.source.digest
+    context = _context(service, policy)
+    graph = read_graph(repository, snapshot)
+    state = graph.states.get(origin)
+    held = (
+        [
+            row
+            for row in _facts(state, "core.expansion.reserved")
+            if row.reservation == reservation
+        ]
+        if state is not None
+        else []
+    )
+    if len(held) != 1:
+        raise IdentityConflict(
+            "The exact stopped expansion reservation is unavailable."
+        )
+    intent = GraduationIntent.model_validate_json(held[0].intent)
+    if (
+        intent.finalization is None
+        or intent.source is None
+        or intent.delivery_target is None
+    ):
+        raise IdentityConflict("Stopped custody requires a complete frozen intent.")
+    spec = _spec(intent.finalization.to_intent())
+    if spec.origin != origin or spec.reservation != reservation:
+        raise IdentityConflict(
+            "Custody cannot match a different origin or reservation."
+        )
+    if (
+        service.owner.extension is not None
+        or service.owner.binding != held[0].holder
+        or service.owner.generation != spec.generation
+    ):
+        raise IdentityConflict(
+            "Custody requires the exact authorized reservation holder."
+        )
+    service.check_target(intent.delivery_target)
+    _, _, state, _ = stopped_expansion_claim(repository, snapshot, intent)
+    key = intent.source.semantic_key
+    graduated = graduation_path(intent.source)
+    external_reservation = f"{reservation_root(key)}/reservation.json"
+    if completed_record(repository, snapshot, intent.source) is not None:
+        raise IdentityConflict("The expansion already has a finalized child.")
+    existing = tuple(
+        row for row in _facts(state, _CUSTODY_EVENT) if row.reservation == reservation
+    )
+    terminal = next(
+        (row for row in existing if row.disposition != "sender-fenced"), None
+    )
+    basis = dict(
+        attempt=spec.attempt,
+        generation=spec.generation,
+        reservation=reservation,
+        semantic_key=key,
+    )
+
+    def retained(message):
+        return service.result(
+            context.operation,
+            snapshot,
+            LocalOutcome.COMPLETED,
+            message,
+            PublicationOutcome.VERIFIED
+            if intent.shared
+            else PublicationOutcome.NOT_APPLICABLE,
+        )
+
+    if spec.issuer_route == "local":
+        if (
+            external is not None
+            or repository.read_blobs(snapshot.tree, (external_reservation,))[
+                external_reservation
+            ]
+            is not None
+        ):
+            raise IdentityConflict(
+                "Local no-child authority cannot consume external custody."
+            )
+        if terminal is not None:
+            if (
+                terminal.authority != "local-allocation"
+                or terminal.disposition != "no-child"
+            ):
+                raise IdentityConflict(
+                    "The retained local custody contradicts the expected authority."
+                )
+            return retained("Verified the retained local no-child disposition.")
+        fact = ExpansionCustody(
+            **basis,
+            disposition="no-child",
+            authority="local-allocation",
+            verified_at=snapshot.revision,
+            proof_refs=(f"local-allocation-fenced:{snapshot.revision}",),
+        )
+        return _append_custody(
+            service, snapshot, policy, intent, fact, (graduated, external_reservation)
+        )
+
+    if external is None or external.installation != service.installation:
+        raise IdentityConflict(
+            "Stopped external custody requires the anchored identity authority."
+        )
+    observed = external.observe_stopped(intent)
+    # C20 may have published positive issuance after the first planning read.
+    prepared = service.policy()
+    snapshot = service.snapshot(prepared)
+    assert prepared.policy is not None
+    if snapshot != observed.snapshot or prepared.policy.source.digest != policy:
+        raise IdentityConflict(
+            "Custody observation is stale against authoritative planning."
+        )
+    _, _, current, _ = stopped_expansion_claim(repository, snapshot, intent)
+    if _facts(current, _CUSTODY_EVENT) != _facts(state, _CUSTODY_EVENT):
+        raise IdentityConflict("Custody history changed during observation.")
+    paths = (graduated, *observed.reads)
+    claim = observed.claim
+    if observed.issue is not None:
+        assert claim is not None
+        if terminal is not None:
+            if (
+                terminal.disposition != "issued"
+                or terminal.claim != claim.token
+                or terminal.issue != observed.issue.number
+            ):
+                raise IdentityConflict(
+                    "Confirmed issuance contradicts retained terminal custody. The exact issue is retained."
+                )
+            return retained("Verified the retained issued identity without attachment.")
+        fact = ExpansionCustody(
+            **basis,
+            disposition="issued",
+            authority="provider-claim",
+            claim=claim.token,
+            issue=observed.issue.number,
+            verified_at=snapshot.revision,
+            proof_refs=(f"issued-ownership:{snapshot.revision}",),
+        )
+        return _append_custody(service, snapshot, policy, intent, fact, paths)
+    absence = observed.absence
+    if terminal is not None:
+        if (
+            terminal.disposition == "no-child"
+            and claim is not None
+            and terminal.claim == claim.token
+            and absence is not None
+            and terminal.fence == absence.fence_proof
+        ):
+            return retained("Verified the retained terminal claim disposition.")
+        raise IdentityConflict(
+            "Current issuer evidence cannot confirm the retained terminal custody."
+        )
+    if claim is None or absence is None:
+        return service.result(
+            context.operation,
+            snapshot,
+            LocalOutcome.UNAVAILABLE,
+            "Expansion custody remains unknown. No uniform writer or provider fence was verified.",
+            PublicationOutcome.PENDING,
+        )
+
+    fence = next((row for row in existing if row.disposition == "sender-fenced"), None)
+    fence_proof = absence.fence_proof
+    assert fence_proof is not None
+    if fence is None:
+        fact = ExpansionCustody(
+            **basis,
+            disposition="sender-fenced",
+            authority="provider-claim",
+            claim=claim.token,
+            fence=fence_proof,
+            verified_at=snapshot.revision,
+            proof_refs=(f"provider-fence:{fence_proof}",),
+        )
+        published = _append_custody(service, snapshot, policy, intent, fact, paths)
+        expected = (
+            PublicationOutcome.VERIFIED
+            if intent.shared
+            else PublicationOutcome.NOT_APPLICABLE
+        )
+        if (
+            refresh_after_fence
+            and published.command.local == LocalOutcome.COMPLETED
+            and published.command.publication == expected
+        ):
+            return _reconcile_custody(
+                service,
+                service.policy(),
+                origin,
+                reservation,
+                external,
+                refresh_after_fence=False,
+            )
+        return published
+    if (fence.claim, fence.fence) != (claim.token, fence_proof):
+        raise IdentityConflict(
+            "The provider fence differs from the retained claim proof."
+        )
+    fact = ExpansionCustody(
+        **basis,
+        disposition="no-child",
+        authority="provider-claim",
+        claim=claim.token,
+        fence=fence_proof,
+        absence=absence.model_dump_json(),
+        verified_at=snapshot.revision,
+        proof_refs=(f"ordered-provider-observation:{snapshot.revision}",),
+    )
+    return _append_custody(service, snapshot, policy, intent, fact, paths)
