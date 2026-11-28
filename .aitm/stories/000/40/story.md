@@ -105,3 +105,7 @@ Original plan-origin metadata (retained as historical source; old events/draft r
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **20** · **P1/S** · **4 agent-hours**. Design accepted for this manual workflow through issue #480 with scope entry **C31**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+## Current delivery hold
+
+[Draft #593 and the exact custody hold receipt](plan/2026-11-28-pr-593-custody-hold.md) document two reproduced failures across the C20 issuer and the C30 expansion boundary. Delivery remains paused at #40.

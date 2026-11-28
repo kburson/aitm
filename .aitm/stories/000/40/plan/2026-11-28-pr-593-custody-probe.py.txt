@@ -1,0 +1,90 @@
+from aitm_core.graduation import GraduationConflict
+from aitm_core.models.common import LocalOutcome, PublicationOutcome
+from aitm_core.models.operations import AuthorityOrigin, OperationOwner, PreflightOutcome, PreflightResult, story_event_path
+from aitm_core.providers.identity import IdentityAuthority
+from aitm_core.relationships import read_graph
+from aitm_core.rules.expansion import expand, resolve_expansion
+from aitm_core.services import ServicePorts, expansion_graduation
+from tests.integration.test_c30 import Issuer, OWNER, create_draft, graduated, install_profile, topology, with_attempt
+import pytest
+
+
+def test_lost_issuance_recovery_after_stop(topology):
+    install_profile(topology)
+    installation = topology.policy.installation
+    repository = installation.repository
+    topology.advance_planning(story_event_path(16), with_attempt(graduated(), 16))
+    first = create_draft(installation, "Original expansion")
+    second = create_draft(installation, "Different expansion")
+    owner = OperationOwner(actor=OWNER.actor, binding="fixture-binding", generation=1)
+    issuer = Issuer(installation.issuer)
+    issuer.lose_reply = True
+    authority = IdentityAuthority(installation, issuer)
+    original = expansion_graduation(installation, owner, ServicePorts(
+        activity_observations=lambda _context: (),
+    ))
+    pending = expand(original, 16, first.identity, "defect", "Original request", external=authority)
+    assert pending.issue is None and pending.command.publication == PublicationOutcome.PENDING, pending
+    assert len(issuer.sent) == 1
+    before = read_graph(repository, repository.tip()).states[16]
+    reserved = before.domains["evidence"].facts["core.expansion.reserved"][0].payload
+    assert before.domains["attempts"].attempts["fixture-attempt"].clock_mode == "expansion-paused"
+
+    tripped = expand(original, 16, second.identity, "story", "Second request", external=authority)
+    assert tripped.issue is None and tripped.command.local == LocalOutcome.REFUSED, tripped
+    after = read_graph(repository, repository.tip())
+    state = after.states[16]
+    assert state.domains["attempts"].attempts["fixture-attempt"].closed
+    assert state.domains["evidence"].facts["core.trip.recorded"][0].payload.cause == "second-expansion"
+    assert not state.domains["evidence"].facts.get("core.expansion.reservation-resolved")
+    assert set(after.stories) == {16}
+
+    issuer.lose_reply = False
+    with pytest.raises(GraduationConflict, match="fenced from this attempt"):
+        expand(original, 16, first.identity, "defect", "Original request", external=authority)
+    with pytest.raises(GraduationConflict, match="fenced from this attempt"):
+        resolve_expansion(original, 16, reserved.reservation)
+    assert len(issuer.sent) == 1
+    print("one externally issued identity; second request stopped the attempt; both recovery routes refused")
+
+
+def test_first_claim_acquired_after_stop(topology, monkeypatch):
+    from aitm_core.providers.identity import reservation_root
+    from aitm_core.providers.backlog import GraduationIntent
+    install_profile(topology)
+    installation = topology.policy.installation
+    repository = installation.repository
+    topology.advance_planning(story_event_path(16), with_attempt(graduated(), 16))
+    first = create_draft(installation, "Original expansion")
+    second = create_draft(installation, "Different expansion")
+    owner = OperationOwner(actor=OWNER.actor, binding="fixture-binding", generation=1)
+    issuer = Issuer(installation.issuer)
+    authority = IdentityAuthority(installation, issuer)
+    original = expansion_graduation(installation, owner, ServicePorts(
+        activity_observations=lambda _context: (),
+    ))
+    main = IdentityAuthority.reserve_identity
+    stops = []
+
+    def reserve_after_stop(instance, intent):
+        assert len(issuer.sent) == 0
+        path = f"{reservation_root(intent.source.semantic_key)}/claim-1.json"
+        assert repository.read_blobs(repository.tip().tree, (path,))[path] is None
+        result = expand(original, 16, second.identity, "story", "Second request", external=authority)
+        assert result.command.local == LocalOutcome.REFUSED, result
+        stopped = read_graph(repository, repository.tip()).states[16]
+        assert stopped.domains["attempts"].attempts["fixture-attempt"].closed
+        stops.append((repository.tip(), path))
+        return main(instance, intent)
+
+    monkeypatch.setattr(IdentityAuthority, "reserve_identity", reserve_after_stop)
+    result = expand(original, 16, first.identity, "defect", "Original request", external=authority)
+    assert result.issue is None
+    assert len(issuer.sent) == 1
+    (stop, path), = stops
+    assert repository.read_blobs(stop.tree, (path,))[path] is None
+    after = repository.tip()
+    assert repository.read_blobs(after.tree, (path,))[path]
+    repository._git("merge-base", "--is-ancestor", stop.revision, after.revision)
+    assert set(read_graph(repository, repository.tip()).stories) == {16}
+    print("published stop preceded claim creation and the provider send")
