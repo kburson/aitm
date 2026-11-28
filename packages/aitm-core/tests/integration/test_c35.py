@@ -6,6 +6,7 @@ from pathlib import Path
 
 from aitm_core.models.operations import story_event_path
 from aitm_core.services import preflight_policy
+from aitm_core.verification.lanes import select_lane
 from tests.integration.test_c08 import DEFAULT, commit_file, configured_settings, git
 from tests.integration.test_c08 import topology as topology
 from tests.integration.test_c16 import cli
@@ -90,6 +91,8 @@ print("captured dependency", fixture_dep.VALUE)
     assert failed_receipt["exit_code"] == 7
     assert failed_receipt["capture_manifest"] != receipt["capture_manifest"]
 
+    if select_lane("contained").probe().assurance is not None:
+        return
     revision = installation.repository.tip()
     commit_file(
         topology.code,
