@@ -16,13 +16,18 @@ from aitm_core.graduation import (
 from aitm_core.models.common import LocalOutcome, PublicationOutcome
 from aitm_core.models.config import DeliveryTarget
 from aitm_core.models.identity import FrozenFinalization
+from aitm_core.models.lifecycle import Estimate
 from aitm_core.models.operations import (
+    EventAppend,
     FinalizationIntent,
+    PreflightOutcome,
+    ReadExpectation,
     RelatedWriteSet,
     story_event_path,
 )
 from aitm_core.providers.backlog import ActionKey, PublishedStory
 from aitm_core.providers.local import LocalBacklog
+from aitm_core.relationships import read_graph
 from aitm_core.services import preflight_policy
 from aitm_core.setup.init import _active_installation, _record_installation
 from aitm_core.store.objects import Repository
@@ -39,7 +44,9 @@ from tests.integration.test_c22 import (
     PROFILE,
     STAMP,
     create_draft,
+    graduation_preflight,
     install_profile,
+    with_attempt,
 )
 
 
@@ -84,12 +91,26 @@ def test_allocator_two_clones(topology, tmp_path, monkeypatch):
         kind="fixture.candidate", version=1, related_preconditions=(), payload=b"typed"
     )
 
-    def finalize(request, child, snapshot):
+    def finalize(request, candidate):
         assert request == semantic
-        choices.append((child, snapshot.revision))
-        return RelatedWriteSet(read_set=())
+        child = candidate.child
+        choices.append((child, candidate.snapshot.revision, candidate.events.operation))
+        estimate = Estimate(phase="refine", agent_hours=1, size="S", priority="P1")
+        event = candidate.events.encode(
+            child,
+            "core.estimate.set",
+            candidate.tails[child],
+            estimate,
+            "candidate-estimate",
+        )
+        return RelatedWriteSet(
+            read_set=(ReadExpectation(path=story_event_path(child), digest=None),),
+            events=(EventAppend(story=child, records=(event,)),),
+        )
 
-    registry = FinalizerRegistry().register_finalizer(semantic.kind, 1, finalize)
+    registry = FinalizerRegistry().register_candidate_finalizer(
+        semantic.kind, 1, finalize
+    )
     left = LocalBacklog(replace(service, registry=registry))
     left_intent = left_intent.model_copy(
         update={"finalization": FrozenFinalization.from_intent(semantic)}
@@ -109,14 +130,49 @@ def test_allocator_two_clones(topology, tmp_path, monkeypatch):
     landed = left.graduate(left_intent, semantic)
     assert landed.command.publication == PublicationOutcome.VERIFIED
     assert landed.issue is not None and landed.issue.number == 2
-    assert [number for number, _ in choices] == [1, 2]
+    assert [number for number, _, _ in choices] == [1, 2]
     assert choices[0][1] != choices[1][1]
+    assert choices[0][2] != choices[1][2]
+    assert "refine" not in read_graph(repo, repo.tip()).stories[1].estimates
+    assert read_graph(repo, repo.tip()).stories[2].estimates["refine"].agent_hours == 1
     assert left.graduate(left_intent, semantic).issue == landed.issue
     assert cli(repo.root, "graduate", "resume", "left-intent")["issue"] == 2
     assert cli(repo.root, "graduate", "--draft", left_draft.identity)["issue"] == 2
 
     third = create_draft(installation, "Lost acknowledgement")
+    origin_path = story_event_path(1)
+    original = repo.read_blobs(repo.tip().tree, (origin_path,))[origin_path]
+    git(topology.planning, "pull", "--ff-only", "-q")
+    topology.advance_planning(origin_path, with_attempt(original, 1))
     request = service.prepare_draft(third.identity, "third", target)
+    request = request.model_copy(
+        update={"finalization": FrozenFinalization.from_intent(semantic)}
+    )
+    before_attempt = repo.tip()
+    blocked_calls = []
+
+    def unexpected_push(*_args):
+        pytest.fail("Refused graduation attempted shared publication")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Publisher, "_push", unexpected_push)
+        unavailable = LocalBacklog(replace(service, registry=registry)).graduate(
+            request, semantic
+        )
+        denied_service = replace(
+            service,
+            registry=registry,
+            ports=graduation_preflight(blocked_calls, PreflightOutcome.BLOCKED),
+        )
+        denied = LocalBacklog(denied_service).graduate(request, semantic)
+    assert unavailable.issue is None and denied.issue is None
+    assert blocked_calls
+    assert repo.tip() == before_attempt
+    assert git(remote, "rev-parse", PLANNING) == before_attempt.revision
+    preflight_calls = []
+    lost_ack_service = replace(
+        service, registry=registry, ports=graduation_preflight(preflight_calls)
+    )
 
     def lost_ack(publisher, revision, expected):
         monkeypatch.setattr(Publisher, "_push", push)
@@ -124,8 +180,10 @@ def test_allocator_two_clones(topology, tmp_path, monkeypatch):
         raise OSError("Lost response after accepted push")
 
     monkeypatch.setattr(Publisher, "_push", lost_ack)
-    third_result = LocalBacklog(service).graduate(request, ordinary_finalization())
+    third_result = LocalBacklog(lost_ack_service).graduate(request, semantic)
     assert third_result.issue is not None and third_result.issue.number == 3
+    assert preflight_calls == [choices[-1][2]]
+    assert read_graph(repo, repo.tip()).stories[3].estimates["refine"].agent_hours == 1
     assert cli(repo.root, "graduate", "resume", "third")["issue"] == 3
 
     action = LocalBacklog(service).project_latest(
@@ -204,3 +262,42 @@ def test_local_only_graduation_is_one_planning_commit(repository, policy_inputs)
     assert cli(repo.root, "graduate", "--draft", created.identity)["issue"] == 1
     assert cli(repo.root, "graduate", "resume", head["operation_id"])["issue"] == 1
     assert repo.tip() == after
+
+    origin = story_event_path(1)
+    baseline = repo.read_blobs(after.tree, (origin,))[origin]
+    attempt_tip = repo.create_commit(
+        after, {origin: with_attempt(baseline, 1)}, "fixture attempt"
+    )
+    repo._git("update-ref", repo.ref, attempt_tip.revision, after.revision)
+    second = Intake(
+        installation,
+        repo.tip(),
+        policy.source.digest,
+        OWNER,
+        datetime(2026, 11, 27, tzinfo=UTC),
+    ).create_draft(CreateEntity("Local attempt preflight", "Original local body\n"))
+    assert second.command.publication == PublicationOutcome.NOT_APPLICABLE
+    service = GraduationService(installation, OWNER)
+    request = service.prepare_draft(
+        second.identity,
+        "local-preflight",
+        DeliveryTarget(repository=installation.code_repository, ref=DEFAULT),
+    )
+    pin = repo.tip()
+    blocked_calls = []
+    denied_service = replace(
+        service, ports=graduation_preflight(blocked_calls, PreflightOutcome.BLOCKED)
+    )
+    for graduation_service in (service, denied_service):
+        result = LocalBacklog(graduation_service).graduate(
+            request, ordinary_finalization()
+        )
+        assert result.issue is None
+        assert repo.tip() == pin
+    assert blocked_calls
+    passed_calls = []
+    ready = replace(service, ports=graduation_preflight(passed_calls))
+    result = LocalBacklog(ready).graduate(request, ordinary_finalization())
+    assert result.issue is not None and result.issue.number == 2
+    assert len(passed_calls) == 1
+    assert repo.parent(repo.tip()) == pin.revision
