@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 476
 title: "[Epic] Core — Intake, numbering and graduation"
 kind: "epic"
-state: ready-for-plan
+state: review
 issue: "https://github.com/kburson/aitm/issues/476"
 parent: 1
 children: [24, 25, 26, 27, 74]
 blocking: []
 blocked-by: [15, 23, 500]
 created: "2026-11-27T04:48:44Z"
-updated: "2026-11-27T06:32:11.294Z"
+updated: "2026-11-28T03:17:09.140+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 18.0, "size": "Feature"}
@@ -52,3 +52,5 @@ Estimate: **18 implementation agent-hours**, including verification and review. 
 ## Core kickoff — 2026-11-27
 
 **Ready for Planning** · rank **70** · **P1/Feature** · **18 agent-hours**. Design accepted for this manual workflow through issue #1 with scope entry **EP07**. [Reviewed kickoff and pinned evidence](https://github.com/kburson/aitm/blob/planning/.aitm/stories/000/2/plan/2026-11-27-core-kickoff/kickoff.md).
+
+[#567 exact hosted qualification before SAR](plan/2026-11-27-pr-567-verification.md).
