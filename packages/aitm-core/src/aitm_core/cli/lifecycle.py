@@ -40,6 +40,7 @@ CORE_GUARDS = (
     "core.design.accepted-current",
     "core.refine.complete",
     "core.plan.admission-ready",
+    "core.plan.capacity-current",
     HOSTED_DELIVERY.pickup_guard,
     HOSTED_DELIVERY.binding_guard,
     HOSTED_DELIVERY.candidate_guard,
@@ -93,9 +94,6 @@ def _run(route, args, identity, ports):
         binding=args.binding,
         generation=args.generation,
     )
-    implementation_bound = (
-        lease.purpose == BindingPurpose.IMPLEMENTATION and lease.source is not None
-    )
 
     def latest():
         prepared = preflight_policy(installation, ports=ports)
@@ -110,11 +108,40 @@ def _run(route, args, identity, ports):
             raise UnavailablePort("policy_refresh")
         return store.read_tree(revision)
 
+    def implementation_head_is_current():
+        if lease.branch is None or lease.source is None:
+            return False
+        observed = workspace.repo._run("show-ref", "--verify", "--hash", lease.branch)
+        if (
+            observed.returncode != 0
+            or observed.stdout.strip().decode() != lease.source.commit
+        ):
+            return False
+        return (
+            workspace.repo._git("rev-parse", f"{lease.source.commit}^{{tree}}")
+            .strip()
+            .decode()
+            == lease.source.tree
+        )
+
     def apply(operation, expected):
         with workspace.lock():
             current = binding()
-            if current.purpose != lease.purpose or current.source != lease.source:
+            if (current.purpose, current.source, current.branch, current.attempt) != (
+                lease.purpose,
+                lease.source,
+                lease.branch,
+                lease.attempt,
+            ):
                 raise BindingConflict("Transition binding changed before mutation.")
+            if any(
+                guard.guard == HOSTED_DELIVERY.binding_guard and guard.ok
+                for guard in operation.guards
+            ):
+                if not implementation_head_is_current():
+                    raise BindingConflict(
+                        "Pinned implementation source changed before mutation."
+                    )
 
             def authorize(candidate, change):
                 return WriteAuthorization(
@@ -129,11 +156,23 @@ def _run(route, args, identity, ports):
                 ports=replace(ports, write_authorization=authorize),
             )
 
+    def observe_binding(call):
+        if (
+            lease.purpose != BindingPurpose.IMPLEMENTATION
+            or not callable(ports.implementation_binding)
+            or not implementation_head_is_current()
+        ):
+            return None
+        return ports.implementation_binding(call, lease)
+
     def guard(call):
         return core_guard(
             call,
             leaf_hours=policy.config.limits.leaf_agent_hours,
-            implementation_bound=implementation_bound,
+            implementation_binding=observe_binding,
+            planning_capacity=ports.planning_capacity
+            if callable(ports.planning_capacity)
+            else None,
             kind_requirements=ports.kind_requirements
             if callable(ports.kind_requirements)
             else None,
@@ -161,7 +200,8 @@ def _run(route, args, identity, ports):
         target=args.target,
         reason=args.reason,
         source=lease.source,
-        implementation_bound=implementation_bound,
+        binding_ref=lease.branch,
+        binding_attempt=lease.attempt,
         latest_snapshot=latest,
         sync=authored,
         transact=apply,

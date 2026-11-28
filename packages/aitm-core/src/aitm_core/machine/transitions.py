@@ -13,7 +13,12 @@ from pydantic import BaseModel
 from aitm_core.events import UnavailableReducer, core_reducers, fold
 from aitm_core.ext.api import DirectiveRegistration
 from aitm_core.ext.registry import Registry
-from aitm_core.machine.guards import GuardCall, GuardDecision, GuardPhase
+from aitm_core.machine.guards import (
+    GuardCall,
+    GuardDecision,
+    GuardPhase,
+    ImplementationBinding,
+)
 from aitm_core.machine.obligations import (
     HOSTED_DELIVERY,
     DeliveryContract,
@@ -75,7 +80,8 @@ class TransitionRequest:
     target: str | None = None
     reason: str | None = None
     source: SourceSnapshot | None = None
-    implementation_bound: bool = False
+    binding_ref: str | None = None
+    binding_attempt: str | None = None
     latest_snapshot: Callable[[], Snapshot] | None = None
     before_sync: Phase | None = None
     sync: Phase | None = None
@@ -131,7 +137,7 @@ def _find_edge(request: TransitionRequest, current: str) -> WorkflowEdge | None:
     return eligible[0] if len(eligible) == 1 else None
 
 
-def _facts(request, snapshot, lifecycle, edge, raw, path):
+def _facts(request, snapshot, lifecycle, edge, raw, path, attempt):
     source, target = edge.source, edge.target
     profile_states = {entry.id: entry for entry in request.profile.states}
     related = tuple(
@@ -152,6 +158,7 @@ def _facts(request, snapshot, lifecycle, edge, raw, path):
     )
     reads_by_path = {read.path: read for read in initial_reads}
     plan_generation = None
+    binding = None
     phases: tuple[tuple[GuardPhase, tuple[str, ...]], ...] = (
         ("onExit", profile_states[source].on_exit if edge.kind != "rework" else ()),
         ("prepare", edge.prepare),
@@ -238,6 +245,42 @@ def _facts(request, snapshot, lifecycle, edge, raw, path):
                             "pickup authorities disagree on the plan generation"
                         )
                     plan_generation = decision.plan_generation
+            if (
+                identifier == request.contract.binding_guard
+                and decision.status == "pass"
+            ):
+                candidate = decision.binding
+                valid = (
+                    isinstance(candidate, ImplementationBinding)
+                    and candidate.snapshot == snapshot
+                    and candidate.story == lifecycle.story_id
+                    and candidate.identity == request.owner.binding
+                    and candidate.generation == request.owner.generation
+                    and candidate.branch == request.binding_ref
+                    and candidate.branch.startswith("refs/heads/")
+                    and candidate.source == request.source
+                    and lifecycle.graduation.delivery_target is not None
+                    and candidate.target == lifecycle.graduation.delivery_target
+                    and candidate.branch != candidate.target.ref
+                    and candidate.attempt == request.binding_attempt
+                    and bool(candidate.attempt.strip())
+                    and (attempt is None or candidate.attempt == attempt)
+                )
+                if valid:
+                    binding = candidate
+                    decision = replace(
+                        decision,
+                        reason=(
+                            f"Binding {candidate.identity} generation {candidate.generation} "
+                            f"at {candidate.branch} and {candidate.source.commit} "
+                            f"for attempt {candidate.attempt} targets "
+                            f"{candidate.target.repository}:{candidate.target.ref}."
+                        ),
+                    )
+                else:
+                    decision = GuardDecision(
+                        "unavailable", "implementation-binding-unqualified"
+                    )
             observations.append(
                 GuardEvaluated(
                     operation=request.operation_id,
@@ -262,7 +305,7 @@ def _facts(request, snapshot, lifecycle, edge, raw, path):
     guards = tuple(
         row.model_copy(update={"read_set_digest": read_digest}) for row in observations
     )
-    return reads, read_digest, observation, guards, plan_generation
+    return reads, read_digest, observation, guards, plan_generation, binding
 
 
 def _result(
@@ -291,6 +334,7 @@ def _make_operation(
     observation,
     guards,
     plan_generation,
+    binding,
 ):
     failed = any(not guard.ok for guard in guards)
     if any(not guard.ok and guard.slot == "prepare" for guard in guards):
@@ -337,18 +381,19 @@ def _make_operation(
             and plan.policy_digest == request.policy_digest
         ):
             plan_generation = plan.plan_generation
-        bound = (
-            request.implementation_bound
-            and request.source is not None
-            and request.owner.binding
-        )
-        if not (plan_generation and bound) and request.mode == "enforce":
+        if not (plan_generation and binding) and request.mode == "enforce":
             return (
                 None,
                 LocalOutcome.UNAVAILABLE,
                 "current plan and implementation binding are required",
             )
-        attempt = f"{request.operation_id}:attempt"
+        attempt = binding.attempt if binding else f"{request.operation_id}:attempt"
+        if isinstance(attempts, AttemptState) and attempt in attempts.attempts:
+            return (
+                None,
+                LocalOutcome.REFUSED,
+                "prepared attempt identity already exists",
+            )
         started_id = f"{request.operation_id}:started"
         append.append(
             (
@@ -358,10 +403,10 @@ def _make_operation(
                     attempt=attempt,
                     generation=1,
                     plan_generation=plan_generation,
-                    binding=request.owner.binding if bound else None,
+                    binding=binding.identity if binding else None,
                     source=request.source,
                     allowance_millis=request.allowance_millis,
-                    provisional=failed or not (plan_generation and bound),
+                    provisional=failed or not (plan_generation and binding),
                 ),
             )
         )
@@ -562,8 +607,14 @@ def _evaluate(request: TransitionRequest, snapshot: Snapshot) -> _Evaluation:
                     reason="configured edge is unavailable",
                 )
             )
-        reads, digest, observation, guards, generation = _facts(
-            request, snapshot, lifecycle, edge, raw, path
+        attempts = state.domains.get("attempts")
+        attempt = (
+            attempts.current_attempt if isinstance(attempts, AttemptState) else None
+        )
+        if attempt is not None and attempts.attempts[attempt].closed:
+            attempt = None
+        reads, digest, observation, guards, generation, binding = _facts(
+            request, snapshot, lifecycle, edge, raw, path, attempt
         )
         operation, outcome, reason = _make_operation(
             request,
@@ -576,6 +627,7 @@ def _evaluate(request: TransitionRequest, snapshot: Snapshot) -> _Evaluation:
             observation,
             guards,
             generation,
+            binding,
         )
         return _Evaluation(
             TransitionExplanation(

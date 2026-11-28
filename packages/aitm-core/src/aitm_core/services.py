@@ -44,6 +44,8 @@ ServicePortName = Literal[
     "entity_sync",
     "lane_selection",
     "kind_requirements",
+    "planning_capacity",
+    "implementation_binding",
     "aggregate_evidence",
     "story_exit_guards",
 ]
@@ -71,6 +73,8 @@ class ServicePorts:
     action_retry: object | None = None
     lane_selection: object | None = None
     kind_requirements: object | None = None
+    planning_capacity: object | None = None
+    implementation_binding: object | None = None
     aggregate_evidence: object | None = None
     story_exit_guards: object | None = None
     extension_declarations: tuple[Extension, ...] = ()
